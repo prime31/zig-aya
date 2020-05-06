@@ -14,7 +14,7 @@ pub extern fn FNA3D_Image_SaveJPG(writeFunc: WriteFunc, context: ?*c_void, srcW:
 
 const warn = @import("std").debug.warn;
 
-pub fn load(device: ?*fna.Device, file: [*c]const u8) void {
+pub fn load(device: ?*fna.Device, file: [*c]const u8) ?*fna.Texture {
     var rw = sdl.SDL_RWFromFile(file, "rb");
     defer std.debug.assert(SDL_RWclose(rw) == 0);
 
@@ -27,9 +27,8 @@ pub fn load(device: ?*fna.Device, file: [*c]const u8) void {
     var texture = fna.FNA3D_CreateTexture2D(device, .color, w, h, 1, 0);
     fna.FNA3D_SetTextureData2D(device, texture, .color, 0, 0, w, h, 1, data, len);
 
-    //FNA3D_SetTextureData2D(device: ?*Device, texture: ?*Texture, format: SurfaceFormat, x: i32, y: i32, w: i32, h: i32, level: i32, data: ?*c_void, dataLength: i32)
-
     warn("data: {}, size: {},{}, len: {}, tex: {}\n", .{ data, w, h, len, texture });
+    return texture;
 }
 
 // SDL_rwops.h:#define SDL_RWclose(ctx) (ctx)->close(ctx)
@@ -38,20 +37,20 @@ inline fn SDL_RWclose(ctx: [*]sdl.SDL_RWops) c_int {
 }
 
 fn readFunc(ctx: ?*c_void, data: [*c]u8, size: i32) callconv(.C) i32 {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(usize), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
     const read = sdl.SDL_RWread(rw, data, 1, @intCast(usize, size));
     std.debug.warn("---- read. wanted: {}, read: {}\n", .{ size, read });
     return @intCast(i32, read);
 }
 
 fn skipFunc(ctx: ?*c_void, len: i32) callconv(.C) void {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(usize), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
     _ = sdl.SDL_RWseek(rw, len, sdl.RW_SEEK_CUR);
     std.debug.warn("---- skip. len: {}\n", .{len});
 }
 
 fn eofFunc(ctx: ?*c_void) callconv(.C) i32 {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(usize), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
     _ = sdl.SDL_RWseek(rw, 0, sdl.RW_SEEK_CUR);
     std.debug.warn("---- eof\n", .{});
     return 0;
