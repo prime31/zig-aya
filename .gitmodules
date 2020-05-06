@@ -1,0 +1,3 @@
+[submodule "deps/fna/FNA3D"]
+	path = deps/fna/FNA3D
+	url = https://github.com/FNA-XNA/FNA3D
