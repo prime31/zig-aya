@@ -1,10 +1,5 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    // @cDefine("STBI_ONLY_PNG", "");
-    // @cDefine("STBI_NO_STDIO", "");
-    // @cInclude("stb_image.h");
-});
+const c = @cImport(@cInclude("SDL2/SDL.h"));
 const fna = @import("fna");
 const fna_image = @import("fna_image");
 const mojo = @import("mojoshader");
@@ -38,6 +33,18 @@ pub fn main() anyerror!void {
         return error.SDLInitializationFailed;
     }
     defer c.SDL_Quit();
+
+    // read file with SDL_RWops
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = &arena.allocator;
+
+    var rw = c.SDL_RWFromFile("assets/font.png", "rb");
+    const file_size = c.SDL_RWsize(rw);
+    const bytes = try allocator.alloc(u8, @intCast(usize, file_size));
+    const read = c.SDL_RWread(rw, @ptrCast(*c_void, bytes), 1, @intCast(usize, file_size));
+    _ = c.SDL_RWclose(rw);
+    std.debug.warn("rw: {}, size: {}, read: {}\n", .{ rw, file_size, read });
 
     const window = c.SDL_CreateWindow("Zig FNA3D", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, 640, 480, @bitCast(u32, attrs)) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
