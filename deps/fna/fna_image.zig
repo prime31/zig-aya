@@ -32,18 +32,18 @@ pub fn load(device: ?*fna.Device, file: [*c]const u8) ?*fna.Texture {
 }
 
 fn readFunc(ctx: ?*c_void, data: [*c]u8, size: i32) callconv(.C) i32 {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx));
     const read = sdl.SDL_RWread(rw, data, 1, @intCast(usize, size));
     return @intCast(i32, read);
 }
 
 fn skipFunc(ctx: ?*c_void, len: i32) callconv(.C) void {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx));
     _ = sdl.SDL_RWseek(rw, len, sdl.RW_SEEK_CUR);
 }
 
 fn eofFunc(ctx: ?*c_void) callconv(.C) i32 {
-    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx.?));
+    var rw = @ptrCast(*sdl.SDL_RWops, @alignCast(@alignOf(sdl.SDL_RWops), ctx));
     _ = sdl.SDL_RWseek(rw, 0, sdl.RW_SEEK_CUR);
     std.debug.warn("---- eof\n", .{});
     return 0;
