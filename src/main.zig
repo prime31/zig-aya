@@ -66,7 +66,7 @@ pub fn main() anyerror!void {
     };
     const device = fna.FNA3D_CreateDevice(&params, 1);
 
-    _ = fna_image.load(device, "assets/font.png");
+    // _ = fna_image.load(device, "assets/font.png");
 
     // device setup
     var viewport = fna.Viewport{ .x = 0, .y = 0, .w = 640, .h = 480, .minDepth = 0, .maxDepth = 1 };
@@ -157,7 +157,7 @@ fn createMesh(device: ?*fna.Device) void {
         .{ .pos = .{ .x = 0.5, .y = 0.5 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF },
     };
 
-    vertBuffer = fna.FNA3D_GenVertexBuffer(device, 0, .write_only, 4, 18);
+    vertBuffer = fna.FNA3D_GenVertexBuffer(device, 0, .write_only, vertices.len, 20);
     fna.FNA3D_SetVertexBufferData(device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(Vertex) * vertices.len), 1, 1, .none);
 
     const indices = [_]u16{
