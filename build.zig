@@ -54,7 +54,7 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.linkFramework("OpenGL");
         exe.linkFramework("Carbon");
         exe.linkSystemLibrary("c++");
-    } else if(target.isWindows()) {
+    } else if (target.isWindows()) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2 then renaming
         // the "include" folder to "SDL2". SDL2.dll and SDL2.lib need to be copied to the zig-cache/bin folder
         exe.addLibPath("c:\\SDL2\\lib\\x64");
@@ -62,11 +62,11 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.addIncludeDir("c:\\SDL2");
     }
 
-    const is_windows = target.isWindows();
-    const metal_driver = if (!is_windows) "-DFNA3D_DRIVER_METAL" else "-dFNA3D_NOTHING";
-    const metal_support = if (!is_windows) "-DSUPPORT_PROFILE_METAL=1" else "-DSUPPORT_PROFILE_METAL=0";
-    const moderngl_driver = if (!is_windows) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_MODERNGL";
-    const threadedgl_driver = if (!is_windows) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_THREADEDGL";
+    const is_not_macos = !target.isDarwin();
+    const metal_driver = if (!is_not_macos) "-DFNA3D_DRIVER_METAL" else "-dFNA3D_NOTHING";
+    const metal_support = if (!is_not_macos) "-DSUPPORT_PROFILE_METAL=1" else "-DSUPPORT_PROFILE_METAL=0";
+    const moderngl_driver = if (!is_not_macos) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_MODERNGL";
+    const threadedgl_driver = if (!is_not_macos) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_THREADEDGL";
 
     const lib_cflags = &[_][]const u8{
         "-std=gnu99",                      "-Wall",                          "-Wno-strict-aliasing",              "-pedantic",

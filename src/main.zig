@@ -66,7 +66,7 @@ pub fn main() anyerror!void {
     };
     const device = fna.FNA3D_CreateDevice(&params, 1);
 
-    // _ = fna_image.load(device, "assets/font.png");
+    _ = fna_image.load(device, "assets/font.png");
 
     // device setup
     var viewport = fna.Viewport{ .x = 0, .y = 0, .w = 640, .h = 480, .minDepth = 0, .maxDepth = 1 };
