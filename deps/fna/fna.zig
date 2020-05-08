@@ -430,10 +430,10 @@ pub extern fn FNA3D_BeginPassRestore(device: ?*Device, effect: ?*Effect, stateCh
 pub extern fn FNA3D_EndPassRestore(device: ?*Device, effect: ?*Effect) void;
 pub extern fn FNA3D_CreateQuery(device: ?*Device) ?*Query;
 pub extern fn FNA3D_AddDisposeQuery(device: ?*Device, query: ?*Query) void;
-pub extern fn QueryBegin(device: ?*Device, query: ?*Query) void;
-pub extern fn QueryEnd(device: ?*Device, query: ?*Query) void;
-pub extern fn QueryComplete(device: ?*Device, query: ?*Query) u8;
-pub extern fn QueryPixelCount(device: ?*Device, query: ?*Query) i32;
+pub extern fn FNA3D_QueryBegin(device: ?*Device, query: ?*Query) void;
+pub extern fn FNA3D_QueryEnd(device: ?*Device, query: ?*Query) void;
+pub extern fn FNA3D_QueryComplete(device: ?*Device, query: ?*Query) u8;
+pub extern fn FNA3D_QueryPixelCount(device: ?*Device, query: ?*Query) i32;
 pub extern fn FNA3D_SupportsDXT1(device: ?*Device) u8;
 pub extern fn FNA3D_SupportsS3TC(device: ?*Device) u8;
 pub extern fn FNA3D_SupportsHardwareInstancing(device: ?*Device) u8;

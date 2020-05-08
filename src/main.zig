@@ -116,7 +116,7 @@ pub fn main() anyerror!void {
         fna.FNA3D_ApplyVertexBufferBindings(device, &vertBindings, 1, 0, 0);
         fna.FNA3D_DrawPrimitives(device, .triangle_list, 0, 2);
 
-        fna.FNA3D_SwapBuffers(device, null, null, null);
+        fna.FNA3D_SwapBuffers(device, null, null, window);
 
         c.SDL_Delay(17);
     }
