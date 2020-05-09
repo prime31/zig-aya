@@ -39,6 +39,23 @@ pub fn build(b: *Builder) void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    addTests(b, target);
+}
+
+fn addTests(b: *Builder, target: std.build.Target) void {
+    var t = b.addTest("src/main.zig");
+    compileFna(b, t, target);
+
+    t.addPackagePath("fna", "deps/fna/fna.zig");
+    t.addPackagePath("fna_image", "deps/fna/fna_image.zig");
+    t.addPackagePath("mojoshader", "deps/fna/mojoshader.zig");
+
+    t.linkSystemLibrary("c");
+    t.linkSystemLibrary("SDL2");
+
+    const test_step = b.step("test", "Run all tests");
+    test_step.dependOn(&t.step);
 }
 
 fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
