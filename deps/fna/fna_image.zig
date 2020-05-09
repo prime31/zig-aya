@@ -1,6 +1,7 @@
 const sdl = @cImport(@cInclude("SDL2/SDL.h"));
 const fna = @import("fna.zig");
 const std = @import("std");
+const win_hack = @import("win_img_load_hack.zig");
 
 pub const ReadFunc = ?fn (?*c_void, [*c]u8, i32) callconv(.C) i32;
 pub const SkipFunc = ?fn (?*c_void, i32) callconv(.C) void;
@@ -15,20 +16,24 @@ pub extern fn FNA3D_Image_SaveJPG(writeFunc: WriteFunc, context: ?*c_void, srcW:
 const warn = @import("std").debug.warn;
 
 pub fn load(device: ?*fna.Device, file: [*c]const u8) ?*fna.Texture {
-    var rw = sdl.SDL_RWFromFile(file, "rb");
-    defer std.debug.assert(sdl.SDL_RWclose(rw) == 0);
+    // windows poops itself compiling SDL_RWFromFile so we just avoid it and use File
+    if (std.Target.current.os.tag == .windows) {
+        return win_hack.load(device, std.mem.span(file));
+    } else {
+        var rw = sdl.SDL_RWFromFile(file, "rb");
+        defer std.debug.assert(sdl.SDL_RWclose(rw) == 0);
 
-    var w: i32 = undefined;
-    var h: i32 = undefined;
-    var len: i32 = undefined;
-    const data = FNA3D_Image_Load(readFunc, skipFunc, eofFunc, rw, &w, &h, &len, -1, -1, 0);
-    defer FNA3D_Image_Free(data);
+        var w: i32 = undefined;
+        var h: i32 = undefined;
+        var len: i32 = undefined;
+        const data = FNA3D_Image_Load(readFunc, skipFunc, eofFunc, rw, &w, &h, &len, -1, -1, 0);
+        defer FNA3D_Image_Free(data);
 
-    var texture = fna.FNA3D_CreateTexture2D(device, .color, w, h, 1, 0);
-    fna.FNA3D_SetTextureData2D(device, texture, .color, 0, 0, w, h, 0, data, len);
+        var texture = fna.FNA3D_CreateTexture2D(device, .color, w, h, 1, 0);
+        fna.FNA3D_SetTextureData2D(device, texture, .color, 0, 0, w, h, 0, data, len);
 
-    warn("data: {}, size: {},{}, len: {}, tex: {}\n", .{ data, w, h, len, texture });
-    return texture;
+        return texture;
+    }
 }
 
 fn readFunc(ctx: ?*c_void, data: [*c]u8, size: i32) callconv(.C) i32 {
