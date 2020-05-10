@@ -30,9 +30,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         },
     }
 
-    artifact.addPackagePath("fna", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/fna.zig" }) catch unreachable);
-    artifact.addPackagePath("fna_image", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/fna_image.zig" }) catch unreachable);
-    artifact.addPackagePath("mojoshader", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/mojoshader.zig" }) catch unreachable);
+    artifact.addPackagePath("fna", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "fna.zig" }) catch unreachable);
 }
 
 fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {

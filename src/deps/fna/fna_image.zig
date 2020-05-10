@@ -1,4 +1,4 @@
-const sdl = @cImport(@cInclude("SDL2/SDL.h"));
+const sdl = @import("../sdl/sdl.zig");
 const fna = @import("fna.zig");
 const std = @import("std");
 const win_hack = @import("win_img_load_hack.zig");

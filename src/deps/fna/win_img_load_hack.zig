@@ -1,4 +1,4 @@
-const sdl = @cImport(@cInclude("SDL2/SDL.h"));
+const sdl = @import("../sdl/sdl.zig");
 const fna = @import("fna.zig");
 const fna_image = @import("fna_image.zig");
 const std = @import("std");
@@ -36,7 +36,7 @@ fn skipFunc(ctx: ?*c_void, len: i32) callconv(.C) void {
 
 fn eofFunc(ctx: ?*c_void) callconv(.C) i32 {
     var file = @ptrCast(*std.fs.File, @alignCast(@alignOf(std.fs.File), ctx));
-    
+
     const pos = file.getPos() catch unreachable;
     const end_pos = file.getEndPos() catch unreachable;
 

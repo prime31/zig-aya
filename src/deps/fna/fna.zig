@@ -1,4 +1,5 @@
-const mojo = @import("mojoshader.zig");
+pub const mojo = @import("mojoshader.zig");
+pub const img = @import("fna_image.zig");
 
 pub const Device = @OpaqueType();
 pub const Texture = @OpaqueType();
@@ -256,78 +257,79 @@ pub const Vec4 = extern struct {
 };
 
 pub const Viewport = extern struct {
-    x: i32,
-    y: i32,
+    x: i32 = 0,
+    y: i32 = 0,
     w: i32,
     h: i32,
-    minDepth: f32,
-    maxDepth: f32,
+    minDepth: f32 = 0,
+    maxDepth: f32 = 1,
 };
 
 pub const PresentationParameters = extern struct {
     backBufferWidth: i32,
     backBufferHeight: i32,
-    backBufferFormat: SurfaceFormat,
-    multiSampleCount: i32,
+    backBufferFormat: SurfaceFormat = .color,
+    multiSampleCount: i32 = 0,
     deviceWindowHandle: ?*c_void,
-    isFullScreen: u8,
-    depthStencilFormat: DepthFormat,
-    presentationInterval: PresentInterval,
-    displayOrientation: DisplayOrientation,
-    renderTargetUsage: RenderTargetUsage,
+    isFullScreen: u8 = 0,
+    depthStencilFormat: DepthFormat = .d24s8,
+    presentationInterval: PresentInterval = .default,
+    displayOrientation: DisplayOrientation = .default,
+    renderTargetUsage: RenderTargetUsage = .platform_contents,
 };
 
+// default BlendState is alpha blend
 pub const BlendState = extern struct {
-    colorSourceBlend: Blend,
-    colorDestinationBlend: Blend,
-    colorBlendFunction: BlendFunction,
-    alphaSourceBlend: Blend,
-    alphaDestinationBlend: Blend,
-    alphaBlendFunction: BlendFunction,
-    colorWriteEnable: ColorWriteChannels,
-    colorWriteEnable1: ColorWriteChannels,
-    colorWriteEnable2: ColorWriteChannels,
-    colorWriteEnable3: ColorWriteChannels,
-    blendFactor: Color,
-    multiSampleMask: i32,
+    colorSourceBlend: Blend = .source_alpha,
+    colorDestinationBlend: Blend = .inverse_source_alpha,
+    colorBlendFunction: BlendFunction = .add,
+    alphaSourceBlend: Blend = .source_alpha,
+    alphaDestinationBlend: Blend = .inverse_source_alpha,
+    alphaBlendFunction: BlendFunction = .add,
+    colorWriteEnable: ColorWriteChannels = .all,
+    colorWriteEnable1: ColorWriteChannels = .all,
+    colorWriteEnable2: ColorWriteChannels = .all,
+    colorWriteEnable3: ColorWriteChannels = .all,
+    blendFactor: Color = Color{ .r = 255, .g = 255, .b = 255, .a = 255 },
+    multiSampleMask: i32 = -1,
 };
 
 pub const DepthStencilState = extern struct {
-    depthBufferEnable: u8,
-    depthBufferWriteEnable: u8,
-    depthBufferFunction: CompareFunction,
-    stencilEnable: u8,
-    stencilMask: i32,
-    stencilWriteMask: i32,
-    twoSidedStencilMode: u8,
-    stencilFail: StencilOperation,
-    stencilDepthBufferFail: StencilOperation,
-    stencilPass: StencilOperation,
-    stencilFunction: CompareFunction,
-    ccwStencilFail: StencilOperation,
-    ccwStencilDepthBufferFail: StencilOperation,
-    ccwStencilPass: StencilOperation,
-    ccwStencilFunction: CompareFunction,
-    referenceStencil: i32,
+    depthBufferEnable: u8 = 0,
+    depthBufferWriteEnable: u8 = 0,
+    depthBufferFunction: CompareFunction = .always,
+    stencilEnable: u8 = 0,
+    stencilMask: i32 = 0,
+    stencilWriteMask: i32 = 0,
+    twoSidedStencilMode: u8 = 0,
+    stencilFail: StencilOperation = .keep,
+    stencilDepthBufferFail: StencilOperation = .keep,
+    stencilPass: StencilOperation = .keep,
+    stencilFunction: CompareFunction = .equal,
+    ccwStencilFail: StencilOperation = .keep,
+    ccwStencilDepthBufferFail: StencilOperation = .keep,
+    ccwStencilPass: StencilOperation = .keep,
+    ccwStencilFunction: CompareFunction = .always,
+    referenceStencil: i32 = 1,
 };
 
 pub const RasterizerState = extern struct {
-    fillMode: FillMode,
-    cullMode: CullMode,
-    depthBias: f32,
-    slopeScaleDepthBias: f32,
-    scissorTestEnable: u8,
-    multiSampleAntiAlias: u8,
+    fillMode: FillMode = .solid,
+    cullMode: CullMode = .none,
+    depthBias: f32 = 0,
+    slopeScaleDepthBias: f32 = 0,
+    scissorTestEnable: u8 = 0,
+    multiSampleAntiAlias: u8 = 0,
 };
 
 pub const SamplerState = extern struct {
-    filter: TextureFilter,
-    addressU: TextureAddressMode,
-    addressV: TextureAddressMode,
-    addressW: TextureAddressMode,
-    mipMapLevelOfDetailBias: f32,
-    maxAnisotropy: i32,
-    maxMipLevel: i32,
+    filter: TextureFilter = .point,
+    addressU: TextureAddressMode = .clamp,
+    addressV: TextureAddressMode = .clamp,
+    addressW: TextureAddressMode = .clamp,
+    mipMapLevelOfDetailBias: f32 = 0,
+    maxAnisotropy: i32 = 4,
+    maxMipLevel: i32 = 0,
 };
 
 pub const VertexElement = extern struct {
