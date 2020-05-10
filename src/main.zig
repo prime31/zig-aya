@@ -1,22 +1,24 @@
 const std = @import("std");
-const c = @cImport(@cInclude("SDL2/SDL.h"));
 const fna = @import("fna");
-const fna_image = @import("fna_image");
-const mojo = @import("mojoshader");
+const mojo = fna.mojo;
 
 const png = @embedFile("../assets/font.png");
 const Allocator = std.mem.Allocator;
 
 pub const Shader = extern struct {
-    effect: ?*fna.Effect = null, mojoEffect: ?*mojo.Effect = null
+    effect: ?*fna.Effect = null,
+    mojoEffect: ?*mojo.Effect = null,
 };
 
 const Vertex = struct {
-    pos: Vec2, uv: Vec2, col: u32 = 0xFFFFFFFF
+    pos: Vec2,
+    uv: Vec2,
+    col: u32 = 0xFFFFFFFF,
 };
 
 const Vec2 = struct {
-    x: f32 = 0, y: f32 = 0
+    x: f32 = 0,
+    y: f32 = 0,
 };
 
 var vertDecl: fna.VertexDeclaration = undefined;
@@ -66,7 +68,7 @@ pub fn main() anyerror!void {
     };
     const device = fna.FNA3D_CreateDevice(&params, 1);
 
-    const tex = fna_image.load(device, "assets/font.png");
+    const tex = fna.img.load(device, "assets/font.png");
     std.debug.warn("loaded tex: {}\n", .{tex});
 
     // device setup
