@@ -8,7 +8,8 @@ pub const LibType = enum(i32) {
     exe_compiled,
 };
 
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType) void {
+/// rel_path is used to add package paths. It should be the the same path used to include this build file
+pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType, rel_path: []const u8) void {
     switch (lib_type) {
         .static => {
             const lib = b.addStaticLibrary("FNA3D", null);
@@ -29,9 +30,9 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         },
     }
 
-    artifact.addPackagePath("fna", "deps/fna/fna.zig");
-    artifact.addPackagePath("fna_image", "deps/fna/fna_image.zig");
-    artifact.addPackagePath("mojoshader", "deps/fna/mojoshader.zig");
+    artifact.addPackagePath("fna", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/fna.zig" }) catch unreachable);
+    artifact.addPackagePath("fna_image", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/fna_image.zig" }) catch unreachable);
+    artifact.addPackagePath("mojoshader", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "src/mojoshader.zig" }) catch unreachable);
 }
 
 fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {

@@ -15,8 +15,7 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(b.standardReleaseOptions());
 
     // fna can be dynamic, static or compiled in
-    fna_build.linkArtifact(b, exe, target, lib_type);
-    // fna_build.compileFna(b, exe, target);
+    fna_build.linkArtifact(b, exe, target, lib_type, "deps/fna");
 
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
@@ -33,7 +32,7 @@ pub fn build(b: *Builder) void {
 
 fn addTests(b: *Builder, target: std.build.Target) void {
     var t = b.addTest("src/test.zig");
-    fna_build.linkArtifact(b, t, target, .exe_compiled);
+    fna_build.linkArtifact(b, t, target, .exe_compiled, "deps/fna");
 
     t.linkSystemLibrary("c");
     t.linkSystemLibrary("SDL2");
