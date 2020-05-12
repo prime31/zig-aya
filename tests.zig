@@ -1,10 +1,10 @@
 const std = @import("std");
-const tilemap = @import("utils/tilemap.zig");
+const tilemap = @import("src/utils/tilemap.zig");
 
 test "tilemap" {
     var timer = try std.time.Timer.start();
 
-    const buffer = @embedFile("../assets/platformer.json");
+    const buffer = @embedFile("assets/platformer.json");
     var tokens = std.json.TokenStream.init(buffer);
 
     const options = std.json.ParseOptions{ .allocator = std.testing.allocator };
@@ -21,5 +21,7 @@ test "tilemap" {
 
 // include all files with tests
 comptime {
-    _ = @import("main.zig");
+    _ = @import("src/main.zig");
+    _ = @import("src/math/vec2.zig");
+    _ = @import("src/math/color.zig");
 }

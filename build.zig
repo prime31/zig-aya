@@ -34,12 +34,12 @@ pub fn build(b: *Builder) void {
 }
 
 fn addTests(b: *Builder, target: std.build.Target) void {
-    var t = b.addTest("src/test.zig");
+    var t = b.addTest("tests.zig");
     fna_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fna");
 
     t.linkSystemLibrary("c");
     t.linkSystemLibrary("SDL2");
 
-    const test_step = b.step("test", "Run tests in test.zig");
+    const test_step = b.step("test", "Run tests in tests.zig");
     test_step.dependOn(&t.step);
 }

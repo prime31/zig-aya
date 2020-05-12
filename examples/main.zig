@@ -12,14 +12,9 @@ pub const Shader = extern struct {
 };
 
 const Vertex = struct {
-    pos: Vec2,
-    uv: Vec2,
+    pos: aya.math.Vec2,
+    uv: aya.math.Vec2,
     col: u32 = 0xFFFFFFFF,
-};
-
-const Vec2 = struct {
-    x: f32 = 0,
-    y: f32 = 0,
 };
 
 var vertDecl: fna.VertexDeclaration = undefined;
@@ -34,6 +29,7 @@ pub fn main() anyerror!void {
         .render = render,
     });
 
+    const c = aya.math.Color.light_gray;
     // const tex = fna.img.load(device, "assets/font.png");
     // std.debug.warn("loaded tex: {}\n", .{tex});
 }

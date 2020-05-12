@@ -97,47 +97,7 @@ pub const Window = struct {
         sdl.SDL_SetWindowFullscreen(self.sdl_window, mode);
     }
 
-    pub fn fucused(self: Self) bool {
+    pub fn focused(self: Self) bool {
         return self.focused;
     }
 };
-
-// scale :: proc() -> f32 {
-//     wx, _ := size();
-//     dx, _ := drawable_size();
-//     return cast(f32)dx / cast(f32)wx;
-// }
-//
-// drawable_size :: proc() -> (i32, i32) {
-//     width, height: i32;
-//     fna.get_drawable_size(sdl_window, &width, &height);
-//     return width, height;
-// }
-//
-// size :: proc() -> (i32, i32) {
-//     width, height: i32;
-//     sdl.get_window_size(sdl_window, &width, &height);
-//     return width, height;
-// }
-//
-// width :: proc() -> i32 {
-//     w, _ := size();
-//     return w;
-// }
-//
-// height :: proc() -> i32 {
-//     _, h := size();
-//     return h;
-// }
-//
-// focused :: proc() -> bool {
-//     return win_focused;
-// }
-//
-// set_size :: proc(width, height: i32) {
-//     sdl.set_window_size(sdl_window, width, height);
-// }
-//
-// set_fullscreen :: proc(mode: WindowMode) {
-//     sdl.set_window_fullscreen(sdl_window, cast(u32)mode);
-// }

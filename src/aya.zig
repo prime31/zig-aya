@@ -1,8 +1,9 @@
 const std = @import("std");
-const sdl = @import("deps/sdl/sdl.zig");
-const fna = @import("deps/fna/fna.zig");
-const gfx = @import("gfx/gfx.zig");
-const win = @import("window.zig");
+pub const sdl = @import("deps/sdl/sdl.zig");
+pub const fna = @import("deps/fna/fna.zig");
+pub const gfx = @import("gfx/gfx.zig");
+pub const win = @import("window.zig");
+pub const math = @import("math/math.zig");
 
 pub var window = win.Window{};
 pub var time = @import("time.zig").Time{};
