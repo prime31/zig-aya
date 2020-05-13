@@ -18,7 +18,6 @@ pub fn load(device: ?*fna.Device, file: []const u8) ?*fna.Texture {
 
     var texture = fna.FNA3D_CreateTexture2D(device, .color, w, h, 1, 0);
     fna.FNA3D_SetTextureData2D(device, texture, .color, 0, 0, w, h, 0, data, len);
-    std.debug.warn("data: {}, size: {},{}, len: {}, tex: {}\n", .{ data, w, h, len, texture });
 
     return texture;
 }

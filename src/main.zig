@@ -176,18 +176,18 @@ fn createMesh(device: ?*fna.Device) void {
 }
 
 fn createShader(device: ?*fna.Device) Shader {
-    var vertColor = @embedFile("../assets/VertexColor.fxb");
+    // read shader from embedded file
+    // var vertColor = @embedFile("../assets/VertexColor.fxb");
 
     // hack until i figure out how to get around const
-    var slice: [vertColor.len]u8 = undefined;
-    for (vertColor) |s, i|
-        slice[i] = s;
+    // var slice: [vertColor.len]u8 = undefined;
+    // for (vertColor) |s, i|
+    //     slice[i] = s;
 
-    var shader = Shader{};
-    fna.FNA3D_CreateEffect(device, &slice[0], vertColor.len, &shader.effect, &shader.mojoEffect);
-
-    var effect_changes = std.mem.zeroes(mojo.EffectStateChanges);
-    fna.FNA3D_ApplyEffect(device, shader.effect, 0, &effect_changes);
+    // var shader = Shader{};
+    // fna.FNA3D_CreateEffect(device, &slice[0], vertColor.len, &shader.effect, &shader.mojoEffect);
+    var shader = aya.gfx.Shader.initFromFile("../assets/VertexColor.fxb");
+    shader.apply();
 
     return shader;
 }

@@ -2,32 +2,33 @@ const std = @import("std");
 
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const Vertex = @import("vertices.zig").Vertex;
+pub const Shader = @import("shader.zig").Shader;
 
-pub var fna_device: ?*fna.Device = null;
+pub var device: ?*fna.Device = null;
 
 const fna = @import("../deps/fna/fna.zig");
 
 const State = struct {
     default_sampler_state: fna.SamplerState = fna.SamplerState{},
-    viewport: fna.Viewport,
+    viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
     // FontBook
     // Batcher
     // Default_Offscreen_Pass
 };
-const state = State{};
+var state = State{};
 
 pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, design_w: i32, design_h: i32, resolution_policy: ResolutionPolicy) void {
-    fna_device = fna.FNA3D_CreateDevice(params, 1);
+    device = fna.FNA3D_CreateDevice(params, 1);
     setPresentationInterval(.one);
 
     var rasterizer = std.mem.zeroes(fna.RasterizerState);
-    fna.FNA3D_ApplyRasterizerState(fna_device, &rasterizer);
+    fna.FNA3D_ApplyRasterizerState(device, &rasterizer);
 
     var blend = fna.BlendState{};
-    fna.FNA3D_SetBlendState(fna_device, &blend);
+    fna.FNA3D_SetBlendState(device, &blend);
 
     var depthStencil = fna.DepthStencilState{};
-    fna.FNA3D_SetDepthStencilState(fna_device, &depthStencil);
+    fna.FNA3D_SetDepthStencilState(device, &depthStencil);
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
 
@@ -53,12 +54,12 @@ pub fn clear(color: fna.Vec4) void {
 
 pub fn clearWithOptions(color: fna.Vec4, options: fna.ClearOptions, depth: f32, stencil: i32) void {
     var clear_color = color;
-    fna.FNA3D_Clear(fna_device, options, &clear_color, depth, stencil);
+    fna.FNA3D_Clear(device, options, &clear_color, depth, stencil);
 }
 
 pub fn setViewport(vp: fna.Viewport) void {
-    viewport = vp;
-    fna.FNA3D_SetViewport(fna_device, &viewport);
+    state.viewport = vp;
+    fna.FNA3D_SetViewport(device, &state.viewport);
 }
 
 pub fn setDefaultSamplerState(sampler_state: fna.SamplerState) void {
@@ -66,7 +67,7 @@ pub fn setDefaultSamplerState(sampler_state: fna.SamplerState) void {
 }
 
 pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
-    fna.FNA3D_SetPresentationInterval(fna_device, present_interval);
+    fna.FNA3D_SetPresentationInterval(device, present_interval);
 }
 
 pub fn getResolutionScaler() ResolutionScaler {

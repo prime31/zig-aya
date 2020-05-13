@@ -6,6 +6,7 @@ pub const sdl = @import("deps/sdl/sdl.zig");
 pub const fna = @import("deps/fna/fna.zig");
 pub const gfx = @import("gfx/gfx.zig");
 pub const math = @import("math/math.zig");
+pub const fs = @import("fs.zig");
 
 pub var window = @import("window.zig").Window{};
 pub var time = @import("time.zig").Time{};
@@ -55,7 +56,7 @@ pub fn run(config: Config) !void {
 
 fn runLoop(update: fn () void, render: fn () void) void {
     while (!pollEvents()) {
-        fna.FNA3D_BeginFrame(gfx.fna_device);
+        fna.FNA3D_BeginFrame(gfx.device);
 
         // TODO: never clear automatically
         gfx.clear(.{ .x = 0.8, .y = 0.2, .z = 0.3, .w = 1 });
@@ -63,7 +64,7 @@ fn runLoop(update: fn () void, render: fn () void) void {
         time.tick(update);
         render();
 
-        window.swap(gfx.fna_device);
+        window.swap(gfx.device);
     }
 }
 

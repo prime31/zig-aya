@@ -36,8 +36,8 @@ fn init() void {
 fn update() void {}
 
 fn render() void {
-    fna.FNA3D_ApplyVertexBufferBindings(aya.gfx.fna_device, &vertBindings, 1, 0, 0);
-    fna.FNA3D_DrawPrimitives(aya.gfx.fna_device, .triangle_list, 0, 2);
+    fna.FNA3D_ApplyVertexBufferBindings(aya.gfx.device, &vertBindings, 1, 0, 0);
+    fna.FNA3D_DrawPrimitives(aya.gfx.device, .triangle_list, 0, 2);
 }
 
 fn createMesh() void {
@@ -75,8 +75,8 @@ fn createMesh() void {
         .{ .pos = .{ .x = 0.5, .y = 0.5 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF },
     };
 
-    vertBuffer = fna.FNA3D_GenVertexBuffer(aya.gfx.fna_device, 0, .write_only, vertices.len, 20);
-    fna.FNA3D_SetVertexBufferData(aya.gfx.fna_device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(aya.gfx.Vertex) * vertices.len), 1, 1, .none);
+    vertBuffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, 0, .write_only, vertices.len, 20);
+    fna.FNA3D_SetVertexBufferData(aya.gfx.device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(aya.gfx.Vertex) * vertices.len), 1, 1, .none);
 
     const indices = [_]u16{
         0, 1, 2, 0, 2, 3,
@@ -90,19 +90,9 @@ fn createMesh() void {
     };
 }
 
-fn createShader() Shader {
-    var vertColor = @embedFile("../assets/VertexColor.fxb");
-
-    // hack until i figure out how to get around const
-    var slice: [vertColor.len]u8 = undefined;
-    for (vertColor) |s, i|
-        slice[i] = s;
-
-    var shader = Shader{};
-    fna.FNA3D_CreateEffect(aya.gfx.fna_device, &slice[0], vertColor.len, &shader.effect, &shader.mojoEffect);
-
-    var effect_changes = std.mem.zeroes(mojo.EffectStateChanges);
-    fna.FNA3D_ApplyEffect(aya.gfx.fna_device, shader.effect, 0, &effect_changes);
+fn createShader() !aya.gfx.Shader {
+    var shader = try aya.gfx.Shader.initFromFile("assets/VertexColor.fxb");
+    shader.apply();
 
     return shader;
 }
