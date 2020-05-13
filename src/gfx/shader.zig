@@ -28,6 +28,10 @@ pub const Shader = extern struct {
         return shader;
     }
 
+    pub fn deinit(self: Shader) void {
+        fna.FNA3D_AddDisposeEffect(gfx.device, self.effect);
+    }
+
     pub fn apply(self: @This()) void {
         var effect_changes = std.mem.zeroes(fna.mojo.EffectStateChanges);
         fna.FNA3D_ApplyEffect(gfx.device, self.effect, 0, &effect_changes);
