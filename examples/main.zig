@@ -11,12 +11,6 @@ pub const Shader = extern struct {
     mojoEffect: ?*mojo.Effect = null,
 };
 
-const Vertex = struct {
-    pos: aya.math.Vec2,
-    uv: aya.math.Vec2,
-    col: u32 = 0xFFFFFFFF,
-};
-
 var vertDecl: fna.VertexDeclaration = undefined;
 var vertBindings: fna.VertexBufferBinding = undefined;
 var vertBuffer: ?*fna.Buffer = undefined;
@@ -72,7 +66,7 @@ fn createMesh(device: ?*fna.Device) void {
     };
 
     //@sizeOf(Vec2)
-    var vertices = [_]Vertex{
+    var vertices = [_]aya.gfx.Vertex{
         .{ .pos = .{ .x = 0.5, .y = 0.5 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF },
         .{ .pos = .{ .x = 0.5, .y = -0.5 }, .uv = .{ .x = 1, .y = 0 }, .col = 0x00FF0FFF },
         .{ .pos = .{ .x = -0.5, .y = -0.5 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF00FFFF },
@@ -82,7 +76,7 @@ fn createMesh(device: ?*fna.Device) void {
     };
 
     vertBuffer = fna.FNA3D_GenVertexBuffer(device, 0, .write_only, vertices.len, 20);
-    fna.FNA3D_SetVertexBufferData(device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(Vertex) * vertices.len), 1, 1, .none);
+    fna.FNA3D_SetVertexBufferData(device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(aya.gfx.Vertex) * vertices.len), 1, 1, .none);
 
     const indices = [_]u16{
         0, 1, 2, 0, 2, 3,
