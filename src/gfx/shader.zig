@@ -1,15 +1,15 @@
 const std = @import("std");
-const fna = @import("../deps/fna/fna.zig");
-const fs = @import("../fs.zig");
-const gfx = @import("gfx.zig");
+const aya = @import("../aya.zig");
+const fna = aya.fna;
+const fs = aya.fs;
+const gfx = aya.gfx;
 
 pub const Shader = extern struct {
     effect: ?*fna.Effect = null,
     mojo_effect: ?*fna.mojo.Effect = null,
-    current_technique: i32 = 0,
 
     pub fn initFromFile(file: []const u8) !Shader {
-        var bytes = try fs.read(file);
+        var bytes = try fs.read(aya.mem.tmp_allocator, file);
 
         var shader = Shader{};
         fna.FNA3D_CreateEffect(gfx.device, &bytes[0], @intCast(u32, bytes.len), &shader.effect, &shader.mojo_effect);

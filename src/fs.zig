@@ -1,14 +1,10 @@
 const std = @import("std");
-const sdl = @import("deps/sdl/sdl.zig");
+const aya = @import("aya.zig");
+const sdl = aya.sdl;
 
-// TODO: leaks
-/// reads the contents of a file. Returned value must be freed.
-pub fn read(file: []const u8) ![]u8 {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    // defer arena.deinit();
-    const allocator = &arena.allocator;
-
-    const c_file = try std.cstr.addNullByte(allocator, file);
+/// reads the contents of a file. Returned value is owned by the caller and must be freed!
+pub fn read(allocator: *std.mem.Allocator, file: []const u8) ![]u8 {
+    const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
     var rw = sdl.SDL_RWFromFile(c_file, "rb");
     if (rw == null) return error.FileNotFound;
 
@@ -21,6 +17,6 @@ pub fn read(file: []const u8) ![]u8 {
 }
 
 test "test fs read" {
-    std.testing.expectError(error.FileNotFound, read("junk.png"));
-    _ = try read("assets/font.png");
+    std.testing.expectError(error.FileNotFound, read(std.testing.allocator, "junk.png"));
+    _ = try read(std.testing.allocator, "assets/font.png");
 }
