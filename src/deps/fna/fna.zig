@@ -13,7 +13,6 @@ pub const PresentInterval = extern enum(c_int) {
     one,
     two,
     immediate,
-    _,
 };
 
 pub const DisplayOrientation = extern enum(c_int) {
@@ -21,21 +20,19 @@ pub const DisplayOrientation = extern enum(c_int) {
     landscape_left,
     landscape_right,
     portrait,
-    _,
 };
 
 pub const RenderTargetUsage = extern enum(c_int) {
     discard_contents,
     preserve_contents,
     platform_contents,
-    _,
 };
 
 pub const ClearOptions = extern enum(c_int) {
     target = 1,
     depth_buffer = 2,
     stencil = 4,
-    _,
+    all = 1 | 2 | 4,
 };
 
 pub const PrimitiveType = extern enum(c_int) {
@@ -44,13 +41,11 @@ pub const PrimitiveType = extern enum(c_int) {
     line_list,
     line_strip,
     point_list_ext,
-    _,
 };
 
 pub const IndexElementSize = extern enum(c_int) {
     sixteen_bit,
     thirty_two_bit,
-    _,
 };
 
 pub const SurfaceFormat = extern enum(c_int) {

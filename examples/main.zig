@@ -29,18 +29,18 @@ pub fn main() anyerror!void {
 }
 
 fn init() void {
-    const shader = createShader(aya.fna_device);
-    createMesh(aya.fna_device);
+    const shader = createShader();
+    createMesh();
 }
 
 fn update() void {}
 
 fn render() void {
-    fna.FNA3D_ApplyVertexBufferBindings(aya.fna_device, &vertBindings, 1, 0, 0);
-    fna.FNA3D_DrawPrimitives(aya.fna_device, .triangle_list, 0, 2);
+    fna.FNA3D_ApplyVertexBufferBindings(aya.gfx.fna_device, &vertBindings, 1, 0, 0);
+    fna.FNA3D_DrawPrimitives(aya.gfx.fna_device, .triangle_list, 0, 2);
 }
 
-fn createMesh(device: ?*fna.Device) void {
+fn createMesh() void {
     vertElems[0] = fna.VertexElement{
         .offset = 0,
         .vertexElementFormat = .vector2,
@@ -75,8 +75,8 @@ fn createMesh(device: ?*fna.Device) void {
         .{ .pos = .{ .x = 0.5, .y = 0.5 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF },
     };
 
-    vertBuffer = fna.FNA3D_GenVertexBuffer(device, 0, .write_only, vertices.len, 20);
-    fna.FNA3D_SetVertexBufferData(device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(aya.gfx.Vertex) * vertices.len), 1, 1, .none);
+    vertBuffer = fna.FNA3D_GenVertexBuffer(aya.gfx.fna_device, 0, .write_only, vertices.len, 20);
+    fna.FNA3D_SetVertexBufferData(aya.gfx.fna_device, vertBuffer, 0, &vertices[0], @intCast(c_int, @sizeOf(aya.gfx.Vertex) * vertices.len), 1, 1, .none);
 
     const indices = [_]u16{
         0, 1, 2, 0, 2, 3,
@@ -90,7 +90,7 @@ fn createMesh(device: ?*fna.Device) void {
     };
 }
 
-fn createShader(device: ?*fna.Device) Shader {
+fn createShader() Shader {
     var vertColor = @embedFile("../assets/VertexColor.fxb");
 
     // hack until i figure out how to get around const
@@ -99,10 +99,10 @@ fn createShader(device: ?*fna.Device) Shader {
         slice[i] = s;
 
     var shader = Shader{};
-    fna.FNA3D_CreateEffect(device, &slice[0], vertColor.len, &shader.effect, &shader.mojoEffect);
+    fna.FNA3D_CreateEffect(aya.gfx.fna_device, &slice[0], vertColor.len, &shader.effect, &shader.mojoEffect);
 
     var effect_changes = std.mem.zeroes(mojo.EffectStateChanges);
-    fna.FNA3D_ApplyEffect(device, shader.effect, 0, &effect_changes);
+    fna.FNA3D_ApplyEffect(aya.gfx.fna_device, shader.effect, 0, &effect_changes);
 
     return shader;
 }
