@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
+pub const Texture = @import("texture.zig").Texture;
 pub const Vertex = @import("vertices.zig").Vertex;
 pub const Shader = @import("shader.zig").Shader;
 
@@ -9,8 +10,8 @@ pub var device: ?*fna.Device = null;
 const fna = @import("../deps/fna/fna.zig");
 
 const State = struct {
-    default_sampler_state: fna.SamplerState = fna.SamplerState{},
     viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
+    white_tex: Texture = undefined,
     // FontBook
     // Batcher
     // Default_Offscreen_Pass
@@ -34,9 +35,9 @@ pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, des
 
     // _batcher = new_batcher();
     //
-    // pixels := [?]u32 {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-    // _white_tex = new_texture_from_data(&pixels[0], 2, 2, default_sampler_state);
-    //
+    var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+    state.white_tex = Texture.init(2, 2);
+    state.white_tex.setColorData(pixels[0..]);
     // default_fontbook = new_fontbook(256, 256);
     // fontbook_add_font_mem(default_fontbook, default_font_bytes, false);
     // fontbook_set_size(default_fontbook, 10);
@@ -60,10 +61,6 @@ pub fn clearWithOptions(color: fna.Vec4, options: fna.ClearOptions, depth: f32, 
 pub fn setViewport(vp: fna.Viewport) void {
     state.viewport = vp;
     fna.FNA3D_SetViewport(device, &state.viewport);
-}
-
-pub fn setDefaultSamplerState(sampler_state: fna.SamplerState) void {
-    state.default_sampler_state = sampler_state;
 }
 
 pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {

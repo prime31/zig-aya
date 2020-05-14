@@ -38,9 +38,8 @@ test "vec2 tests" {
     const v_orth = Vec2{ .x = -5, .y = 1 };
 
     std.testing.expectEqual(v2, v_orth);
-
-    std.debug.warn("\nangleBetween: {}\n", .{v.angleBetween(v2)});
-    std.debug.warn("\ndistanceSq: {}\n", .{v.distanceSq(v2)});
-    std.debug.warn("\ndistance: {}\n", .{v.distance(v2)});
-    std.debug.warn("\nperpindicular: {}\n", .{v.perpindicular(v2)});
+    std.testing.expect(math.approxEq(f32, -2.55, v.angleBetween(v2), 0.01));
+    std.testing.expect(math.approxEq(f32, 52, v.distanceSq(v2), 0.01));
+    std.testing.expect(math.approxEq(f32, 7.21, v.distance(v2), 0.01));
+    std.testing.expect(math.approxEq(f32, -6, v.perpindicular(v2).y, 0.01));
 }

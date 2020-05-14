@@ -1,4 +1,5 @@
 const sdl = @import("deps/sdl/sdl.zig");
+const mem = @import("mem/mem.zig");
 const fna = @import("deps/fna/fna.zig");
 const std = @import("std");
 
@@ -30,7 +31,7 @@ pub const Window = struct {
         if (config.fullscreen) flags |= sdl.SDL_WINDOW_FULLSCREEN_DESKTOP;
 
         // TODO: use a temp allocator when we have one
-        const title = try std.cstr.addNullByte(std.testing.allocator, config.title);
+        const title = try std.cstr.addNullByte(mem.tmp_allocator, config.title);
         self.sdl_window = sdl.SDL_CreateWindow(title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, flags)) orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             return error.SDLWindowInitializationFailed;

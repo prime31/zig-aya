@@ -27,4 +27,5 @@ comptime {
     _ = @import("src/math/mat32.zig");
     _ = @import("src/fs.zig");
     _ = @import("src/gfx/shader.zig");
+    _ = @import("src/gfx/texture.zig");
 }
