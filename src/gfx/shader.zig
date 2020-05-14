@@ -4,6 +4,18 @@ const fna = aya.fna;
 const fs = aya.fs;
 const gfx = aya.gfx;
 
+pub fn cmp(a: []const u8, b: [*:0]const u8) i8 {
+    var index: usize = 0;
+    while (a[index] == b[index] and a[index] != 0) : (index += 1) {}
+    if (a[index] > b[index]) {
+        return 1;
+    } else if (a[index] < b[index]) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 pub const Shader = extern struct {
     effect: ?*fna.Effect = null,
     mojo_effect: ?*fna.mojo.Effect = null,
@@ -68,19 +80,19 @@ pub const Shader = extern struct {
         return error.TechnniqueNotFound;
     }
 
-    pub fn getParam(self: @This(), comptime T: type, name: string) T {
+    pub fn getParam(self: @This(), comptime T: type, name: []const u8) T {
         if (self.mojo_effect.?.param_count > 0) {
             const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
             for (params) |param| {
-                if (std.cstr.cmp(name, param.name) == 0) {
-                    return getParamImpl(T, param.effect_value);
+                if (cmp(name, param.value.name) == 0) {
+                    return getParamImpl(T, param.value);
                 }
             }
         }
         return unreachable;
     }
 
-    fn getParamImpl(comptime T: type, value: EffectValue) T {
+    fn getParamImpl(comptime T: type, value: fna.mojo.EffectValue) T {
         return switch (@typeInfo(T)) {
             .Float => @floatCast(T, value.float.*),
             .Int => @intCast(T, value.int.*),
@@ -106,19 +118,19 @@ pub const Shader = extern struct {
         };
     }
 
-    pub fn setParam(self: @This(), comptime T: type, name: string, value: T) void {
+    pub fn setParam(self: @This(), comptime T: type, name: []const u8, value: T) void {
         if (self.mojo_effect.?.param_count > 0) {
             const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
             for (params) |param| {
-                if (std.cstr.cmp(name, param.name) == 0) {
-                    return setParamImpl(T, param);
+                if (cmp(name, param.value.name) == 0) {
+                    return setParamImpl(T, param.value, value);
                 }
             }
         }
         return unreachable;
     }
 
-    fn setParamImpl(comptime T: type, effect_value: EffectValue, value: T) void {
+    fn setParamImpl(comptime T: type, effect_value: fna.mojo.EffectValue, value: T) void {
         switch (@typeInfo(T)) {
             .Float => value.float.* = @floatCast(f32, value),
             .Int => value.int.* = @intCast(c_int, value),
@@ -144,5 +156,7 @@ pub const Shader = extern struct {
 
 test "test shader" {
     std.testing.expectError(error.ShaderCreationError, Shader.initFromFile("assets/VertexColor.fxb"));
+    var s = Shader{};
+    _ = s.getParam(f32, "fart");
     // shader.setCurrentTechnique("SpriteBlink"); // need gfx.device for this
 }
