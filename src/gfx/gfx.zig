@@ -21,7 +21,7 @@ pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, des
     device = fna.FNA3D_CreateDevice(params, 1);
     setPresentationInterval(.one);
 
-    var rasterizer = std.mem.zeroes(fna.RasterizerState);
+    var rasterizer = fna.RasterizerState{};
     fna.FNA3D_ApplyRasterizerState(device, &rasterizer);
 
     var blend = fna.BlendState{};

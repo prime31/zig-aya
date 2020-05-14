@@ -60,8 +60,8 @@ pub const EffectValue = extern struct {
     value_count: c_uint,
     value: extern union {
         values: ?*c_void,
-        valuesI: [*c]c_int,
-        valuesF: [*c]f32,
+        int: [*c]c_int,
+        float: [*c]f32,
         // valuesZBT: [*c]MOJOSHADER_zBufferType,
         // valuesFiM: [*c]MOJOSHADER_fillMode,
         // valuesSM: [*c]MOJOSHADER_shadeMode,
@@ -83,7 +83,7 @@ pub const EffectValue = extern struct {
 };
 
 pub const SymbolTypeInfo = extern struct {
-    parameter_class: MOJOSHADER_symbolClass,
+    parameter_class: SymbolClass,
     parameter_type: SymbolType,
     rows: c_uint,
     columns: c_uint,
@@ -281,27 +281,23 @@ pub const struct_MOJOSHADER_swizzle = extern struct {
 };
 pub const MOJOSHADER_swizzle = struct_MOJOSHADER_swizzle;
 
-const enum_unnamed_7 = extern enum(c_int) {
-    MOJOSHADER_SYMREGSET_BOOL = 0,
-    MOJOSHADER_SYMREGSET_INT4 = 1,
-    MOJOSHADER_SYMREGSET_FLOAT4 = 2,
-    MOJOSHADER_SYMREGSET_SAMPLER = 3,
-    MOJOSHADER_SYMREGSET_TOTAL = 4,
-    _,
+const SymbolRegisterSet = extern enum(c_int) {
+    bool = 0,
+    int4 = 1,
+    float4 = 2,
+    sampler = 3,
+    total = 4,
 };
-pub const MOJOSHADER_symbolRegisterSet = enum_unnamed_7;
 
-const enum_unnamed_8 = extern enum(c_int) {
-    MOJOSHADER_SYMCLASS_SCALAR = 0,
-    MOJOSHADER_SYMCLASS_VECTOR = 1,
-    MOJOSHADER_SYMCLASS_MATRIX_ROWS = 2,
-    MOJOSHADER_SYMCLASS_MATRIX_COLUMNS = 3,
-    MOJOSHADER_SYMCLASS_OBJECT = 4,
-    MOJOSHADER_SYMCLASS_STRUCT = 5,
-    MOJOSHADER_SYMCLASS_TOTAL = 6,
-    _,
+const SymbolClass = extern enum(c_int) {
+    scalar = 0,
+    vector = 1,
+    matrix_ros = 2,
+    matrix_columns = 3,
+    object = 4,
+    struct_ = 5,
+    total = 6,
 };
-pub const MOJOSHADER_symbolClass = enum_unnamed_8;
 
 pub const struct_MOJOSHADER_symbolStructMember = extern struct {
     name: [*c]const u8,
@@ -311,7 +307,7 @@ pub const MOJOSHADER_symbolStructMember = struct_MOJOSHADER_symbolStructMember;
 
 pub const struct_MOJOSHADER_symbol = extern struct {
     name: [*c]const u8,
-    register_set: MOJOSHADER_symbolRegisterSet,
+    register_set: SymbolRegisterSet,
     register_index: c_uint,
     register_count: c_uint,
     info: SymbolTypeInfo,
