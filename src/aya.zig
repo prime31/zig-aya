@@ -7,7 +7,7 @@ pub const fna = @import("deps/fna/fna.zig");
 pub const gfx = @import("gfx/gfx.zig");
 pub const math = @import("math/math.zig");
 pub const fs = @import("fs.zig");
-pub const mem = @import("mem.zig");
+pub const mem = @import("mem/mem.zig");
 
 pub var window = @import("window.zig").Window{};
 pub var time = @import("time.zig").Time{};
@@ -66,7 +66,6 @@ fn runLoop(update: fn () void, render: fn () void) void {
         render();
 
         window.swap(gfx.device);
-        mem.onEndFrame();
     }
 }
 
@@ -75,7 +74,7 @@ fn pollEvents() bool {
     // input.newFrame();
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
-        switch (event.@"type") {
+        switch (event.type) {
             sdl.SDL_QUIT => return true,
             sdl.SDL_WINDOWEVENT => {
                 if (event.window.windowID == window.id) {
