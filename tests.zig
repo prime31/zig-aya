@@ -26,6 +26,8 @@ comptime {
     // _ = @import("src/math/color.zig"); // Zig bug: TODO buf_read_value_bytes union type
     _ = @import("src/math/mat32.zig");
     _ = @import("src/fs.zig");
+
+    _ = @import("src/gfx/gfx.zig");
     _ = @import("src/gfx/shader.zig");
-    _ = @import("src/gfx/texture.zig");
+    _ = @import("src/gfx/textures.zig");
 }

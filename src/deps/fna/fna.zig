@@ -78,7 +78,6 @@ pub const DepthFormat = extern enum(c_int) {
     d16,
     d24,
     d24s8,
-    _,
 };
 
 pub const CubeMapFace = extern enum(c_int) {
@@ -238,8 +237,8 @@ pub const Color = extern struct {
 };
 
 pub const Rect = extern struct {
-    x: i32,
-    y: i32,
+    x: i32 = 0,
+    y: i32 = 0,
     w: i32,
     h: i32,
 };
@@ -348,12 +347,21 @@ pub const VertexBufferBinding = extern struct {
 };
 
 pub const RenderTargetBinding = extern struct {
-    type: u8,
-    unnamed_2: union_unnamed_3,
-    levelCount: i32,
-    multiSampleCount: i32,
-    texture: ?*Texture,
-    colorBuffer: ?*Renderbuffer,
+    type: u8 = 0, // 2d = 0, cube = 1
+    unnamed: extern union {
+        twod: extern struct {
+            width: i32,
+            height: i32,
+        },
+        cube: extern struct {
+            size: i32,
+            face: CubeMapFace,
+        },
+    },
+    levelCount: i32 = 1,
+    multiSampleCount: i32 = 0,
+    texture: ?*Texture = null,
+    colorBuffer: ?*Renderbuffer = null,
 };
 
 pub const LogFunc = ?fn ([*c]const u8) callconv(.C) void;

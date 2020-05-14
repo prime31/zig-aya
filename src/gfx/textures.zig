@@ -74,7 +74,41 @@ pub const Texture = extern struct {
     }
 };
 
-test "test texture" {
+pub const RenderTexture = extern struct {
+    tex: Texture = undefined,
+    render_target_usage: fna.RenderTargetUsage = .platform_contents,
+    depth_stencil_buffer: ?*fna.Renderbuffer = null,
+    depth_stencil_format: fna.DepthFormat = .none,
+
+    pub fn init(width: i32, height: i32) RenderTexture {
+        return RenderTexture{
+            .tex = .{
+                .tex = fna.FNA3D_CreateTexture2D(aya.gfx.device, .color, width, height, 1, 1),
+                .width = width,
+                .height = height,
+            },
+        };
+    }
+
+    pub fn initWithDepthStencil(width: i32, height: i32, format: fna.Depth_Format) RenderTexture {
+        var rt = init(width, height);
+        rt.depth_stencil_format = format;
+        if (format != .none) {
+            rt.depth_stencil_buffer = fna.FNA3D_GenDepthStencilRenderbuffer(aya.gfx.device, width, height, format, 0);
+        }
+
+        return rt;
+    }
+
+    pub fn deinit(self: RenderTexture) void {
+        if (self.depth_stencil_buffer != null) {
+            fna.FNA3D_AddDisposeRenderbuffer(aya.gfx.device, self.depth_stencil_buffer);
+        }
+        self.tex.deinit();
+    }
+};
+
+test "test texture and rendertexture" {
     try aya.window.create(aya.WindowConfig{});
     defer aya.window.deinit();
 
@@ -95,4 +129,7 @@ test "test texture" {
     tex3.bind(0);
     tex3.bind(0);
     tex3.deinit();
+
+    const rt = RenderTexture.init(40, 40);
+    rt.deinit();
 }
