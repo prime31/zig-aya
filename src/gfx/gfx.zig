@@ -33,11 +33,12 @@ pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, des
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
 
-    // _batcher = new_batcher();
-    //
     var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
     state.white_tex = Texture.init(2, 2);
     state.white_tex.setColorData(pixels[0..]);
+
+    // _batcher = new_batcher();
+    //
     // default_fontbook = new_fontbook(256, 256);
     // fontbook_add_font_mem(default_fontbook, default_font_bytes, false);
     // fontbook_set_size(default_fontbook, 10);
