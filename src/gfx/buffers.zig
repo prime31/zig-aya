@@ -15,7 +15,6 @@ pub const VertexBuffer = struct {
 
     var vert_decl_cache = std.StringHashMap(fna.VertexDeclaration).init(aya.mem.allocator);
 
-    //vertex_count: i32, is_dynamic: bool = false, usage: fna.Buffer_Usage = .Write_Only
     pub fn init(comptime T: type, vertex_count: i32, dynamic: bool) VertexBuffer {
         const vert_decl = vertexDeclarationForType(T) catch unreachable;
         const is_dynamic: u8 = if (dynamic) 0 else 1;
@@ -27,6 +26,23 @@ pub const VertexBuffer = struct {
     pub fn initWithUsage(comptime T: type, vertex_count: i32, dynamic: bool, usage: fna.BufferUsage) VertexBuffer {
         buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, 0, usage, vertex_count, 20);
         return VertexBuffer{};
+    }
+
+    pub fn initWithOptions(comptime T: type, vertex_count: i32, dynamic: bool, usages: []fna.VertexElementUsage) VertexBuffer {
+        const vert_decl = blk: {
+            if (vert_decl_cache.getValue(@typeName(T))) |decl| {
+                break :blk decl;
+            } else {
+                const vd = vertexDeclarationForTypeUsages(T, usages) catch unreachable;
+                _ = vert_decl_cache.put(@typeName(T), vd) catch |err| std.debug.warn("failed caching vertex declartion: {}\n", .{err});
+                break :blk vd;
+            }
+        };
+        //const vert_decl = vertexDeclarationForTypeUsages(T, usages) catch unreachable;
+        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        return VertexBuffer{
+            .buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, is_dynamic, .write_only, vertex_count, vert_decl.vertexStride),
+        };
     }
 
     pub fn deinit(self: VertexBuffer) void {
@@ -62,6 +78,44 @@ pub const VertexBuffer = struct {
     /// returns the VertexElementFormat for a given type
     fn vertexFormatForType(comptime T: type) fna.VertexElementFormat {
         switch (@typeInfo(T)) {
+            .Array => |info| {
+                switch (@typeInfo(info.child)) {
+                    .Float => |flt_info| {
+                        switch (@divExact(flt_info.bits, 8)) {
+                            2 => {
+                                switch (info.len) {
+                                    2 => return .half_vector2,
+                                    4 => return .half_vector4,
+                                    else => unreachable,
+                                }
+                            },
+                            4 => {
+                                switch (info.len) {
+                                    2 => return .vector2,
+                                    3 => return .vector3,
+                                    4 => return .vector4,
+                                    else => unreachable,
+                                }
+                            },
+                            else => unreachable,
+                        }
+                    },
+                    .Int => |int_info| {
+                        std.debug.assert(info.len == 2 or info.len == 4);
+                        switch (@divExact(int_info.bits, 8)) {
+                            2 => {
+                                switch (info.len) {
+                                    2 => return .short2,
+                                    4 => return .short4,
+                                    else => unreachable,
+                                }
+                            },
+                            else => unreachable,
+                        }
+                    },
+                    else => unreachable,
+                }
+            },
             .Struct => |StructT| {
                 const field_type = StructT.fields[0].field_type;
                 const field_size = @sizeOf(field_type);
@@ -154,4 +208,15 @@ test "test buffers" {
     std.testing.expectEqual(ele2.offset, 8);
     std.testing.expectEqual(ele3.offset, 16);
     std.testing.expectEqual(ele3.vertexElementFormat, .color);
+
+    const VertexArr = struct {
+        pos: [2]f32,
+        uv: [2]f32,
+        col: u32 = 0xFFFFFFFF,
+    };
+    _ = VertexBuffer.initWithOptions(VertexArr, 10, false, usages[0..]);
+    std.testing.expectEqual(VertexBuffer.vert_decl_cache.count(), 2);
+
+    _ = VertexBuffer.initWithOptions(VertexArr, 10, false, usages[0..]);
+    std.testing.expectEqual(VertexBuffer.vert_decl_cache.count(), 2);
 }
