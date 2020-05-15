@@ -1,20 +1,8 @@
 const std = @import("std");
+const fna = @import("../deps/fna/fna.zig");
 const aya = @import("../aya.zig");
-const fna = aya.fna;
 const fs = aya.fs;
 const gfx = aya.gfx;
-
-pub fn cmp(a: []const u8, b: [*:0]const u8) i8 {
-    var index: usize = 0;
-    while (a[index] == b[index] and a[index] != 0) : (index += 1) {}
-    if (a[index] > b[index]) {
-        return 1;
-    } else if (a[index] < b[index]) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
 
 pub const Shader = extern struct {
     effect: ?*fna.Effect = null,
@@ -71,7 +59,7 @@ pub const Shader = extern struct {
     pub fn setCurrentTechnique(self: @This(), name: [:0]const u8) !void {
         const techniques = self.mojo_effect.?.techniques[0..@intCast(usize, self.mojo_effect.?.technique_count)];
         for (techniques) |technique, i| {
-            if (std.cstr.cmp(name, technique.name) == 0) {
+            if (aya.utils.cstr_cmp(name, technique.name) == 0) {
                 fna.FNA3D_SetEffectTechnique(gfx.device, self.effect, &techniques[i]);
                 return;
             }
@@ -84,7 +72,7 @@ pub const Shader = extern struct {
         if (self.mojo_effect.?.param_count > 0) {
             const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
             for (params) |param| {
-                if (cmp(name, param.value.name) == 0) {
+                if (aya.utils.cstr_cmp(name, param.value.name) == 0) {
                     return getParamImpl(T, param.value);
                 }
             }
@@ -110,7 +98,7 @@ pub const Shader = extern struct {
                     std.debug.assert(value.type.parameter_type == .float);
                     std.debug.assert(value.type.rows == 2);
                     std.debug.assert(value.type.columns == 3);
-                    return T{};
+                    return Mat32{};
                 }
                 @compileError("Unsupported struct type '" ++ @typeName(T) ++ "'");
             },
@@ -122,7 +110,7 @@ pub const Shader = extern struct {
         if (self.mojo_effect.?.param_count > 0) {
             const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
             for (params) |param| {
-                if (cmp(name, param.value.name) == 0) {
+                if (aya.utils.cstr_cmp(name, param.value.name) == 0) {
                     return setParamImpl(T, param.value, value);
                 }
             }
@@ -146,6 +134,14 @@ pub const Shader = extern struct {
                     std.debug.assert(value.type.parameter_type == .float);
                     std.debug.assert(value.type.rows == 2);
                     std.debug.assert(value.type.columns == 3);
+                    std.debug.assert(value.value_count == 8);
+                    const floats = value.float.*[0..@intCast(usize, value_count)];
+                    floats[0] = value.data[0];
+                    floats[1] = value.data[2];
+                    floats[2] = value.data[4];
+                    floats[4] = value.data[1];
+                    floats[5] = value.data[3];
+                    floats[6] = value.data[5];
                 }
                 @compileError("Unsupported struct type '" ++ @typeName(T) ++ "'");
             },
@@ -153,6 +149,16 @@ pub const Shader = extern struct {
         }
     }
 };
+
+test "test cstr" {
+    const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
+    defer std.testing.allocator.free(slice);
+    const span = std.mem.spanZ(slice);
+
+    std.testing.expect(aya.utils.cstr_cmp(span, slice) == 0);
+    std.testing.expect(aya.utils.cstr_cmp("hell", slice) == 0);
+    std.testing.expect(aya.utils.cstr_cmp("hell", span) == 0);
+}
 
 test "test shader" {
     std.testing.expectError(error.ShaderCreationError, Shader.initFromFile("assets/VertexColor.fxb"));

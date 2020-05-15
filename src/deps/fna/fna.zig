@@ -193,11 +193,10 @@ pub const TextureFilter = extern enum(c_int) {
     minlinear_magpoint_mippoint,
     minpoint_maglinear_miplinear,
     minpoint_maglinear_mippoint,
-    _,
 };
 
 pub const VertexElementFormat = extern enum(c_int) {
-    singe,
+    single,
     vector2,
     vector3,
     vector4,
@@ -209,7 +208,6 @@ pub const VertexElementFormat = extern enum(c_int) {
     normalized_short4,
     half_vector2,
     half_vector4,
-    _,
 };
 
 pub const VertexElementUsage = extern enum(c_int) {
@@ -226,7 +224,6 @@ pub const VertexElementUsage = extern enum(c_int) {
     point_size,
     sample,
     tesselate_factor,
-    _,
 };
 
 pub const Color = extern struct {

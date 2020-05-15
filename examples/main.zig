@@ -14,7 +14,6 @@ pub const Shader = extern struct {
 var vertDecl: fna.VertexDeclaration = undefined;
 var vertBindings: fna.VertexBufferBinding = undefined;
 var vertBuffer: ?*fna.Buffer = undefined;
-var vertElems: [3]fna.VertexElement = undefined;
 
 pub fn main() anyerror!void {
     try aya.run(.{
@@ -30,7 +29,7 @@ pub fn main() anyerror!void {
 
 fn init() void {
     const shader = createShader();
-    createMesh();
+    createMesh() catch unreachable;
 }
 
 fn update() void {}
@@ -40,20 +39,22 @@ fn render() void {
     fna.FNA3D_DrawPrimitives(aya.gfx.device, .triangle_list, 0, 2);
 }
 
-fn createMesh() void {
-    vertElems[0] = fna.VertexElement{
+fn createMesh() !void {
+    var vert_elems = try aya.mem.allocator.alloc(fna.VertexElement, 3);
+
+    vert_elems[0] = fna.VertexElement{
         .offset = 0,
         .vertexElementFormat = .vector2,
         .vertexElementUsage = .position,
         .usageIndex = 0,
     };
-    vertElems[1] = fna.VertexElement{
+    vert_elems[1] = fna.VertexElement{
         .offset = 8,
         .vertexElementFormat = .vector2,
         .vertexElementUsage = .texture_coordinate,
         .usageIndex = 0,
     };
-    vertElems[2] = fna.VertexElement{
+    vert_elems[2] = fna.VertexElement{
         .offset = 16,
         .vertexElementFormat = .color,
         .vertexElementUsage = .color,
@@ -62,7 +63,7 @@ fn createMesh() void {
     vertDecl = fna.VertexDeclaration{
         .vertexStride = 20,
         .elementCount = 3,
-        .elements = &vertElems,
+        .elements = &vert_elems[0],
     };
 
     //@sizeOf(Vec2)

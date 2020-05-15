@@ -4,10 +4,12 @@ pub const WindowConfig = @import("window.zig").WindowConfig;
 
 pub const sdl = @import("deps/sdl/sdl.zig");
 pub const fna = @import("deps/fna/fna.zig");
+
 pub const gfx = @import("gfx/gfx.zig");
 pub const math = @import("math/math.zig");
 pub const fs = @import("fs.zig");
 pub const mem = @import("mem/mem.zig");
+pub const utils = @import("utils/utils.zig");
 
 pub var window = @import("window.zig").Window{};
 pub var time = @import("time.zig").Time{};

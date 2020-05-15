@@ -3,8 +3,11 @@ const std = @import("std");
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
-pub const Vertex = @import("vertices.zig").Vertex;
+
 pub const Shader = @import("shader.zig").Shader;
+pub const Vertex = @import("buffers.zig").Vertex;
+pub const VertexBuffer = @import("buffers.zig").VertexBuffer;
+pub const IndexBuffer = @import("buffers.zig").IndexBuffer;
 
 pub var device: ?*fna.Device = null;
 
