@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
+pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
 
@@ -80,7 +81,7 @@ pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
 }
 
 pub fn getResolutionScaler() ResolutionScaler {
-    return .default;
+    return ResolutionScaler{ .w = 0, .h = 0 }; // TODO: default_pass.scaler;
 }
 
 pub fn setRenderTexture(rt: ?RenderTexture) void {

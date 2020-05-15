@@ -109,7 +109,7 @@ pub const RenderTexture = extern struct {
 };
 
 test "test texture and rendertexture" {
-    try aya.window.create(aya.WindowConfig{});
+    aya.window = try @import("../window.zig").Window.init(aya.WindowConfig{});
     defer aya.window.deinit();
 
     var params = fna.PresentationParameters{

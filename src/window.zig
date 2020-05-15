@@ -19,12 +19,13 @@ pub const WindowMode = enum(u32) {
 };
 
 pub const Window = struct {
-    const Self = @This();
     sdl_window: ?*sdl.SDL_Window = null,
     id: u32 = 0,
     focused: bool = undefined,
 
-    pub fn create(self: *Self, config: WindowConfig) !void {
+    pub fn init(config: WindowConfig) !Window {
+        var window = Window{};
+
         var flags = @bitCast(c_int, fna.FNA3D_PrepareWindowAttributes());
         if (config.resizable) flags |= sdl.SDL_WINDOW_RESIZABLE;
         if (config.high_dpi) flags |= sdl.SDL_WINDOW_ALLOW_HIGHDPI;
@@ -32,23 +33,24 @@ pub const Window = struct {
 
         // TODO: use a temp allocator when we have one
         const title = try std.cstr.addNullByte(mem.tmp_allocator, config.title);
-        self.sdl_window = sdl.SDL_CreateWindow(title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, flags)) orelse {
+        window.sdl_window = sdl.SDL_CreateWindow(title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, flags)) orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             return error.SDLWindowInitializationFailed;
         };
 
-        self.id = sdl.SDL_GetWindowID(self.sdl_window);
+        window.id = sdl.SDL_GetWindowID(window.sdl_window);
+        return window;
     }
 
-    pub fn deinit(self: Self) void {
+    pub fn deinit(self: Window) void {
         sdl.SDL_DestroyWindow(self.sdl_window);
     }
 
-    pub fn swap(self: Self, device: ?*fna.Device) void {
+    pub fn swap(self: Window, device: ?*fna.Device) void {
         fna.FNA3D_SwapBuffers(device, null, null, self.sdl_window);
     }
 
-    pub fn handleEvent(self: *Self, event: *sdl.SDL_WindowEvent) void {
+    pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
         switch (event.event) {
             sdl.SDL_WINDOWEVENT_SIZE_CHANGED => std.debug.warn("sizec \n", .{}),
             sdl.SDL_WINDOWEVENT_FOCUS_GAINED => self.focused = true,
@@ -58,7 +60,7 @@ pub const Window = struct {
     }
 
     /// returns the drawable size / the window size. Used to scale mouse coords when the OS gives them to us in points.
-    pub fn scale(self: Self) f32 {
+    pub fn scale(self: Window) f32 {
         var wx = self.width();
 
         var dx: i32 = undefined;
@@ -68,15 +70,15 @@ pub const Window = struct {
         return @intToFloat(f32, dx) / @intToFloat(f32, wx);
     }
 
-    pub fn drawableSize(self: Self, w: *i32, h: *i32) void {
+    pub fn drawableSize(self: Window, w: *i32, h: *i32) void {
         fna.FNA3D_GetDrawableSize(self.sdl_window, w, h);
     }
 
-    pub fn size(self: Self, w: *i32, h: *i32) void {
+    pub fn size(self: Window, w: *i32, h: *i32) void {
         sdl.SDL_GetWindowSize(self.sdl_window, w, h);
     }
 
-    pub fn width(self: Self) i32 {
+    pub fn width(self: Window) i32 {
         var w: i32 = undefined;
         var h: i32 = undefined;
         self.size(&w, &h);
@@ -90,15 +92,15 @@ pub const Window = struct {
         return h;
     }
 
-    pub fn setSize(self: Self, w: i32, h: i32) void {
+    pub fn setSize(self: Window, w: i32, h: i32) void {
         sdl.SDL_SetWindowSize(self.sdl_window, w, h);
     }
 
-    pub fn setMode(self: Self, mode: WindowMode) void {
+    pub fn setMode(self: Window, mode: WindowMode) void {
         sdl.SDL_SetWindowFullscreen(self.sdl_window, mode);
     }
 
-    pub fn focused(self: Self) bool {
+    pub fn focused(self: Window) bool {
         return self.focused;
     }
 };

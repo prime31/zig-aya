@@ -13,6 +13,12 @@ pub const Time = struct {
     frame_count: u32 = 1,
     timestep: Timestep = undefined,
 
+    pub fn init(update_rate: f64, update_multiplicity: i64) Time {
+        return Time{
+            .timestep = Timestep.init(update_rate, update_multiplicity),
+        };
+    }
+
     fn updateFps(self: *Time) void {
         self.frame_count += 1;
         self.fps_frames += 1;
@@ -25,10 +31,6 @@ pub const Time = struct {
             self.fps_last_update = self.curr_time;
             self.fps_frames = 0;
         }
-    }
-
-    pub fn init(self: *Time, update_rate: f64, update_multiplicity: i64) void {
-        self.timestep = Timestep.init(update_rate, update_multiplicity);
     }
 
     pub fn tick(self: *Time, update: fn () void) void {

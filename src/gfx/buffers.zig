@@ -183,16 +183,32 @@ pub const VertexBuffer = struct {
 pub const IndexBuffer = struct {
     buffer: ?*fna.Buffer = undefined,
 
-    pub fn init() IndexBuffer {
-        return IndexBuffer{};
+    pub fn init(index_count: i32, dynamic: bool) IndexBuffer {
+        return initWithOptions(index_count, dynamic, .write_only, .sixteen_bit);
+    }
+
+    pub fn initWithOptions(index_count: i32, dynamic: bool, usage: fna.BufferUsage, index_ele_size: fna.IndexElementSize) IndexBuffer {
+        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        return IndexBuffer{
+            .buffer = fna.FNA3D_GenIndexBuffer(aya.gfx.device, is_dynamic, usage, index_count, index_ele_size),
+        };
     }
 
     pub fn deinit(self: IndexBuffer) void {
         fna.FNA3D_AddDisposeIndexBuffer(aya.gfx.device, self.buffer);
     }
+
+    pub fn setData(self: IndexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
+        const elem_size = @intCast(i32, @sizeOf(std.meta.Elem(T)));
+        fna.FNA3D_SetIndexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], elem_size * @intCast(i32, data.len), options);
+    }
 };
 
-test "test buffers" {
+test "test index buffers" {
+    const ibuff = IndexBuffer.init(3, true);
+}
+
+test "test vertex buffers" {
     _ = VertexBuffer.init(Vertex, 10, true);
     std.testing.expectEqual(VertexBuffer.vert_decl_cache.count(), 1);
 

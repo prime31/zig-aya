@@ -70,7 +70,6 @@ pub const SurfaceFormat = extern enum(c_int) {
     half_vector4,
     hdr_blendable,
     color_rgba_ext,
-    _,
 };
 
 pub const DepthFormat = extern enum(c_int) {
@@ -87,20 +86,17 @@ pub const CubeMapFace = extern enum(c_int) {
     netative_y,
     positive_z,
     netative_z,
-    _,
 };
 
 pub const BufferUsage = extern enum(c_int) {
     none,
     write_only,
-    _,
 };
 
 pub const SetDataOptions = extern enum(c_int) {
     none,
     discard,
     no_overwrite,
-    _,
 };
 
 pub const Blend = extern enum(c_int) {
@@ -117,7 +113,6 @@ pub const Blend = extern enum(c_int) {
     blend_factor,
     inverse_blend_factor,
     source_alpha_saturation,
-    _,
 };
 
 pub const BlendFunction = extern enum(c_int) {

@@ -2,17 +2,26 @@ const std = @import("std");
 
 pub const WindowConfig = @import("window.zig").WindowConfig;
 
+// libs
 pub const sdl = @import("deps/sdl/sdl.zig");
 pub const fna = @import("deps/fna/fna.zig");
 
+// aya namespaces
 pub const gfx = @import("gfx/gfx.zig");
-pub const math = @import("math/math.zig");
 pub const fs = @import("fs.zig");
+
+pub const math = @import("math/math.zig");
 pub const mem = @import("mem/mem.zig");
 pub const utils = @import("utils/utils.zig");
 
-pub var window = @import("window.zig").Window{};
-pub var time = @import("time.zig").Time{};
+// aya objects
+pub var window: Window = undefined;
+pub var time: Time = undefined;
+pub var input: Input = undefined;
+
+const Window = @import("window.zig").Window;
+const Input = @import("input.zig").Input;
+const Time = @import("time.zig").Time;
 
 pub const Config = struct {
     init: fn () void,
@@ -42,7 +51,7 @@ pub fn run(config: Config) !void {
     }
     defer sdl.SDL_Quit();
 
-    try window.create(config.win_config);
+    window = try Window.init(config.win_config);
     defer window.deinit();
 
     var params = fna.PresentationParameters{
@@ -51,7 +60,8 @@ pub fn run(config: Config) !void {
         .deviceWindowHandle = window.sdl_window,
     };
     gfx.init(&params, config.disable_debug_render, config.design_width, config.design_height, config.resolution_policy);
-    time.init(config.update_rate, config.update_multiplicity);
+    time = Time.init(config.update_rate, config.update_multiplicity);
+    input = Input.init(window.scale());
 
     config.init();
     runLoop(config.update, config.render);
@@ -73,7 +83,7 @@ fn runLoop(update: fn () void, render: fn () void) void {
 
 /// returns true when its time to quit
 fn pollEvents() bool {
-    // input.newFrame();
+    input.newFrame();
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         switch (event.type) {
@@ -84,7 +94,7 @@ fn pollEvents() bool {
                     window.handleEvent(&event.window);
                 }
             },
-            else => {}, // input.handleEvent(&event);
+            else => input.handleEvent(&event),
         }
     }
     return false;

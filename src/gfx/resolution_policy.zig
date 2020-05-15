@@ -7,10 +7,10 @@ pub const ResolutionPolicy = enum {
     best_fit,
 };
 
-const ResolutionScaler = struct {
-    x: i32,
-    y: i32,
+pub const ResolutionScaler = struct {
+    x: i32 = 0,
+    y: i32 = 0,
     w: i32,
     h: i32,
-    scale: f32,
+    scale: f32 = 1,
 };
