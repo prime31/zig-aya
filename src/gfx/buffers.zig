@@ -50,7 +50,7 @@ pub const VertexBuffer = struct {
     }
 
     /// returns a VertexDeclaration for type. The elements array must be freed later! usages are fna.VertexElementUsage
-    pub fn vertexDeclarationForTypeUsages(comptime T: type, usages: []fna.VertexElementUsage) !fna.VertexDeclaration {
+    fn vertexDeclarationForTypeUsages(comptime T: type, usages: []fna.VertexElementUsage) !fna.VertexDeclaration {
         var vert_elems = try vertexElementsForType(T, usages);
         return fna.VertexDeclaration{
             .vertexStride = @intCast(i32, @sizeOf(T)),
