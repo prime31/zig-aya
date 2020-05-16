@@ -21,8 +21,6 @@ test "tilemap" {
 
 // include all files with tests
 comptime {
-    _ = @import("src/main.zig");
-
     _ = @import("src/fs.zig");
     _ = @import("src/input.zig");
 
@@ -34,4 +32,5 @@ comptime {
     _ = @import("src/gfx/shader.zig");
     // _ = @import("src/gfx/textures.zig"); // requires firing up a Window
     _ = @import("src/gfx/buffers.zig");
+    _ = @import("src/gfx/mesh.zig");
 }

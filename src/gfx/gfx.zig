@@ -6,6 +6,8 @@ pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
 
 pub const Shader = @import("shader.zig").Shader;
+pub const Mesh = @import("mesh.zig").Mesh;
+pub const DynamicMesh = @import("mesh.zig").DynamicMesh;
 pub const Vertex = @import("buffers.zig").Vertex;
 pub const VertexBuffer = @import("buffers.zig").VertexBuffer;
 pub const IndexBuffer = @import("buffers.zig").IndexBuffer;

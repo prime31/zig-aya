@@ -334,8 +334,8 @@ pub const VertexDeclaration = extern struct {
 pub const VertexBufferBinding = extern struct {
     vertexBuffer: ?*Buffer,
     vertexDeclaration: VertexDeclaration,
-    vertexOffset: i32,
-    instanceFrequency: i32,
+    vertexOffset: i32 = 0,
+    instanceFrequency: i32 = 0,
 };
 
 pub const RenderTargetBinding = extern struct {

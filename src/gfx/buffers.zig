@@ -49,7 +49,12 @@ pub const VertexBuffer = struct {
         fna.FNA3D_AddDisposeVertexBuffer(aya.gfx.device, self.buffer);
     }
 
-    fn vertexDeclarationForType(comptime T: type) !fna.VertexDeclaration {
+    pub fn setData(self: VertexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
+        fna.FNA3D_SetVertexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], @intCast(c_int, @sizeOf(T) * data.len), 1, 1, options);
+        //fna.set_vertex_buffer_data(fna_device, buffer, offset_in_bytes, &data[0], cast(i32)len(data) * element_size, 1, 1, options);
+    }
+
+    pub fn vertexDeclarationForType(comptime T: type) !fna.VertexDeclaration {
         if (vert_decl_cache.getValue(@typeName(T))) |decl| return decl;
 
         const vert_decl = switch (T) {
@@ -199,7 +204,7 @@ pub const IndexBuffer = struct {
     }
 
     pub fn setData(self: IndexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
-        const elem_size = @intCast(i32, @sizeOf(std.meta.Elem(T)));
+        const elem_size = @intCast(i32, @sizeOf(T));
         fna.FNA3D_SetIndexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], elem_size * @intCast(i32, data.len), options);
     }
 };

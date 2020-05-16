@@ -8,6 +8,9 @@ pub const LibType = enum(i32) {
     exe_compiled,
 };
 
+// TODO: fill in a test builder
+// pub fn build(b: *Builder) void {}
+
 /// rel_path is used to add package paths. It should be the the same path used to include this build file
 pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType, rel_path: []const u8) void {
     switch (lib_type) {

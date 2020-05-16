@@ -10,7 +10,7 @@ pub fn build(b: *Builder) void {
     const lib_type_int = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
     const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
 
-    const exe = b.addExecutable("aya", "examples/main.zig");
+    const exe = b.addExecutable("aya", "examples/mesh.zig");
     exe.setTarget(target);
     exe.setBuildMode(b.standardReleaseOptions());
 
@@ -31,6 +31,24 @@ pub fn build(b: *Builder) void {
     run_step.dependOn(&run_cmd.step);
 
     addTests(b, target);
+}
+
+fn addExeDeps(exe: *std.build.LibExeObjStep, b: *Builder, target: std.build.Target) void {
+    exe.addPackagePath("aya", "src/aya.zig");
+    exe.addPackagePath("sdl", "deps/sdl/sdl.zig");
+
+    // fna can be dynamic, static or compiled in
+    fna_build.linkArtifact(b, exe, target, lib_type, "src/deps/fna");
+
+    exe.linkSystemLibrary("c");
+    exe.linkSystemLibrary("SDL2");
+    exe.install();
+
+    const run_cmd = exe.run();
+    run_cmd.step.dependOn(b.getInstallStep());
+
+    const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&run_cmd.step);
 }
 
 fn addTests(b: *Builder, target: std.build.Target) void {
