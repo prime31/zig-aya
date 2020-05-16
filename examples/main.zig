@@ -92,6 +92,13 @@ fn createMesh() !void {
 }
 
 fn createShader() !aya.gfx.Shader {
+    // read shader from embedded file
+    // var vertColor = @embedFile("../assets/VertexColor.fxb");
+
+    // hack until i figure out how to get around const
+    // var slice: [vertColor.len]u8 = undefined;
+    // for (vertColor) |s, i|
+    //     slice[i] = s;
     var shader = try aya.gfx.Shader.initFromFile("assets/VertexColor.fxb");
     shader.apply();
 
