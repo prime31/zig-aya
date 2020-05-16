@@ -10,8 +10,23 @@ pub fn build(b: *Builder) void {
     const lib_type_int = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
     const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
 
-    const exe = b.addExecutable("aya", "examples/mesh.zig");
-    exe.setTarget(target);
+    createExe(b, target, lib_type, "run", "examples/mesh.zig");
+
+    const examples = [_][2][]const u8{
+        [_][]const u8{ "main", "examples/main.zig" },
+        [_][]const u8{ "mesh", "examples/mesh.zig" },
+    };
+
+    for (examples) |example| {
+        createExe(b, target, lib_type, example[0], example[1]);
+    }
+
+    addTests(b, target);
+}
+
+// creates an exe with all the required dependencies
+fn createExe(b: *Builder, target: std.build.Target, lib_type: fna_build.LibType, name: []const u8, source: []const u8) void {
+    var exe = b.addExecutable(name, source);
     exe.setBuildMode(b.standardReleaseOptions());
 
     exe.addPackagePath("aya", "src/aya.zig");
@@ -22,35 +37,13 @@ pub fn build(b: *Builder) void {
 
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
-    exe.install();
 
     const run_cmd = exe.run();
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
-
-    addTests(b, target);
+    const exe_step = b.step(name, b.fmt("run {}.zig", .{name}));
+    exe_step.dependOn(&run_cmd.step);
 }
 
-fn addExeDeps(exe: *std.build.LibExeObjStep, b: *Builder, target: std.build.Target) void {
-    exe.addPackagePath("aya", "src/aya.zig");
-    exe.addPackagePath("sdl", "deps/sdl/sdl.zig");
-
-    // fna can be dynamic, static or compiled in
-    fna_build.linkArtifact(b, exe, target, lib_type, "src/deps/fna");
-
-    exe.linkSystemLibrary("c");
-    exe.linkSystemLibrary("SDL2");
-    exe.install();
-
-    const run_cmd = exe.run();
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
-}
-
+// add tests.zig file runnable via "zig build test"
 fn addTests(b: *Builder, target: std.build.Target) void {
     var t = b.addTest("tests.zig");
     fna_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fna");
