@@ -1,7 +1,121 @@
 pub const mojo = @import("mojoshader.zig");
 pub const img = @import("fna_image.zig");
 
-pub const Device = @OpaqueType();
+pub const Device = struct {
+    device: *c_void,
+
+    pub fn init(presentation_params: [*c]PresentationParameters, debug_mode: bool) *Device {
+        const debug: u8 = if (debug_mode) 1 else 0;
+        return FNA3D_CreateDevice(presentation_params, debug).?;
+    }
+
+    pub fn applyRasterizerState(self: *Device, rasterizer_state: [*c]RasterizerState) void {
+        FNA3D_ApplyRasterizerState(self, rasterizer_state);
+    }
+
+    pub fn setBlendState(self: *Device, blend_state: [*c]BlendState) void {
+        FNA3D_SetBlendState(self, blend_state);
+    }
+
+    pub fn setDepthStencilState(self: *Device, depth_stencil: [*c]DepthStencilState) void {
+        FNA3D_SetDepthStencilState(self, depth_stencil);
+    }
+
+    pub fn clear(self: *Device, color: Vec4) void {
+        self.clearWithOptions(.all, color, 0, 1);
+    }
+
+    pub fn clearWithOptions(self: *Device, options: ClearOptions, color: Vec4, depth: f32, stencil: i32) void {
+        FNA3D_Clear(self, options, &color, depth, stencil);
+    }
+
+    pub fn setViewport(self: *Device, viewport: [*c]Viewport) void {
+        FNA3D_SetViewport(self, viewport);
+    }
+
+    pub fn setScissorRect(self: *Device, scissor: *Rect) void {
+        FNA3D_SetScissorRect(self, scissor);
+    }
+
+    pub fn unSetRenderTarget(self: *Device) void {
+        FNA3D_SetRenderTargets(self, null, 0, null, .none);
+    }
+
+    pub fn setRenderTarget(self: *Device, render_targets: *RenderTargetBinding, depth_stencil_buffer: ?*Renderbuffer, depth_format: DepthFormat) void {
+        FNA3D_SetRenderTargets(self, render_targets, 1, depth_stencil_buffer, depth_format);
+    }
+
+    pub fn setRenderTargets(self: *Device, render_targets: [*c]RenderTargetBinding, num_render_targets: i32, depth_stencil_buffer: ?*Renderbuffer, depth_format: DepthFormat) void {
+        FNA3D_SetRenderTargets(self, render_targets, num_render_targets, depth_stencil_buffer, depth_format);
+    }
+
+    pub fn setPresentationInterval(self: *Device, interval: PresentInterval) void {
+        FNA3D_SetPresentationInterval(self, interval);
+    }
+
+    pub fn getBackbufferSize(self: *Device, w: *i32, h: *i32) void {
+        FNA3D_GetBackbufferSize(self, w, h);
+    }
+
+    pub fn createEffect(self: *Device, effect_code: []u8, effect: *?*Effect, mojo_effect: *?*mojo.Effect) void {
+        FNA3D_CreateEffect(self, &effect_code[0], @intCast(u32, effect_code.len), effect, mojo_effect);
+    }
+
+    pub fn setEffectTechnique(self: *Device, effect: ?*Effect, technique: ?*mojo.EffectTechnique) void {
+        FNA3D_SetEffectTechnique(self, effect, technique);
+    }
+
+    pub fn addDisposeEffect(self: *Device, effect: ?*Effect) void {
+        FNA3D_AddDisposeEffect(self, effect);
+    }
+
+    pub fn applyEffect(self: *Device, effect: ?*Effect, pass: u32, state_changes: ?*mojo.EffectStateChanges) void {
+        FNA3D_ApplyEffect(self, effect, pass, state_changes);
+    }
+
+    pub fn supportsNoOverwrite(self: *Device) bool {
+        return FNA3D_SupportsNoOverwrite(self) == 1;
+    }
+
+    pub fn swapBuffers(self: *Device, override_window_handle: ?*c_void) void {
+        FNA3D_SwapBuffers(self, null, null, override_window_handle);
+    }
+
+    pub fn genVertexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, vertex_count: i32, vertex_stride: i32) ?*Buffer {
+        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        return FNA3D_GenVertexBuffer(self, is_dynamic, usage, vertex_count, vertex_stride);
+    }
+
+    pub fn addDisposeVertexBuffer(self: *Device, buffer: ?*Buffer) void {
+        FNA3D_AddDisposeVertexBuffer(self, buffer);
+    }
+
+    pub fn setVertexBufferData(self: *Device, comptime T: type, buffer: ?*Buffer, data: []T, offset_in_bytes: i32, options: SetDataOptions) void {
+        FNA3D_SetVertexBufferData(self, buffer, offset_in_bytes, &data[0], @intCast(c_int, @sizeOf(T) * data.len), 1, 1, options);
+    }
+
+    pub fn genIndexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, index_count: i32, index_element_size: IndexElementSize) ?*Buffer {
+        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        return FNA3D_GenIndexBuffer(self, is_dynamic, usage, index_count, index_element_size);
+    }
+
+    pub fn addDisposeIndexBuffer(self: *Device, buffer: ?*Buffer) void {
+        FNA3D_AddDisposeIndexBuffer(self, buffer);
+    }
+
+    pub fn setIndexBufferData(self: *Device, buffer: ?*Buffer, offset_in_bytes: i32, data: ?*c_void, data_length: i32, options: SetDataOptions) void {
+        FNA3D_SetIndexBufferData(self, buffer, offset_in_bytes, data, data_length, options);
+    }
+};
+
+pub fn prepareWindowAttributes() c_int {
+    return @intCast(c_int, FNA3D_PrepareWindowAttributes());
+}
+
+pub fn getDrawableSize(window: *c_void, w: *i32, h: *i32) void {
+    FNA3D_GetDrawableSize(window, w, h);
+}
+
 pub const Texture = @OpaqueType();
 pub const Buffer = @OpaqueType();
 pub const Renderbuffer = @OpaqueType();
@@ -367,14 +481,14 @@ pub extern fn FNA3D_DestroyDevice(device: ?*Device) void;
 pub extern fn FNA3D_BeginFrame(device: ?*Device) void;
 pub extern fn FNA3D_SwapBuffers(device: ?*Device, sourceRectangle: [*c]Rect, destinationRectangle: [*c]Rect, overrideWindowHandle: ?*c_void) void;
 pub extern fn FNA3D_SetPresentationInterval(device: ?*Device, presentInterval: PresentInterval) void;
-pub extern fn FNA3D_Clear(device: ?*Device, options: ClearOptions, color: [*c]Vec4, depth: f32, stencil: i32) void;
+pub extern fn FNA3D_Clear(device: ?*Device, options: ClearOptions, color: [*c]const Vec4, depth: f32, stencil: i32) void;
 pub extern fn FNA3D_DrawIndexedPrimitives(device: ?*Device, primitiveType: PrimitiveType, baseVertex: i32, minVertexIndex: i32, numVertices: i32, startIndex: i32, primitiveCount: i32, indices: ?*Buffer, indexElementSize: IndexElementSize) void;
 pub extern fn FNA3D_DrawInstancedPrimitives(device: ?*Device, primitiveType: PrimitiveType, baseVertex: i32, minVertexIndex: i32, numVertices: i32, startIndex: i32, primitiveCount: i32, instanceCount: i32, indices: ?*Buffer, indexElementSize: IndexElementSize) void;
 pub extern fn FNA3D_DrawPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexStart: i32, primitiveCount: i32) void;
 pub extern fn FNA3D_DrawUserIndexedPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexData: ?*c_void, vertexOffset: i32, numVertices: i32, indexData: ?*c_void, indexOffset: i32, indexElementSize: IndexElementSize, primitiveCount: i32) void;
 pub extern fn FNA3D_DrawUserPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexData: ?*c_void, vertexOffset: i32, primitiveCount: i32) void;
 pub extern fn FNA3D_SetViewport(device: ?*Device, viewport: [*c]Viewport) void;
-pub extern fn FNA3D_SetScissorRect(device: ?*Device, scissor: [*c]Rect) void;
+pub extern fn FNA3D_SetScissorRect(device: ?*Device, scissor: [*c]const Rect) void;
 pub extern fn FNA3D_GetBlendFactor(device: ?*Device, blendFactor: [*c]Color) void;
 pub extern fn FNA3D_SetBlendFactor(device: ?*Device, blendFactor: [*c]Color) void;
 pub extern fn FNA3D_GetMultiSampleMask(device: ?*Device) i32;
@@ -418,7 +532,7 @@ pub extern fn FNA3D_GenIndexBuffer(device: ?*Device, dynamic: u8, usage: BufferU
 pub extern fn FNA3D_AddDisposeIndexBuffer(device: ?*Device, buffer: ?*Buffer) void;
 pub extern fn FNA3D_SetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32, options: SetDataOptions) void;
 pub extern fn FNA3D_GetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32) void;
-pub extern fn FNA3D_CreateEffect(device: ?*Device, effectCode: [*c]u8, effectCodeLength: u32, effect: [*c]?*Effect, effectData: [*c]?*mojo.Effect) void;
+pub extern fn FNA3D_CreateEffect(device: ?*Device, effectCode: [*c]u8, effectCodeLength: u32, effect: *?*Effect, effectData: *?*mojo.Effect) void;
 pub extern fn FNA3D_CloneEffect(device: ?*Device, cloneSource: ?*Effect, effect: [*c]?*Effect, effectData: [*c]?*mojo.Effect) void;
 pub extern fn FNA3D_AddDisposeEffect(device: ?*Device, effect: ?*Effect) void;
 pub extern fn FNA3D_SetEffectTechnique(device: ?*Device, effect: ?*Effect, technique: ?*mojo.EffectTechnique) void;

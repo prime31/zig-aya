@@ -5,25 +5,30 @@ const fs = aya.fs;
 const gfx = aya.gfx;
 
 pub const Shader = extern struct {
-    effect: ?*fna.Effect = null,
-    mojo_effect: ?*fna.mojo.Effect = null,
+    effect: *fna.Effect,
+    mojo_effect: *fna.mojo.Effect,
 
     pub fn initFromFile(file: []const u8) !Shader {
         var bytes = try fs.read(aya.mem.tmp_allocator, file);
 
-        var shader = Shader{};
-        fna.FNA3D_CreateEffect(gfx.device, &bytes[0], @intCast(u32, bytes.len), &shader.effect, &shader.mojo_effect);
+        var effect: ?*fna.Effect = null;
+        var mojo_effect: ?*fna.mojo.Effect = null;
+        gfx.device.createEffect(bytes, &effect, &mojo_effect);
 
-        if (shader.mojo_effect == null) return error.ShaderCreationError;
+        if (mojo_effect == null or effect == null) return error.ShaderCreationError;
 
-        if (shader.mojo_effect.?.error_count > 0) {
-            const errors = shader.mojo_effect.?.errors[0..@intCast(usize, shader.mojo_effect.?.error_count)];
+        if (mojo_effect.?.error_count > 0) {
+            const errors = mojo_effect.?.errors[0..@intCast(usize, mojo_effect.?.error_count)];
             std.debug.warn("shader compile errors: {}\n", .{errors});
             return error.ShaderCompileError;
         }
 
-        const techniques = shader.mojo_effect.?.techniques[0..@intCast(usize, shader.mojo_effect.?.technique_count)];
-        fna.FNA3D_SetEffectTechnique(gfx.device, shader.effect, &techniques[0]);
+        var shader = Shader{
+            .effect = effect.?,
+            .mojo_effect = mojo_effect.?,
+        };
+        const techniques = shader.mojo_effect.techniques[0..@intCast(usize, shader.mojo_effect.technique_count)];
+        gfx.device.setEffectTechnique(shader.effect, &techniques[0]);
 
         // debug shader techniques/passes and params
         comptime const debug_shader = false;
@@ -36,8 +41,8 @@ pub const Shader = extern struct {
                 }
             }
 
-            if (shader.mojo_effect.?.param_count > 0) {
-                const params = shader.mojo_effect.?.params[0..@intCast(usize, shader.mojo_effect.?.param_count)];
+            if (shader.mojo_effect.param_count > 0) {
+                const params = shader.mojo_effect.params[0..@intCast(usize, shader.mojo_effect.param_count)];
                 for (params) |param| {
                     std.debug.warn("Param: {}\n", .{param});
                 }
@@ -48,19 +53,23 @@ pub const Shader = extern struct {
     }
 
     pub fn deinit(self: Shader) void {
-        fna.FNA3D_AddDisposeEffect(gfx.device, self.effect);
+        gfx.device.addDisposeEffect(self.effect);
     }
 
     pub fn apply(self: @This()) void {
+        self.applyPass(0);
+    }
+
+    pub fn applyPass(self: @This(), pass: u32) void {
         var effect_changes = std.mem.zeroes(fna.mojo.EffectStateChanges);
-        fna.FNA3D_ApplyEffect(gfx.device, self.effect, 0, &effect_changes);
+        gfx.device.applyEffect(self.effect, pass, &effect_changes);
     }
 
     pub fn setCurrentTechnique(self: @This(), name: [:0]const u8) !void {
         const techniques = self.mojo_effect.?.techniques[0..@intCast(usize, self.mojo_effect.?.technique_count)];
         for (techniques) |technique, i| {
-            if (aya.utils.cstr_cmp(name, technique.name) == 0) {
-                fna.FNA3D_SetEffectTechnique(gfx.device, self.effect, &techniques[i]);
+            if (aya.utils.cstr_u8_cmp(technique.name, name) == 0) {
+                gfx.device.setEffectTechnique(self.effect, &techniques[i]);
                 return;
             }
         }
@@ -72,7 +81,7 @@ pub const Shader = extern struct {
         if (self.mojo_effect.?.param_count > 0) {
             const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
             for (params) |param| {
-                if (aya.utils.cstr_cmp(name, param.value.name) == 0) {
+                if (aya.utils.cstr_u8_cmp(param.value.name, name) == 0) {
                     return getParamImpl(T, param.value);
                 }
             }
@@ -98,6 +107,7 @@ pub const Shader = extern struct {
                     std.debug.assert(value.type.parameter_type == .float);
                     std.debug.assert(value.type.rows == 2);
                     std.debug.assert(value.type.columns == 3);
+                    @compileError("Fix me. implement mat32");
                     return Mat32{};
                 }
                 @compileError("Unsupported struct type '" ++ @typeName(T) ++ "'");
@@ -107,15 +117,15 @@ pub const Shader = extern struct {
     }
 
     pub fn setParam(self: @This(), comptime T: type, name: []const u8, value: T) void {
-        if (self.mojo_effect.?.param_count > 0) {
-            const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
+        if (self.mojo_effect.param_count > 0) {
+            const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
             for (params) |param| {
-                if (aya.utils.cstr_cmp(name, param.value.name) == 0) {
+                if (aya.utils.cstr_u8_cmp(param.value.name, name) == 0) {
                     return setParamImpl(T, param.value, value);
                 }
             }
         }
-        return unreachable;
+        @panic("Attempting to set a shader param that doesnt exist");
     }
 
     fn setParamImpl(comptime T: type, effect_value: fna.mojo.EffectValue, value: T) void {
@@ -123,19 +133,21 @@ pub const Shader = extern struct {
             .Float => value.float.* = @floatCast(f32, value),
             .Int => value.int.* = @intCast(c_int, value),
             .Struct => {
-                if (T == Vec2) {
-                    std.debug.assert(value.type.parameter_class == .vector);
-                    std.debug.assert(value.type.parameter_type == .float);
-                    const floats = value.float.*[0..2];
+                if (T == aya.math.Vec2) {
+                    std.debug.assert(effect_value.type.parameter_class == .vector);
+                    std.debug.assert(effect_value.type.parameter_type == .float);
+
+                    const floats = effect_value.value.float[0..2];
                     floats[0] = value.x;
                     floats[1] = value.y;
-                } else if (T == Mat32) {
-                    std.debug.assert(value.type.parameter_class == .matrix_rows);
-                    std.debug.assert(value.type.parameter_type == .float);
-                    std.debug.assert(value.type.rows == 2);
-                    std.debug.assert(value.type.columns == 3);
-                    std.debug.assert(value.value_count == 8);
-                    const floats = value.float.*[0..@intCast(usize, value_count)];
+                } else if (T == aya.math.Mat32) {
+                    std.debug.assert(effect_value.type.parameter_class == .matrix_rows);
+                    std.debug.assert(effect_value.type.parameter_type == .float);
+                    std.debug.assert(effect_value.type.rows == 2);
+                    std.debug.assert(effect_value.type.columns == 3);
+                    std.debug.assert(effect_value.value_count == 8);
+
+                    const floats = effect_value.value.float[0..@intCast(usize, effect_value.value_count)];
                     floats[0] = value.data[0];
                     floats[1] = value.data[2];
                     floats[2] = value.data[4];
@@ -143,22 +155,11 @@ pub const Shader = extern struct {
                     floats[5] = value.data[3];
                     floats[6] = value.data[5];
                 }
-                @compileError("Unsupported struct type '" ++ @typeName(T) ++ "'");
             },
-            else => @compileError("Unable to set value of type '" ++ @typeName(T) ++ "'"),
+            else => @compileError("Unable to set value of type '" ++ @typeName(T) ++ "'. Unsupported."),
         }
     }
 };
-
-test "test cstr" {
-    const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
-    defer std.testing.allocator.free(slice);
-    const span = std.mem.spanZ(slice);
-
-    std.testing.expect(aya.utils.cstr_cmp(span, slice) == 0);
-    std.testing.expect(aya.utils.cstr_cmp("hell", slice) == 0);
-    std.testing.expect(aya.utils.cstr_cmp("hell", span) == 0);
-}
 
 test "test shader" {
     std.testing.expectError(error.ShaderCreationError, Shader.initFromFile("assets/VertexColor.fxb"));

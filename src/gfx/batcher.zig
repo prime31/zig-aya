@@ -59,7 +59,7 @@ pub const Batcher = struct {
 
         // if we ran out of space and dont support no_overwrite we have to discard the buffer
         // TODO: we can lose data on Metal with no_overwrite. FNA3D bug or our bug?
-        const options: fna.SetDataOptions = if (discard_buffer or self.discard_next or fna.FNA3D_SupportsNoOverwrite(aya.gfx.device) == 0) .discard else .no_overwrite;
+        const options: fna.SetDataOptions = if (discard_buffer or self.discard_next or !aya.gfx.device.supportsNoOverwrite()) .discard else .no_overwrite;
         self.discard_next = false;
 
         self.mesh.appendVertSlice(self.buffer_offset, self.vert_count, options);
@@ -88,7 +88,7 @@ pub const Batcher = struct {
             }
 
             // we have to discard two frames for metal else we lose draws for some reason...
-            if (fna.FNA3D_SupportsNoOverwrite(aya.gfx.device) == 1) self.discard_next = true;
+            if (aya.gfx.device.supportsNoOverwrite()) self.discard_next = true;
             self.vert_index = 0;
             self.vert_count = 0;
             self.buffer_offset = 0;

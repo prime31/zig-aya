@@ -121,7 +121,7 @@ test "test texture and rendertexture" {
         .backBufferHeight = 50,
         .deviceWindowHandle = aya.window.sdl_window,
     };
-    aya.gfx.device = fna.FNA3D_CreateDevice(&params, 1);
+    aya.gfx.device = fna.Device.init(&params, true);
 
     const tex = try Texture.initFromFile("assets/font.png");
     tex.deinit();

@@ -22,9 +22,8 @@ pub const VertexBuffer = struct {
 
     pub fn init(comptime T: type, vertex_count: i32, dynamic: bool) VertexBuffer {
         const vert_decl = vertexDeclarationForType(T) catch unreachable;
-        const is_dynamic: u8 = if (dynamic) 0 else 1;
         return VertexBuffer{
-            .buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, is_dynamic, .write_only, vertex_count, vert_decl.vertexStride),
+            .buffer = aya.gfx.device.genVertexBuffer(dynamic, .write_only, vertex_count, vert_decl.vertexStride),
         };
     }
 
@@ -38,19 +37,18 @@ pub const VertexBuffer = struct {
                 break :blk vd;
             }
         };
-        //const vert_decl = vertexDeclarationForTypeUsages(T, usages) catch unreachable;
-        const is_dynamic: u8 = if (dynamic) 0 else 1;
+
         return VertexBuffer{
-            .buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, is_dynamic, .write_only, vertex_count, vert_decl.vertexStride),
+            .buffer = aya.gfx.device.genVertexBuffer(dynamic, .write_only, vertex_count, vert_decl.vertexStride),
         };
     }
 
     pub fn deinit(self: VertexBuffer) void {
-        fna.FNA3D_AddDisposeVertexBuffer(aya.gfx.device, self.buffer);
+        aya.gfx.device.addDisposeVertexBuffer(self.buffer);
     }
 
     pub fn setData(self: VertexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
-        fna.FNA3D_SetVertexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], @intCast(c_int, @sizeOf(T) * data.len), 1, 1, options);
+        aya.gfx.device.setVertexBufferData(T, self.buffer, data, offset_in_bytes, options);
     }
 
     pub fn vertexDeclarationForType(comptime T: type) !fna.VertexDeclaration {
@@ -196,19 +194,18 @@ pub const IndexBuffer = struct {
     }
 
     pub fn initWithOptions(index_count: i32, dynamic: bool, usage: fna.BufferUsage, index_ele_size: fna.IndexElementSize) IndexBuffer {
-        const is_dynamic: u8 = if (dynamic) 0 else 1;
         return IndexBuffer{
-            .buffer = fna.FNA3D_GenIndexBuffer(aya.gfx.device, is_dynamic, usage, index_count, index_ele_size),
+            .buffer = aya.gfx.device.genIndexBuffer(dynamic, usage, index_count, index_ele_size),
         };
     }
 
     pub fn deinit(self: IndexBuffer) void {
-        fna.FNA3D_AddDisposeIndexBuffer(aya.gfx.device, self.buffer);
+        aya.gfx.device.addDisposeIndexBuffer(self.buffer);
     }
 
     pub fn setData(self: IndexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
         const elem_size = @intCast(i32, @sizeOf(T));
-        fna.FNA3D_SetIndexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], elem_size * @intCast(i32, data.len), options);
+        aya.gfx.device.setIndexBufferData(self.buffer, offset_in_bytes, &data[0], elem_size * @intCast(i32, data.len), options);
     }
 };
 

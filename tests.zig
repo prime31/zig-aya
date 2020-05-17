@@ -35,4 +35,6 @@ comptime {
     _ = @import("src/gfx/buffers.zig");
     _ = @import("src/gfx/mesh.zig");
     _ = @import("src/gfx/batcher.zig");
+
+    _ = @import("src/utils/utils.zig");
 }

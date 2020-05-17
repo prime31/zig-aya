@@ -26,12 +26,11 @@ pub const Window = struct {
     pub fn init(config: WindowConfig) !Window {
         var window = Window{};
 
-        var flags = @bitCast(c_int, fna.FNA3D_PrepareWindowAttributes());
+        var flags = fna.prepareWindowAttributes();
         if (config.resizable) flags |= sdl.SDL_WINDOW_RESIZABLE;
         if (config.high_dpi) flags |= sdl.SDL_WINDOW_ALLOW_HIGHDPI;
         if (config.fullscreen) flags |= sdl.SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-        // TODO: use a temp allocator when we have one
         const title = try std.cstr.addNullByte(mem.tmp_allocator, config.title);
         window.sdl_window = sdl.SDL_CreateWindow(title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, flags)) orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
@@ -46,8 +45,8 @@ pub const Window = struct {
         sdl.SDL_DestroyWindow(self.sdl_window);
     }
 
-    pub fn swap(self: Window, device: ?*fna.Device) void {
-        fna.FNA3D_SwapBuffers(device, null, null, self.sdl_window);
+    pub fn swap(self: Window, device: *fna.Device) void {
+        device.swapBuffers(self.sdl_window);
     }
 
     pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
@@ -71,7 +70,7 @@ pub const Window = struct {
     }
 
     pub fn drawableSize(self: Window, w: *i32, h: *i32) void {
-        fna.FNA3D_GetDrawableSize(self.sdl_window, w, h);
+        fna.getDrawableSize(self.sdl_window, w, h);
     }
 
     pub fn size(self: Window, w: *i32, h: *i32) void {

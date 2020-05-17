@@ -1,13 +1,24 @@
 pub const tilemap = @import("tilemap.zig");
 
-pub fn cstr_cmp(a: []const u8, b: [*:0]const u8) i8 {
+pub fn cstr_u8_cmp(a: [*:0]const u8, b: []const u8) i8 {
     var index: usize = 0;
-    while (a[index] == b[index] and b[index + 1] != 0) : (index += 1) {}
-    if (a[index] > b[index]) {
+    while (b[index] == a[index] and a[index + 1] != 0) : (index += 1) {}
+    if (b[index] > a[index]) {
         return 1;
-    } else if (a[index] < b[index]) {
+    } else if (b[index] < a[index]) {
         return -1;
     } else {
         return 0;
     }
+}
+
+test "test cstr" {
+    const std = @import("std");
+    const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
+    defer std.testing.allocator.free(slice);
+    const span = std.mem.spanZ(slice);
+
+    std.testing.expect(cstr_u8_cmp(slice, span) == 0);
+    std.testing.expect(cstr_u8_cmp(slice, "hell") == 0);
+    std.testing.expect(cstr_u8_cmp(span, "hell") == 0);
 }

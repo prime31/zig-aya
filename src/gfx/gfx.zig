@@ -1,5 +1,6 @@
 const std = @import("std");
 
+// exports
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const Texture = @import("textures.zig").Texture;
@@ -13,9 +14,11 @@ pub const Vertex = @import("buffers.zig").Vertex;
 pub const VertexBuffer = @import("buffers.zig").VertexBuffer;
 pub const IndexBuffer = @import("buffers.zig").IndexBuffer;
 
-pub var device: ?*fna.Device = null;
+pub var device: *fna.Device = undefined;
 
+// locals
 const fna = @import("../deps/fna/fna.zig");
+const math = @import("../math/math.zig");
 
 const State = struct {
     viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
@@ -28,17 +31,17 @@ const State = struct {
 var state = State{};
 
 pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, design_w: i32, design_h: i32, resolution_policy: ResolutionPolicy) void {
-    device = fna.FNA3D_CreateDevice(params, 1);
+    device = fna.Device.init(params, true);
     setPresentationInterval(.one);
 
     var rasterizer = fna.RasterizerState{};
-    fna.FNA3D_ApplyRasterizerState(device, &rasterizer);
+    device.applyRasterizerState(&rasterizer);
 
     var blend = fna.BlendState{};
-    fna.FNA3D_SetBlendState(device, &blend);
+    device.setBlendState(&blend);
 
     var depthStencil = fna.DepthStencilState{};
-    fna.FNA3D_SetDepthStencilState(device, &depthStencil);
+    device.setDepthStencilState(&depthStencil);
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
 
@@ -60,27 +63,26 @@ pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, des
 }
 
 pub fn clear(color: fna.Vec4) void {
-    clearWithOptions(color, .all, 1, 0);
+    device.clear(color);
 }
 
+// TODO: use a proper Color
 pub fn clearWithOptions(color: fna.Vec4, options: fna.ClearOptions, depth: f32, stencil: i32) void {
-    var clear_color = color;
-    fna.FNA3D_Clear(device, options, &clear_color, depth, stencil);
+    device.clearWithOptions(options, color, depth, stencil);
 }
 
 pub fn setViewport(vp: fna.Viewport) void {
     state.viewport = vp;
-    fna.FNA3D_SetViewport(device, &state.viewport);
+    device.setViewport(&state.viewport);
 }
 
-// TODO: switch to aya.math.Rect
-pub fn setScissor(rect: fna.Rect) void {
-    var r = rect;
-    fna.FNA3D_SetScissorRect(device, &r);
+pub fn setScissor(rect: math.RectI) void {
+    var r = @bitCast(fna.Rect, rect);
+    device.setScissorRect(&r);
 }
 
 pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
-    fna.FNA3D_SetPresentationInterval(device, present_interval);
+    device.setPresentationInterval(present_interval);
 }
 
 pub fn getResolutionScaler() ResolutionScaler {
@@ -98,10 +100,10 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
 
     // unsetting a render texture
     if (rt == null) {
-        fna.FNA3D_SetRenderTargets(device, &state.rt_binding, 0, null, .none);
+        device.unSetRenderTarget();
         state.rt_binding.texture = null;
 
-        fna.FNA3D_GetBackbufferSize(device, &new_width, &new_height);
+        device.getBackbufferSize(&new_width, &new_height);
         // TODO: save PresentationParams and fetch clear_target from it???
         // we dont need to Resolve the previous target since we dont support mips and multisampling
     } else {
@@ -109,11 +111,11 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
         state.rt_binding.unnamed.twod.height = rt.?.tex.height;
         state.rt_binding.texture = rt.?.tex.tex;
 
-        fna.FNA3D_SetRenderTargets(device, &state.rt_binding, 1, rt.?.depth_stencil_buffer, rt.?.depth_stencil_format);
+        device.setRenderTarget(&state.rt_binding, rt.?.depth_stencil_buffer, rt.?.depth_stencil_format);
 
         new_width = rt.?.tex.width;
         new_height = rt.?.tex.height;
-        // TODO: store clear_target in RenderTexture???
+        // TODO: store clear_target in RenderTexture so we dont force platform_contents???
         // we dont need to Resolve the previous target since we dont support mips and multisampling
     }
 
