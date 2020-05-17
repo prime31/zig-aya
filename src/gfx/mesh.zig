@@ -32,8 +32,8 @@ pub const Mesh = struct {
     pub fn draw(self: *Mesh, num_vertices: i32) void {
         const primitive_count = @divExact(num_vertices, 2);
 
-        fna.FNA3D_ApplyVertexBufferBindings(aya.gfx.device, &self.vert_buffer_binding, 1, 0, 0); // last 2 params: bindings_updated: u8, base_vertex: i32
-        fna.FNA3D_DrawIndexedPrimitives(aya.gfx.device, .triangle_list, 0, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+        aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, 0); // last 2 params: bindings_updated: u8, base_vertex: i32
+        aya.gfx.device.drawIndexedPrimitives(.triangle_list, 0, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
     }
 };
 
@@ -103,8 +103,8 @@ pub fn DynamicMesh(comptime T: type) type {
         pub fn draw(self: *Self, base_vertex: i32, num_vertices: i32) void {
             const primitive_count = @divExact(num_vertices, 2); // assuming .triangle_list
 
-            fna.FNA3D_ApplyVertexBufferBindings(aya.gfx.device, &self.vert_buffer_binding, 1, 0, base_vertex); // last 2 params: bindings_updated: u8, base_vertex: i32
-            fna.FNA3D_DrawIndexedPrimitives(aya.gfx.device, .triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+            aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
+            aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
         }
     };
 }

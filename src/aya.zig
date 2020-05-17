@@ -69,7 +69,7 @@ pub fn run(config: Config) !void {
 
 fn runLoop(update: fn () void, render: fn () void) void {
     while (!pollEvents()) {
-        fna.FNA3D_BeginFrame(gfx.device);
+        gfx.device.beginFrame();
 
         // TODO: never clear automatically
         gfx.clear(.{ .x = 0.8, .y = 0.2, .z = 0.3, .w = 1 });

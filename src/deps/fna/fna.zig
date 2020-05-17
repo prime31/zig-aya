@@ -82,7 +82,7 @@ pub const Device = struct {
     }
 
     pub fn genVertexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, vertex_count: i32, vertex_stride: i32) ?*Buffer {
-        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        const is_dynamic: u8 = if (dynamic) 1 else 0;
         return FNA3D_GenVertexBuffer(self, is_dynamic, usage, vertex_count, vertex_stride);
     }
 
@@ -95,7 +95,7 @@ pub const Device = struct {
     }
 
     pub fn genIndexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, index_count: i32, index_element_size: IndexElementSize) ?*Buffer {
-        const is_dynamic: u8 = if (dynamic) 0 else 1;
+        const is_dynamic: u8 = if (dynamic) 1 else 0;
         return FNA3D_GenIndexBuffer(self, is_dynamic, usage, index_count, index_element_size);
     }
 
@@ -105,6 +105,44 @@ pub const Device = struct {
 
     pub fn setIndexBufferData(self: *Device, buffer: ?*Buffer, offset_in_bytes: i32, data: ?*c_void, data_length: i32, options: SetDataOptions) void {
         FNA3D_SetIndexBufferData(self, buffer, offset_in_bytes, data, data_length, options);
+    }
+
+    pub fn beginFrame(self: *Device) void {
+        FNA3D_BeginFrame(self);
+    }
+
+    pub fn applyVertexBufferBindings(self: *Device, bindings: [*c]VertexBufferBinding, num_bindings: i32, bindings_updated: bool, base_vertex: i32) void {
+        const updated: u8 = if (bindings_updated) 1 else 0;
+        FNA3D_ApplyVertexBufferBindings(self, bindings, num_bindings, updated, base_vertex);
+    }
+
+    pub fn drawIndexedPrimitives(self: *Device, primitive_type: PrimitiveType, base_vertex: i32, min_vertex_index: i32, num_vertices: i32, start_index: i32, primitive_count: i32, indices: ?*Buffer, index_element_size: IndexElementSize) void {
+        FNA3D_DrawIndexedPrimitives(self, primitive_type, base_vertex, min_vertex_index, num_vertices, start_index, primitive_count, indices, index_element_size);
+    }
+
+    pub fn createTexture2D(self: *Device, format: SurfaceFormat, width: i32, height: i32, level_count: i32, is_render_target: bool) ?*Texture {
+        const render_target: u8 = if (is_render_target) 1 else 0;
+        return FNA3D_CreateTexture2D(self, format, width, height, level_count, render_target);
+    }
+
+    pub fn addDisposeTexture(self: *Device, texture: ?*Texture) void {
+        FNA3D_AddDisposeTexture(self, texture);
+    }
+
+    pub fn setTextureData2D(self: *Device, texture: ?*Texture, format: SurfaceFormat, x: i32, y: i32, w: i32, h: i32, level: i32, data: ?*c_void, data_length: i32) void {
+        FNA3D_SetTextureData2D(self, texture, format, x, y, w, h, level, data, data_length);
+    }
+
+    pub fn verifySampler(self: *Device, index: i32, texture: ?*Texture, sampler: *SamplerState) void {
+        FNA3D_VerifySampler(self, index, texture, sampler);
+    }
+
+    pub fn genDepthStencilRenderbuffer(self: *Device, width: i32, height: i32, format: DepthFormat, multi_sample_count: i32) ?*Renderbuffer {
+        return FNA3D_GenDepthStencilRenderbuffer(self, width, height, format, multi_sample_count);
+    }
+
+    pub fn addDisposeRenderbuffer(self: *Device, renderbuffer: ?*Renderbuffer) void {
+        FNA3D_AddDisposeRenderbuffer(self, renderbuffer);
     }
 };
 
@@ -235,7 +273,6 @@ pub const BlendFunction = extern enum(c_int) {
     reverse_subtract,
     max,
     min,
-    _,
 };
 
 pub const ColorWriteChannels = extern enum(c_int) {
@@ -245,7 +282,6 @@ pub const ColorWriteChannels = extern enum(c_int) {
     blue = 4,
     alpha = 8,
     all = 15,
-    _,
 };
 
 pub const StencilOperation = extern enum(c_int) {
@@ -257,7 +293,6 @@ pub const StencilOperation = extern enum(c_int) {
     increment_saturation,
     decrement_saturation,
     invert,
-    _,
 };
 
 pub const CompareFunction = extern enum(c_int) {
@@ -269,27 +304,23 @@ pub const CompareFunction = extern enum(c_int) {
     greater_equal,
     greater,
     not_equal,
-    _,
 };
 
 pub const CullMode = extern enum(c_int) {
     none,
     cull_clockwise,
     cull_counter_clockwise,
-    _,
 };
 
 pub const FillMode = extern enum(c_int) {
     solid,
     wireframe,
-    _,
 };
 
 pub const TextureAddressMode = extern enum(c_int) {
     wrap,
     clamp,
     mirror,
-    _,
 };
 
 pub const TextureFilter = extern enum(c_int) {

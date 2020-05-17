@@ -12,7 +12,7 @@ pub const Texture = extern struct {
 
     pub fn init(width: i32, height: i32) Texture {
         return Texture{
-            .tex = fna.FNA3D_CreateTexture2D(aya.gfx.device, .color, width, height, 1, 0),
+            .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, false),
             .width = width,
             .height = height,
         };
@@ -24,7 +24,7 @@ pub const Texture = extern struct {
         const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
         const img_data = fna.img.load(c_file, &texture.width, &texture.height);
 
-        texture.tex = fna.FNA3D_CreateTexture2D(aya.gfx.device, .color, texture.width, texture.height, 1, 0);
+        texture.tex = aya.gfx.device.createTexture2D(.color, texture.width, texture.height, 1, false);
         texture.setData(img_data);
         fna.img.FNA3D_Image_Free(img_data.ptr);
 
@@ -47,15 +47,15 @@ pub const Texture = extern struct {
 
     pub fn deinit(self: Texture) void {
         _ = sampler_state_cache.remove(self.tex.?);
-        fna.FNA3D_AddDisposeTexture(aya.gfx.device, self.tex);
+        aya.gfx.device.addDisposeTexture(self.tex);
     }
 
     pub fn setData(self: Texture, data: []u8) void {
-        fna.FNA3D_SetTextureData2D(aya.gfx.device, self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
+        aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }
 
     pub fn setColorData(self: Texture, data: []u32) void {
-        fna.FNA3D_SetTextureData2D(aya.gfx.device, self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
+        aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }
 
     pub fn setSamplerState(self: Texture, sampler_state: fna.SamplerState) void {
@@ -72,7 +72,7 @@ pub const Texture = extern struct {
 
         var sampler_state = sampler_state_cache.getValue(fna_texture.?);
         if (sampler_state == null) sampler_state.? = fna.SamplerState{};
-        fna.FNA3D_VerifySampler(aya.gfx.device, @intCast(i32, slot), fna_texture, &sampler_state.?);
+        aya.gfx.device.verifySampler(@intCast(i32, slot), fna_texture, &sampler_state.?);
 
         bound_textures[slot] = fna_texture.?;
     }
@@ -87,7 +87,7 @@ pub const RenderTexture = extern struct {
     pub fn init(width: i32, height: i32) RenderTexture {
         return RenderTexture{
             .tex = .{
-                .tex = fna.FNA3D_CreateTexture2D(aya.gfx.device, .color, width, height, 1, 1),
+                .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, true),
                 .width = width,
                 .height = height,
             },
@@ -98,7 +98,7 @@ pub const RenderTexture = extern struct {
         var rt = init(width, height);
         rt.depth_stencil_format = format;
         if (format != .none) {
-            rt.depth_stencil_buffer = fna.FNA3D_GenDepthStencilRenderbuffer(aya.gfx.device, width, height, format, 0);
+            rt.depth_stencil_buffer = aya.gfx.device.genDepthStencilRenderbuffer(width, height, format, 0);
         }
 
         return rt;
@@ -106,7 +106,7 @@ pub const RenderTexture = extern struct {
 
     pub fn deinit(self: RenderTexture) void {
         if (self.depth_stencil_buffer != null) {
-            fna.FNA3D_AddDisposeRenderbuffer(aya.gfx.device, self.depth_stencil_buffer);
+            aya.gfx.device.addDisposeRenderbuffer(self.depth_stencil_buffer);
         }
         self.tex.deinit();
     }
