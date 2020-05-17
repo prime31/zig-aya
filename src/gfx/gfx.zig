@@ -5,6 +5,7 @@ pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
 
+pub const Batcher = @import("batcher.zig").Batcher;
 pub const Shader = @import("shader.zig").Shader;
 pub const Mesh = @import("mesh.zig").Mesh;
 pub const DynamicMesh = @import("mesh.zig").DynamicMesh;

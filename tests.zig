@@ -34,4 +34,5 @@ comptime {
     // _ = @import("src/gfx/textures.zig"); // requires firing up a Window
     _ = @import("src/gfx/buffers.zig");
     _ = @import("src/gfx/mesh.zig");
+    _ = @import("src/gfx/batcher.zig");
 }

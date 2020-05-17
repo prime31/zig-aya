@@ -63,14 +63,18 @@ pub const Texture = extern struct {
     }
 
     pub fn bind(self: Texture, slot: usize) void {
+        bindTexture(self.tex, slot);
+    }
+
+    pub fn bindTexture(fna_texture: ?*fna.Texture, slot: usize) void {
         // avoid binding already bound textures
-        if (bound_textures[slot] == self.tex.?) return;
+        if (bound_textures[slot] == fna_texture.?) return;
 
-        var sampler_state = sampler_state_cache.getValue(self.tex.?);
+        var sampler_state = sampler_state_cache.getValue(fna_texture.?);
         if (sampler_state == null) sampler_state.? = fna.SamplerState{};
-        fna.FNA3D_VerifySampler(aya.gfx.device, @intCast(i32, slot), self.tex, &sampler_state.?);
+        fna.FNA3D_VerifySampler(aya.gfx.device, @intCast(i32, slot), fna_texture, &sampler_state.?);
 
-        bound_textures[slot] = self.tex.?;
+        bound_textures[slot] = fna_texture.?;
     }
 };
 

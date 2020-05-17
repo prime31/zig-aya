@@ -90,9 +90,9 @@ pub fn DynamicMesh(comptime T: type) type {
             std.debug.assert(start_index + num_verts <= self.verts.len);
             // cheat a bit here and use the VertexBufferBinding data to get the element size of our verts
             const offset_in_bytes = start_index * self.vert_buffer_binding.vertexDeclaration.vertexStride;
-            const vert_slice = self.verts[start_index .. start_index + num_verts];
+            const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
 
-            self.vert_buffer.setData(vert_slice, offset_in_bytes, options);
+            self.vert_buffer.setData(T, vert_slice, offset_in_bytes, options);
         }
 
         pub fn updateIndices(self: Self, options: fna.SetDataOptions) void {
