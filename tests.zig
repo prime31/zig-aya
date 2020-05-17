@@ -24,6 +24,7 @@ comptime {
     _ = @import("src/fs.zig");
     _ = @import("src/input.zig");
 
+    _ = @import("src/math/math.zig");
     _ = @import("src/math/vec2.zig");
     // _ = @import("src/math/color.zig"); // Zig bug: TODO buf_read_value_bytes union type
     _ = @import("src/math/mat32.zig");

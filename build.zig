@@ -10,7 +10,8 @@ pub fn build(b: *Builder) void {
     const lib_type_int = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
     const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
 
-    createExe(b, target, lib_type, "run", "examples/mesh.zig");
+    // current example file being worked on
+    createExe(b, target, lib_type, "run", "examples/dynamic_mesh.zig");
 
     const examples = [_][2][]const u8{
         [_][]const u8{ "main", "examples/main.zig" },

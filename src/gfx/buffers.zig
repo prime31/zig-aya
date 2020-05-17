@@ -10,6 +10,11 @@ pub const Vertex = struct {
     col: u32 = 0xFFFFFFFF,
 };
 
+pub const VertexPositionColor = struct {
+    pos: Vec2,
+    col: u32 = 0xFFFFFFFF,
+};
+
 pub const VertexBuffer = struct {
     buffer: ?*fna.Buffer = undefined,
 
@@ -21,11 +26,6 @@ pub const VertexBuffer = struct {
         return VertexBuffer{
             .buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, is_dynamic, .write_only, vertex_count, vert_decl.vertexStride),
         };
-    }
-
-    pub fn initWithUsage(comptime T: type, vertex_count: i32, dynamic: bool, usage: fna.BufferUsage) VertexBuffer {
-        buffer = fna.FNA3D_GenVertexBuffer(aya.gfx.device, 0, usage, vertex_count, 20);
-        return VertexBuffer{};
     }
 
     pub fn initWithOptions(comptime T: type, vertex_count: i32, dynamic: bool, usages: []fna.VertexElementUsage) VertexBuffer {
@@ -51,7 +51,6 @@ pub const VertexBuffer = struct {
 
     pub fn setData(self: VertexBuffer, comptime T: type, data: []T, offset_in_bytes: i32, options: fna.SetDataOptions) void {
         fna.FNA3D_SetVertexBufferData(aya.gfx.device, self.buffer, offset_in_bytes, &data[0], @intCast(c_int, @sizeOf(T) * data.len), 1, 1, options);
-        //fna.set_vertex_buffer_data(fna_device, buffer, offset_in_bytes, &data[0], cast(i32)len(data) * element_size, 1, 1, options);
     }
 
     pub fn vertexDeclarationForType(comptime T: type) !fna.VertexDeclaration {
@@ -60,6 +59,10 @@ pub const VertexBuffer = struct {
         const vert_decl = switch (T) {
             Vertex => blk: {
                 var usages = [_]fna.VertexElementUsage{ .position, .texture_coordinate, .color };
+                break :blk try VertexBuffer.vertexDeclarationForTypeUsages(T, usages[0..]);
+            },
+            VertexPositionColor => blk: {
+                var usages = [_]fna.VertexElementUsage{ .position, .color };
                 break :blk try VertexBuffer.vertexDeclarationForTypeUsages(T, usages[0..]);
             },
             else => unreachable,
