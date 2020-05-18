@@ -56,30 +56,51 @@ pub const Shader = extern struct {
         gfx.device.addDisposeEffect(self.effect);
     }
 
-    pub fn apply(self: @This()) void {
+    pub fn apply(self: Shader) void {
         self.applyPass(0);
     }
 
-    pub fn applyPass(self: @This(), pass: u32) void {
+    pub fn applyPass(self: Shader, pass: u32) void {
         var effect_changes = std.mem.zeroes(fna.mojo.EffectStateChanges);
         gfx.device.applyEffect(self.effect, pass, &effect_changes);
     }
 
-    pub fn setCurrentTechnique(self: @This(), name: [:0]const u8) !void {
-        const techniques = self.mojo_effect.?.techniques[0..@intCast(usize, self.mojo_effect.?.technique_count)];
-        for (techniques) |technique, i| {
-            if (aya.utils.cstr_u8_cmp(technique.name, name) == 0) {
-                gfx.device.setEffectTechnique(self.effect, &techniques[i]);
-                return;
+    /// gets the index of the pass for the current technique. The index can be passed to applyPass
+    pub fn getPassIndexForCurrentTechnique(self: Shader, pass_name: []const u8) !u32 {
+        const passes = self.mojo_effect.current_technique.passes[0..@intCast(usize, self.mojo_effect.current_technique.pass_count)];
+        for (passes) |pass, i| {
+            if (aya.utils.cstr_u8_cmp(pass.name, pass_name) == 0) {
+                return i;
             }
         }
+        return error.PassNotFound;
+    }
 
+    pub fn setCurrentTechnique(self: *Shader, name: []const u8) !void {
+        const techniques = self.mojo_effect.techniques[0..@intCast(usize, self.mojo_effect.technique_count)];
+        for (techniques) |technique, i| {
+            if (aya.utils.cstr_u8_cmp(technique.name, name) == 0) {
+                return gfx.device.setEffectTechnique(self.effect, &techniques[i]);
+            }
+        }
         return error.TechnniqueNotFound;
     }
 
-    pub fn getParam(self: @This(), comptime T: type, name: []const u8) T {
-        if (self.mojo_effect.?.param_count > 0) {
-            const params = self.mojo_effect.?.params[0..@intCast(usize, self.mojo_effect.?.param_count)];
+    pub fn getParamIndex(self: Shader, name: []const u8) usize {
+        if (self.mojo_effect.param_count > 0) {
+            const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
+            for (params) |param, i| {
+                if (aya.utils.cstr_u8_cmp(param.value.name, name) == 0) {
+                    return i;
+                }
+            }
+        }
+        return error.ParamNotFound;
+    }
+
+    pub fn getParamValue(self: Shader, comptime T: type, name: []const u8) T {
+        if (self.mojo_effect.param_count > 0) {
+            const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
             for (params) |param| {
                 if (aya.utils.cstr_u8_cmp(param.value.name, name) == 0) {
                     return getParamImpl(T, param.value);
@@ -116,7 +137,7 @@ pub const Shader = extern struct {
         };
     }
 
-    pub fn setParam(self: @This(), comptime T: type, name: []const u8, value: T) void {
+    pub fn setParam(self: Shader, comptime T: type, name: []const u8, value: T) void {
         if (self.mojo_effect.param_count > 0) {
             const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
             for (params) |param| {
@@ -163,7 +184,7 @@ pub const Shader = extern struct {
 
 test "test shader" {
     std.testing.expectError(error.ShaderCreationError, Shader.initFromFile("assets/VertexColor.fxb"));
-    // var s = Shader{};
-    // _ = s.getParam(f32, "fart");
-    // shader.setCurrentTechnique("SpriteBlink"); // need gfx.device for this
+    // var s = try Shader.initFromFile("assets/VertexColor.fxb");
+    // _ = s.getParamValue(f32, "fart");
+    // _ = try s.setCurrentTechnique("SpriteBlink"); // need gfx.device for this
 }

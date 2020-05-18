@@ -150,7 +150,7 @@ pub fn prepareWindowAttributes() c_int {
     return @intCast(c_int, FNA3D_PrepareWindowAttributes());
 }
 
-pub fn getDrawableSize(window: *c_void, w: *i32, h: *i32) void {
+pub fn getDrawableSize(window: ?*c_void, w: *i32, h: *i32) void {
     FNA3D_GetDrawableSize(window, w, h);
 }
 
