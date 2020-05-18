@@ -27,10 +27,13 @@ fn init() void {
     mesh.verts[3] = .{ .pos = .{ .x = 220, .y = 220 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF };
     mesh.updateAllVerts(.none);
 
-    var shader = aya.gfx.Shader.initFromFile("assets/VertexColor.fxb") catch unreachable;
+    var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
     var mat = aya.math.Mat32.initOrtho(640, 480);
     shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
     shader.apply();
+
+    const texture = aya.gfx.Texture.initCheckerboard();
+    texture.bind(0);
 }
 
 fn update() void {
