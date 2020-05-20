@@ -46,7 +46,7 @@ pub const Texture = extern struct {
     }
 
     pub fn deinit(self: Texture) void {
-        _ = sampler_state_cache.remove(self.tex.?);
+        _ = sampler_state_cache.remove(self.tex);
         aya.gfx.device.addDisposeTexture(self.tex);
     }
 
@@ -90,7 +90,7 @@ pub const RenderTexture = extern struct {
     pub fn init(width: i32, height: i32) RenderTexture {
         return RenderTexture{
             .tex = .{
-                .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, true),
+                .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, true).?,
                 .width = width,
                 .height = height,
             },
