@@ -32,7 +32,10 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: fna_build.LibType,
     exe.setBuildMode(b.standardReleaseOptions());
 
     // these dont seem to work yet? Should be able to get at them with: const build_options = @import("build_options");
-    exe.addBuildOption(bool, "aya_debug", true);
+    // for these to work we need the following:
+    // in main.zig: pub const build_options = @import("build_options");
+    // in aya.zig: pub const build_options = @import("root").build_options;
+    exe.addBuildOption(bool, "debug", true);
 
     exe.addPackagePath("aya", "src/aya.zig");
     exe.addPackagePath("sdl", "deps/sdl/sdl.zig");
