@@ -4,13 +4,13 @@ const aya = @import("../aya.zig");
 const gfx = @import("gfx.zig");
 const Vec2 = @import("../math/vec2.zig").Vec2;
 
-pub const Vertex = struct {
+pub const Vertex = packed struct {
     pos: Vec2,
     uv: Vec2,
     col: u32 = 0xFFFFFFFF,
 };
 
-pub const VertexPositionColor = struct {
+pub const VertexPositionColor = packed struct {
     pos: Vec2,
     col: u32 = 0xFFFFFFFF,
 };

@@ -7,10 +7,13 @@ pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
 
 pub const Batcher = @import("batcher.zig").Batcher;
-pub const Shader = @import("shader.zig").Shader;
+pub const AtlasBatch = @import("atlas_batch.zig").AtlasBatch;
+
+pub const Vertex = @import("buffers.zig").Vertex;
 pub const Mesh = @import("mesh.zig").Mesh;
 pub const DynamicMesh = @import("mesh.zig").DynamicMesh;
-pub const Vertex = @import("buffers.zig").Vertex;
+
+pub const Shader = @import("shader.zig").Shader;
 pub const VertexBuffer = @import("buffers.zig").VertexBuffer;
 pub const IndexBuffer = @import("buffers.zig").IndexBuffer;
 
