@@ -67,6 +67,7 @@ pub const Color = extern union {
 
     pub const white = Color{ .value = 0xFFFFFFFF };
     pub const black = Color{ .value = 0xFF000000 };
+    pub const transparent = Color{ .comps = .{ .r = 0, .g = 0, .b = 0, .a = 0 } };
     pub const light_gray = Color{ .comps = .{ .r = 200, .g = 200, .b = 200, .a = 255 } };
     pub const gray = Color{ .comps = .{ .r = 130, .g = 130, .b = 130, .a = 255 } };
     pub const dark_gray = Color{ .comps = .{ .r = 80, .g = 80, .b = 80, .a = 255 } };
@@ -88,7 +89,6 @@ pub const Color = extern union {
     pub const beige = Color{ .comps = .{ .r = 211, .g = 176, .b = 131, .a = 255 } };
     pub const brown = Color{ .comps = .{ .r = 127, .g = 106, .b = 79, .a = 255 } };
     pub const dark_brown = Color{ .comps = .{ .r = 76, .g = 63, .b = 47, .a = 255 } };
-    pub const transparent = Color{ .comps = .{ .r = 0, .g = 0, .b = 0, .a = 0 } };
     pub const magenta = Color{ .comps = .{ .r = 255, .g = 0, .b = 255, .a = 255 } };
 };
 

@@ -8,7 +8,7 @@ pub const Batcher = struct {
     mesh: DynamicMesh(Vertex),
     draw_calls: std.ArrayList(DrawCall),
 
-    vert_index: i32 = 0, // current index into the vertex array
+    vert_index: usize = 0, // current index into the vertex array
     vert_count: i32 = 0, // total verts that we have not yet rendered
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
     discard_next: bool = false, // flag for dealing with the Metal issue where we have to discard our buffer 2 times
@@ -47,7 +47,7 @@ pub const Batcher = struct {
     }
 
     /// called at the end of the frame when all drawing is complete. Flushes the batch and resets local state.
-    pub fn endFrame(self: Batcher) void {
+    pub fn endFrame(self: *Batcher) void {
         self.flush(false);
         self.vert_index = 0;
         self.vert_count = 0;
@@ -66,7 +66,7 @@ pub const Batcher = struct {
 
         // run through all our accumulated draw calls
         for (self.draw_calls.items) |*draw_call| {
-            aya.gfx.Texture.bindTexture(draw_call.texture, 0);
+            aya.gfx.Texture.bindTexture(draw_call.texture.?, 0);
             self.mesh.draw(self.buffer_offset, draw_call.vert_count);
 
             self.buffer_offset += draw_call.vert_count;
@@ -74,6 +74,7 @@ pub const Batcher = struct {
         }
 
         self.vert_count = 0;
+        self.draw_calls.items.len = 0;
     }
 
     /// ensures the vert buffer has enough space and manages the draw call command buffer when textures change
@@ -100,13 +101,16 @@ pub const Batcher = struct {
         }
     }
 
-    pub fn draw(self: Batcher, texture: ?*fna.Texture, quad: aya.math.Quad, mat: aya.math.Mat32, color: aya.math.Color) void {
-        self.ensureCapacity(texture);
+    pub fn draw(self: *Batcher, texture: *fna.Texture, quad: aya.math.Quad, mat: aya.math.Mat32, color: aya.math.Color) void {
+        self.ensureCapacity(texture) catch |err| {
+            std.debug.warn("Batcher.draw failed to append a draw call with error: {}\n", .{err});
+            return;
+        };
 
         // copy the quad positions, uvs and color into vertex array transforming them with the matrix as we do it
         mat.transformQuad(self.mesh.verts[self.vert_index .. self.vert_index + 4], quad, color);
 
-        self.draw_calls[self.draw_calls.items.len - 1].vert_count += 4;
+        self.draw_calls.items[self.draw_calls.items.len - 1].vert_count += 4;
         self.vert_count += 4;
         self.vert_index += 4;
     }

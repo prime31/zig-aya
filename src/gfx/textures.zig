@@ -3,16 +3,16 @@ const fna = @import("../deps/fna/fna.zig");
 const aya = @import("../aya.zig");
 
 pub const Texture = extern struct {
-    tex: ?*fna.Texture = null,
+    tex: *fna.Texture = undefined,
     width: i32 = 0,
     height: i32 = 0,
 
-    var bound_textures: [4]?*fna.Texture = undefined;
+    var bound_textures: [4]*fna.Texture = undefined;
     var sampler_state_cache = std.AutoHashMap(*fna.Texture, fna.SamplerState).init(aya.mem.allocator);
 
     pub fn init(width: i32, height: i32) Texture {
         return Texture{
-            .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, false),
+            .tex = aya.gfx.device.createTexture2D(.color, width, height, 1, false).?,
             .width = width,
             .height = height,
         };
@@ -24,7 +24,7 @@ pub const Texture = extern struct {
         const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
         const img_data = fna.img.load(c_file, &texture.width, &texture.height);
 
-        texture.tex = aya.gfx.device.createTexture2D(.color, texture.width, texture.height, 1, false);
+        texture.tex = aya.gfx.device.createTexture2D(.color, texture.width, texture.height, 1, false).?;
         texture.setData(img_data);
         fna.img.FNA3D_Image_Free(img_data.ptr);
 
@@ -59,22 +59,25 @@ pub const Texture = extern struct {
     }
 
     pub fn setSamplerState(self: Texture, sampler_state: fna.SamplerState) void {
-        _ = sampler_state_cache.put(self.tex.?, sampler_state) catch |err| std.debug.warn("failed setSamplerState: {}\n", .{err});
+        _ = sampler_state_cache.put(self.tex, sampler_state) catch |err| std.debug.warn("failed setSamplerState: {}\n", .{err});
     }
 
     pub fn bind(self: Texture, slot: usize) void {
         bindTexture(self.tex, slot);
     }
 
-    pub fn bindTexture(fna_texture: ?*fna.Texture, slot: usize) void {
+    pub fn bindTexture(fna_texture: *fna.Texture, slot: usize) void {
         // avoid binding already bound textures
-        if (bound_textures[slot] == fna_texture.?) return;
+        if (bound_textures[slot] == fna_texture) return;
 
-        var sampler_state = sampler_state_cache.getValue(fna_texture.?);
-        if (sampler_state == null) sampler_state.? = fna.SamplerState{};
+        var sampler_state = sampler_state_cache.getValue(fna_texture);
+        if (sampler_state == null) {
+            sampler_state = fna.SamplerState{};
+            _ = sampler_state_cache.put(fna_texture, sampler_state.?) catch |err| std.debug.warn("failed caching sampler state: {}\n", .{err});
+        }
         aya.gfx.device.verifySampler(@intCast(i32, slot), fna_texture, &sampler_state.?);
 
-        bound_textures[slot] = fna_texture.?;
+        bound_textures[slot] = fna_texture;
     }
 };
 

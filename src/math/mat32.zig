@@ -83,7 +83,7 @@ pub const Mat32 = struct {
         self.data[1] = nm1;
     }
 
-    pub fn scale(self: *@This(), x, y: f32) void {
+    pub fn scale(self: *@This(), x: f32, y: f32) void {
         self.data[0] *= x;
         self.data[1] *= x;
         self.data[2] *= y;
