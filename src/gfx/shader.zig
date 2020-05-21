@@ -183,8 +183,7 @@ pub const Shader = extern struct {
 };
 
 test "test shader" {
-    std.testing.expectError(error.ShaderCreationError, Shader.initFromFile("assets/VertexColor.fxb"));
-    // var s = try Shader.initFromFile("assets/VertexColor.fxb");
-    // _ = s.getParamValue(f32, "fart");
-    // _ = try s.setCurrentTechnique("SpriteBlink"); // need gfx.device for this
+    var s = try Shader.initFromFile("assets/VertexColor.fxb");
+    _ = try s.setCurrentTechnique("SpriteBlink");
+    s.apply();
 }

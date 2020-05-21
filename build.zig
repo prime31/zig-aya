@@ -11,12 +11,13 @@ pub fn build(b: *Builder) void {
     const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
 
     // current example file being worked on
-    createExe(b, target, lib_type, "run", "examples/batcher.zig");
+    createExe(b, target, lib_type, "run", "examples/atlas_batch.zig");
 
     const examples = [_][2][]const u8{
         [_][]const u8{ "main", "examples/main.zig" },
         [_][]const u8{ "mesh", "examples/mesh.zig" },
         [_][]const u8{ "batcher", "examples/batcher.zig" },
+        [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
     };
 
     for (examples) |example| {

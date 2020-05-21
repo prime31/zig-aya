@@ -17,7 +17,7 @@ pub const Quad = struct {
         return q;
     }
 
-    pub fn setViewport(self: *@This(), x: f32, y: f32, width: f32, height: f32) void {
+    pub fn setViewport(self: *Quad, x: f32, y: f32, width: f32, height: f32) void {
         self.positions[0] = Vec2{ .x = 0, .y = 0 }; // tl
         self.positions[1] = Vec2{ .x = width, .y = 0 }; // tr
         self.positions[2] = Vec2{ .x = width, .y = height }; // br
@@ -36,12 +36,12 @@ pub const Quad = struct {
         self.uvs[3] = Vec2{ .x = x * inv_w + w_tol, .y = (y + height) * inv_h - h_tol };
     }
 
-    pub fn setImageDimensions(self: *@This(), w: i32, h: i32) void {
+    pub fn setImageDimensions(self: *Quad, w: i32, h: i32) void {
         self.img_w = w;
         self.img_h = h;
     }
 
-    pub fn setViewportRect(self: *@This(), viewport: Rect) void {
+    pub fn setViewportRect(self: *Quad, viewport: Rect) void {
         self.setViewport(viewport.x, viewport.y, viewport.w, viewport.h);
     }
 };

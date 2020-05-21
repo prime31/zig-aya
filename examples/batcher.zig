@@ -30,8 +30,6 @@ fn init() void {
 
     checker_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, checker_tex.width), @intToFloat(f32, checker_tex.height), checker_tex.width, checker_tex.height);
     font_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, font_tex.width), @intToFloat(f32, font_tex.height), font_tex.width, font_tex.height);
-
-    aya.gfx.setPresentationInterval(.two);
 }
 
 fn update() void {}

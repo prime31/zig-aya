@@ -246,9 +246,9 @@ pub const BufferUsage = extern enum(c_int) {
 };
 
 pub const SetDataOptions = extern enum(c_int) {
-    none,
-    discard,
-    no_overwrite,
+    none, // The SetData can overwrite the portions of existing data
+    discard, // The SetData will discard the entire buffer. A pointer to a new memory area is returned and rendering from the previous area do not stall.
+    no_overwrite, // The SetData operation will not overwrite existing data. This allows the driver to return immediately from a SetData operation and continue rendering.
 };
 
 pub const Blend = extern enum(c_int) {

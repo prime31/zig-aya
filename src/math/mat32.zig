@@ -49,7 +49,7 @@ pub const Mat32 = struct {
         return result;
     }
 
-    pub fn setTransform(self: *@This(), vals: struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 }) void {
+    pub fn setTransform(self: *Mat32, vals: struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 }) void {
         const c = math.cos(vals.angle);
         const s = math.sin(vals.angle);
 
@@ -65,12 +65,12 @@ pub const Mat32 = struct {
         self.data[5] = vals.y - vals.ox * self.data[1] - vals.oy * self.data[3];
     }
 
-    pub fn translate(self: *@This(), x: f32, y: f32) void {
+    pub fn translate(self: *Mat32, x: f32, y: f32) void {
         self.data[4] = self.data[0] * x + self.data[2] * y + self.data[4];
         self.data[5] = self.data[1] * x + self.data[3] * y + self.data[5];
     }
 
-    pub fn rotate(self: *@This(), rads: f32) void {
+    pub fn rotate(self: *Mat32, rads: f32) void {
         const cos = math.cos(rads);
         const sin = math.sin(rads);
 
@@ -83,21 +83,21 @@ pub const Mat32 = struct {
         self.data[1] = nm1;
     }
 
-    pub fn scale(self: *@This(), x: f32, y: f32) void {
+    pub fn scale(self: *Mat32, x: f32, y: f32) void {
         self.data[0] *= x;
         self.data[1] *= x;
         self.data[2] *= y;
         self.data[3] *= y;
     }
 
-    pub fn transformVec2(self: @This(), pos: Vec2) Vec2 {
+    pub fn transformVec2(self: Mat32, pos: Vec2) Vec2 {
         return .{
             .x = pos.x * self.data[0] + pos.y * self.data[2] + self.data[4],
             .y = pos.x * self.data[1] + pos.y * self.data[3] + self.data[5],
         };
     }
 
-    pub fn transformVec2Slice(self: @This(), comptime T: type, dst: []T, src: []Vec2) void {
+    pub fn transformVec2Slice(self: Mat32, comptime T: type, dst: []T, src: []Vec2) void {
         for (src) |item, i| {
             dst[i].pos.x = src[i].x * self.data[0] + src[i].y * self.data[2] + self.data[4];
             dst[i].pos.y = src[i].x * self.data[1] + src[i].y * self.data[3] + self.data[5];
@@ -106,7 +106,7 @@ pub const Mat32 = struct {
 
     /// transforms the positions in Quad and copies them to dst along with the uvs and color. This could be made generic
     /// if we have other common Vertex types
-    pub fn transformQuad(self: @This(), dst: []Vertex, quad: Quad, color: Color) void {
+    pub fn transformQuad(self: Mat32, dst: []Vertex, quad: Quad, color: Color) void {
         for (dst) |*item, i| {
             item.*.pos.x = quad.positions[i].x * self.data[0] + quad.positions[i].y * self.data[2] + self.data[4];
             item.*.pos.y = quad.positions[i].x * self.data[1] + quad.positions[i].y * self.data[3] + self.data[5];
@@ -115,7 +115,7 @@ pub const Mat32 = struct {
         }
     }
 
-    pub fn transformVertexSlice(self: @This(), dst: []Vertex) void {
+    pub fn transformVertexSlice(self: Mat32, dst: []Vertex) void {
         for (dst) |item, i| {
             const x = dst[i].pos.x * self.data[0] + dst[i].pos.y * self.data[2] + self.data[4];
             const y = dst[i].pos.x * self.data[1] + dst[i].pos.y * self.data[3] + self.data[5];
