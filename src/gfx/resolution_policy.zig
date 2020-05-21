@@ -49,7 +49,6 @@ pub const ResolutionPolicy = enum {
         switch (self) {
             .default => {
                 const win_scale = aya.window.scale();
-                std.debug.warn("\n\n-------{}, {}, {}\n", .{ w, h, win_scale });
                 const width = @floatToInt(i32, @intToFloat(f32, w) / win_scale);
                 const height = @floatToInt(i32, @intToFloat(f32, h) / win_scale);
                 return ResolutionScaler{

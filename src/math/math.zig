@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const Vec2 = @import("vec2.zig").Vec2;
+pub const Vec4 = @import("vec4.zig").Vec4;
 pub const Rect = @import("rect.zig").Rect;
 pub const RectI = @import("rect.zig").RectI;
 pub const Mat32 = @import("mat32.zig").Mat32;

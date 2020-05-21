@@ -1,10 +1,12 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
 
 // exports
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
+pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 
 pub const Batcher = @import("batcher.zig").Batcher;
 pub const AtlasBatch = @import("atlas_batch.zig").AtlasBatch;
@@ -19,7 +21,16 @@ pub const IndexBuffer = @import("buffers.zig").IndexBuffer;
 
 pub var device: *fna.Device = undefined;
 
+pub const Config = struct {
+    disable_debug_render: bool,
+    design_width: i32,
+    design_height: i32,
+    resolution_policy: ResolutionPolicy,
+    batcher_max_sprites: i32,
+};
+
 // locals
+const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
 const fna = @import("../deps/fna/fna.zig");
 const math = @import("../math/math.zig");
 
@@ -27,13 +38,14 @@ const State = struct {
     viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
     white_tex: Texture = undefined,
     rt_binding: fna.RenderTargetBinding = undefined,
+    batcher: Batcher = undefined,
+    debug_render_enabled: bool = false,
+    default_pass: DefaultOffscreenPass = undefined,
     // FontBook
-    // Batcher
-    // Default_Offscreen_Pass
 };
 var state = State{};
 
-pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, design_w: i32, design_h: i32, resolution_policy: ResolutionPolicy) void {
+pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     device = fna.Device.init(params, true);
     setPresentationInterval(.one);
 
@@ -52,26 +64,34 @@ pub fn init(params: *fna.PresentationParameters, disable_debug_render: bool, des
     state.white_tex = Texture.init(2, 2);
     state.white_tex.setColorData(pixels[0..]);
 
-    // _batcher = new_batcher();
+    state.batcher = try Batcher.init(null, config.batcher_max_sprites);
+    state.debug_render_enabled = !config.disable_debug_render;
+
+    // if we were passed 0's for design size default to the window/backbuffer size
+    var design_w = config.design_width;
+    var design_h = config.design_height;
+    if (design_w == 0 or design_h == 0) {
+        design_w = params.backBufferWidth;
+        design_h = params.backBufferHeight;
+    }
+    state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
+
+    // state.default_fontbook = new_fontbook(256, 256);
+    // fontbook_add_font_mem(state.default_fontbook, default_font_bytes, false);
+    // fontbook_set_size(state.default_fontbook, 10);
     //
-    // default_fontbook = new_fontbook(256, 256);
-    // fontbook_add_font_mem(default_fontbook, default_font_bytes, false);
-    // fontbook_set_size(default_fontbook, 10);
-    //
-    // _default_pass = new_defaultoffscreenpass(design_w, design_h, resolution_policy);
-    // fmt.println(_default_pass);
-    //
-    // _debug_render_enabled = !disable_debug_render;
-    // debug_init();
+    // state.default_pass = new_defaultoffscreenpass(design_w, design_h, resolution_policy);
 }
 
-pub fn clear(color: fna.Vec4) void {
-    device.clear(color);
+pub fn clear(color: math.Color) void {
+    var fna_color = @bitCast(fna.Vec4, color.asVec4());
+    device.clear(&fna_color);
 }
 
 // TODO: use a proper Color
-pub fn clearWithOptions(color: fna.Vec4, options: fna.ClearOptions, depth: f32, stencil: i32) void {
-    device.clearWithOptions(options, color, depth, stencil);
+pub fn clearWithOptions(color: math.Color, options: fna.ClearOptions, depth: f32, stencil: i32) void {
+    var fna_color = @bitCast(fna.Vec4, color.asVec4());
+    device.clearWithOptions(options, &fna_color, depth, stencil);
 }
 
 pub fn setViewport(vp: fna.Viewport) void {
@@ -89,7 +109,7 @@ pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
 }
 
 pub fn getResolutionScaler() ResolutionScaler {
-    return ResolutionScaler{ .w = 0, .h = 0 }; // TODO: default_pass.scaler;
+    return state.default_pass.scaler;
 }
 
 pub fn setRenderTexture(rt: ?RenderTexture) void {
@@ -127,6 +147,14 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
     setScissor(.{ .w = new_width, .h = new_height });
 
     if (clear_target == .discard_contents) clear(.{ .x = 0, .y = 0, .z = 0, .w = 1 });
+}
+
+// Drawing
+pub fn beginPass() void {} // TODO
+
+pub fn endPass() void {
+    state.batcher.flush(false);
+    aya.debug.render(state.debug_render_enabled);
 }
 
 test "gfx tests" {

@@ -18,10 +18,12 @@ pub const utils = @import("utils/utils.zig");
 pub var window: Window = undefined;
 pub var time: Time = undefined;
 pub var input: Input = undefined;
+pub var debug: Debug = undefined;
 
 const Window = @import("window.zig").Window;
 const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
+const Debug = @import("debug.zig").Debug;
 
 pub const Config = struct {
     init: fn () void,
@@ -31,12 +33,22 @@ pub const Config = struct {
     update_rate: f64 = 60, // desired fps
     update_multiplicity: i64 = 1, // Makes the game always do a multiple of N updates at a time. Defaults to 1. 2 would be update_rate / multiplicity or 30fps.
 
-    resolution_policy: gfx.ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
-    design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
-    design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
+    gfx_config: gfx.Config = gfx.Config{
+        .resolution_policy = .default, // defines how the main render texture should be blitted to the backbuffer
+        .design_width = 0, // the width of the main offscreen render texture when the policy is not .default
+        .design_height = 0, // the height of the main offscreen render texture when the policy is not .default
+        .batcher_max_sprites = 1000, // defined the size of the vertex/index buffers based on the number of sprites/quads
+        .disable_debug_render = false, // when true, debug rendering will be disabled
+    },
 
-    win_config: WindowConfig = WindowConfig{}, // window configuration
-    disable_debug_render: bool = false, // when true, debug rendering will be disabled
+    win_config: WindowConfig = WindowConfig{
+        .title = "Zig FNA", // the window title as UTF-8 encoded string
+        .width = 640, // the preferred width of the window / canvas
+        .height = 480, // the preferred height of the window / canvas
+        .resizable = true, // whether the window should be allowed to be resized
+        .fullscreen = false, // whether the window should be created in fullscreen mode
+        .high_dpi = false, // whether the backbuffer is full-resolution on HighDPI displays
+    },
 
     imgui_disabled: bool = false, // whether imgui should be disabled
     imgui_viewports: bool = false, // whether imgui viewports should be enabled
@@ -59,9 +71,12 @@ pub fn run(config: Config) !void {
         .backBufferHeight = config.win_config.height,
         .deviceWindowHandle = window.sdl_window,
     };
-    gfx.init(&params, config.disable_debug_render, config.design_width, config.design_height, config.resolution_policy);
+    try gfx.init(&params, config.gfx_config);
+
     time = Time.init(config.update_rate, config.update_multiplicity);
     input = Input.init(window.scale());
+    debug = try Debug.init();
+    defer debug.deinit();
 
     config.init();
     runLoop(config.update, config.render);
@@ -72,7 +87,7 @@ fn runLoop(update: fn () void, render: fn () void) void {
         gfx.device.beginFrame();
 
         // TODO: never clear automatically
-        gfx.clear(.{ .x = 0.8, .y = 0.2, .z = 0.3, .w = 1 });
+        gfx.clear(math.Color.aya);
 
         time.tick(update);
         render();

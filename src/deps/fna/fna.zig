@@ -21,12 +21,12 @@ pub const Device = struct {
         FNA3D_SetDepthStencilState(self, depth_stencil);
     }
 
-    pub fn clear(self: *Device, color: Vec4) void {
+    pub fn clear(self: *Device, color: *Vec4) void {
         self.clearWithOptions(.all, color, 0, 1);
     }
 
-    pub fn clearWithOptions(self: *Device, options: ClearOptions, color: Vec4, depth: f32, stencil: i32) void {
-        FNA3D_Clear(self, options, &color, depth, stencil);
+    pub fn clearWithOptions(self: *Device, options: ClearOptions, color: *Vec4, depth: f32, stencil: i32) void {
+        FNA3D_Clear(self, options, color, depth, stencil);
     }
 
     pub fn setViewport(self: *Device, viewport: [*c]Viewport) void {

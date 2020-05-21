@@ -4,12 +4,12 @@ const fna = @import("deps/fna/fna.zig");
 const std = @import("std");
 
 pub const WindowConfig = struct {
-    title: []const u8 = "Zig FNA", // the window title as UTF-8 encoded string
-    width: i32 = 640, // the preferred width of the window / canvas
-    height: i32 = 480, // the preferred height of the window / canvas
-    resizable: bool = true, // whether the window should be allowed to be resized
-    fullscreen: bool = false, // whether the window should be created in fullscreen mode
-    high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
+    title: []const u8,
+    width: i32,
+    height: i32,
+    resizable: bool,
+    fullscreen: bool,
+    high_dpi: bool,
 };
 
 pub const WindowMode = enum(u32) {

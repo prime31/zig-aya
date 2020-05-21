@@ -1,4 +1,5 @@
 const std = @import("std");
+const Vec4 = @import("vec4.zig").Vec4;
 
 pub const Color = extern union {
     value: u32,
@@ -25,39 +26,48 @@ pub const Color = extern union {
         return fromBytes(@truncate(u8, @intCast(u32, r)), @truncate(u8, @intCast(u32, g)), @truncate(u8, @intCast(u32, b)), @truncate(u8, @intCast(u32, a)));
     }
 
-    pub fn r_val(self: @This()) u8 {
+    pub fn r_val(self: Color) u8 {
         return @truncate(u8, self.value);
     }
 
-    pub fn g_val(self: @This()) u8 {
+    pub fn g_val(self: Color) u8 {
         return @truncate(u8, self.value >> 8);
     }
 
-    pub fn b_val(self: @This()) u8 {
+    pub fn b_val(self: Color) u8 {
         return @truncate(u8, self.value >> 16);
     }
 
-    pub fn a_val(self: @This()) u8 {
+    pub fn a_val(self: Color) u8 {
         return @truncate(u8, self.value >> 24);
     }
 
-    pub fn set_r(self: *@This(), r: u8) void {
+    pub fn set_r(self: *Color, r: u8) void {
         self.value = (self.value & 0xffffff00) | r;
     }
 
-    pub fn set_g(self: *@This(), g: u8) void {
+    pub fn set_g(self: *Color, g: u8) void {
         self.value = (self.value & 0xffff00ff) | g;
     }
 
-    pub fn set_b(self: *@This(), b: u8) void {
+    pub fn set_b(self: *Color, b: u8) void {
         self.value = (self.value & 0xff00ffff) | b;
     }
 
-    pub fn set_a(self: *@This(), a: u8) void {
+    pub fn set_a(self: *Color, a: u8) void {
         self.value = (self.value & 0x00ffffff) | a;
     }
 
-    pub fn scale(self: @This(), s: f32) Color {
+    pub fn asVec4(self: Color) Vec4 {
+        return .{
+            .x = @intToFloat(f32, self.comps.r) / 255,
+            .y = @intToFloat(f32, self.comps.g) / 255,
+            .z = @intToFloat(f32, self.comps.b) / 255,
+            .w = @intToFloat(f32, self.comps.a) / 255,
+        };
+    }
+
+    pub fn scale(self: Color, s: f32) Color {
         const r = @floatToInt(i32, @intToFloat(f32, self.r_val()) * s);
         const g = @floatToInt(i32, @intToFloat(f32, self.g_val()) * s);
         const b = @floatToInt(i32, @intToFloat(f32, self.b_val()) * s);
@@ -68,6 +78,7 @@ pub const Color = extern union {
     pub const white = Color{ .value = 0xFFFFFFFF };
     pub const black = Color{ .value = 0xFF000000 };
     pub const transparent = Color{ .comps = .{ .r = 0, .g = 0, .b = 0, .a = 0 } };
+    pub const aya = Color{ .comps = .{ .r = 204, .g = 51, .b = 77, .a = 255 } };
     pub const light_gray = Color{ .comps = .{ .r = 200, .g = 200, .b = 200, .a = 255 } };
     pub const gray = Color{ .comps = .{ .r = 130, .g = 130, .b = 130, .a = 255 } };
     pub const dark_gray = Color{ .comps = .{ .r = 80, .g = 80, .b = 80, .a = 255 } };
