@@ -37,7 +37,7 @@ pub const Mesh = struct {
     }
 };
 
-/// Contains a dynamic VertexBuffer and a slice of verts. The IndexBuffer is optionally dynammic. If it is dynamic
+/// Contains a dynamic VertexBuffer and a slice of verts. The IndexBuffer is optionally dynamic. If it is dynamic
 /// a slice of indices will also be maintained.
 pub fn DynamicMesh(comptime T: type) type {
     return struct {
@@ -80,7 +80,22 @@ pub fn DynamicMesh(comptime T: type) type {
             if (self.indices.len > 0) self.allocator.free(self.indices);
         }
 
-        /// Try not to use .none when using dynamic vert buffers
+        /// deinits the current VertexBuffer and creates a new one with the new_vertex_count
+        pub fn expandBuffers(self: *Self, new_vertex_count: i32, new_index_count: i32) !void {
+            self.vert_buffer.deinit();
+            self.vert_buffer = buffers.VertexBuffer.init(T, new_vertex_count, true);
+            self.vert_buffer_binding.vertexBuffer = self.vert_buffer.buffer;
+            self.verts = try self.allocator.realloc(self.verts, @intCast(usize, new_vertex_count));
+
+            const ibuff_dynamic = self.indices.len > 0;
+            self.index_buffer.deinit();
+            self.index_buffer = buffers.IndexBuffer.init(new_index_count, ibuff_dynamic);
+            if (ibuff_dynamic) {
+                self.indices = try self.allocator.realloc(self.indices, @intCast(usize, new_index_count));
+            }
+        }
+
+        /// try not to use .none when using dynamic vert buffers
         pub fn updateAllVerts(self: Self, options: fna.SetDataOptions) void {
             self.vert_buffer.setData(T, self.verts, 0, options);
         }
@@ -89,7 +104,7 @@ pub fn DynamicMesh(comptime T: type) type {
         pub fn appendVertSlice(self: Self, start_index: i32, num_verts: i32, options: fna.SetDataOptions) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
             // cheat a bit here and use the VertexBufferBinding data to get the element size of our verts
-            const offset_in_bytes = start_index * self.vert_buffer_binding.vertexDeclaration.vertexStride;
+            const offset_in_bytes = start_index * @intCast(i32, @sizeOf(T));
             const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
 
             self.vert_buffer.setData(T, vert_slice, offset_in_bytes, options);
@@ -117,5 +132,6 @@ test "test mesh" {
     var dyn_mesh = try DynamicMesh(buffers.Vertex).init(null, 10, 10, false);
     dyn_mesh.updateAllVerts(.none);
     dyn_mesh.draw(0, 2);
+    _ = try dyn_mesh.expandBuffers(15, 14);
     dyn_mesh.deinit();
 }

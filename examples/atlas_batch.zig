@@ -18,7 +18,7 @@ pub fn main() anyerror!void {
 
 fn init() void {
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png") catch unreachable;
-    batch = aya.gfx.AtlasBatch.init(null, font_tex, 102) catch unreachable;
+    batch = aya.gfx.AtlasBatch.init(null, font_tex, 10) catch unreachable;
 
     var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
     var mat = aya.math.Mat32.initOrtho(640, 480);
@@ -41,7 +41,7 @@ fn init() void {
             const x_gap = @intToFloat(f32, x);
             const y_gap = @intToFloat(f32, y);
             mat.setTransform(.{ .x = x_pos * scale + x_gap, .y = y_pos * scale + y_gap, .sx = scale, .sy = scale });
-            _ = batch.addViewport(.{ .x = x_pos, .y = y_pos, .w = w, .h = h }, mat, aya.math.Color.white) catch unreachable;
+            _ = batch.addViewport(.{ .x = x_pos, .y = y_pos, .w = w, .h = h }, mat, aya.math.Color.white);
             mat.translate(w * scale, 0);
         }
         x = 0;
@@ -49,11 +49,13 @@ fn init() void {
     }
 
     mat.setTransform(.{ .x = 100, .y = 100, .angle = 0.3, .sx = 0.2, .sy = 0.2, .ox = @intToFloat(f32, font_tex.width) / 2.0, .oy = @intToFloat(f32, font_tex.height) / 2.0 });
-    _ = batch.add(quad, mat, aya.math.Color.green) catch unreachable;
-    index = batch.addViewport(.{ .w = 20, .h = 20 }, null, aya.math.Color.blue) catch unreachable;
+    _ = batch.add(quad, mat, aya.math.Color.green);
+    index = batch.addViewport(.{ .w = 20, .h = 20 }, null, aya.math.Color.blue);
 }
 
 fn update() void {
+    if (aya.math.rand.chance(0.9)) return;
+
     const rx = aya.math.rand.range(f32, -2, 2);
     const ry = aya.math.rand.range(f32, -2, 2);
 
