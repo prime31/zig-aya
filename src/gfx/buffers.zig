@@ -6,7 +6,7 @@ const Vec2 = @import("../math/vec2.zig").Vec2;
 
 pub const Vertex = packed struct {
     pos: Vec2,
-    uv: Vec2,
+    uv: Vec2 = Vec2{ .x = 0, .y = 0 },
     col: u32 = 0xFFFFFFFF,
 };
 

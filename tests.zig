@@ -31,10 +31,11 @@ comptime {
 
     // _ = @import("src/gfx/textures.zig"); // requires firing up a Window and sets up a Device in its test
     // _ = @import("src/gfx/gfx.zig"); // Zig bug: anything that imports aya fails due to debug.zig
-    _ = @import("src/gfx/shader.zig");
+    // _ = @import("src/gfx/shader.zig");
     // _ = @import("src/gfx/buffers.zig");
     // _ = @import("src/gfx/mesh.zig");
     // _ = @import("src/gfx/batcher.zig");
-    _ = @import("src/gfx/atlas_batch.zig");
-    _ = @import("src/utils/utils.zig");
+    // _ = @import("src/gfx/triangle_batcher.zig");
+    // _ = @import("src/gfx/atlas_batch.zig");
+    // _ = @import("src/utils/utils.zig");
 }

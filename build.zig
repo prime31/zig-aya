@@ -11,7 +11,7 @@ pub fn build(b: *Builder) void {
     const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
 
     // current example file being worked on
-    createExe(b, target, lib_type, "run", "examples/offscreen.zig");
+    createExe(b, target, lib_type, "run", "examples/primitives.zig");
 
     const examples = [_][2][]const u8{
         [_][]const u8{ "main", "examples/main.zig" },
@@ -19,6 +19,7 @@ pub fn build(b: *Builder) void {
         [_][]const u8{ "batcher", "examples/batcher.zig" },
         [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
+        [_][]const u8{ "primitives", "examples/primitives.zig" },
     };
 
     for (examples) |example| {

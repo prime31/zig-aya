@@ -9,6 +9,7 @@ pub const RenderTexture = @import("textures.zig").RenderTexture;
 pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 
 pub const Batcher = @import("batcher.zig").Batcher;
+pub const TriangleBatcher = @import("triangle_batcher.zig").TriangleBatcher;
 pub const AtlasBatch = @import("atlas_batch.zig").AtlasBatch;
 
 pub const Vertex = @import("buffers.zig").Vertex;

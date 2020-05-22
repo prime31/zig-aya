@@ -115,9 +115,17 @@ pub fn DynamicMesh(comptime T: type) type {
             self.index_buffer.setData(i16, self.indices, 0, options);
         }
 
-        pub fn draw(self: *Self, base_vertex: i32, num_vertices: i32) void {
+        pub fn drawQuads(self: *Self, base_vertex: i32, num_vertices: i32) void {
             const primitive_count = @divExact(num_vertices, 2); // assuming .triangle_list
+            self.draw(base_vertex, num_vertices, primitive_count);
+        }
 
+        pub fn drawTriangles(self: *Self, base_vertex: i32, num_vertices: i32) void {
+            const primitive_count = @divExact(num_vertices, 3); // assuming .triangle_list
+            self.draw(base_vertex, num_vertices, primitive_count);
+        }
+
+        pub fn draw(self: *Self, base_vertex: i32, num_vertices: i32, primitive_count: i32) void {
             aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
             aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
         }

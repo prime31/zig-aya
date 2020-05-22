@@ -25,6 +25,7 @@ pub const Batcher = struct {
             .mesh = try DynamicMesh(Vertex).init(alloc, max_sprites * 4, max_sprites * 6, false),
             .draw_calls = try std.ArrayList(DrawCall).initCapacity(alloc, 10),
         };
+        errdefer batcher.deinit();
 
         var indices = try aya.mem.tmp_allocator.alloc(i16, @intCast(usize, max_sprites * 6));
         var i: usize = 0;
@@ -67,7 +68,7 @@ pub const Batcher = struct {
         // run through all our accumulated draw calls
         for (self.draw_calls.items) |*draw_call| {
             aya.gfx.Texture.bindTexture(draw_call.texture.?, 0);
-            self.mesh.draw(self.buffer_offset, draw_call.vert_count);
+            self.mesh.drawQuads(self.buffer_offset, draw_call.vert_count);
 
             self.buffer_offset += draw_call.vert_count;
             draw_call.texture = null;

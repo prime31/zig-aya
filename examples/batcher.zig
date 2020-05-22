@@ -15,6 +15,8 @@ pub fn main() anyerror!void {
     });
 
     batcher.deinit();
+    checker_tex.deinit();
+    font_tex.deinit();
 }
 
 fn init() void {
