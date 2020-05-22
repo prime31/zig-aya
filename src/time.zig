@@ -129,7 +129,8 @@ pub const Time = struct {
         pub fn tick(self: *Timestep, update: fn () void) void {
             // frame timer
             const current_frame_time = sdl.SDL_GetPerformanceCounter();
-            var delta_time = @intCast(i32, current_frame_time - self.prev_frame_time);
+            const delta_u32 = @truncate(u32, current_frame_time - self.prev_frame_time);
+            var delta_time = @intCast(i32, delta_u32);
             self.prev_frame_time = current_frame_time;
 
             // handle unexpected timer anomalies (overflow, extra slow frames, etc)

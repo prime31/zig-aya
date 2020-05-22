@@ -1,11 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
+const math = aya.math;
 
-var batcher: aya.gfx.Batcher = undefined;
 var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
-var checker_quad: aya.math.Quad = undefined;
-var font_quad: aya.math.Quad = undefined;
+var rt: aya.gfx.RenderTexture = undefined;
 
 pub fn main() anyerror!void {
     try aya.run(.{
@@ -13,13 +12,9 @@ pub fn main() anyerror!void {
         .update = update,
         .render = render,
     });
-
-    batcher.deinit();
 }
 
 fn init() void {
-    batcher = aya.gfx.Batcher.init(null, 100) catch unreachable;
-
     var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
     var mat = aya.math.Mat32.initOrtho(640, 480);
     shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
@@ -27,45 +22,42 @@ fn init() void {
 
     checker_tex = aya.gfx.Texture.initCheckerboard();
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png") catch unreachable;
-
-    checker_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, checker_tex.width), @intToFloat(f32, checker_tex.height), checker_tex.width, checker_tex.height);
-    font_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, font_tex.width), @intToFloat(f32, font_tex.height), font_tex.width, font_tex.height);
+    rt = aya.gfx.RenderTexture.init(52, 52);
 }
 
 fn update() void {}
 
 fn render() void {
-    var mat = aya.math.Mat32.identity;
-    var x: usize = 0;
-    var y = @as(usize, 0);
-    while (x < 640 / 4) : (x += 1) {
-        while (y < 480 / 4) : (y += 1) {
-            batcher.draw(checker_tex.tex, checker_quad, mat, aya.math.Color.white);
-            mat.translate(0, 4);
-        }
-        y = 0;
-        mat.translate(4, 0);
-        mat.translate(0, -480);
+    aya.gfx.beginPass();
+    aya.gfx.drawTexScale(checker_tex, 5, 5, 10);
+    aya.gfx.drawTexScale(checker_tex, 55, 55, 2);
+
+    aya.gfx.drawTexScale(font_tex, 200, 100, 0.2);
+    aya.gfx.drawTexScale(font_tex, 300, 200, 0.2);
+
+    aya.gfx.drawLine(aya.math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
+    aya.gfx.drawPoint(math.Vec2.init(350, 350), 10, math.Color.sky_blue);
+    aya.gfx.drawPoint(math.Vec2.init(380, 380), 15, math.Color.magenta);
+    aya.gfx.drawRect(math.Vec2.init(387, 372), 40, 15, math.Color.dark_brown);
+    aya.gfx.drawHollowRect(math.Vec2.init(430, 372), 40, 15, 2, math.Color.yellow);
+    aya.gfx.drawCircle(math.Vec2.init(100, 350), 20, 1, 12, math.Color.orange);
+
+    const poly = [_]math.Vec2{ .{ .x = 400, .y = 30 }, .{ .x = 420, .y = 10 }, .{ .x = 430, .y = 80 }, .{ .x = 410, .y = 60 }, .{ .x = 375, .y = 40 } };
+    aya.gfx.drawHollowPolygon(poly[0..], 2, math.Color.gold);
+    aya.gfx.endPass();
+
+    aya.gfx.beginPass();
+    aya.gfx.setRenderTexture(rt);
+    aya.gfx.clear(aya.math.Color.lime);
+    var i = @as(usize, 0);
+    while (i <= @divFloor(rt.tex.width, checker_tex.width)) : (i += 1) {
+        aya.gfx.drawTex(checker_tex, @intToFloat(f32, i * 4), @intToFloat(f32, i * 2 + 10));
     }
+    aya.gfx.endPass();
 
-    mat = aya.math.Mat32.identity;
-    mat.translate(5, 5);
-    mat.scale(10, 10);
-
-    batcher.draw(checker_tex.tex, checker_quad, mat, aya.math.Color.white);
-
-    mat.translate(5, 5);
-    mat.scale(2, 2);
-    batcher.draw(checker_tex.tex, checker_quad, mat, aya.math.Color.magenta);
-
-    mat = aya.math.Mat32.identity;
-    mat.translate(400, 100);
-    mat.scale(0.2, 0.2);
-    batcher.draw(font_tex.tex, font_quad, mat, aya.math.Color.lime);
-
-    mat.translate(400, 100);
-    batcher.draw(font_tex.tex, font_quad, mat, aya.math.Color.white);
-
-    batcher.endFrame();
+    aya.gfx.beginPass();
+    aya.debug.drawPoint(math.Vec2.init(40, 400), 60, null);
+    aya.gfx.setRenderTexture(null);
+    aya.gfx.drawTexScale(rt.tex, 70, 200, 2);
     aya.gfx.endPass();
 }

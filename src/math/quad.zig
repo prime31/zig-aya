@@ -17,6 +17,10 @@ pub const Quad = struct {
         return q;
     }
 
+    pub fn setViewportRect(self: *Quad, viewport: Rect) void {
+        self.setViewport(viewport.x, viewport.y, viewport.w, viewport.h);
+    }
+
     pub fn setViewport(self: *Quad, x: f32, y: f32, width: f32, height: f32) void {
         self.positions[0] = Vec2{ .x = 0, .y = 0 }; // tl
         self.positions[1] = Vec2{ .x = width, .y = 0 }; // tr
@@ -36,13 +40,15 @@ pub const Quad = struct {
         self.uvs[3] = Vec2{ .x = x * inv_w + w_tol, .y = (y + height) * inv_h - h_tol };
     }
 
+    /// sets the Quad to be the full size of the texture
+    pub fn setFill(self: *Quad, img_w: i32, img_h: i32) void {
+        self.setImageDimensions(img_w, img_h);
+        self.setViewport(0, 0, @intToFloat(f32, img_w), @intToFloat(f32, img_h));
+    }
+
     pub fn setImageDimensions(self: *Quad, w: i32, h: i32) void {
         self.img_w = w;
         self.img_h = h;
-    }
-
-    pub fn setViewportRect(self: *Quad, viewport: Rect) void {
-        self.setViewport(viewport.x, viewport.y, viewport.w, viewport.h);
     }
 };
 

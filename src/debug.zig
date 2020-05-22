@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("aya.zig");
 const math = @import("math/math.zig");
+const gfx = aya.gfx;
 
 pub const Debug = struct {
     debug_items: std.ArrayList(DebugDrawCommand),
@@ -38,6 +39,7 @@ pub const Debug = struct {
     const Circle = struct {
         center: math.Vec2,
         r: f32,
+        thickness: f32,
         hollow: bool = true,
         color: math.Color,
     };
@@ -62,16 +64,16 @@ pub const Debug = struct {
         if (enabled) {
             for (self.debug_items.items) |item| {
                 switch (item) {
-                    .point => {}, // draw_point(item.point.pos, item.point.size, item.point.color);
-                    .line => {}, // draw_line(item.line.pt1, item.line.pt2, item.line.thickness, item.line.color);
+                    .point => |pt| gfx.drawPoint(pt.pos, pt.size, pt.color),
+                    .line => |line| gfx.drawLine(line.pt1, line.pt2, line.thickness, line.color),
                     .rect => |rect| {
                         if (rect.hollow) {
-                            std.debug.warn("hollow: {}\n", .{rect});
+                            gfx.drawHollowRect(rect.pos, rect.w, rect.h, rect.thickness, rect.color);
                         } else {
-                            std.debug.warn("solid: {}\n", .{rect});
+                            gfx.drawRect(rect.pos, rect.w, rect.h, rect.color);
                         }
-                    }, // draw_rect(item.rect.pos, item.rect.w, item.rect.h, item.rect.color);
-                    .circle => {}, // unimplemented();
+                    },
+                    .circle => |circle| gfx.drawCircle(circle.center, circle.r, circle.thickness, 12, circle.color),
                     .text => {}, // draw_text(item.text.text);
                 }
             }
@@ -99,8 +101,8 @@ pub const Debug = struct {
         self.debug_items.append(.{ .rect = rect }) catch return;
     }
 
-    pub fn drawHollowCircle(self: *Debug, center: math.Vec2, radius: f32, color: ?math.Color) void {
-        const circle = Circle{ .center = center, .radius = radius, .color = color orelse math.Color.white };
+    pub fn drawHollowCircle(self: *Debug, center: math.Vec2, radius: f32, thickness: f32, color: ?math.Color) void {
+        const circle = Circle{ .center = center, .radius = radius, .thickness = thickness, .color = color orelse math.Color.white };
         self.debug_items.append(.{ .circle = circle }) catch return;
     }
 

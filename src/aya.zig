@@ -92,6 +92,7 @@ fn runLoop(update: fn () void, render: fn () void) void {
         time.tick(update);
         render();
 
+        gfx.commit();
         window.swap(gfx.device);
     }
 }

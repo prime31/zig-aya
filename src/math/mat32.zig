@@ -16,15 +16,17 @@ const math = std.math;
 pub const Mat32 = struct {
     data: [6]f32 = undefined,
 
+    const TransformParams = struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 };
+
     pub const identity = Mat32{ .data = .{ 1, 0, 0, 1, 0, 0 } };
 
     pub fn init() Mat32 {
         return identity;
     }
 
-    pub fn initTransform(vals: struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 }) Mat32 {
+    pub fn initTransform(vals: TransformParams) Mat32 {
         var mat = Mat32{};
-        mat.setTransform(.{ .x = vals.x, .y = vals.y, .angle = vals.angle, .sx = vals.sx });
+        mat.setTransform(vals);
         return mat;
     }
 
@@ -49,7 +51,7 @@ pub const Mat32 = struct {
         return result;
     }
 
-    pub fn setTransform(self: *Mat32, vals: struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 }) void {
+    pub fn setTransform(self: *Mat32, vals: TransformParams) void {
         const c = math.cos(vals.angle);
         const s = math.sin(vals.angle);
 

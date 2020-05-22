@@ -9,25 +9,42 @@ pub const Vec2 = packed struct {
         return .{ .x = x, .y = y };
     }
 
-    pub fn orthogonal(self: @This()) Vec2 {
+    pub fn angleToVec(radians: f32, length: f32) Vec2 {
+        return .{ .x = math.cos(radians) * length, .y = math.sin(radians) * length };
+    }
+
+    pub fn orthogonal(self: Vec2) Vec2 {
         return .{ .x = -self.y, .y = self.x };
     }
 
-    pub fn angleBetween(self: @This(), to: Vec2) f32 {
+    pub fn add(self: Vec2, other: Vec2) Vec2 {
+        return .{ .x = self.x + other.x, .y = self.y + other.y };
+    }
+
+    pub fn subtract(self: Vec2, other: Vec2) Vec2 {
+        return .{ .x = self.x - other.x, .y = self.y - other.y };
+    }
+
+    pub fn scale(self: *Vec2, s: f32) void {
+        self.x *= s;
+        self.y *= s;
+    }
+
+    pub fn angleBetween(self: Vec2, to: Vec2) f32 {
         return math.atan2(f32, to.y - self.y, to.x - self.x);
     }
 
-    pub fn distanceSq(self: @This(), v: Vec2) f32 {
+    pub fn distanceSq(self: Vec2, v: Vec2) f32 {
         const v1 = self.x - v.x;
         const v2 = self.y - v.y;
         return v1 * v1 + v2 * v2;
     }
 
-    pub fn distance(self: @This(), v: Vec2) f32 {
+    pub fn distance(self: Vec2, v: Vec2) f32 {
         return math.sqrt(self.distanceSq(v));
     }
 
-    pub fn perpindicular(self: @This(), v: Vec2) Vec2 {
+    pub fn perpindicular(self: Vec2, v: Vec2) Vec2 {
         return .{ .x = -1 * (v.y - self.y), .y = v.x - self.x };
     }
 };

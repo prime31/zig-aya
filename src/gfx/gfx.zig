@@ -41,6 +41,7 @@ const State = struct {
     batcher: Batcher = undefined,
     debug_render_enabled: bool = false,
     default_pass: DefaultOffscreenPass = undefined,
+    quad: math.Quad = math.Quad.init(0, 0, 1, 1, 1, 1),
     // FontBook
 };
 var state = State{};
@@ -79,8 +80,6 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     // state.default_fontbook = new_fontbook(256, 256);
     // fontbook_add_font_mem(state.default_fontbook, default_font_bytes, false);
     // fontbook_set_size(state.default_fontbook, 10);
-    //
-    // state.default_pass = new_defaultoffscreenpass(design_w, design_h, resolution_policy);
 }
 
 pub fn clear(color: math.Color) void {
@@ -88,7 +87,6 @@ pub fn clear(color: math.Color) void {
     device.clear(&fna_color);
 }
 
-// TODO: use a proper Color
 pub fn clearWithOptions(color: math.Color, options: fna.ClearOptions, depth: f32, stencil: i32) void {
     var fna_color = @bitCast(fna.Vec4, color.asVec4());
     device.clearWithOptions(options, &fna_color, depth, stencil);
@@ -143,18 +141,106 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
     }
 
     // Apply new state, clear target if requested
-    setViewport(.{ .w = new_width, .h = new_height });
+    // TODO: why does setting the viewport screw up rendering to a RT?
+    // setViewport(.{ .w = new_width, .h = new_height });
     setScissor(.{ .w = new_width, .h = new_height });
 
-    if (clear_target == .discard_contents) clear(.{ .x = 0, .y = 0, .z = 0, .w = 1 });
+    if (clear_target == .discard_contents) clear(math.Color.black);
 }
 
-// Drawing
+// Passes
 pub fn beginPass() void {} // TODO
 
 pub fn endPass() void {
     state.batcher.flush(false);
     aya.debug.render(state.debug_render_enabled);
+}
+
+/// if we havent yet blitted to the screen do so now
+pub fn commit() void {
+    state.batcher.endFrame();
+
+    // TODO: deal with final blit
+}
+
+// Drawing
+pub fn drawTex(texture: Texture, x: f32, y: f32) void {
+    state.quad.setFill(texture.width, texture.height);
+
+    var mat = math.Mat32.initTransform(.{ .x = x, .y = y });
+    state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
+}
+
+pub fn drawTexScale(texture: Texture, x: f32, y: f32, scale: f32) void {
+    state.quad.setFill(texture.width, texture.height);
+
+    var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .angle = 0, .sx = scale, .sy = scale });
+    state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
+}
+
+pub fn drawPoint(position: math.Vec2, size: f32, color: math.Color) void {
+    state.quad.setFill(@floatToInt(i32, size), @floatToInt(i32, size));
+
+    const offset = if (size == 1) 0 else size * 0.5;
+    var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
+    state.batcher.draw(state.white_tex.tex, state.quad, mat, color);
+}
+
+pub fn drawLine(start: math.Vec2, end: math.Vec2, thickness: f32, color: math.Color) void {
+    state.quad.setFill(1, 1);
+
+    const angle = start.angleBetween(end);
+    const length = start.distance(end);
+
+    var mat = math.Mat32.initTransform(.{ .x = start.x, .y = start.y, .angle = angle, .sx = length, .sy = thickness });
+    state.batcher.draw(state.white_tex.tex, state.quad, mat, color);
+}
+
+pub fn drawRect(position: math.Vec2, width: f32, height: f32, color: math.Color) void {
+    state.quad.setFill(@floatToInt(i32, width), @floatToInt(i32, height));
+    var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y });
+    state.batcher.draw(state.white_tex.tex, state.quad, mat, color);
+}
+
+pub fn drawHollowRect(position: math.Vec2, width: f32, height: f32, thickness: f32, color: math.Color) void {
+    const tr = math.Vec2{ .x = position.x + width, .y = position.y };
+    const br = math.Vec2{ .x = position.x + width, .y = position.y + height };
+    const bl = math.Vec2{ .x = position.x, .y = position.y + height };
+
+    drawLine(position, tr, thickness, color);
+    drawLine(tr, br, thickness, color);
+    drawLine(br, bl, thickness, color);
+    drawLine(bl, position, thickness, color);
+}
+
+pub fn drawCircle(center: math.Vec2, radius: f32, thickness: f32, resolution: i32, color: math.Color) void {
+    state.quad.setFill(state.white_tex.width, state.white_tex.height);
+
+    var last = math.Vec2.init(1, 0);
+    last.scale(radius);
+    var last_p = last.orthogonal();
+
+    var i: usize = 0;
+    while (i <= resolution) : (i += 1) {
+        const at = math.Vec2.angleToVec(@intToFloat(f32, i) * math.pi_over_2 / @intToFloat(f32, resolution), radius);
+        const at_p = at.orthogonal();
+
+        drawLine(center.add(last), center.add(at), thickness, color);
+        drawLine(center.subtract(last), center.subtract(at), thickness, color);
+        drawLine(center.add(last_p), center.add(at_p), thickness, color);
+        drawLine(center.subtract(last_p), center.subtract(at_p), thickness, color);
+
+        last = at;
+        last_p = at_p;
+    }
+}
+
+pub fn drawHollowPolygon(verts: []const math.Vec2, thickness: f32, color: math.Color) void {
+    var i: usize = 0;
+    while (i < verts.len - 1) : (i += 1) {
+        drawLine(verts[i], verts[i + 1], thickness, color);
+    }
+    drawLine(verts[verts.len - 1], verts[0], thickness, color);
 }
 
 test "gfx tests" {
