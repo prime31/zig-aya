@@ -46,7 +46,7 @@ pub const Debug = struct {
 
     const Text = struct {
         pos: math.Vec2,
-        text: [:0]const u8,
+        text: []const u8,
         color: math.Color,
     };
 
@@ -74,7 +74,7 @@ pub const Debug = struct {
                         }
                     },
                     .circle => |circle| gfx.drawCircle(circle.center, circle.r, circle.thickness, 12, circle.color),
-                    .text => {}, // draw_text(item.text.text);
+                    .text => |text| gfx.drawText(text.text, null),
                 }
             }
         }
@@ -107,8 +107,7 @@ pub const Debug = struct {
     }
 
     pub fn drawText(self: *Debug, text: []const u8, pos: math.Vec2, color: ?math.Color) void {
-        const c_str = std.mem.dupeZ(aya.mem.tmp_allocator, u8, text) catch return;
-        const text_item = Text{ .pos = pos, .text = c_str, .color = color orelse math.Color.white };
+        const text_item = Text{ .pos = pos, .text = text, .color = color orelse math.Color.white };
         self.debug_items.append(.{ .text = text_item }) catch return;
     }
 };

@@ -49,6 +49,11 @@ pub const FontBook = struct {
         return fons.fonsAddFontMem(self.stash, c_file, @ptrCast([*c]const u8, data), @intCast(i32, data.len), 1);
     }
 
+    pub fn addFontMem(self: *FontBook, name: [:0]const u8, data: []const u8, free_data: bool) c_int {
+        const free: c_int = if (free_data) 1 else 0;
+        return fons.fonsAddFontMem(self.stash, name, @ptrCast([*c]const u8, data), @intCast(i32, data.len), free);
+    }
+
     pub fn setAlign(self: *FontBook, alignment: fons.Align) void {
         fons.fonsSetAlign(self.stash, alignment);
     }
@@ -78,13 +83,11 @@ pub const FontBook = struct {
         if (self.texture != null and (self.texture.?.width != width or self.texture.?.height != height)) {
             self.texture.?.deinit();
             self.texture = null;
-            std.debug.warn("killing texture\n", .{});
         }
 
         if (self.texture == null) {
             self.texture = aya.gfx.Texture.init(width, height);
             self.texture.?.setSamplerState(fna.SamplerState{ .filter = self.tex_filter });
-            std.debug.warn("texture creation time, {}x{}\n", .{ width, height });
         }
 
         self.width = width;
@@ -94,13 +97,11 @@ pub const FontBook = struct {
     }
 
     fn renderResize(ctx: ?*c_void, width: c_int, height: c_int) callconv(.C) c_int {
-        std.debug.warn("renderResize\n", .{});
         return renderCreate(ctx, width, height);
     }
 
     fn renderUpdate(ctx: ?*c_void, rect: [*c]c_int, data: [*c]const u8) callconv(.C) void {
         // TODO: only update the rect that changed
-        std.debug.warn("renderUpdate\n", .{});
         var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
 
         const tex_area = @intCast(usize, self.width * self.height);
@@ -118,6 +119,5 @@ pub const FontBook = struct {
         }
 
         self.texture.?.setData(pixels);
-        // fna.set_texture_data_2d(fna_device, fb.texture, .Color, 0, 0, fb.width, fb.height, 0, &pixels[0], cast(i32)tex_area * 4);
     }
 };

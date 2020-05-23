@@ -2,6 +2,7 @@ const std = @import("std");
 const sdl = @import("deps/sdl/sdl.zig");
 const gfx = @import("gfx/gfx.zig");
 const math = @import("math/math.zig");
+const FixedList = @import("utils/fixed_list.zig").FixedList;
 
 const released: u3 = 1; // true only the frame the key is released
 const down: u3 = 2; // true the entire time the key is down
@@ -14,10 +15,10 @@ pub const MouseButton = enum(usize) {
 };
 
 pub const Input = struct {
-    keys: [243]u2 = undefined,
-    dirty_keys: []sdl.SDL_Scancode = undefined, // arraylist
-    mouse_buttons: [4]u2 = undefined,
-    dirty_mouse_buttons: []u2 = undefined, // arraylist
+    keys: [243]u2 = [_]u2{0} ** 243,
+    dirty_keys: FixedList(i32, 10),
+    mouse_buttons: [4]u2 = [_]u2{0} ** 4,
+    dirty_mouse_buttons: FixedList(u2, 3),
     mouse_wheel_y: i32 = 0,
     mouse_rel_x: i32 = 0,
     mouse_rel_y: i32 = 0,
@@ -25,31 +26,32 @@ pub const Input = struct {
     res_scaler: gfx.ResolutionScaler = undefined,
 
     pub fn init(win_scale: f32) Input {
-        var input = Input{};
-        //self.dirty_keys = make([dynamic]sdl.Scancode, 5);
-        //self.dirty_mouse_buttons = make([dynamic]byte, 3);
-        input.window_scale = @floatToInt(i32, win_scale);
-
-        // TODO: this is a bit of a cheat, but we know that graphics is all set here so we fetch the scaler
-        input.res_scaler = gfx.getResolutionScaler();
-        return input;
+        return .{
+            .dirty_keys = FixedList(i32, 10).init(),
+            .dirty_mouse_buttons = FixedList(u2, 3).init(),
+            .window_scale = @floatToInt(i32, win_scale),
+            .res_scaler = gfx.getResolutionScaler(),
+        };
     }
 
     /// clears any released keys
     pub fn newFrame(self: *Input) void {
-        // if len(self.dirty_keys) > 0 {
-        //     for k in self.dirty_keys {
-        //         self.keys[k] -= 1;
-        //     }
-        //     clear(&self.dirty_keys);
-        // }
+        if (self.dirty_keys.len > 0) {
+            var iter = self.dirty_keys.iter();
+            while (iter.next()) |key| {
+                self.keys[@intCast(usize, key)] -= 1;
+            }
+            self.dirty_keys.clear();
+        }
 
-        // if len(self.dirty_mouse_buttons) > 0 {
-        //     for b in self.dirty_mouse_buttons {
-        //         self.mouse_buttons[b] -= 1;
-        //     }
-        //     clear(&self.dirty_mouse_buttons);
-        // }
+        if (self.dirty_mouse_buttons.len > 0) {
+            var iter = self.dirty_mouse_buttons.iter();
+            while (iter.next()) |button| {
+                self.mouse_buttons[button] -= 1;
+            }
+            self.dirty_mouse_buttons.clear();
+        }
+
         self.mouse_wheel_y = 0;
         self.mouse_rel_x = 0;
         self.mouse_rel_y = 0;
@@ -73,27 +75,27 @@ pub const Input = struct {
     }
 
     fn handleKeyboardEvent(self: *Input, evt: *sdl.SDL_KeyboardEvent) void {
+        const scancode = @enumToInt(evt.keysym.scancode);
+        self.dirty_keys.append(scancode);
+
         if (evt.state == 0) {
-            self.keys[@intCast(usize, @enumToInt(evt.keysym.scancode))] = released;
-            // append(&input.dirty_keys, evt.keysym.scancode);
+            self.keys[@intCast(usize, scancode)] = released;
         } else {
-            self.keys[@intCast(usize, @enumToInt(evt.keysym.scancode))] = pressed;
-            // append(&input.dirty_keys, evt.keysym.scancode);
+            self.keys[@intCast(usize, scancode)] = pressed;
         }
 
-        std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
+        // std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
     }
 
     fn handleMouseEvent(self: *Input, evt: *sdl.SDL_MouseButtonEvent) void {
+        self.dirty_mouse_buttons.append(@intCast(u2, evt.button));
         if (evt.state == 0) {
             self.mouse_buttons[@intCast(usize, evt.button)] = released;
-            // append(&input.dirty_mouse_buttons, evt.button);
         } else {
             self.mouse_buttons[@intCast(usize, evt.button)] = pressed;
-            // append(&input.dirty_mouse_buttons, evt.button);
         }
 
-        std.debug.warn("mouse: {}\n", .{evt});
+        // std.debug.warn("mouse: {}\n", .{evt});
     }
 
     /// only true if down this frame and not down the previous frame

@@ -45,7 +45,7 @@ const State = struct {
     debug_render_enabled: bool = false,
     default_pass: DefaultOffscreenPass = undefined,
     quad: math.Quad = math.Quad.init(0, 0, 1, 1, 1, 1),
-    // FontBook
+    fontbook: *FontBook = undefined,
 };
 var state = State{};
 
@@ -80,9 +80,9 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     }
     state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
 
-    // state.default_fontbook = new_fontbook(256, 256);
-    // fontbook_add_font_mem(state.default_fontbook, default_font_bytes, false);
-    // fontbook_set_size(state.default_fontbook, 10);
+    state.fontbook = try FontBook.init(null, 128, 128, .point);
+    _ = state.fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
+    state.fontbook.setSize(10);
 }
 
 pub fn clear(color: math.Color) void {
@@ -181,17 +181,19 @@ pub fn drawTexScale(texture: Texture, x: f32, y: f32, scale: f32) void {
     state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
 }
 
-pub fn drawText(str: []const u8, fontbook: *FontBook) void {
+pub fn drawText(str: []const u8, fontbook: ?*FontBook) void {
     const cstr = std.cstr.addNullByte(aya.mem.tmp_allocator, str) catch unreachable;
+    drawTextZ(cstr, fontbook);
+}
 
-    // var book = if (fontbook != null) ? fontbook else default_fontbook;
+pub fn drawTextZ(cstr: [:0]const u8, fontbook: ?*FontBook) void {
+    var book = if (fontbook != null) fontbook.? else state.fontbook;
     var matrix = math.Mat32.initTransform(.{ .x = 20, .y = 40, .sx = 4, .sy = 4 });
-    fontbook.setAlign(.left);
+    book.setAlign(.left);
 
-    var fons_quad = fontbook.getQuad();
-    var iter = fontbook.getTextIterator(cstr);
-    while (fontbook.textIterNext(&iter, &fons_quad)) {
-        // TODO: maybe make the transform_vec2_arr generic and just use a local fixed array for positions and tex coords and do this in batcher?
+    var fons_quad = book.getQuad();
+    var iter = book.getTextIterator(cstr);
+    while (book.textIterNext(&iter, &fons_quad)) {
         state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
         state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
         state.quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
@@ -202,7 +204,7 @@ pub fn drawText(str: []const u8, fontbook: *FontBook) void {
         state.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
         state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-        state.batcher.draw(fontbook.texture.?.tex, state.quad, matrix, aya.math.Color.white);
+        state.batcher.draw(book.texture.?.tex, state.quad, matrix, aya.math.Color.white);
     }
 }
 
