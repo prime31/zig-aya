@@ -24,6 +24,9 @@ comptime {
     _ = @import("src/fs.zig");
     // _ = @import("src/input.zig"); // Zig bug: TODO buf_read_value_bytes union type
 
+    _ = @import("src/mem/sdl_allocator.zig");
+    _ = @import("src/mem/scratch_allocator.zig");
+
     _ = @import("src/math/math.zig");
     _ = @import("src/math/vec2.zig");
     // _ = @import("src/math/color.zig"); // Zig bug: TODO buf_read_value_bytes union type

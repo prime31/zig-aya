@@ -189,7 +189,7 @@ pub fn drawText(str: []const u8, fontbook: ?*FontBook) void {
 pub fn drawTextZ(cstr: [:0]const u8, fontbook: ?*FontBook) void {
     var book = if (fontbook != null) fontbook.? else state.fontbook;
     var matrix = math.Mat32.initTransform(.{ .x = 20, .y = 40, .sx = 4, .sy = 4 });
-    book.setAlign(.left);
+    book.setAlign(.default);
 
     var fons_quad = book.getQuad();
     var iter = book.getTextIterator(cstr);

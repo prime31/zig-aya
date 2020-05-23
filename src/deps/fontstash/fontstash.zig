@@ -40,7 +40,8 @@ pub const Align = extern enum(c_int) {
     top = 8,
     middle = 16,
     bottom = 32,
-    baseline = 64, // Default
+    baseline = 64,
+    default = 65,
     // combos
     left_middle = 17,
     center_middle = 18,

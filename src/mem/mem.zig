@@ -7,7 +7,7 @@ var tmp_allocator_instance = ScratchAllocator.init(allocator_mem[0..]);
 var allocator_mem: [2 * 1024 * 1024]u8 = undefined;
 
 // default to the c allocator for now
-pub const allocator = std.heap.c_allocator;
+pub const allocator = @import("sdl_allocator.zig").sdl_allocator;
 
 test "test mem" {
     const result = try tmp_allocator.alloc(u8, 50);

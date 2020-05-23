@@ -78,7 +78,7 @@ pub const ScratchAllocator = struct {
     }
 };
 
-test "test scratch allocator" {
+test "scratch allocator" {
     var allocator_memory: [800000 * @sizeOf(u64)]u8 = undefined;
     var allocator_instance = ScratchAllocator.init(allocator_memory[0..]);
 
