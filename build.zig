@@ -2,16 +2,17 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 const fna_build = @import("deps/fna/build.zig");
+const fontstash_build = @import("deps/fontstash/build.zig");
 
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
 
     // windows static lib compilation of FNA causes an SDL header issue so its forced as exe_compiled
-    const lib_type_int = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
-    const lib_type = if (target.isWindows()) .exe_compiled else @intToEnum(fna_build.LibType, lib_type_int);
+    var lib_type = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
+    if (target.isWindows()) lib_type = 2;
 
     // current example file being worked on
-    createExe(b, target, lib_type, "run", "examples/primitives.zig");
+    createExe(b, target, lib_type, "run", "examples/fonts.zig");
 
     const examples = [_][2][]const u8{
         [_][]const u8{ "main", "examples/main.zig" },
@@ -20,6 +21,7 @@ pub fn build(b: *Builder) void {
         [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "primitives", "examples/primitives.zig" },
+        [_][]const u8{ "fonts", "examples/fonts.zig" },
     };
 
     for (examples) |example| {
@@ -30,7 +32,7 @@ pub fn build(b: *Builder) void {
 }
 
 // creates an exe with all the required dependencies
-fn createExe(b: *Builder, target: std.build.Target, lib_type: fna_build.LibType, name: []const u8, source: []const u8) void {
+fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const u8, source: []const u8) void {
     var exe = b.addExecutable(name, source);
     exe.setBuildMode(b.standardReleaseOptions());
 
@@ -41,10 +43,11 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: fna_build.LibType,
     exe.addBuildOption(bool, "debug", true);
 
     exe.addPackagePath("aya", "src/aya.zig");
-    exe.addPackagePath("sdl", "deps/sdl/sdl.zig");
+    exe.addPackagePath("sdl", "src/deps/sdl/sdl.zig");
 
     // fna can be dynamic, static or compiled in
-    fna_build.linkArtifact(b, exe, target, lib_type, "src/deps/fna");
+    fna_build.linkArtifact(b, exe, target, @intToEnum(fna_build.LibType, lib_type), "src/deps/fna");
+    fontstash_build.linkArtifact(b, exe, target, @intToEnum(fontstash_build.LibType, lib_type), "src/deps/fontstash");
 
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
@@ -58,6 +61,7 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: fna_build.LibType,
 fn addTests(b: *Builder, target: std.build.Target) void {
     var t = b.addTest("tests.zig");
     fna_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fna");
+    fontstash_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fontstash");
 
     t.linkSystemLibrary("c");
     t.linkSystemLibrary("SDL2");

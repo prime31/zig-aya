@@ -27,9 +27,9 @@ pub const Window = struct {
         var window = Window{};
 
         var flags = fna.prepareWindowAttributes();
-        if (config.resizable) flags |= sdl.SDL_WINDOW_RESIZABLE;
-        if (config.high_dpi) flags |= sdl.SDL_WINDOW_ALLOW_HIGHDPI;
-        if (config.fullscreen) flags |= sdl.SDL_WINDOW_FULLSCREEN_DESKTOP;
+        if (config.resizable) flags |= @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
+        if (config.high_dpi) flags |= @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
+        if (config.fullscreen) flags |= @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN_DESKTOP);
 
         const title = try std.cstr.addNullByte(mem.tmp_allocator, config.title);
         window.sdl_window = sdl.SDL_CreateWindow(title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, flags)) orelse {
@@ -51,9 +51,9 @@ pub const Window = struct {
 
     pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
         switch (event.event) {
-            sdl.SDL_WINDOWEVENT_SIZE_CHANGED => std.debug.warn("sizec \n", .{}),
-            sdl.SDL_WINDOWEVENT_FOCUS_GAINED => self.focused = true,
-            sdl.SDL_WINDOWEVENT_FOCUS_LOST => self.focused = false,
+            @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED) => std.debug.warn("sizec \n", .{}),
+            @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED) => self.focused = true,
+            @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST) => self.focused = false,
             else => {},
         }
     }

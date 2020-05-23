@@ -81,7 +81,7 @@ pub const Input = struct {
             // append(&input.dirty_keys, evt.keysym.scancode);
         }
 
-        std.debug.warn("kb: {}\n", .{evt});
+        std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
     }
 
     fn handleMouseEvent(self: *Input, evt: *sdl.SDL_MouseButtonEvent) void {

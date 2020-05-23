@@ -20,6 +20,8 @@ pub const Shader = @import("shader.zig").Shader;
 pub const VertexBuffer = @import("buffers.zig").VertexBuffer;
 pub const IndexBuffer = @import("buffers.zig").IndexBuffer;
 
+pub const FontBook = @import("fontbook.zig").FontBook;
+
 pub var device: *fna.Device = undefined;
 
 pub const Config = struct {
@@ -177,6 +179,31 @@ pub fn drawTexScale(texture: Texture, x: f32, y: f32, scale: f32) void {
 
     var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .angle = 0, .sx = scale, .sy = scale });
     state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
+}
+
+pub fn drawText(str: []const u8, fontbook: *FontBook) void {
+    const cstr = std.cstr.addNullByte(aya.mem.tmp_allocator, str) catch unreachable;
+
+    // var book = if (fontbook != null) ? fontbook else default_fontbook;
+    var matrix = math.Mat32.initTransform(.{ .x = 20, .y = 40, .sx = 4, .sy = 4 });
+    fontbook.setAlign(.left);
+
+    var fons_quad = fontbook.getQuad();
+    var iter = fontbook.getTextIterator(cstr);
+    while (fontbook.textIterNext(&iter, &fons_quad)) {
+        // TODO: maybe make the transform_vec2_arr generic and just use a local fixed array for positions and tex coords and do this in batcher?
+        state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
+        state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
+        state.quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
+        state.quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
+
+        state.quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
+        state.quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
+        state.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
+        state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
+
+        state.batcher.draw(fontbook.texture.?.tex, state.quad, matrix, aya.math.Color.white);
+    }
 }
 
 pub fn drawPoint(position: math.Vec2, size: f32, color: math.Color) void {

@@ -106,7 +106,7 @@ fn pollEvents() bool {
             sdl.SDL_QUIT => return true,
             sdl.SDL_WINDOWEVENT => {
                 if (event.window.windowID == window.id) {
-                    if (event.window.event == sdl.SDL_WINDOWEVENT_CLOSE) return true;
+                    if (event.window.event == @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)) return true;
                     window.handleEvent(&event.window);
                 }
             },

@@ -33,7 +33,7 @@ pub const ScratchAllocator = struct {
             // irrecoverable if more memory is requested then we have in our buffer.
             if (n > self.buffer.len) return error.OutOfMemory;
 
-            const result = self.buffer[0..new_end_index];
+            const result = self.buffer[0..n];
             self.end_index = n;
             return result;
         }
