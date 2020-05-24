@@ -74,7 +74,7 @@ pub const Debug = struct {
                         }
                     },
                     .circle => |circle| gfx.drawCircle(circle.center, circle.r, circle.thickness, 12, circle.color),
-                    .text => |text| gfx.drawText(text.text, null),
+                    .text => |text| gfx.drawText(text.text, text.pos.x, text.pos.y, null),
                 }
             }
         }

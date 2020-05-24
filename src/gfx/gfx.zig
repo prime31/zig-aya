@@ -113,6 +113,10 @@ pub fn getResolutionScaler() ResolutionScaler {
     return state.default_pass.scaler;
 }
 
+pub fn getFontBook() FontBook {
+    return state.fontbook;
+}
+
 pub fn setRenderTexture(rt: ?RenderTexture) void {
     // early out if we have nothing to change
     if (state.rt_binding.texture == null and rt == null) return;
@@ -181,18 +185,13 @@ pub fn drawTexScale(texture: Texture, x: f32, y: f32, scale: f32) void {
     state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
 }
 
-pub fn drawText(str: []const u8, fontbook: ?*FontBook) void {
-    const cstr = std.cstr.addNullByte(aya.mem.tmp_allocator, str) catch unreachable;
-    drawTextZ(cstr, fontbook);
-}
-
-pub fn drawTextZ(cstr: [:0]const u8, fontbook: ?*FontBook) void {
+pub fn drawText(str: []const u8, x: f32, y: f32, fontbook: ?*FontBook) void {
     var book = if (fontbook != null) fontbook.? else state.fontbook;
-    var matrix = math.Mat32.initTransform(.{ .x = 20, .y = 40, .sx = 4, .sy = 4 });
+    var matrix = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = 4, .sy = 4 });
     book.setAlign(.default);
 
     var fons_quad = book.getQuad();
-    var iter = book.getTextIterator(cstr);
+    var iter = book.getTextIterator(str);
     while (book.textIterNext(&iter, &fons_quad)) {
         state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
         state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
@@ -205,6 +204,28 @@ pub fn drawTextZ(cstr: [:0]const u8, fontbook: ?*FontBook) void {
         state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
         state.batcher.draw(book.texture.?.tex, state.quad, matrix, aya.math.Color.white);
+    }
+}
+
+pub fn drawTextOptions(str: []const u8, fontbook: ?*FontBook, options: struct { x: f32, y: f32, rot: f32 = 0, sx: f32 = 1, sy: f32 = 1, alignment: FontBook.Align = .default, color: math.Color = math.Color.White }) void {
+    var book = if (fontbook != null) fontbook.? else state.fontbook;
+    var matrix = math.Mat32.initTransform(.{ .x = options.x, .y = options.y, .angle = options.rot, .sx = options.sx, .sy = options.sy });
+    book.setAlign(options.alignment);
+
+    var fons_quad = book.getQuad();
+    var iter = book.getTextIterator(str);
+    while (book.textIterNext(&iter, &fons_quad)) {
+        state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
+        state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
+        state.quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
+        state.quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
+
+        state.quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
+        state.quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
+        state.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
+        state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
+
+        state.batcher.draw(book.texture.?.tex, state.quad, matrix, options.color);
     }
 }
 

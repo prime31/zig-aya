@@ -33,9 +33,9 @@ fn onKeyPressed(ctx: ?*c_void, evt: [*c]sdl.SDL_Event) callconv(.C) c_int {
         const c_key = sdl.SDL_GetKeyName(evt[0].key.keysym.sym);
 
         const span = std.mem.spanZ(c_key);
-        aya.gfx.drawText(span, book);
+        aya.gfx.drawText(span, 40, 50, book);
         const c_key_lwr = std.ascii.toLower(span[0]);
-        aya.gfx.drawText(&[_]u8{c_key_lwr}, book);
+        aya.gfx.drawText(&[_]u8{c_key_lwr}, 20, 50, book);
     }
 
     return 0;
@@ -47,12 +47,14 @@ fn update() void {
 
 fn render() void {
     if (aya.input.mouseDown(.left)) {
-        aya.gfx.drawText("pooop", null);
+        aya.gfx.drawText("pooop", 200, 50, null);
     }
 
     if (aya.input.mouseDown(.right)) {
-        aya.gfx.drawText("fucker", book);
+        aya.gfx.drawText("fucker", 200, 50, book);
     }
+
+    aya.gfx.drawTextOptions("fucker", null, .{ .x = 300, .y = 150, .sx = 3, .sy = 3, .rot = 0.785, .color = Color.yellow });
 
     aya.gfx.drawTex(book.texture.?, 10, 60);
     aya.gfx.endPass();

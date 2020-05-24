@@ -136,7 +136,7 @@ FONS_DEF void fonsLineBounds(FONScontext* s, float y, float* miny, float* maxy);
 FONS_DEF void fonsVertMetrics(FONScontext* s, float* ascender, float* descender, float* lineh);
 
 // Text iterator
-FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter, float x, float y, const char* str, const char* end);
+FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter, float x, float y, const char* str, int len);
 FONS_DEF int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, struct FONSquad* quad);
 
 // Pull texture changes
@@ -1318,8 +1318,10 @@ FONS_DEF float fonsDrawText(FONScontext* stash,
 	return x;
 }
 
+// this used to take in a "const char* end" but instead we now can pass it a non null-terminated
+// string and the length
 FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
-					 float x, float y, const char* str, const char* end)
+					 float x, float y, const char* str, int len)
 {
 	FONSstate* state = fons__getState(stash);
 	float width;
@@ -1340,24 +1342,21 @@ FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
 	if (state->align & FONS_ALIGN_LEFT) {
 		// empty
 	} else if (state->align & FONS_ALIGN_RIGHT) {
-		width = fonsTextBounds(stash, x,y, str, end, NULL);
+		width = fonsTextBounds(stash, x,y, str, NULL, NULL);
 		x -= width;
 	} else if (state->align & FONS_ALIGN_CENTER) {
-		width = fonsTextBounds(stash, x,y, str, end, NULL);
+		width = fonsTextBounds(stash, x,y, str, NULL, NULL);
 		x -= width * 0.5f;
 	}
 	// Align vertically.
 	y += fons__getVertAlign(stash, iter->font, state->align, iter->isize);
-
-	if (end == NULL)
-		end = str + strlen(str);
 
 	iter->x = iter->nextx = x;
 	iter->y = iter->nexty = y;
 	iter->spacing = state->spacing;
 	iter->str = str;
 	iter->next = str;
-	iter->end = end;
+	iter->end = str + len;
 	iter->codepoint = 0;
 	iter->prevGlyphIndex = -1;
 

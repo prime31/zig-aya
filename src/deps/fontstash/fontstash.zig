@@ -111,7 +111,7 @@ pub extern fn fonsDrawText(s: ?*Context, x: f32, y: f32, string: [*c]const u8, e
 pub extern fn fonsTextBounds(s: ?*Context, x: f32, y: f32, string: [*c]const u8, end: [*c]const u8, bounds: [*c]f32) f32;
 pub extern fn fonsLineBounds(s: ?*Context, y: f32, miny: [*c]f32, maxy: [*c]f32) void;
 pub extern fn fonsVertMetrics(s: ?*Context, ascender: [*c]f32, descender: [*c]f32, lineh: [*c]f32) void;
-pub extern fn fonsTextIterInit(stash: ?*Context, iter: [*c]TextIter, x: f32, y: f32, str: [*c]const u8, end: [*c]const u8) c_int;
+pub extern fn fonsTextIterInit(stash: ?*Context, iter: [*c]TextIter, x: f32, y: f32, str: [*c]const u8, len: c_int) c_int;
 pub extern fn fonsTextIterNext(stash: ?*Context, iter: [*c]TextIter, quad: [*c]Quad) c_int;
 pub extern fn fonsGetTextureData(stash: ?*Context, width: [*c]c_int, height: [*c]c_int) [*c]const u8;
 pub extern fn fonsValidateTexture(s: ?*Context, dirty: [*c]c_int) c_int;

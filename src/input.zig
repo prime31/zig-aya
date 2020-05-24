@@ -15,7 +15,7 @@ pub const MouseButton = enum(usize) {
 };
 
 pub const Input = struct {
-    keys: [243]u2 = [_]u2{0} ** 243,
+    keys: [@intCast(usize, @enumToInt(sdl.SDL_Scancode.SDL_NUM_SCANCODES))]u2 = [_]u2{0} ** @intCast(usize, @enumToInt(sdl.SDL_Scancode.SDL_NUM_SCANCODES)),
     dirty_keys: FixedList(i32, 10),
     mouse_buttons: [4]u2 = [_]u2{0} ** 4,
     dirty_mouse_buttons: FixedList(u2, 3),
@@ -39,7 +39,11 @@ pub const Input = struct {
         if (self.dirty_keys.len > 0) {
             var iter = self.dirty_keys.iter();
             while (iter.next()) |key| {
-                self.keys[@intCast(usize, key)] -= 1;
+                const ukey = @intCast(usize, key);
+
+                // guard against double key presses
+                if (self.keys[ukey] > 0)
+                    self.keys[ukey] -= 1;
             }
             self.dirty_keys.clear();
         }
@@ -47,7 +51,10 @@ pub const Input = struct {
         if (self.dirty_mouse_buttons.len > 0) {
             var iter = self.dirty_mouse_buttons.iter();
             while (iter.next()) |button| {
-                self.mouse_buttons[button] -= 1;
+
+                // guard against double mouse presses
+                if (self.mouse_buttons[button] > 0)
+                    self.mouse_buttons[button] -= 1;
             }
             self.dirty_mouse_buttons.clear();
         }
