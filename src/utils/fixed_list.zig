@@ -13,7 +13,7 @@ pub fn FixedList(comptime T: type, comptime len: usize) type {
             list: Self,
             index: usize = 0,
 
-            fn next(self: *Iterator) ?T {
+            pub fn next(self: *Iterator) ?T {
                 if (self.index == self.list.len) return null;
                 var next_item = self.list.items[self.index];
                 self.index += 1;

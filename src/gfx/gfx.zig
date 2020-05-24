@@ -46,6 +46,7 @@ const State = struct {
     default_pass: DefaultOffscreenPass = undefined,
     quad: math.Quad = math.Quad.init(0, 0, 1, 1, 1, 1),
     fontbook: *FontBook = undefined,
+    blitted_to_screen: bool = false,
 };
 var state = State{};
 
@@ -156,18 +157,60 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
 }
 
 // Passes
-pub fn beginPass() void {} // TODO
+
+// offscreen passes should be rendered first. If no pass is in the PassConfig rendering will be done to the
+// DefaultOffscreenPass. After all passes are run you can optionally call postprocess and then blitToScreen.
+// If another pass is run after blitToScreen rendering will be to the backbuffer.
+pub fn beginPass() void {
+    var proj_mat = math.Mat32.identity;
+
+    // if we already blitted to the screen we can only blit to the backbuffer
+    if (state.blitted_to_screen) {
+        var w: i32 = undefined;
+        var h: i32 = undefined;
+        aya.window.drawableSize(&h, &w);
+        // clear and set viewport
+        proj_mat = math.Mat32.initOrtho(w, h);
+    } else {
+        // if we were given an OffscreenPass use it else use our DefaultOffscreenPass
+        //pass := if config.pass == 0 { &gg.def_pass.offscreen_pass } else { config.pass }
+        proj_mat = math.Mat32.initOrtho(pass.color_tex.w, pass.color_tex.h);
+    }
+
+    // if we were given a transform matrix multiply it here
+    //proj_mat = proj_mat * *config.trans_mat
+
+    // if we were given a Shader use it else set the SpriteEffect
+
+    // set the TransformMatrix if it exists on the Shader
+}
 
 pub fn endPass() void {
     state.batcher.flush(false);
     aya.debug.render(state.debug_render_enabled);
 }
 
+// pub fn postprocess(effect_stack: EffectStack) void {
+//effect_stack.process(state.default_pass)
+// }
+
+// renders the default OffscreenPass to the backbuffer using the ResolutionScaler
+pub fn blitToScreen(letterbox_color: math.Color) void {
+    state.blitted_to_screen = true;
+
+    // begin_pass({color:letterbox_color trans_mat:0 pipeline:0 pass:0})
+    const scaler = state.default_pass.scaler;
+    //state.batcher.draw(state.default_pass.render_tex.texture, {x:scaler.x y:scaler.y sx:scaler.scale sy:scaler.scale})
+}
+
 /// if we havent yet blitted to the screen do so now
 pub fn commit() void {
     state.batcher.endFrame();
 
-    // TODO: deal with final blit
+    if (!state.blitted_to_screen)
+        blitToScreen(math.Color.black);
+
+    state.blitted_to_screen = false;
 }
 
 // Drawing
