@@ -3,7 +3,7 @@ const aya = @import("aya");
 
 var mesh: aya.gfx.Mesh = undefined;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,

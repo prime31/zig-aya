@@ -5,7 +5,7 @@ const Color = math.Color;
 
 var tri_batch: aya.gfx.TriangleBatcher = undefined;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,

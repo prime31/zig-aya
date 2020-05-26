@@ -6,7 +6,7 @@ var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
 var rt: aya.gfx.RenderTexture = undefined;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,

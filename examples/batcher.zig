@@ -7,7 +7,7 @@ var font_tex: aya.gfx.Texture = undefined;
 var checker_quad: aya.math.Quad = undefined;
 var font_quad: aya.math.Quad = undefined;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,

@@ -4,7 +4,7 @@ const aya = @import("aya");
 var mesh: aya.gfx.DynamicMesh(aya.gfx.Vertex) = undefined;
 var rng = std.rand.DefaultPrng.init(0);
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,

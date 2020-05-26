@@ -11,7 +11,7 @@ var vertDecl: fna.VertexDeclaration = undefined;
 var vertBindings: fna.VertexBufferBinding = undefined;
 var vertBuffer: ?*fna.Buffer = undefined;
 
-pub fn main() anyerror!void {
+pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,
