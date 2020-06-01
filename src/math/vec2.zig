@@ -9,6 +9,14 @@ pub const Vec2 = packed struct {
         return .{ .x = x, .y = y };
     }
 
+    fn getField(vec: Vec2, comptime index: comptime_int) f32 {
+        switch (index) {
+            0 => return vec.x,
+            1 => return vec.y,
+            else => @compileError("index out of bounds!"),
+        }
+    }
+
     pub fn angleToVec(radians: f32, length: f32) Vec2 {
         return .{ .x = math.cos(radians) * length, .y = math.sin(radians) * length };
     }

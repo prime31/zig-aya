@@ -13,6 +13,16 @@ pub const Quad = @import("quad.zig").Quad;
 
 pub const rand = @import("rand.zig");
 
+/// Converts degrees to radian
+pub fn toRadians(deg: var) @typeOf(deg) {
+    return pi * deg / 180.0;
+}
+
+/// Converts radian to degree
+pub fn toDegrees(rad: var) @typeOf(deg) {
+    return 180.0 * rad / pi;
+}
+
 test "test math.rand" {
     rand.seed(0);
 
