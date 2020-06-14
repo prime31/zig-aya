@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya.zig");
 const math = @import("math/math.zig");
-const gfx = aya.gfx;
+const draw = aya.gfx.draw;
 
 pub const Debug = struct {
     debug_items: std.ArrayList(DebugDrawCommand),
@@ -64,17 +64,17 @@ pub const Debug = struct {
         if (enabled) {
             for (self.debug_items.items) |item| {
                 switch (item) {
-                    .point => |pt| gfx.drawPoint(pt.pos, pt.size, pt.color),
-                    .line => |line| gfx.drawLine(line.pt1, line.pt2, line.thickness, line.color),
+                    .point => |pt| draw.point(pt.pos, pt.size, pt.color),
+                    .line => |line| draw.line(line.pt1, line.pt2, line.thickness, line.color),
                     .rect => |rect| {
                         if (rect.hollow) {
-                            gfx.drawHollowRect(rect.pos, rect.w, rect.h, rect.thickness, rect.color);
+                            draw.hollowRect(rect.pos, rect.w, rect.h, rect.thickness, rect.color);
                         } else {
-                            gfx.drawRect(rect.pos, rect.w, rect.h, rect.color);
+                            draw.rect(rect.pos, rect.w, rect.h, rect.color);
                         }
                     },
-                    .circle => |circle| gfx.drawCircle(circle.center, circle.r, circle.thickness, 12, circle.color),
-                    .text => |text| gfx.drawText(text.text, text.pos.x, text.pos.y, null),
+                    .circle => |circle| draw.circle(circle.center, circle.r, circle.thickness, 12, circle.color),
+                    .text => |text| draw.text(text.text, text.pos.x, text.pos.y, null),
                 }
             }
         }

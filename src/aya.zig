@@ -8,6 +8,7 @@ pub const fna = @import("deps/fna/fna.zig");
 
 // aya namespaces
 pub const gfx = @import("gfx/gfx.zig");
+pub const draw = gfx.draw;
 pub const fs = @import("fs.zig");
 
 pub const math = @import("math/math.zig");
