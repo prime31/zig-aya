@@ -37,18 +37,13 @@ const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
 const fna = @import("../deps/fna/fna.zig");
 const math = @import("../math/math.zig");
 
-const State = struct {
+pub var state = struct {
     viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
-    white_tex: Texture = undefined,
     rt_binding: fna.RenderTargetBinding = undefined,
-    batcher: Batcher = undefined,
     debug_render_enabled: bool = false,
     default_pass: DefaultOffscreenPass = undefined,
-    quad: math.Quad = math.Quad.init(0, 0, 1, 1, 1, 1),
-    fontbook: *FontBook = undefined,
     blitted_to_screen: bool = false,
-};
-pub var state = State{};
+}{};
 
 pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     device = fna.Device.init(params, true);
@@ -65,11 +60,7 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
 
-    var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-    state.white_tex = Texture.init(2, 2);
-    state.white_tex.setColorData(pixels[0..]);
-
-    state.batcher = try Batcher.init(null, config.batcher_max_sprites);
+    try draw.init(config);
     state.debug_render_enabled = !config.disable_debug_render;
 
     // if we were passed 0's for design size default to the window/backbuffer size
@@ -80,10 +71,6 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
         design_h = params.backBufferHeight;
     }
     state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
-
-    state.fontbook = try FontBook.init(null, 128, 128, .point);
-    _ = state.fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
-    state.fontbook.setSize(10);
 }
 
 pub fn clear(color: math.Color) void {
@@ -115,7 +102,7 @@ pub fn getResolutionScaler() ResolutionScaler {
 }
 
 pub fn getFontBook() FontBook {
-    return state.fontbook;
+    return draw.fontbook;
 }
 
 pub fn setRenderTexture(rt: ?RenderTexture) void {
@@ -186,7 +173,7 @@ pub fn beginPass() void {
 }
 
 pub fn endPass() void {
-    state.batcher.flush(false);
+    draw.batcher.flush(false);
     aya.debug.render(state.debug_render_enabled);
 }
 
@@ -200,12 +187,12 @@ pub fn blitToScreen(letterbox_color: math.Color) void {
 
     // begin_pass({color:letterbox_color trans_mat:0 pipeline:0 pass:0})
     const scaler = state.default_pass.scaler;
-    //state.batcher.draw(state.default_pass.render_tex.texture, {x:scaler.x y:scaler.y sx:scaler.scale sy:scaler.scale})
+    //draw.batcher.draw(state.default_pass.render_tex.texture, {x:scaler.x y:scaler.y sx:scaler.scale sy:scaler.scale})
 }
 
 /// if we havent yet blitted to the screen do so now
 pub fn commit() void {
-    state.batcher.endFrame();
+    draw.batcher.endFrame();
 
     if (!state.blitted_to_screen)
         blitToScreen(math.Color.black);

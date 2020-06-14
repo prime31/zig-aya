@@ -2,87 +2,105 @@ const gfx = @import("gfx.zig");
 const math = @import("../math/math.zig");
 
 pub const draw = struct {
+    pub var batcher: gfx.Batcher = undefined;
+    pub var fontbook: *gfx.FontBook = undefined;
+
+    var quad: math.Quad = math.Quad.init(0, 0, 1, 1, 1, 1);
+    var white_tex: gfx.Texture = undefined;
+
+    pub fn init(config: gfx.Config) !void {
+        var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+        white_tex = gfx.Texture.init(2, 2);
+        white_tex.setColorData(pixels[0..]);
+
+        batcher = try gfx.Batcher.init(null, config.batcher_max_sprites);
+
+        fontbook = try gfx.FontBook.init(null, 128, 128, .point);
+        _ = fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
+        fontbook.setSize(10);
+    }
+
     // Drawing
     pub fn tex(texture: gfx.Texture, x: f32, y: f32) void {
-        gfx.state.quad.setFill(texture.width, texture.height);
+        quad.setFill(texture.width, texture.height);
 
         var mat = math.Mat32.initTransform(.{ .x = x, .y = y });
-        gfx.state.batcher.draw(texture.tex, gfx.state.quad, mat, math.Color.white);
+        batcher.draw(texture.tex, quad, mat, math.Color.white);
     }
 
     pub fn texScale(texture: Texture, x: f32, y: f32, scale: f32) void {
-        state.quad.setFill(texture.width, texture.height);
+        quad.setFill(texture.width, texture.height);
 
         var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .angle = 0, .sx = scale, .sy = scale });
-        state.batcher.draw(texture.tex, state.quad, mat, math.Color.white);
+        state.batcher.draw(texture.tex, quad, mat, math.Color.white);
     }
 
-    pub fn text(str: []const u8, x: f32, y: f32, fontbook: ?*gfx.FontBook) void {
-        var book = if (fontbook != null) fontbook.? else gfx.state.fontbook;
+    pub fn text(str: []const u8, x: f32, y: f32, fb: ?*gfx.FontBook) void {
+        var book = if (fb) |fb_resolved| fb_resolved else fontbook;
         var matrix = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = 4, .sy = 4 });
         book.setAlign(.default);
 
         var fons_quad = book.getQuad();
         var iter = book.getTextIterator(str);
         while (book.textIterNext(&iter, &fons_quad)) {
-            gfx.state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
-            gfx.state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
-            gfx.state.quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
-            gfx.state.quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
+            quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
+            quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
+            quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
+            quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
 
-            gfx.state.quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
-            gfx.state.quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
-            gfx.state.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
-            gfx.state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
+            quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
+            quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
+            quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
+            quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            gfx.state.batcher.draw(book.texture.?.tex, gfx.state.quad, matrix, math.Color.white);
+            batcher.draw(book.texture.?.tex, quad, matrix, math.Color.white);
         }
     }
 
-    pub fn textOptions(str: []const u8, fontbook: ?*gfx.FontBook, options: struct { x: f32, y: f32, rot: f32 = 0, sx: f32 = 1, sy: f32 = 1, alignment: gfx.FontBook.Align = .default, color: math.Color = math.Color.White }) void {
-        var book = if (fontbook != null) fontbook.? else gfx.state.fontbook;
+    pub fn textOptions(str: []const u8, fb: ?*gfx.FontBook, options: struct { x: f32, y: f32, rot: f32 = 0, sx: f32 = 1, sy: f32 = 1, alignment: gfx.FontBook.Align = .default, color: math.Color = math.Color.White }) void {
+        var book = if (fb) |fb_resolved| fb_resolved else fontbook;
         var matrix = math.Mat32.initTransform(.{ .x = options.x, .y = options.y, .angle = options.rot, .sx = options.sx, .sy = options.sy });
         book.setAlign(options.alignment);
 
         var fons_quad = book.getQuad();
         var iter = book.getTextIterator(str);
         while (book.textIterNext(&iter, &fons_quad)) {
-            gfx.state.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
-            gfx.state.quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
-            gfx.state.quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
-            gfx.state.quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
+            quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
+            quad.positions[1] = .{ .x = fons_quad.x1, .y = fons_quad.y0 };
+            quad.positions[2] = .{ .x = fons_quad.x1, .y = fons_quad.y1 };
+            quad.positions[3] = .{ .x = fons_quad.x0, .y = fons_quad.y1 };
 
-            gfx.state.quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
-            gfx.state.quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
-            gfx.state.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
-            gfx.state.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
+            quad.uvs[0] = .{ .x = fons_quad.s0, .y = fons_quad.t0 };
+            quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
+            quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
+            quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            gfx.state.batcher.draw(book.texture.?.tex, gfx.state.quad, matrix, options.color);
+            batcher.draw(book.texture.?.tex, quad, matrix, options.color);
         }
     }
 
     pub fn point(position: math.Vec2, size: f32, color: math.Color) void {
-        gfx.state.quad.setFill(@floatToInt(i32, size), @floatToInt(i32, size));
+        quad.setFill(@floatToInt(i32, size), @floatToInt(i32, size));
 
         const offset = if (size == 1) 0 else size * 0.5;
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
-        gfx.state.batcher.draw(gfx.state.white_tex.tex, gfx.state.quad, mat, color);
+        batcher.draw(white_tex.tex, quad, mat, color);
     }
 
     pub fn line(start: math.Vec2, end: math.Vec2, thickness: f32, color: math.Color) void {
-        gfx.state.quad.setFill(1, 1);
+        quad.setFill(1, 1);
 
         const angle = start.angleBetween(end);
         const length = start.distance(end);
 
         var mat = math.Mat32.initTransform(.{ .x = start.x, .y = start.y, .angle = angle, .sx = length, .sy = thickness });
-        gfx.state.batcher.draw(gfx.state.white_tex.tex, gfx.state.quad, mat, color);
+        batcher.draw(white_tex.tex, quad, mat, color);
     }
 
     pub fn rect(position: math.Vec2, width: f32, height: f32, color: math.Color) void {
-        gfx.state.quad.setFill(@floatToInt(i32, width), @floatToInt(i32, height));
+        quad.setFill(@floatToInt(i32, width), @floatToInt(i32, height));
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y });
-        gfx.state.batcher.draw(gfx.state.white_tex.tex, gfx.state.quad, mat, color);
+        batcher.draw(white_tex.tex, quad, mat, color);
     }
 
     pub fn hollowRect(position: math.Vec2, width: f32, height: f32, thickness: f32, color: math.Color) void {
@@ -97,7 +115,7 @@ pub const draw = struct {
     }
 
     pub fn circle(center: math.Vec2, radius: f32, thickness: f32, resolution: i32, color: math.Color) void {
-        gfx.state.quad.setFill(gfx.state.white_tex.width, gfx.state.white_tex.height);
+        quad.setFill(white_tex.width, white_tex.height);
 
         var last = math.Vec2.init(1, 0);
         last.scale(radius);
