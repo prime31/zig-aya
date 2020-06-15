@@ -100,7 +100,7 @@ pub const AtlasBatch = struct {
         }
 
         aya.gfx.Texture.bindTexture(self.texture.tex, 0);
-        self.mesh.draw(0, @intCast(i32, self.sprite_count * 4));
+        self.mesh.drawQuads(0, @intCast(i32, self.sprite_count * 4));
     }
 };
 

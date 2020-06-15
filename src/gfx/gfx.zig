@@ -157,11 +157,11 @@ pub fn beginPass() void {
         var h: i32 = undefined;
         aya.window.drawableSize(&h, &w);
         // clear and set viewport
-        proj_mat = math.Mat32.initOrtho(w, h);
+        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, w), @intToFloat(f32, h));
     } else {
         // if we were given an OffscreenPass use it else use our DefaultOffscreenPass
-        //pass := if config.pass == 0 { &gg.def_pass.offscreen_pass } else { config.pass }
-        proj_mat = math.Mat32.initOrtho(pass.color_tex.w, pass.color_tex.h);
+        // const pass := if config.pass == 0 { &gg.def_pass.offscreen_pass } else { config.pass }
+        // proj_mat = math.Mat32.initOrtho(pass.color_tex.w, pass.color_tex.h);
     }
 
     // if we were given a transform matrix multiply it here

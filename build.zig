@@ -11,21 +11,26 @@ pub fn build(b: *Builder) void {
     var lib_type = b.option(i32, "lib_type", "0: static, 1: dynamic, 2: exe compiled") orelse 0;
     if (target.isWindows()) lib_type = 2;
 
-    // current example file being worked on
-    createExe(b, target, lib_type, "run", "examples/fonts.zig");
-
+    // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
+        [_][]const u8{ "main", "examples/main.zig" },
+
+        [_][]const u8{ "fonts", "examples/fonts.zig" },
         [_][]const u8{ "main", "examples/main.zig" },
         [_][]const u8{ "mesh", "examples/mesh.zig" },
         [_][]const u8{ "batcher", "examples/batcher.zig" },
         [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "primitives", "examples/primitives.zig" },
-        [_][]const u8{ "fonts", "examples/fonts.zig" },
     };
 
-    for (examples) |example| {
+    for (examples) |example, i| {
         createExe(b, target, lib_type, example[0], example[1]);
+
+        // first element in the list is added as "run" so "zig build run" works
+        if (i == 0) {
+            createExe(b, target, lib_type, "run", example[1]);
+        }
     }
 
     addTests(b, target);
@@ -60,6 +65,9 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
 // add tests.zig file runnable via "zig build test"
 fn addTests(b: *Builder, target: std.build.Target) void {
     var t = b.addTest("tests.zig");
+    t.addPackagePath("aya", "src/aya.zig");
+    t.addPackagePath("sdl", "src/deps/sdl/sdl.zig");
+
     fna_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fna");
     fontstash_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fontstash");
 

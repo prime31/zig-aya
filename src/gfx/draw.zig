@@ -28,11 +28,11 @@ pub const draw = struct {
         batcher.draw(texture.tex, quad, mat, math.Color.white);
     }
 
-    pub fn texScale(texture: Texture, x: f32, y: f32, scale: f32) void {
+    pub fn texScale(texture: gfx.Texture, x: f32, y: f32, scale: f32) void {
         quad.setFill(texture.width, texture.height);
 
         var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .angle = 0, .sx = scale, .sy = scale });
-        state.batcher.draw(texture.tex, quad, mat, math.Color.white);
+        batcher.draw(texture.tex, quad, mat, math.Color.white);
     }
 
     pub fn text(str: []const u8, x: f32, y: f32, fb: ?*gfx.FontBook) void {

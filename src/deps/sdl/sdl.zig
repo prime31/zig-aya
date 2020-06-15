@@ -17,6 +17,10 @@ pub const Uint32 = u32;
 pub const Sint64 = i64;
 pub const Uint64 = u64;
 
+pub const RW_SEEK_SET: c_int = 0;   // Seek from the beginning of data
+pub const RW_SEEK_CUR: c_int = 1;   // Seek relative to current read point
+pub const RW_SEEK_END: c_int = 2;   // Seek relative to the end of data
+
 pub extern fn SDL_malloc(size: usize) ?*c_void;
 pub extern fn SDL_calloc(nmemb: usize, size: usize) ?*c_void;
 pub extern fn SDL_realloc(mem: ?*c_void, size: usize) ?*c_void;

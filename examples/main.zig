@@ -11,6 +11,7 @@ var vertDecl: fna.VertexDeclaration = undefined;
 var vertBindings: fna.VertexBufferBinding = undefined;
 var vertBuffer: ?*fna.Buffer = undefined;
 
+// defunct example. eventually make this a simple template
 pub fn main() !void {
     try aya.run(.{
         .init = init,
@@ -19,9 +20,6 @@ pub fn main() !void {
     });
 
     mesh.deinit();
-    const c = aya.math.Color.light_gray;
-    // const tex = fna.img.load(device, "assets/font.png");
-    // std.debug.warn("loaded tex: {}\n", .{tex});
 }
 
 fn init() void {
@@ -107,6 +105,8 @@ fn createShader() !aya.gfx.Shader {
     // for (vertColor) |s, i|
     //     slice[i] = s;
     var shader = try aya.gfx.Shader.initFromFile("assets/VertexColor.fxb");
+    var mat = aya.math.Mat32.initOrthoOffCenter(2, 2);
+    shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
     shader.apply();
 
     return shader;
