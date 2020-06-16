@@ -8,6 +8,10 @@ pub const Texture = @import("textures.zig").Texture;
 pub const RenderTexture = @import("textures.zig").RenderTexture;
 pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 
+pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
+// TODO: move Sepia to its own file
+pub const Sepia = @import("post_process_stack.zig").Sepia;
+
 pub const Batcher = @import("batcher.zig").Batcher;
 pub const TriangleBatcher = @import("triangle_batcher.zig").TriangleBatcher;
 pub const AtlasBatch = @import("atlas_batch.zig").AtlasBatch;
@@ -43,6 +47,8 @@ pub var state = struct {
     debug_render_enabled: bool = false,
     default_pass: DefaultOffscreenPass = undefined,
     blitted_to_screen: bool = false,
+    sprite_shader: Shader = undefined,
+    transform_mat: math.Mat32 = undefined,
 }{};
 
 pub fn init(params: *fna.PresentationParameters, config: Config) !void {
@@ -72,6 +78,8 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
         design_h = params.backBufferHeight;
     }
     state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
+
+    state.sprite_shader = aya.gfx.Shader.initFromBytes(@embedFile("assets/SpriteEffect.fxb")) catch unreachable;
 }
 
 pub fn clear(color: math.Color) void {
@@ -145,10 +153,16 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
 
     // Apply new state, clear target if requested
     // TODO: why does setting the viewport screw up rendering to a RT?
-    // setViewport(.{ .w = new_width, .h = new_height });
+    setViewport(.{ .w = new_width, .h = new_height });
     setScissor(.{ .w = new_width, .h = new_height });
 
     if (clear_target == .discard_contents) clear(math.Color.black);
+}
+
+pub fn setShader(shader: Shader) void {
+    draw.batcher.flush(false);
+    shader.setParam(aya.math.Mat32, "TransformMatrix", state.transform_mat);
+    shader.apply();
 }
 
 // Passes
@@ -184,17 +198,17 @@ pub fn beginPass(config: PassConfig) void {
 
     // if we were given a transform matrix multiply it here
     if (config.trans_mat) |trans_mat| {
-        //proj_mat = proj_mat * *config.trans_mat
         proj_mat = proj_mat.mul(trans_mat);
     }
 
+    state.transform_mat = proj_mat;
+
     // if we were given a Shader use it else set the SpriteEffect
     if (config.shader) |shader| {
-        // setShader(shader);
+        setShader(shader);
+    } else {
+        setShader(state.sprite_shader);
     }
-
-    // set the TransformMatrix if it exists on the Shader
-    //shader.setParam(aya.math.Mat32, "TransformMatrix", proj_mat);
 }
 
 pub fn endPass() void {
@@ -202,9 +216,10 @@ pub fn endPass() void {
     aya.debug.render(state.debug_render_enabled);
 }
 
-// pub fn postprocess(effect_stack: EffectStack) void {
-//  effect_stack.process(state.default_pass)
-// }
+pub fn postProcess(stack: PostProcessStack) void {
+    state.transform_mat = math.Mat32.initOrtho(@intToFloat(f32, state.default_pass.offscreen_pass.render_tex.tex.width), @intToFloat(f32, state.default_pass.offscreen_pass.render_tex.tex.height));
+    stack.process(state.default_pass.offscreen_pass);
+}
 
 // renders the default OffscreenPass to the backbuffer using the ResolutionScaler
 pub fn blitToScreen(letterbox_color: math.Color) void {

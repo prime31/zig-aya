@@ -4,6 +4,7 @@ pub const pi = std.math.pi;
 pub const pi_over_2 = std.math.pi / 2.0;
 
 pub const Vec2 = @import("vec2.zig").Vec2;
+pub const Vec3 = @import("vec3.zig").Vec3;
 pub const Vec4 = @import("vec4.zig").Vec4;
 pub const Rect = @import("rect.zig").Rect;
 pub const RectI = @import("rect.zig").RectI;

@@ -66,7 +66,7 @@ pub const Device = struct {
         FNA3D_GetBackbufferSize(self, w, h);
     }
 
-    pub fn createEffect(self: *Device, effect_code: []u8, effect: *?*Effect, mojo_effect: *?*mojo.Effect) void {
+    pub fn createEffect(self: *Device, effect_code: []const u8, effect: *?*Effect, mojo_effect: *?*mojo.Effect) void {
         FNA3D_CreateEffect(self, &effect_code[0], @intCast(u32, effect_code.len), effect, mojo_effect);
     }
 
@@ -572,7 +572,7 @@ pub extern fn FNA3D_GenIndexBuffer(device: ?*Device, dynamic: u8, usage: BufferU
 pub extern fn FNA3D_AddDisposeIndexBuffer(device: ?*Device, buffer: ?*Buffer) void;
 pub extern fn FNA3D_SetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32, options: SetDataOptions) void;
 pub extern fn FNA3D_GetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32) void;
-pub extern fn FNA3D_CreateEffect(device: ?*Device, effectCode: [*c]u8, effectCodeLength: u32, effect: *?*Effect, effectData: *?*mojo.Effect) void;
+pub extern fn FNA3D_CreateEffect(device: ?*Device, effectCode: [*c]const u8, effectCodeLength: u32, effect: *?*Effect, effectData: *?*mojo.Effect) void;
 pub extern fn FNA3D_CloneEffect(device: ?*Device, cloneSource: ?*Effect, effect: [*c]?*Effect, effectData: [*c]?*mojo.Effect) void;
 pub extern fn FNA3D_AddDisposeEffect(device: ?*Device, effect: ?*Effect) void;
 pub extern fn FNA3D_SetEffectTechnique(device: ?*Device, effect: ?*Effect, technique: ?*mojo.EffectTechnique) void;

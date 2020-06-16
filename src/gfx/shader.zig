@@ -10,7 +10,10 @@ pub const Shader = extern struct {
 
     pub fn initFromFile(file: []const u8) !Shader {
         var bytes = try fs.read(aya.mem.tmp_allocator, file);
+        return initFromBytes(bytes);
+    }
 
+    pub fn initFromBytes(bytes: []const u8) !Shader {
         var effect: ?*fna.Effect = null;
         var mojo_effect: ?*fna.mojo.Effect = null;
         gfx.device.createEffect(bytes, &effect, &mojo_effect);
@@ -161,6 +164,14 @@ pub const Shader = extern struct {
                     const floats = effect_value.value.float[0..2];
                     floats[0] = value.x;
                     floats[1] = value.y;
+                } else if (T == aya.math.Vec3) {
+                    std.debug.assert(effect_value.type.parameter_class == .vector);
+                    std.debug.assert(effect_value.type.parameter_type == .float);
+
+                    const floats = effect_value.value.float[0..3];
+                    floats[0] = value.x;
+                    floats[1] = value.y;
+                    floats[2] = value.z;
                 } else if (T == aya.math.Mat32) {
                     std.debug.assert(effect_value.type.parameter_class == .matrix_rows);
                     std.debug.assert(effect_value.type.parameter_type == .float);
