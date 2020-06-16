@@ -13,14 +13,12 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
-        [_][]const u8{ "main", "examples/main.zig" },
-
+        [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "fonts", "examples/fonts.zig" },
         [_][]const u8{ "main", "examples/main.zig" },
         [_][]const u8{ "mesh", "examples/mesh.zig" },
         [_][]const u8{ "batcher", "examples/batcher.zig" },
         [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
-        [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "primitives", "examples/primitives.zig" },
     };
 

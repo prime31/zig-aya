@@ -25,11 +25,11 @@ pub const FontBook = @import("fontbook.zig").FontBook;
 pub var device: *fna.Device = undefined;
 
 pub const Config = struct {
-    disable_debug_render: bool,
-    design_width: i32,
-    design_height: i32,
-    resolution_policy: ResolutionPolicy,
-    batcher_max_sprites: i32,
+    disable_debug_render: bool = .default, // defines how the main render texture should be blitted to the backbuffer
+    design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
+    design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
+    resolution_policy: ResolutionPolicy = 1000, // defined the size of the vertex/index buffers based on the number of sprites/quads
+    batcher_max_sprites: i32 = false, // when true, debug rendering will be disabled
 };
 
 // locals
@@ -59,6 +59,7 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     device.setDepthStencilState(&depthStencil);
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
+    setScissor(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
 
     try draw.init(config);
     state.debug_render_enabled = !config.disable_debug_render;
@@ -95,6 +96,10 @@ pub fn setScissor(rect: math.RectI) void {
 
 pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
     device.setPresentationInterval(present_interval);
+}
+
+pub fn resetBackbuffer(width: i32, height: i32) void {
+    device.resetBackbuffer(width, height, aya.window.sdl_window);
 }
 
 pub fn getResolutionScaler() ResolutionScaler {

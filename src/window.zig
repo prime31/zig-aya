@@ -4,12 +4,12 @@ const fna = @import("deps/fna/fna.zig");
 const std = @import("std");
 
 pub const WindowConfig = struct {
-    title: []const u8,
-    width: i32,
-    height: i32,
-    resizable: bool,
-    fullscreen: bool,
-    high_dpi: bool,
+    title: []const u8 = "zig aya", // the window title as UTF-8 encoded string
+    width: i32 = 640, // the preferred width of the window / canvas
+    height: i32 = 480, // the preferred height of the window / canvas
+    resizable: bool = true, // whether the window should be allowed to be resized
+    fullscreen: bool = false, // whether the window should be created in fullscreen mode
+    high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
 };
 
 pub const WindowMode = enum(u32) {
@@ -51,7 +51,11 @@ pub const Window = struct {
 
     pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
         switch (event.event) {
-            @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED) => std.debug.warn("sizec \n", .{}),
+            @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED) => {
+                std.debug.warn("resize: {}x{}\n", .{ event.data1, event.data2 });
+                // TODO: make a resized event and let gfx resize itself
+                @import("aya.zig").gfx.resetBackbuffer(event.data1, event.data2);
+            },
             @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED) => self.focused = true,
             @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST) => self.focused = false,
             else => {},
@@ -69,14 +73,6 @@ pub const Window = struct {
         return @intToFloat(f32, dx) / @intToFloat(f32, wx);
     }
 
-    pub fn drawableSize(self: Window, w: *i32, h: *i32) void {
-        fna.getDrawableSize(self.sdl_window, w, h);
-    }
-
-    pub fn size(self: Window, w: *i32, h: *i32) void {
-        sdl.SDL_GetWindowSize(self.sdl_window, w, h);
-    }
-
     pub fn width(self: Window) i32 {
         var w: i32 = undefined;
         var h: i32 = undefined;
@@ -91,6 +87,14 @@ pub const Window = struct {
         return h;
     }
 
+    pub fn drawableSize(self: Window, w: *i32, h: *i32) void {
+        fna.getDrawableSize(self.sdl_window, w, h);
+    }
+
+    pub fn size(self: Window, w: *i32, h: *i32) void {
+        sdl.SDL_GetWindowSize(self.sdl_window, w, h);
+    }
+
     pub fn setSize(self: Window, w: i32, h: i32) void {
         sdl.SDL_SetWindowSize(self.sdl_window, w, h);
     }
@@ -101,5 +105,13 @@ pub const Window = struct {
 
     pub fn focused(self: Window) bool {
         return self.focused;
+    }
+
+    pub fn setResizable(self: Window, resizable: bool) void {
+        sdl.SDL_SetWindowResizable(self.sdl_window, resizable);
+    }
+
+    pub fn resizable(self: Window) bool {
+        return (sdl.SDL_GetWindowFlags(self.sdl_window) & @intCast(u32, @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_RESIZABLE))) != 0;
     }
 };

@@ -12,7 +12,6 @@ pub const Sint8 = i8;
 pub const Uint8 = u8;
 pub const Sint16 = i16;
 pub const Uint16 = u16;
-pub const Sint32 = i32;
 pub const Uint32 = u32;
 pub const Sint64 = i64;
 pub const Uint64 = u64;
@@ -1167,7 +1166,7 @@ pub const SDL_Scancode = extern enum(c_int) {
     SDL_NUM_SCANCODES = 512,
 };
 
-pub const SDL_Keycode = Sint32;
+pub const SDL_Keycode = i32;
 
 const SDL_KeyCode = extern enum(c_int) {
     SDLK_UNKNOWN = 0,
@@ -1499,7 +1498,7 @@ pub const struct_unnamed_55 = extern struct {
     data: [16]Uint8,
 };
 pub const SDL_JoystickGUID = struct_unnamed_55;
-pub const SDL_JoystickID = Sint32;
+pub const SDL_JoystickID = i32;
 
 pub const SDL_JoystickType = extern enum(c_int) {
     SDL_JOYSTICK_TYPE_UNKNOWN,
@@ -1850,7 +1849,7 @@ pub const struct_SDL_CommonEvent = extern struct {
     timestamp: Uint32,
 };
 pub const SDL_CommonEvent = struct_SDL_CommonEvent;
-pub const struct_SDL_DisplayEvent = extern struct {
+pub const SDL_DisplayEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
     display: Uint32,
@@ -1858,10 +1857,10 @@ pub const struct_SDL_DisplayEvent = extern struct {
     padding1: Uint8,
     padding2: Uint8,
     padding3: Uint8,
-    data1: Sint32,
+    data1: i32,
 };
-pub const SDL_DisplayEvent = struct_SDL_DisplayEvent;
-pub const struct_SDL_WindowEvent = extern struct {
+
+pub const SDL_WindowEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
     windowID: Uint32,
@@ -1869,10 +1868,10 @@ pub const struct_SDL_WindowEvent = extern struct {
     padding1: Uint8,
     padding2: Uint8,
     padding3: Uint8,
-    data1: Sint32,
-    data2: Sint32,
+    data1: i32,
+    data2: i32,
 };
-pub const SDL_WindowEvent = struct_SDL_WindowEvent;
+
 pub const struct_SDL_KeyboardEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
@@ -1889,8 +1888,8 @@ pub const struct_SDL_TextEditingEvent = extern struct {
     timestamp: Uint32,
     windowID: Uint32,
     text: [32]u8,
-    start: Sint32,
-    length: Sint32,
+    start: i32,
+    length: i32,
 };
 pub const SDL_TextEditingEvent = struct_SDL_TextEditingEvent;
 pub const struct_SDL_TextInputEvent = extern struct {
@@ -1906,10 +1905,10 @@ pub const struct_SDL_MouseMotionEvent = extern struct {
     windowID: Uint32,
     which: Uint32,
     state: Uint32,
-    x: Sint32,
-    y: Sint32,
-    xrel: Sint32,
-    yrel: Sint32,
+    x: i32,
+    y: i32,
+    xrel: i32,
+    yrel: i32,
 };
 pub const SDL_MouseMotionEvent = struct_SDL_MouseMotionEvent;
 pub const struct_SDL_MouseButtonEvent = extern struct {
@@ -1921,8 +1920,8 @@ pub const struct_SDL_MouseButtonEvent = extern struct {
     state: Uint8,
     clicks: Uint8,
     padding1: Uint8,
-    x: Sint32,
-    y: Sint32,
+    x: i32,
+    y: i32,
 };
 pub const SDL_MouseButtonEvent = struct_SDL_MouseButtonEvent;
 pub const struct_SDL_MouseWheelEvent = extern struct {
@@ -1930,8 +1929,8 @@ pub const struct_SDL_MouseWheelEvent = extern struct {
     timestamp: Uint32,
     windowID: Uint32,
     which: Uint32,
-    x: Sint32,
-    y: Sint32,
+    x: i32,
+    y: i32,
     direction: Uint32,
 };
 pub const SDL_MouseWheelEvent = struct_SDL_MouseWheelEvent;
@@ -1982,7 +1981,7 @@ pub const SDL_JoyButtonEvent = struct_SDL_JoyButtonEvent;
 pub const struct_SDL_JoyDeviceEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
-    which: Sint32,
+    which: i32,
 };
 pub const SDL_JoyDeviceEvent = struct_SDL_JoyDeviceEvent;
 pub const struct_SDL_ControllerAxisEvent = extern struct {
@@ -2010,7 +2009,7 @@ pub const SDL_ControllerButtonEvent = struct_SDL_ControllerButtonEvent;
 pub const struct_SDL_ControllerDeviceEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
-    which: Sint32,
+    which: i32,
 };
 pub const SDL_ControllerDeviceEvent = struct_SDL_ControllerDeviceEvent;
 pub const struct_SDL_AudioDeviceEvent = extern struct {
@@ -2069,7 +2068,7 @@ pub const SDL_DropEvent = struct_SDL_DropEvent;
 pub const struct_SDL_SensorEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
-    which: Sint32,
+    which: i32,
     data: [6]f32,
 };
 pub const SDL_SensorEvent = struct_SDL_SensorEvent;
@@ -2087,7 +2086,7 @@ pub const struct_SDL_UserEvent = extern struct {
     type: Uint32,
     timestamp: Uint32,
     windowID: Uint32,
-    code: Sint32,
+    code: i32,
     data1: ?*c_void,
     data2: ?*c_void,
 };
@@ -2166,7 +2165,7 @@ pub const struct__SDL_Haptic = @Type(.Opaque);
 pub const SDL_Haptic = struct__SDL_Haptic;
 pub const struct_SDL_HapticDirection = extern struct {
     type: Uint8,
-    dir: [3]Sint32,
+    dir: [3]i32,
 };
 pub const SDL_HapticDirection = struct_SDL_HapticDirection;
 pub const struct_SDL_HapticConstant = extern struct {
@@ -2616,7 +2615,7 @@ pub extern fn SDL_RenderGetMetalLayer(renderer: ?*SDL_Renderer) ?*c_void;
 pub extern fn SDL_RenderGetMetalCommandEncoder(renderer: ?*SDL_Renderer) ?*c_void;
 pub const struct__SDL_Sensor = @Type(.Opaque);
 pub const SDL_Sensor = struct__SDL_Sensor;
-pub const SDL_SensorID = Sint32;
+pub const SDL_SensorID = i32;
 pub const SDL_SENSOR_INVALID = @enumToInt(enum_unnamed_83.SDL_SENSOR_INVALID);
 pub const SDL_SENSOR_UNKNOWN = @enumToInt(enum_unnamed_83.SDL_SENSOR_UNKNOWN);
 pub const SDL_SENSOR_ACCEL = @enumToInt(enum_unnamed_83.SDL_SENSOR_ACCEL);

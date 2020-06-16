@@ -34,22 +34,8 @@ pub const Config = struct {
     update_rate: f64 = 60, // desired fps
     update_multiplicity: i64 = 1, // Makes the game always do a multiple of N updates at a time. Defaults to 1. 2 would be update_rate / multiplicity or 30fps.
 
-    gfx_config: gfx.Config = gfx.Config{
-        .resolution_policy = .default, // defines how the main render texture should be blitted to the backbuffer
-        .design_width = 0, // the width of the main offscreen render texture when the policy is not .default
-        .design_height = 0, // the height of the main offscreen render texture when the policy is not .default
-        .batcher_max_sprites = 1000, // defined the size of the vertex/index buffers based on the number of sprites/quads
-        .disable_debug_render = false, // when true, debug rendering will be disabled
-    },
-
-    win_config: WindowConfig = WindowConfig{
-        .title = "Zig FNA", // the window title as UTF-8 encoded string
-        .width = 640, // the preferred width of the window / canvas
-        .height = 480, // the preferred height of the window / canvas
-        .resizable = true, // whether the window should be allowed to be resized
-        .fullscreen = false, // whether the window should be created in fullscreen mode
-        .high_dpi = false, // whether the backbuffer is full-resolution on HighDPI displays
-    },
+    gfx_config: gfx.Config = gfx.Config{},
+    win_config: WindowConfig = WindowConfig{},
 
     imgui_disabled: bool = false, // whether imgui should be disabled
     imgui_viewports: bool = false, // whether imgui viewports should be enabled

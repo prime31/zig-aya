@@ -9,6 +9,15 @@ pub const Device = struct {
         return FNA3D_CreateDevice(presentation_params, debug).?;
     }
 
+    pub fn resetBackbuffer(self: *Device, width: i32, height: i32, window: ?*c_void) void {
+        var params = PresentationParameters{
+            .backBufferWidth = width,
+            .backBufferHeight = height,
+            .deviceWindowHandle = window,
+        };
+        FNA3D_ResetBackbuffer(self, &params);
+    }
+
     pub fn applyRasterizerState(self: *Device, rasterizer_state: [*c]RasterizerState) void {
         FNA3D_ApplyRasterizerState(self, rasterizer_state);
     }
