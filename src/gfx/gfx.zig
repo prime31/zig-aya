@@ -25,11 +25,11 @@ pub const FontBook = @import("fontbook.zig").FontBook;
 pub var device: *fna.Device = undefined;
 
 pub const Config = struct {
-    disable_debug_render: bool = .default, // defines how the main render texture should be blitted to the backbuffer
+    disable_debug_render: bool = false, // when true, debug rendering will be disabled
     design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
-    resolution_policy: ResolutionPolicy = 1000, // defined the size of the vertex/index buffers based on the number of sprites/quads
-    batcher_max_sprites: i32 = false, // when true, debug rendering will be disabled
+    resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
+    batcher_max_sprites: i32 = 1000, // defines the size of the vertex/index buffers based on the number of sprites/quads
 };
 
 // locals
@@ -100,6 +100,9 @@ pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
 
 pub fn resetBackbuffer(width: i32, height: i32) void {
     device.resetBackbuffer(width, height, aya.window.sdl_window);
+    // TODO: why does setting the viewport here cause issues with rendering?
+    // setViewport(.{ .w = width, .h = height });
+    setScissor(.{ .w = width, .h = height });
 }
 
 pub fn getResolutionScaler() ResolutionScaler {
@@ -150,29 +153,44 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
 
 // Passes
 
-// offscreen passes should be rendered first. If no pass is in the PassConfig rendering will be done to the
-// DefaultOffscreenPass. After all passes are run you can optionally call postprocess and then blitToScreen.
+pub const PassConfig = struct {
+    color: math.Color = math.Color.aya,
+    trans_mat: ?math.Mat32 = null,
+    shader: ?Shader = null,
+    pass: ?*OffscreenPass = null,
+};
+
+// OffscreenPasses should be rendered first. If no pass is in the PassConfig rendering will be done to the
+// DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
 // If another pass is run after blitToScreen rendering will be to the backbuffer.
-pub fn beginPass() void {
-    var proj_mat = math.Mat32.identity;
+pub fn beginPass(config: PassConfig) void {
+    var proj_mat: math.Mat32 = undefined;
 
     // if we already blitted to the screen we can only blit to the backbuffer
     if (state.blitted_to_screen) {
         var w: i32 = undefined;
         var h: i32 = undefined;
-        aya.window.drawableSize(&h, &w);
-        // clear and set viewport
+        aya.window.drawableSize(&w, &h);
+
         proj_mat = math.Mat32.initOrtho(@intToFloat(f32, w), @intToFloat(f32, h));
+        setRenderTexture(null);
     } else {
         // if we were given an OffscreenPass use it else use our DefaultOffscreenPass
-        // const pass := if config.pass == 0 { &gg.def_pass.offscreen_pass } else { config.pass }
-        // proj_mat = math.Mat32.initOrtho(pass.color_tex.w, pass.color_tex.h);
+        const pass = if (config.pass) |p| p else &state.default_pass.offscreen_pass;
+        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, pass.render_tex.tex.width), @intToFloat(f32, pass.render_tex.tex.height));
+        setRenderTexture(pass.render_tex);
+        clear(config.color);
     }
 
     // if we were given a transform matrix multiply it here
-    //proj_mat = proj_mat * *config.trans_mat
+    if (config.trans_mat) |trans_mat| {
+        //proj_mat = proj_mat * *config.trans_mat
+    }
 
     // if we were given a Shader use it else set the SpriteEffect
+    if (config.shader) |shader | {
+        // setShader(shader);
+    }
 
     // set the TransformMatrix if it exists on the Shader
 }
@@ -183,24 +201,30 @@ pub fn endPass() void {
 }
 
 // pub fn postprocess(effect_stack: EffectStack) void {
-//effect_stack.process(state.default_pass)
+//  effect_stack.process(state.default_pass)
 // }
 
 // renders the default OffscreenPass to the backbuffer using the ResolutionScaler
 pub fn blitToScreen(letterbox_color: math.Color) void {
     state.blitted_to_screen = true;
 
-    // begin_pass({color:letterbox_color trans_mat:0 pipeline:0 pass:0})
+    // TODO: Hack until we get window resized events
+    state.default_pass.onWindowResizedCallback();
+
+    beginPass(.{.color = letterbox_color});
+    clear(letterbox_color);
     const scaler = state.default_pass.scaler;
-    //draw.batcher.draw(state.default_pass.render_tex.texture, {x:scaler.x y:scaler.y sx:scaler.scale sy:scaler.scale})
+    draw.texScale(state.default_pass.offscreen_pass.render_tex.tex, @intToFloat(f32, scaler.x), @intToFloat(f32, scaler.y), scaler.scale);
+    endPass();
 }
 
 /// if we havent yet blitted to the screen do so now
 pub fn commit() void {
     draw.batcher.endFrame();
 
-    if (!state.blitted_to_screen)
+    if (!state.blitted_to_screen) {
         blitToScreen(math.Color.black);
+    }
 
     state.blitted_to_screen = false;
 }

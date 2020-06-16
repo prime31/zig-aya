@@ -40,5 +40,7 @@ comptime {
     // _ = @import("src/gfx/batcher.zig");
     // _ = @import("src/gfx/triangle_batcher.zig");
     // _ = @import("src/gfx/atlas_batch.zig");
+    // _ = @import("src/gfx/offscreen_pass.zig"); // Zig bug: TODO buf_read_value_bytes union type
+
     // _ = @import("src/utils/utils.zig");
 }

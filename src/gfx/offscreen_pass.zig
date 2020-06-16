@@ -3,7 +3,7 @@ const gfx = @import("gfx.zig");
 pub const OffscreenPass = struct {
     render_tex: gfx.RenderTexture,
 
-    pub fn init(w: i32, h: i32, policy: gfx.ResolutionPolicy) OffscreenPass {
+    pub fn init(w: i32, h: i32) OffscreenPass {
         return OffscreenPass{
             .render_tex = gfx.RenderTexture.init(w, h),
         };
@@ -15,7 +15,7 @@ pub const OffscreenPass = struct {
 };
 
 pub const DefaultOffscreenPass = struct {
-    render_tex: gfx.RenderTexture,
+    offscreen_pass: OffscreenPass,
     policy: gfx.ResolutionPolicy,
     scaler: gfx.ResolutionScaler,
     design_w: i32,
@@ -26,7 +26,7 @@ pub const DefaultOffscreenPass = struct {
         var scaler = policy.getScaler(w, h);
 
         const pass = DefaultOffscreenPass{
-            .render_tex = gfx.RenderTexture.init(w, h),
+            .offscreen_pass = OffscreenPass.init(w, h),
             .policy = policy,
             .scaler = scaler,
             .design_w = w,
@@ -42,11 +42,11 @@ pub const DefaultOffscreenPass = struct {
 
     pub fn deinit(self: DefaultOffscreenPass) void {
         // TODO: unsubscribe from window resize event
-        self.render_tex.deinit();
+        self.offscreen_pass.deinit();
     }
 
-    fn onWindowResizedCallback(self: DefaultOffScreenPass) void {
-        pass.scaler = pass.policy.getScaler(pass.design_w, pass.design_h);
+    pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {
+        self.scaler = self.policy.getScaler(self.design_w, self.design_h);
     }
 };
 

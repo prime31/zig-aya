@@ -31,7 +31,7 @@ pub const draw = struct {
     pub fn texScale(texture: gfx.Texture, x: f32, y: f32, scale: f32) void {
         quad.setFill(texture.width, texture.height);
 
-        var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .angle = 0, .sx = scale, .sy = scale });
+        var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale });
         batcher.draw(texture.tex, quad, mat, math.Color.white);
     }
 

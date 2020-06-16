@@ -4,18 +4,21 @@ const math = aya.math;
 
 var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
-var rt: aya.gfx.RenderTexture = undefined;
+var offscreen_pass: aya.gfx.OffscreenPass = undefined;
 
 pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,
         .render = render,
+        .gfx_config = .{
+            .resolution_policy = .show_all_pixel_perfect,
+        }
     });
 
     checker_tex.deinit();
     font_tex.deinit();
-    rt.deinit();
+    offscreen_pass.deinit();
 }
 
 fn init() void {
@@ -26,13 +29,22 @@ fn init() void {
 
     checker_tex = aya.gfx.Texture.initCheckerboard();
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png") catch unreachable;
-    rt = aya.gfx.RenderTexture.init(52, 52);
+    offscreen_pass = aya.gfx.OffscreenPass.init(52, 52);
 }
 
 fn update() void {}
 
 fn render() void {
-    aya.gfx.beginPass();
+    // render offscreen
+    aya.gfx.beginPass(.{.pass = &offscreen_pass, .color = aya.math.Color.lime});
+    var i = @as(usize, 0);
+    while (i <= @divFloor(offscreen_pass.render_tex.tex.width, checker_tex.width)) : (i += 1) {
+        aya.draw.tex(checker_tex, @intToFloat(f32, i * 4), @intToFloat(f32, i * 2 + 10));
+    }
+    aya.gfx.endPass();
+
+    // render into our default render target
+    aya.gfx.beginPass(.{});
     aya.draw.texScale(checker_tex, 5, 5, 10);
     aya.draw.texScale(checker_tex, 55, 55, 2);
 
@@ -50,18 +62,12 @@ fn render() void {
     aya.draw.hollowPolygon(poly[0..], 2, math.Color.gold);
     aya.gfx.endPass();
 
-    aya.gfx.beginPass();
-    aya.gfx.setRenderTexture(rt);
-    aya.gfx.clear(aya.math.Color.lime);
-    var i = @as(usize, 0);
-    while (i <= @divFloor(rt.tex.width, checker_tex.width)) : (i += 1) {
-        aya.draw.tex(checker_tex, @intToFloat(f32, i * 4), @intToFloat(f32, i * 2 + 10));
-    }
-    aya.gfx.endPass();
+    // blit the default render target to the screen
+    aya.gfx.blitToScreen(aya.math.Color.black);
 
-    aya.gfx.beginPass();
-    aya.debug.drawPoint(math.Vec2.init(40, 400), 60, null);
-    aya.gfx.setRenderTexture(null);
-    aya.draw.texScale(rt.tex, 70, 200, 2);
+    // now render directly to the backbuffer
+    aya.gfx.beginPass(.{});
+    aya.debug.drawPoint(math.Vec2.init(40, 400), 60, aya.math.Color.yellow);
+    aya.draw.texScale(offscreen_pass.render_tex.tex, 70, 200, 2);
     aya.gfx.endPass();
 }
