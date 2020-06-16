@@ -185,14 +185,16 @@ pub fn beginPass(config: PassConfig) void {
     // if we were given a transform matrix multiply it here
     if (config.trans_mat) |trans_mat| {
         //proj_mat = proj_mat * *config.trans_mat
+        proj_mat = proj_mat.mul(trans_mat);
     }
 
     // if we were given a Shader use it else set the SpriteEffect
-    if (config.shader) |shader | {
+    if (config.shader) |shader| {
         // setShader(shader);
     }
 
     // set the TransformMatrix if it exists on the Shader
+    //shader.setParam(aya.math.Mat32, "TransformMatrix", proj_mat);
 }
 
 pub fn endPass() void {
