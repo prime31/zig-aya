@@ -41,7 +41,7 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.addIncludeDir("/Users/desaro/emsdk/upstream/emscripten/system/include");
         exe.addIncludeDir("/Users/desaro/emsdk/upstream/emscripten/system/include/SDL");
     } else if (target.isDarwin()) {
-        const frameworks_dir = macos_frameworks_dir(b) catch unreachable;
+        const frameworks_dir = macosFrameworksDir(b) catch unreachable;
         exe.addFrameworkDir(frameworks_dir);
         exe.linkFramework("Foundation");
         exe.linkFramework("Cocoa");
@@ -94,7 +94,7 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
 }
 
 // helper function to get SDK path on Mac
-fn macos_frameworks_dir(b: *Builder) ![]u8 {
+fn macosFrameworksDir(b: *Builder) ![]u8 {
     var str = try b.exec(&[_][]const u8{ "xcrun", "--show-sdk-path" });
     const strip_newline = std.mem.lastIndexOf(u8, str, "\n");
     if (strip_newline) |index| {

@@ -1,7 +1,9 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
+
 const fna_build = @import("deps/fna/build.zig");
+const imgui_build = @import("deps/imgui/build.zig");
 const fontstash_build = @import("deps/fontstash/build.zig");
 
 pub fn build(b: *Builder) void {
@@ -13,6 +15,7 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
+        [_][]const u8{ "imgui", "examples/imgui.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "fonts", "examples/fonts.zig" },
         [_][]const u8{ "main", "examples/main.zig" },
@@ -50,6 +53,7 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
 
     // fna can be dynamic, static or compiled in
     fna_build.linkArtifact(b, exe, target, @intToEnum(fna_build.LibType, lib_type), "src/deps/fna");
+    imgui_build.linkArtifact(b, exe, target, @intToEnum(imgui_build.LibType, lib_type), "src/deps/imgui");
     fontstash_build.linkArtifact(b, exe, target, @intToEnum(fontstash_build.LibType, lib_type), "src/deps/fontstash");
 
     exe.linkSystemLibrary("c");
