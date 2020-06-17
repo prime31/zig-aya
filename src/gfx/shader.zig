@@ -7,6 +7,7 @@ const gfx = aya.gfx;
 pub const Shader = extern struct {
     effect: *fna.Effect,
     mojo_effect: *fna.mojo.Effect,
+    transform_matrix_index: usize = std.math.maxInt(usize),
 
     pub fn initFromFile(file: []const u8) !Shader {
         var bytes = try fs.read(aya.mem.tmp_allocator, file);
@@ -30,6 +31,10 @@ pub const Shader = extern struct {
             .effect = effect.?,
             .mojo_effect = mojo_effect.?,
         };
+
+        // store the index of the TransformMatrix param if we have one
+        shader.transform_matrix_index = if (shader.getParamIndex("TransformMatrix")) |index| index else |err| shader.transform_matrix_index;
+
         const techniques = shader.mojo_effect.techniques[0..@intCast(usize, shader.mojo_effect.technique_count)];
         gfx.device.setEffectTechnique(shader.effect, &techniques[0]);
 
@@ -89,7 +94,8 @@ pub const Shader = extern struct {
         return error.TechnniqueNotFound;
     }
 
-    pub fn getParamIndex(self: Shader, name: []const u8) usize {
+    /// gets the index of the parameter
+    pub fn getParamIndex(self: Shader, name: []const u8) !usize {
         if (self.mojo_effect.param_count > 0) {
             const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
             for (params) |param, i| {
@@ -101,6 +107,7 @@ pub const Shader = extern struct {
         return error.ParamNotFound;
     }
 
+    /// gets the value of the parameter
     pub fn getParamValue(self: Shader, comptime T: type, name: []const u8) T {
         if (self.mojo_effect.param_count > 0) {
             const params = self.mojo_effect.params[0..@intCast(usize, self.mojo_effect.param_count)];
@@ -111,6 +118,11 @@ pub const Shader = extern struct {
             }
         }
         return unreachable;
+    }
+
+    /// gets the value of the parameter
+    pub fn getParamValueByIndex(self: Shader, comptime T: type, index: usize) T {
+        return getParamImpl(T, self.mojo_effect.params[index].value);
     }
 
     fn getParamImpl(comptime T: type, value: fna.mojo.EffectValue) T {
@@ -150,6 +162,10 @@ pub const Shader = extern struct {
             }
         }
         @panic("Attempting to set a shader param that doesnt exist");
+    }
+
+    pub fn setParamByIndex(self: Shader, comptime T: type, index: usize, value: T) void {
+        return setParamImpl(T, self.mojo_effect.params[index].value, value);
     }
 
     fn setParamImpl(comptime T: type, effect_value: fna.mojo.EffectValue, value: T) void {

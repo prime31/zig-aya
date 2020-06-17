@@ -24,6 +24,11 @@ pub fn toDegrees(rad: var) @typeOf(deg) {
     return 180.0 * rad / pi;
 }
 
+pub fn isEven(val: var) bool {
+    std.debug.assert(@typeInfo(@TypeOf(val)) == .Int or @typeInfo(@TypeOf(val)) == .ComptimeInt);
+    return @mod(val, 2) == 0;
+}
+
 test "test math.rand" {
     rand.seed(0);
 
@@ -39,4 +44,6 @@ test "test math.rand" {
     std.testing.expect(rand.range(f32, 5.0, 10.0) < 10);
 
     std.testing.expect(rand.uintLessThan(u32, 5) < 5);
+
+    std.testing.expect(isEven(666));
 }

@@ -41,7 +41,7 @@ const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
 const fna = @import("../deps/fna/fna.zig");
 const math = @import("../math/math.zig");
 
-pub var state = struct {
+var state = struct {
     viewport: fna.Viewport = fna.Viewport{ .w = 0, .h = 0 },
     rt_binding: fna.RenderTargetBinding = undefined,
     debug_render_enabled: bool = false,
@@ -109,7 +109,7 @@ pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
 pub fn resetBackbuffer(width: i32, height: i32) void {
     device.resetBackbuffer(width, height, aya.window.sdl_window);
     // TODO: why does setting the viewport here cause issues with rendering?
-    // setViewport(.{ .w = width, .h = height });
+    setViewport(.{ .w = width, .h = height });
     setScissor(.{ .w = width, .h = height });
 }
 
@@ -119,6 +119,10 @@ pub fn getResolutionScaler() ResolutionScaler {
 
 pub fn getFontBook() FontBook {
     return draw.fontbook;
+}
+
+pub fn createPostProcessStack() PostProcessStack {
+    return PostProcessStack.init(null, state.default_pass.design_w, state.default_pass.design_h);
 }
 
 pub fn setRenderTexture(rt: ?RenderTexture) void {
@@ -161,23 +165,25 @@ pub fn setRenderTexture(rt: ?RenderTexture) void {
 
 pub fn setShader(shader: Shader) void {
     draw.batcher.flush(false);
-    shader.setParam(aya.math.Mat32, "TransformMatrix", state.transform_mat);
+    if (shader.transform_matrix_index < std.math.maxInt(usize)) {
+        shader.setParamByIndex(aya.math.Mat32, shader.transform_matrix_index, state.transform_mat);
+    }
     shader.apply();
 }
 
 // Passes
 
-pub const PassConfig = struct {
-    color: math.Color = math.Color.aya,
+pub const Pass = struct {
+    color: ?math.Color = math.Color.aya,
     trans_mat: ?math.Mat32 = null,
     shader: ?Shader = null,
-    pass: ?*OffscreenPass = null,
+    render_texture: ?RenderTexture = null,
 };
 
 // OffscreenPasses should be rendered first. If no pass is in the PassConfig rendering will be done to the
 // DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
 // If another pass is run after blitToScreen rendering will be to the backbuffer.
-pub fn beginPass(config: PassConfig) void {
+pub fn beginPass(config: Pass) void {
     var proj_mat: math.Mat32 = undefined;
 
     // if we already blitted to the screen we can only blit to the backbuffer
@@ -190,10 +196,12 @@ pub fn beginPass(config: PassConfig) void {
         setRenderTexture(null);
     } else {
         // if we were given an OffscreenPass use it else use our DefaultOffscreenPass
-        const pass = if (config.pass) |p| p else &state.default_pass.offscreen_pass;
-        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, pass.render_tex.tex.width), @intToFloat(f32, pass.render_tex.tex.height));
-        setRenderTexture(pass.render_tex);
-        clear(config.color);
+        const rt = config.render_texture orelse state.default_pass.render_tex;
+        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, rt.tex.width), @intToFloat(f32, rt.tex.height));
+        setRenderTexture(rt);
+        if (config.color) |color| {
+            clear(color);
+        }
     }
 
     // if we were given a transform matrix multiply it here
@@ -204,11 +212,12 @@ pub fn beginPass(config: PassConfig) void {
     state.transform_mat = proj_mat;
 
     // if we were given a Shader use it else set the SpriteEffect
-    if (config.shader) |shader| {
-        setShader(shader);
-    } else {
-        setShader(state.sprite_shader);
-    }
+    setShader(config.shader orelse state.sprite_shader);
+    // if (config.shader) |shader| {
+    //     setShader(shader);
+    // } else {
+    //     setShader(state.sprite_shader);
+    // }
 }
 
 pub fn endPass() void {
@@ -216,9 +225,9 @@ pub fn endPass() void {
     aya.debug.render(state.debug_render_enabled);
 }
 
-pub fn postProcess(stack: PostProcessStack) void {
-    state.transform_mat = math.Mat32.initOrtho(@intToFloat(f32, state.default_pass.offscreen_pass.render_tex.tex.width), @intToFloat(f32, state.default_pass.offscreen_pass.render_tex.tex.height));
-    stack.process(state.default_pass.offscreen_pass);
+pub fn postProcess(stack: *PostProcessStack) void {
+    state.transform_mat = math.Mat32.initOrtho(@intToFloat(f32, state.default_pass.render_tex.tex.width), @intToFloat(f32, state.default_pass.render_tex.tex.height));
+    stack.process(&state.default_pass.render_tex);
 }
 
 // renders the default OffscreenPass to the backbuffer using the ResolutionScaler
@@ -231,7 +240,7 @@ pub fn blitToScreen(letterbox_color: math.Color) void {
     beginPass(.{.color = letterbox_color});
     clear(letterbox_color);
     const scaler = state.default_pass.scaler;
-    draw.texScale(state.default_pass.offscreen_pass.render_tex.tex, @intToFloat(f32, scaler.x), @intToFloat(f32, scaler.y), scaler.scale);
+    draw.texScale(state.default_pass.render_tex.tex, @intToFloat(f32, scaler.x), @intToFloat(f32, scaler.y), scaler.scale);
     endPass();
 }
 

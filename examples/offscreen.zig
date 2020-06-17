@@ -5,7 +5,7 @@ const math = aya.math;
 
 var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
-var offscreen_pass: aya.gfx.OffscreenPass = undefined;
+var rt: aya.gfx.RenderTexture = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 
 pub fn main() !void {
@@ -20,16 +20,16 @@ pub fn main() !void {
 
     checker_tex.deinit();
     font_tex.deinit();
-    offscreen_pass.deinit();
+    rt.deinit();
     stack.deinit();
 }
 
 fn init() void {
     checker_tex = aya.gfx.Texture.initCheckerboard();
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png") catch unreachable;
-    offscreen_pass = aya.gfx.OffscreenPass.init(52, 52);
+    rt = aya.gfx.RenderTexture.init(52, 52);
 
-    stack = aya.gfx.PostProcessStack.init(null);
+    stack = aya.gfx.createPostProcessStack();
     _ = stack.add(aya.gfx.Sepia, {});
 }
 
@@ -49,9 +49,9 @@ fn update() void {
 
 fn render() void {
     // render offscreen
-    aya.gfx.beginPass(.{.pass = &offscreen_pass, .color = aya.math.Color.lime});
+    aya.gfx.beginPass(.{.render_texture = rt, .color = aya.math.Color.lime});
     var i = @as(usize, 0);
-    while (i <= @divFloor(offscreen_pass.render_tex.tex.width, checker_tex.width)) : (i += 1) {
+    while (i <= @divFloor(rt.tex.width, checker_tex.width)) : (i += 1) {
         aya.draw.tex(checker_tex, @intToFloat(f32, i * 4), @intToFloat(f32, i * 2 + 10));
     }
     aya.gfx.endPass();
@@ -76,12 +76,12 @@ fn render() void {
     aya.gfx.endPass();
 
     // blit the default render target to the screen
-    aya.gfx.postProcess(stack);
+    aya.gfx.postProcess(&stack);
     aya.gfx.blitToScreen(aya.math.Color.black);
 
     // now render directly to the backbuffer
     aya.gfx.beginPass(.{});
     aya.debug.drawPoint(math.Vec2.init(30, 400), 60, aya.math.Color.yellow);
-    aya.draw.texScale(offscreen_pass.render_tex.tex, 0, 200, 2);
+    aya.draw.texScale(rt.tex, 0, 200, 2);
     aya.gfx.endPass();
 }
