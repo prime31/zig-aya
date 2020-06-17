@@ -35,6 +35,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         },
     }
 
+    artifact.addPackagePath("imgui_manual", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "imgui_manual.zig" }) catch unreachable);
     artifact.addPackagePath("imgui", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "imgui.zig" }) catch unreachable);
 }
 
