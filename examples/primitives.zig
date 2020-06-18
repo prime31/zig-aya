@@ -27,7 +27,7 @@ fn init() void {
 fn update() void {}
 
 fn render() void {
-    aya.gfx.beginPass();
+    aya.gfx.beginPass(.{});
     aya.draw.line(aya.math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
     aya.draw.point(math.Vec2.init(350, 350), 10, math.Color.sky_blue);
     aya.draw.point(math.Vec2.init(380, 380), 15, math.Color.magenta);
@@ -39,7 +39,7 @@ fn render() void {
     aya.draw.hollowPolygon(poly[0..], 2, math.Color.gold);
     aya.gfx.endPass();
 
-    aya.gfx.beginPass();
+    aya.gfx.beginPass(.{.color = null});
     tri_batch.drawTriangle(.{ .x = 50, .y = 50 }, .{ .x = 150, .y = 150 }, .{ .x = 0, .y = 150 }, Color.black);
     tri_batch.drawTriangle(.{ .x = 300, .y = 50 }, .{ .x = 350, .y = 150 }, .{ .x = 200, .y = 150 }, Color.lime);
     tri_batch.endFrame();

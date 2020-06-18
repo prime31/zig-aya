@@ -36,5 +36,7 @@ fn init() void {
 fn update() void {}
 
 fn render() void {
+    aya.gfx.beginPass(.{});
     mesh.draw(4);
+    aya.gfx.endPass();
 }

@@ -66,5 +66,7 @@ fn update() void {
 }
 
 fn render() void {
+    aya.gfx.beginPass(.{});
     batch.draw();
+    aya.gfx.endPass();
 }

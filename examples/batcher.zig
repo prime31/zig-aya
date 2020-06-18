@@ -37,6 +37,7 @@ fn init() void {
 fn update() void {}
 
 fn render() void {
+    aya.gfx.beginPass(.{});
     var mat = aya.math.Mat32.identity;
     var x: usize = 0;
     var y = @as(usize, 0);
