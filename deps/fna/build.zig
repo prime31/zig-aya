@@ -51,7 +51,6 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.linkFramework("MetalKit");
         exe.linkFramework("OpenGL");
         exe.linkFramework("Carbon");
-        exe.linkSystemLibrary("c++");
         exe.addIncludeDir("/usr/local/include/SDL2");
     } else if (target.isWindows()) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2 then renaming
@@ -63,33 +62,41 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.addIncludeDir("/usr/local/include/SDL2");
     }
 
-    const has_metal = target.isDarwin();
-    const metal_driver = if (has_metal) "-DFNA3D_DRIVER_METAL" else "-dFNA3D_NOTHING";
-    const metal_support = if (has_metal) "-DSUPPORT_PROFILE_METAL=1" else "-DSUPPORT_PROFILE_METAL=0";
-    const moderngl_driver = if (has_metal) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_MODERNGL";
-    const threadedgl_driver = if (has_metal) "-dFNA3D_NOTHING" else "-DFNA3D_DRIVER_THREADEDGL";
-
     const lib_cflags = &[_][]const u8{
         "-std=gnu99",                      "-Wall",                          "-Wno-strict-aliasing",              "-pedantic",
         "-DMOJOSHADER_NO_VERSION_INCLUDE", "-DMOJOSHADER_USE_SDL_STDLIB",    "-DFNA3D_DRIVER_OPENGL",             "-DMOJOSHADER_EFFECT_SUPPORT",
         "-DMOJOSHADER_DEPTH_CLIPPING",     "-DMOJOSHADER_FLIP_RENDERTARGET", "-DMOJOSHADER_XNA4_VERTEX_TEXTURES", "-DSUPPORT_PROFILE_ARB1=0",
-        "-DSUPPORT_PROFILE_ARB1_NV=0",     "-DSUPPORT_PROFILE_BYTECODE=0",   "-DSUPPORT_PROFILE_D3D=0",           metal_driver,
-        metal_support,                     "-fno-sanitize=undefined",        "-w",                                moderngl_driver,
-        threadedgl_driver,
+        "-DSUPPORT_PROFILE_ARB1_NV=0",     "-DSUPPORT_PROFILE_BYTECODE=0",   "-DSUPPORT_PROFILE_D3D=0",           "-fno-sanitize=undefined",
+        "-w",
     };
     // -fno-sanitize=undefined fixes a crash in stb hash
 
+    const platform_cflags = if (std.Target.current.os.tag == .macosx) blk: {
+        break :blk &[_][]const u8{ "-DFNA3D_DRIVER_METAL", "-DSUPPORT_PROFILE_METAL=1" };
+    } else if (std.Target.current.os.tag == .windows) blk: {
+        break :blk &[_][]const u8{ "-DFNA3D_DRIVER_D3D11", "-DSUPPORT_PROFILE_HLSL=1", "-DSUPPORT_PROFILE_METAL=0" };
+    } else blk: {
+        break :blk &[_][]const u8{};
+    };
+
+    const cflags = lib_cflags ++ platform_cflags;
+
+    // for builds from the root dir of the project
     exe.addIncludeDir("deps/fna/FNA3D/include");
     exe.addIncludeDir("deps/fna/FNA3D/MojoShader");
 
+    // for local builds with this build file as the root of the build
+    exe.addIncludeDir("FNA3D/include");
+    exe.addIncludeDir("FNA3D/MojoShader");
+
     for (fna_src_files) |src_file| {
         const file = b.fmt("deps/fna/FNA3D/src/{}", .{src_file});
-        exe.addCSourceFile(file, lib_cflags);
+        exe.addCSourceFile(file, cflags);
     }
 
     for (mojo_src_files) |src_file| {
         const file = b.fmt("deps/fna/FNA3D/MojoShader/{}", .{src_file});
-        exe.addCSourceFile(file, lib_cflags);
+        exe.addCSourceFile(file, cflags);
     }
 }
 
