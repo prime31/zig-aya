@@ -1425,7 +1425,10 @@ pub const SDL_Keymod = extern enum(c_int) {
     KMOD_CAPS = 8192,
     KMOD_MODE = 16384,
     KMOD_RESERVED = 32768,
-    _,
+    shift = 1 | 2,
+    alt = 256 | 512,
+    ctrl = 64 | 128,
+    gui = 1024 | 2048,
 };
 
 pub const SDL_Keysym = extern struct {
@@ -1453,6 +1456,20 @@ pub extern fn SDL_HasScreenKeyboardSupport() SDL_bool;
 pub extern fn SDL_IsScreenKeyboardShown(window: ?*SDL_Window) SDL_bool;
 pub const struct_SDL_Cursor = @Type(.Opaque);
 pub const SDL_Cursor = struct_SDL_Cursor;
+
+pub const SDL_MouseCursor = extern enum(c_int) {
+    None = -1,
+    Arrow = 0,
+    TextInput = 1,
+    ResizeAll = 2,
+    ResizeNS = 3,
+    ResizeEW = 4,
+    ResizeNESW = 5,
+    ResizeNWSE = 6,
+    Hand = 7,
+    NotAllowed = 8,
+    Count = 9,
+};
 
 pub const SDL_SystemCursor = extern enum(c_int) {
     SDL_SYSTEM_CURSOR_ARROW,

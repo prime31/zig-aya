@@ -2,6 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 const imgui = @import("imgui");
 
+var demo_open: bool = true;
+
 pub fn main() !void {
     try aya.run(.{
         .init = init,
@@ -15,6 +17,8 @@ fn init() void {
     std.debug.warn("good? {s}\n", .{res});
 }
 
-fn update() void {}
+fn update() void {
+    imgui.igShowDemoWindow(&demo_open);
+}
 
 fn render() void {}

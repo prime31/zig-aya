@@ -19,7 +19,7 @@ pub const WindowMode = enum(u32) {
 };
 
 pub const Window = struct {
-    sdl_window: ?*sdl.SDL_Window = null,
+    sdl_window: *sdl.SDL_Window = undefined,
     id: u32 = 0,
     focused: bool = undefined,
 

@@ -31,6 +31,18 @@ pub const Texture = extern struct {
         return texture;
     }
 
+    pub fn initFromData(data: []u8, width: i32, height: i32) !Texture {
+        var texture = Texture{
+            .width = width,
+            .height = height,
+        };
+
+        texture.tex = aya.gfx.device.createTexture2D(.color, texture.width, texture.height, 1, false).?;
+        texture.setData(data);
+
+        return texture;
+    }
+
     pub fn initCheckerboard() Texture {
         var pixels = [_]u32{
             0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,

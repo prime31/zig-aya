@@ -9,6 +9,10 @@ pub const Device = struct {
         return FNA3D_CreateDevice(presentation_params, debug).?;
     }
 
+    pub fn deinit(self: *Device) void {
+        FNA3D_DestroyDevice(self);
+    }
+
     pub fn resetBackbuffer(self: *Device, width: i32, height: i32, window: ?*c_void) void {
         var params = PresentationParameters{
             .backBufferWidth = width,

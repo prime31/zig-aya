@@ -54,14 +54,15 @@ var state = struct {
 pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     device = fna.Device.init(params, true);
 
-    var rasterizer = fna.RasterizerState{};
-    device.applyRasterizerState(&rasterizer);
+    // initialize all graphics state
+    var raster_state = fna.RasterizerState{};
+    setRasterizerState(&raster_state);
 
-    var blend = fna.BlendState{};
-    device.setBlendState(&blend);
+    var blend_state = fna.BlendState{};
+    setBlendState(&blend_state);
 
-    var depthStencil = fna.DepthStencilState{};
-    device.setDepthStencilState(&depthStencil);
+    var depth_stencil_state = fna.DepthStencilState{};
+    setDepthStencilState(&depth_stencil_state);
 
     setViewport(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
     setScissor(.{ .w = params.backBufferWidth, .h = params.backBufferHeight });
@@ -79,6 +80,12 @@ pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
 
     state.sprite_shader = aya.gfx.Shader.initFromBytes(@embedFile("assets/SpriteEffect.fxb")) catch unreachable;
+}
+
+pub fn deinit() void {
+    state.default_pass.deinit();
+    state.sprite_shader.deinit();
+    device.deinit();
 }
 
 pub fn clear(color: math.Color) void {
@@ -99,6 +106,18 @@ pub fn setViewport(vp: fna.Viewport) void {
 pub fn setScissor(rect: math.RectI) void {
     var r = @bitCast(fna.Rect, rect);
     device.setScissorRect(&r);
+}
+
+pub fn setRasterizerState(rasterizer_state: *fna.RasterizerState) void {
+    device.applyRasterizerState(rasterizer_state);
+}
+
+pub fn setBlendState(blend_state: *fna.BlendState) void {
+    device.setBlendState(blend_state);
+}
+
+pub fn setDepthStencilState(depth_stencil_state: *fna.DepthStencilState) void {
+    device.setDepthStencilState(depth_stencil_state);
 }
 
 pub fn resetBackbuffer(width: i32, height: i32) void {

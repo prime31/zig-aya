@@ -26,6 +26,8 @@ const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
 const Debug = @import("debug.zig").Debug;
 
+const imgui = @import("imgui/implementation.zig");
+
 pub const Config = struct {
     init: fn () void,
     update: fn () void,
@@ -37,7 +39,7 @@ pub const Config = struct {
     gfx_config: gfx.Config = gfx.Config{},
     win_config: WindowConfig = WindowConfig{},
 
-    imgui_disabled: bool = false, // whether imgui should be disabled
+    imgui_enabled: bool = true, // whether imgui should be disabled
     imgui_viewports: bool = false, // whether imgui viewports should be enabled
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
@@ -59,33 +61,42 @@ pub fn run(config: Config) !void {
         .deviceWindowHandle = window.sdl_window,
     };
     try gfx.init(&params, config.gfx_config);
+    defer gfx.deinit();
 
     time = Time.init(config.update_rate, config.update_multiplicity);
     input = Input.init(window.scale());
     debug = try Debug.init();
     defer debug.deinit();
 
+    if (config.imgui_enabled) imgui.init(gfx.device, window.sdl_window);
+
     config.init();
-    runLoop(config.update, config.render);
+    runLoop(config.update, config.render, config.imgui_enabled);
 }
 
-fn runLoop(update: fn () void, render: fn () void) void {
-    while (!pollEvents()) {
+fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {
+    while (!pollEvents(imgui_enabled)) {
+        if (imgui_enabled) imgui.newFrame();
         gfx.device.beginFrame();
 
         time.tick(update);
         render();
 
         gfx.commit();
+        if (imgui_enabled) imgui.render();
         window.swap(gfx.device);
     }
 }
 
 /// returns true when its time to quit
-fn pollEvents() bool {
+fn pollEvents(imgui_enabled: bool) bool {
     input.newFrame();
     var event: sdl.SDL_Event = undefined;
+
     while (sdl.SDL_PollEvent(&event) != 0) {
+        // ignore events imgui eats
+        if (imgui_enabled and imgui.handleEvent(&event)) continue;
+
         switch (event.type) {
             sdl.SDL_QUIT => return true,
             sdl.SDL_WINDOWEVENT => {

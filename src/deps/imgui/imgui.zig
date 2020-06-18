@@ -29,7 +29,7 @@ pub const va_list = __darwin_va_list;
 pub extern fn renameat(c_int, [*c]const u8, c_int, [*c]const u8) c_int;
 pub extern fn renamex_np([*c]const u8, [*c]const u8, c_uint) c_int;
 pub extern fn renameatx_np(c_int, [*c]const u8, c_int, [*c]const u8, c_uint) c_int;
-pub const fpos_t = __darwin_off_t;
+
 pub const struct___sbuf = extern struct {
     _base: [*c]u8,
     _size: c_int,
@@ -46,7 +46,7 @@ pub const struct___sFILE = extern struct {
     _cookie: ?*c_void,
     _close: ?fn (?*c_void) callconv(.C) c_int,
     _read: ?fn (?*c_void, [*c]u8, c_int) callconv(.C) c_int,
-    _seek: ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t,
+    // _seek: ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t,
     _write: ?fn (?*c_void, [*c]const u8, c_int) callconv(.C) c_int,
     _ub: struct___sbuf,
     _extra: ?*struct___sFILEX,
@@ -55,7 +55,7 @@ pub const struct___sFILE = extern struct {
     _nbuf: [1]u8,
     _lb: struct___sbuf,
     _blksize: c_int,
-    _offset: fpos_t,
+    // _offset: fpos_t,
 };
 pub const FILE = struct___sFILE;
 pub extern var __stdinp: [*c]FILE;
@@ -1105,7 +1105,7 @@ pub const struct_ImDrawList = extern struct {
 pub const ImDrawList = struct_ImDrawList;
 pub const struct_ImDrawData = extern struct {
     Valid: bool,
-    CmdLists: [*c][*c]ImDrawList,
+    CmdLists: [*c]*ImDrawList,
     CmdListsCount: c_int,
     TotalIdxCount: c_int,
     TotalVtxCount: c_int,
@@ -2801,12 +2801,12 @@ pub extern fn igCreateContext(shared_font_atlas: [*c]ImFontAtlas) [*c]ImGuiConte
 pub extern fn igDestroyContext(ctx: [*c]ImGuiContext) void;
 pub extern fn igGetCurrentContext() [*c]ImGuiContext;
 pub extern fn igSetCurrentContext(ctx: [*c]ImGuiContext) void;
-pub extern fn igGetIO() [*c]ImGuiIO;
+pub extern fn igGetIO() *ImGuiIO;
 pub extern fn igGetStyle() [*c]ImGuiStyle;
-pub extern fn igNewFrame() void;
-pub extern fn igEndFrame() void;
+pub extern fn igNewFrame() callconv(.C) void;
+pub extern fn igEndFrame() callconv(.C) void;
 pub extern fn igRender() void;
-pub extern fn igGetDrawData() [*c]ImDrawData;
+pub extern fn igGetDrawData() *ImDrawData;
 pub extern fn igShowDemoWindow(p_open: [*c]bool) void;
 pub extern fn igShowAboutWindow(p_open: [*c]bool) void;
 pub extern fn igShowMetricsWindow(p_open: [*c]bool) void;
@@ -3156,12 +3156,12 @@ pub extern fn igSetAllocatorFunctions(alloc_func: ?fn (usize, ?*c_void) callconv
 pub extern fn igMemAlloc(size: usize) ?*c_void;
 pub extern fn igMemFree(ptr: ?*c_void) void;
 pub extern fn igGetPlatformIO() [*c]ImGuiPlatformIO;
-pub extern fn igGetMainViewport() [*c]ImGuiViewport;
+pub extern fn igGetMainViewport() *ImGuiViewport;
 pub extern fn igUpdatePlatformWindows() void;
 pub extern fn igRenderPlatformWindowsDefault(platform_render_arg: ?*c_void, renderer_render_arg: ?*c_void) void;
 pub extern fn igDestroyPlatformWindows() void;
 pub extern fn igFindViewportByID(id: ImGuiID) [*c]ImGuiViewport;
-pub extern fn igFindViewportByPlatformHandle(platform_handle: ?*c_void) [*c]ImGuiViewport;
+pub extern fn igFindViewportByPlatformHandle(platform_handle: ?*c_void) ?*ImGuiViewport;
 pub extern fn ImGuiStyle_ImGuiStyle() [*c]ImGuiStyle;
 pub extern fn ImGuiStyle_destroy(self: [*c]ImGuiStyle) void;
 pub extern fn ImGuiStyle_ScaleAllSizes(self: [*c]ImGuiStyle, scale_factor: f32) void;
