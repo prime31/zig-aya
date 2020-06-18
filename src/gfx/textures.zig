@@ -97,7 +97,7 @@ pub const RenderTexture = extern struct {
         };
     }
 
-    pub fn initWithDepthStencil(width: i32, height: i32, format: fna.Depth_Format) RenderTexture {
+    pub fn initWithDepthStencil(width: i32, height: i32, format: fna.DepthFormat) RenderTexture {
         var rt = init(width, height);
         rt.depth_stencil_format = format;
         if (format != .none) {
@@ -112,6 +112,18 @@ pub const RenderTexture = extern struct {
             aya.gfx.device.addDisposeRenderbuffer(self.depth_stencil_buffer);
         }
         self.tex.deinit();
+    }
+
+    pub fn resize(self: *RenderTexture, width: i32, height: i32) void {
+        self.deinit();
+
+        const rt: RenderTexture = if (self.depth_stencil_format != .none)
+            RenderTexture.initWithDepthStencil(width, height, self.depth_stencil_format)
+        else
+            RenderTexture.init(width, height);
+
+        self.tex = rt.tex;
+        self.depth_stencil_buffer = rt.depth_stencil_buffer;
     }
 };
 

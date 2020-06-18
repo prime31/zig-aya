@@ -1,4 +1,6 @@
+const std = @import("std");
 const gfx = @import("gfx.zig");
+const aya = @import("../aya.zig");
 
 pub const DefaultOffscreenPass = struct {
     render_tex: gfx.RenderTexture,
@@ -20,6 +22,7 @@ pub const DefaultOffscreenPass = struct {
         };
 
         // TODO: we have to update our scaler when the window resizes
+        // TODO: remove the hack from gfx.blitToScreen when this works
         //aya.window.subscribe(.resize, onWindowResizedCallback, pass, false);
 
         return pass;
@@ -32,6 +35,14 @@ pub const DefaultOffscreenPass = struct {
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {
         // TODO: if the policy is .default we need to recreate the render textures with the new backbuffer size
+        var w: i32 = 0;
+        var h: i32 = 0;
+        aya.window.drawableSize(&w, &h);
+        if (self.policy == .default and (w != self.design_w or h != self.design_h)) {
+            self.render_tex.resize(w, h);
+            self.design_w = w;
+            self.design_h = h;
+        }
         self.scaler = self.policy.getScaler(self.design_w, self.design_h);
     }
 };
