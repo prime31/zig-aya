@@ -72,6 +72,8 @@ pub fn run(config: Config) !void {
 
     config.init();
     runLoop(config.update, config.render, config.imgui_enabled);
+
+    if (config.imgui_enabled) imgui.deinit();
 }
 
 fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {

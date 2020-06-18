@@ -21,4 +21,6 @@ fn update() void {
     imgui.igShowDemoWindow(&demo_open);
 }
 
-fn render() void {}
+fn render() void {
+    aya.gfx.beginPass(.{});
+}

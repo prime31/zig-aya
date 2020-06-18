@@ -1,15 +1,19 @@
 const std = @import("std");
 const imgui = @import("../deps/imgui/imgui.zig");
 const sdl = @import("../deps/sdl/sdl.zig");
+const aya = @import("../aya.zig");
 
 pub const Events = struct {
-    mouse_cursors: [imgui.ImGuiMouseCursor_COUNT]*sdl.SDL_Cursor = undefined,
+    mouse_cursors: [imgui.ImGuiMouseCursor_COUNT]?*sdl.SDL_Cursor = undefined,
     mouse_button_state: [4]bool = undefined,
     global_time: u64 = 0,
+
+    var clipboard_text: [*c]u8 = null;
 
     pub fn init() Events {
         var io = imgui.igGetIO();
         io.BackendFlags |= imgui.ImGuiBackendFlags_HasMouseCursors;
+        io.BackendFlags |= imgui.ImGuiBackendFlags_HasSetMousePos;
 
         io.KeyMap[imgui.ImGuiKey_Tab] = @enumToInt(sdl.SDL_Scancode.SDL_SCANCODE_TAB);
         io.KeyMap[imgui.ImGuiKey_LeftArrow] = @enumToInt(sdl.SDL_Scancode.SDL_SCANCODE_LEFT);
@@ -34,36 +38,61 @@ pub const Events = struct {
         io.KeyMap[imgui.ImGuiKey_Y] = @enumToInt(sdl.SDL_Scancode.SDL_SCANCODE_Y);
         io.KeyMap[imgui.ImGuiKey_Z] = @enumToInt(sdl.SDL_Scancode.SDL_SCANCODE_Z);
 
-        // TODO: wire up clipboard get/set methods
+        io.SetClipboardTextFn = setClipboardTextFn;
+        io.GetClipboardTextFn = getClipboardTextFn;
 
         var self = Events{};
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.Arrow))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.TextInput))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.ResizeAll))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.ResizeNS))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.ResizeEW))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.ResizeNESW))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.ResizeNWSE))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.Hand))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND).?;
-        self.mouse_cursors[@intCast(usize, @enumToInt(sdl.SDL_MouseCursor.NotAllowed))] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO).?;
-
-        // var main_vp = imgui.igGetMainViewport();
-        // main_vp.PlatformHandle = window;
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_Arrow)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_TextInput)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_ResizeAll)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_ResizeNS)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_ResizeEW)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_ResizeNESW)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_ResizeNWSE)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_Hand)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND);
+        self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_NotAllowed)] = sdl.SDL_CreateSystemCursor(sdl.SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO);
 
         // TODO: ImGui_ImplSDL2_UpdateMonitors
 
         // TODO: ImGui_ImplSDL2_InitPlatformInterface
         if ((io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable) != 0 and (io.BackendFlags & imgui.ImGuiBackendFlags_PlatformHasViewports) != 0) {
+            // var main_vp = imgui.igGetMainViewport();
+            // main_vp.PlatformHandle = window;
             //init_platform_interface(window);
         }
 
         return self;
     }
 
-    pub fn newFrame(self: *Events, window: *sdl.SDL_Window, drawable_w: i32, drawable_h: i32) void {
+    pub fn deinit(self: Events) void {
+        if (clipboard_text) |txt| sdl.SDL_free(clipboard_text);
+
+        // Destroy SDL mouse cursors
+        for (self.mouse_cursors) |cursor| {
+            sdl.SDL_FreeCursor(cursor);
+        }
+    }
+
+    fn getClipboardTextFn(ctx: ?*c_void) callconv(.C) [*c]const u8 {
+        if (clipboard_text) |txt| {
+            sdl.SDL_free(txt);
+            clipboard_text = null;
+        }
+        clipboard_text = sdl.SDL_GetClipboardText();
+        return clipboard_text;
+    }
+
+    fn setClipboardTextFn(ctx: ?*c_void, text: [*c]const u8) callconv(.C) void {
+        _ = sdl.SDL_SetClipboardText(text);
+    }
+
+    pub fn newFrame(self: *Events, window: *sdl.SDL_Window, ) void {
         var win_w: i32 = undefined;
         var win_h: i32 = undefined;
+        var drawable_w: i32 = undefined;
+        var drawable_h: i32 = undefined;
         sdl.SDL_GetWindowSize(window, &win_w, &win_h);
+        aya.window.drawableSize(&drawable_w, &drawable_h);
 
         const io = imgui.igGetIO();
         io.DisplaySize = imgui.ImVec2{ .x = @intToFloat(f32, win_w), .y = @intToFloat(f32, win_h) };
@@ -78,10 +107,11 @@ pub const Events = struct {
         const frequency = sdl.SDL_GetPerformanceFrequency();
         const current_time = sdl.SDL_GetPerformanceCounter();
         io.DeltaTime = if (self.global_time > 0) @intToFloat(f32, current_time - self.global_time / frequency) else @as(f32, 1 / 60);
+        self.global_time = current_time;
 
         // ImGui_ImplSDL2_UpdateMousePosAndButtons
         if (io.WantSetMousePos) {
-            if (io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable != 0) {
+            if ((io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable) != 0) {
                 _ = sdl.SDL_WarpMouseGlobal(@floatToInt(c_int, io.MousePos.x), @floatToInt(c_int, io.MousePos.y));
             } else {
                 _ = sdl.SDL_WarpMouseInWindow(window, @floatToInt(c_int, io.MousePos.x), @floatToInt(c_int, io.MousePos.y));
@@ -93,8 +123,8 @@ pub const Events = struct {
         var mouse_y_local: c_int = undefined;
         const mouse_buttons = sdl.SDL_GetMouseState(&mouse_x_local, &mouse_y_local);
         io.MouseDown[0] = self.mouse_button_state[0] or sdlButton(mouse_buttons, 1);
-        io.MouseDown[1] = self.mouse_button_state[1] or sdlButton(mouse_buttons, 2);
-        io.MouseDown[2] = self.mouse_button_state[2] or sdlButton(mouse_buttons, 3);
+        io.MouseDown[1] = self.mouse_button_state[1] or sdlButton(mouse_buttons, 3);
+        io.MouseDown[2] = self.mouse_button_state[2] or sdlButton(mouse_buttons, 2);
 
         self.mouse_button_state[0] = false;
         self.mouse_button_state[1] = false;
@@ -117,13 +147,13 @@ pub const Events = struct {
         }
 
         // ImGui_ImplSDL2_UpdateMouseCursor
-        if (io.ConfigFlags & imgui.ImGuiConfigFlags_NoMouseCursorChange != 0) {
+        if (io.ConfigFlags & imgui.ImGuiConfigFlags_NoMouseCursorChange == 0) {
             const cursor = imgui.igGetMouseCursor();
-            if (io.MouseDrawCursor or cursor == imgui.ImGuiConfigFlags_None) {
-                _ = sdl.SDL_ShowCursor(0);
+            if (io.MouseDrawCursor or cursor == imgui.ImGuiMouseCursor_None) {
+                _ = sdl.SDL_ShowCursor(sdl.SDL_FALSE);
             } else {
-                sdl.SDL_SetCursor(self.mouse_cursors[@intCast(usize, cursor)]);
-                _ = sdl.SDL_ShowCursor(1);
+                sdl.SDL_SetCursor(self.mouse_cursors[@intCast(usize, cursor)] orelse self.mouse_cursors[@intCast(usize, imgui.ImGuiMouseCursor_Arrow)].?);
+                _ = sdl.SDL_ShowCursor(sdl.SDL_TRUE);
             }
         }
 

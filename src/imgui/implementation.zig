@@ -18,11 +18,13 @@ pub fn init(device: *fna.Device, window: *sdl.SDL_Window) void {
     state.events = Events.init();
 }
 
+pub fn deinit() void {
+    state.renderer.deinit();
+    state.events.deinit();
+}
+
 pub fn newFrame() void {
-    var w: i32 = undefined;
-    var h: i32 = undefined;
-    aya.window.drawableSize(&w, &h);
-    state.events.newFrame(aya.window.sdl_window, w, h);
+    state.events.newFrame(aya.window.sdl_window);
     imgui.igNewFrame();
 }
 

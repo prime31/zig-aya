@@ -1457,20 +1457,6 @@ pub extern fn SDL_IsScreenKeyboardShown(window: ?*SDL_Window) SDL_bool;
 pub const struct_SDL_Cursor = @Type(.Opaque);
 pub const SDL_Cursor = struct_SDL_Cursor;
 
-pub const SDL_MouseCursor = extern enum(c_int) {
-    None = -1,
-    Arrow = 0,
-    TextInput = 1,
-    ResizeAll = 2,
-    ResizeNS = 3,
-    ResizeEW = 4,
-    ResizeNESW = 5,
-    ResizeNWSE = 6,
-    Hand = 7,
-    NotAllowed = 8,
-    Count = 9,
-};
-
 pub const SDL_SystemCursor = extern enum(c_int) {
     SDL_SYSTEM_CURSOR_ARROW,
     SDL_SYSTEM_CURSOR_IBEAM,
