@@ -73,9 +73,6 @@ fn runLoop(update: fn () void, render: fn () void) void {
     while (!pollEvents()) {
         gfx.device.beginFrame();
 
-        // TODO: never clear automatically
-        gfx.clear(math.Color.aya);
-
         time.tick(update);
         render();
 

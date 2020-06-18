@@ -53,7 +53,6 @@ var state = struct {
 
 pub fn init(params: *fna.PresentationParameters, config: Config) !void {
     device = fna.Device.init(params, true);
-    setPresentationInterval(.one);
 
     var rasterizer = fna.RasterizerState{};
     device.applyRasterizerState(&rasterizer);
@@ -100,10 +99,6 @@ pub fn setViewport(vp: fna.Viewport) void {
 pub fn setScissor(rect: math.RectI) void {
     var r = @bitCast(fna.Rect, rect);
     device.setScissorRect(&r);
-}
-
-pub fn setPresentationInterval(present_interval: fna.PresentInterval) void {
-    device.setPresentationInterval(present_interval);
 }
 
 pub fn resetBackbuffer(width: i32, height: i32) void {
@@ -213,11 +208,6 @@ pub fn beginPass(config: Pass) void {
 
     // if we were given a Shader use it else set the SpriteEffect
     setShader(config.shader orelse state.sprite_shader);
-    // if (config.shader) |shader| {
-    //     setShader(shader);
-    // } else {
-    //     setShader(state.sprite_shader);
-    // }
 }
 
 pub fn endPass() void {

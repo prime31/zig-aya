@@ -58,10 +58,6 @@ pub const Device = struct {
         FNA3D_SetRenderTargets(self, render_targets, num_render_targets, depth_stencil_buffer, depth_format);
     }
 
-    pub fn setPresentationInterval(self: *Device, interval: PresentInterval) void {
-        FNA3D_SetPresentationInterval(self, interval);
-    }
-
     pub fn getBackbufferSize(self: *Device, w: *i32, h: *i32) void {
         FNA3D_GetBackbufferSize(self, w, h);
     }
@@ -92,7 +88,7 @@ pub const Device = struct {
 
     pub fn genVertexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, vertex_count: i32, vertex_stride: i32) ?*Buffer {
         const is_dynamic: u8 = if (dynamic) 1 else 0;
-        return FNA3D_GenVertexBuffer(self, is_dynamic, usage, vertex_count, vertex_stride);
+        return FNA3D_GenVertexBuffer(self, is_dynamic, usage, vertex_count * vertex_stride);
     }
 
     pub fn addDisposeVertexBuffer(self: *Device, buffer: ?*Buffer) void {
@@ -105,7 +101,8 @@ pub const Device = struct {
 
     pub fn genIndexBuffer(self: *Device, dynamic: bool, usage: BufferUsage, index_count: i32, index_element_size: IndexElementSize) ?*Buffer {
         const is_dynamic: u8 = if (dynamic) 1 else 0;
-        return FNA3D_GenIndexBuffer(self, is_dynamic, usage, index_count, index_element_size);
+        const size: i32 = if (index_element_size == .sixteen_bit) @sizeOf(i16) else @sizeOf(i32);
+        return FNA3D_GenIndexBuffer(self, is_dynamic, usage, index_count * size);
     }
 
     pub fn addDisposeIndexBuffer(self: *Device, buffer: ?*Buffer) void {
@@ -520,13 +517,10 @@ pub extern fn FNA3D_CreateDevice(presentationParameters: [*c]PresentationParamet
 pub extern fn FNA3D_DestroyDevice(device: ?*Device) void;
 pub extern fn FNA3D_BeginFrame(device: ?*Device) void;
 pub extern fn FNA3D_SwapBuffers(device: ?*Device, sourceRectangle: [*c]Rect, destinationRectangle: [*c]Rect, overrideWindowHandle: ?*c_void) void;
-pub extern fn FNA3D_SetPresentationInterval(device: ?*Device, presentInterval: PresentInterval) void;
 pub extern fn FNA3D_Clear(device: ?*Device, options: ClearOptions, color: [*c]const Vec4, depth: f32, stencil: i32) void;
 pub extern fn FNA3D_DrawIndexedPrimitives(device: ?*Device, primitiveType: PrimitiveType, baseVertex: i32, minVertexIndex: i32, numVertices: i32, startIndex: i32, primitiveCount: i32, indices: ?*Buffer, indexElementSize: IndexElementSize) void;
 pub extern fn FNA3D_DrawInstancedPrimitives(device: ?*Device, primitiveType: PrimitiveType, baseVertex: i32, minVertexIndex: i32, numVertices: i32, startIndex: i32, primitiveCount: i32, instanceCount: i32, indices: ?*Buffer, indexElementSize: IndexElementSize) void;
 pub extern fn FNA3D_DrawPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexStart: i32, primitiveCount: i32) void;
-pub extern fn FNA3D_DrawUserIndexedPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexData: ?*c_void, vertexOffset: i32, numVertices: i32, indexData: ?*c_void, indexOffset: i32, indexElementSize: IndexElementSize, primitiveCount: i32) void;
-pub extern fn FNA3D_DrawUserPrimitives(device: ?*Device, primitiveType: PrimitiveType, vertexData: ?*c_void, vertexOffset: i32, primitiveCount: i32) void;
 pub extern fn FNA3D_SetViewport(device: ?*Device, viewport: [*c]Viewport) void;
 pub extern fn FNA3D_SetScissorRect(device: ?*Device, scissor: [*c]const Rect) void;
 pub extern fn FNA3D_GetBlendFactor(device: ?*Device, blendFactor: [*c]Color) void;
@@ -541,7 +535,6 @@ pub extern fn FNA3D_ApplyRasterizerState(device: ?*Device, rasterizerState: [*c]
 pub extern fn FNA3D_VerifySampler(device: ?*Device, index: i32, texture: ?*Texture, sampler: [*c]SamplerState) void;
 pub extern fn FNA3D_VerifyVertexSampler(device: ?*Device, index: i32, texture: ?*Texture, sampler: [*c]SamplerState) void;
 pub extern fn FNA3D_ApplyVertexBufferBindings(device: ?*Device, bindings: [*c]VertexBufferBinding, numBindings: i32, bindingsUpdated: u8, baseVertex: i32) void;
-pub extern fn FNA3D_ApplyVertexDeclaration(device: ?*Device, vertexDeclaration: [*c]VertexDeclaration, vertexData: ?*c_void, vertexOffset: i32) void;
 pub extern fn FNA3D_SetRenderTargets(device: ?*Device, renderTargets: [*c]RenderTargetBinding, numRenderTargets: i32, depthStencilBuffer: ?*Renderbuffer, depthFormat: DepthFormat) void;
 pub extern fn FNA3D_ResolveTarget(device: ?*Device, target: [*c]RenderTargetBinding) void;
 pub extern fn FNA3D_ResetBackbuffer(device: ?*Device, presentationParameters: [*c]PresentationParameters) void;
@@ -564,11 +557,11 @@ pub extern fn FNA3D_GetTextureDataCube(device: ?*Device, texture: ?*Texture, for
 pub extern fn FNA3D_GenColorRenderbuffer(device: ?*Device, width: i32, height: i32, format: SurfaceFormat, multiSampleCount: i32, texture: ?*Texture) ?*Renderbuffer;
 pub extern fn FNA3D_GenDepthStencilRenderbuffer(device: ?*Device, width: i32, height: i32, format: DepthFormat, multiSampleCount: i32) ?*Renderbuffer;
 pub extern fn FNA3D_AddDisposeRenderbuffer(device: ?*Device, renderbuffer: ?*Renderbuffer) void;
-pub extern fn FNA3D_GenVertexBuffer(device: ?*Device, dynamic: u8, usage: BufferUsage, vertexCount: i32, vertexStride: i32) ?*Buffer;
+pub extern fn FNA3D_GenVertexBuffer(device: ?*Device, dynamic: u8, usage: BufferUsage, size_in_bytes: i32) ?*Buffer;
 pub extern fn FNA3D_AddDisposeVertexBuffer(device: ?*Device, buffer: ?*Buffer) void;
 pub extern fn FNA3D_SetVertexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, elementCount: i32, elementSizeInBytes: i32, vertexStride: i32, options: SetDataOptions) void;
 pub extern fn FNA3D_GetVertexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, elementCount: i32, elementSizeInBytes: i32, vertexStride: i32) void;
-pub extern fn FNA3D_GenIndexBuffer(device: ?*Device, dynamic: u8, usage: BufferUsage, indexCount: i32, indexElementSize: IndexElementSize) ?*Buffer;
+pub extern fn FNA3D_GenIndexBuffer(device: ?*Device, dynamic: u8, usage: BufferUsage, size_in_bytes: i32) ?*Buffer;
 pub extern fn FNA3D_AddDisposeIndexBuffer(device: ?*Device, buffer: ?*Buffer) void;
 pub extern fn FNA3D_SetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32, options: SetDataOptions) void;
 pub extern fn FNA3D_GetIndexBufferData(device: ?*Device, buffer: ?*Buffer, offsetInBytes: i32, data: ?*c_void, dataLength: i32) void;
@@ -590,5 +583,5 @@ pub extern fn FNA3D_SupportsS3TC(device: ?*Device) u8;
 pub extern fn FNA3D_SupportsHardwareInstancing(device: ?*Device) u8;
 pub extern fn FNA3D_SupportsNoOverwrite(device: ?*Device) u8;
 pub extern fn FNA3D_GetMaxTextureSlots(device: ?*Device, textures: [*c]i32, vertexTextures: [*c]i32) void;
-pub extern fn FNA3D_GetMaxMultiSampleCount(device: ?*Device) i32;
+pub extern fn FNA3D_GetMaxMultiSampleCount(device: ?*Device, SurfaceFormat: format, multi_sample_count: i32) i32;
 pub extern fn FNA3D_SetStringMarker(device: ?*Device, text: [*c]const u8) void;
