@@ -21,6 +21,8 @@ pub const Renderer = struct {
         // io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
 
         imgui.igStyleColorsDark(imgui.igGetStyle());
+        imgui.igGetStyle().FrameRounding = 0;
+        imgui.igGetStyle().WindowRounding = 0;
 
         _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
 
@@ -76,20 +78,19 @@ pub const Renderer = struct {
         var state = fna.RasterizerState{ .scissorTestEnable = 1 };
         gfx.setRasterizerState(&state);
 
-        for (draw_data.CmdLists[0..@intCast(usize, draw_data.CmdListsCount)]) |list| {
+        for (draw_data.CmdLists[0..@intCast(usize, draw_data.CmdListsCount)]) |list, i| {
             fna.FNA3D_SetVertexBufferData(gfx.device, self.vert_buffer.buffer, 0, list.VtxBuffer.Data, list.VtxBuffer.Size, @sizeOf(imgui.ImDrawVert), @sizeOf(imgui.ImDrawVert), .none);
             fna.FNA3D_SetIndexBufferData(gfx.device, self.index_buffer.buffer, 0, list.IdxBuffer.Data, list.IdxBuffer.Size * @sizeOf(imgui.ImDrawIdx), .none);
 
-            const clip_offset = draw_data.DisplayPos;
-            for (list.CmdBuffer.Data[0..@intCast(usize, list.CmdBuffer.Size)]) |cmd, idx| {
+            for (list.CmdBuffer.Data[0..@intCast(usize, list.CmdBuffer.Size)]) |cmd| {
                 if (cmd.UserCallback) |cb| {
                     cb(list, &cmd);
                 } else {
                     var clip_rect = fna.Rect{
-                        .x = @floatToInt(i32, cmd.ClipRect.x - clip_offset.x),
-                        .y = @floatToInt(i32, cmd.ClipRect.y - clip_offset.y),
-                        .w = @floatToInt(i32, cmd.ClipRect.z - clip_offset.x),
-                        .h = @floatToInt(i32, cmd.ClipRect.w - clip_offset.y),
+                        .x = @floatToInt(i32, cmd.ClipRect.x - draw_data.DisplayPos.x),
+                        .y = @floatToInt(i32, cmd.ClipRect.y - draw_data.DisplayPos.y),
+                        .w = @floatToInt(i32, cmd.ClipRect.z - cmd.ClipRect.x),
+                        .h = @floatToInt(i32, cmd.ClipRect.w - cmd.ClipRect.y),
                     };
 
                     if (clip_rect.x < width and clip_rect.y < height and clip_rect.h >= 0 and clip_rect.w >= 0) {
@@ -98,7 +99,7 @@ pub const Renderer = struct {
 
                         gfx.device.applyVertexBufferBindings(&vert_buffer_binding, 1, bindings_updated, @intCast(i32, cmd.VtxOffset));
                         gfx.device.drawIndexedPrimitives(.triangle_list, @intCast(i32, cmd.VtxOffset), 0, list.VtxBuffer.Size, @intCast(i32, cmd.IdxOffset), @intCast(i32, cmd.ElemCount / 3), self.index_buffer.buffer, .sixteen_bit);
-                        bindings_updated = true;
+                        bindings_updated = false;
                     }
                 }
             }

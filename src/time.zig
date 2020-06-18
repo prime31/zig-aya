@@ -9,7 +9,7 @@ pub const Time = struct {
     prev_time: u32 = 0,
     curr_time: u32 = 0,
     fps_last_update: u32 = 0,
-    fps: u32 = 0,
+    frames_per_seconds: u32 = 0,
     frame_count: u32 = 1,
     timestep: Timestep = undefined,
 
@@ -27,7 +27,7 @@ pub const Time = struct {
 
         const time_since_last = self.curr_time - self.fps_last_update;
         if (self.curr_time > self.fps_last_update + 1000) {
-            self.fps = self.fps_frames * 1000 / time_since_last;
+            self.frames_per_seconds = self.fps_frames * 1000 / time_since_last;
             self.fps_last_update = self.curr_time;
             self.fps_frames = 0;
         }
@@ -55,7 +55,11 @@ pub const Time = struct {
     }
 
     pub fn fps(self: Time) u32 {
-        return self.fps;
+        return self.frames_per_seconds;
+    }
+
+    pub fn dt(self: Time) f32 {
+        return self.timestep.fixed_deltatime;
     }
 
     pub fn now(self: Time) u32 {

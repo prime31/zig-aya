@@ -2802,7 +2802,7 @@ pub extern fn igDestroyContext(ctx: [*c]ImGuiContext) void;
 pub extern fn igGetCurrentContext() [*c]ImGuiContext;
 pub extern fn igSetCurrentContext(ctx: [*c]ImGuiContext) void;
 pub extern fn igGetIO() *ImGuiIO;
-pub extern fn igGetStyle() [*c]ImGuiStyle;
+pub extern fn igGetStyle() *ImGuiStyle;
 pub extern fn igNewFrame() callconv(.C) void;
 pub extern fn igEndFrame() callconv(.C) void;
 pub extern fn igRender() void;

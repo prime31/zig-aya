@@ -106,7 +106,7 @@ pub const Events = struct {
 
         const frequency = sdl.SDL_GetPerformanceFrequency();
         const current_time = sdl.SDL_GetPerformanceCounter();
-        io.DeltaTime = if (self.global_time > 0) @intToFloat(f32, current_time - self.global_time / frequency) else @as(f32, 1 / 60);
+        io.DeltaTime = if (self.global_time > 0) @floatCast(f32, (@intToFloat(f64, current_time - self.global_time)) / @intToFloat(f64, frequency)) else @as(f32, 1 / 60);
         self.global_time = current_time;
 
         // ImGui_ImplSDL2_UpdateMousePosAndButtons
