@@ -19,7 +19,6 @@ fn init() void {
 
 fn update() void {
     imgui.igShowDemoWindow(&demo_open);
-    imgui.igText("-");
 }
 
 fn render() void {

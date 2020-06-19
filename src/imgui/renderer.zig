@@ -17,8 +17,9 @@ pub const Renderer = struct {
 
         _ = imgui.igCreateContext(null);
         var io = imgui.igGetIO();
-        // io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
         // io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+        io.ConfigDockingWithShift = true;
 
         imgui.igStyleColorsDark(imgui.igGetStyle());
         imgui.igGetStyle().FrameRounding = 0;

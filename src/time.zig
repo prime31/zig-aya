@@ -13,9 +13,9 @@ pub const Time = struct {
     frame_count: u32 = 1,
     timestep: Timestep = undefined,
 
-    pub fn init(update_rate: f64, update_multiplicity: i64) Time {
+    pub fn init(update_rate: f64) Time {
         return Time{
-            .timestep = Timestep.init(update_rate, update_multiplicity),
+            .timestep = Timestep.init(update_rate),
         };
     }
 
@@ -85,10 +85,14 @@ pub const Time = struct {
         return @intToFloat(f64, perf_counter_time) * 1000 / @intToFloat(f64, sdl.SDL_GetPerformanceFrequency());
     }
 
+    /// forces a resync of the timing code. Useful after some slower operations such as level loads or window resizes
+    pub fn resync(self: *Time) void {
+        self.timestep.resync = true;
+    }
+
     // converted from Tyler Glaiel's: https://github.com/TylerGlaiel/FrameTimingControl/blob/master/frame_timer.cpp
     const Timestep = struct {
         // these are loaded from Settings in production code
-        update_multiplicity: i64,
         unlock_framerate: bool = false,
 
         // compute how many ticks one update should be
@@ -104,10 +108,8 @@ pub const Time = struct {
         // time_averager: utils.Ring_Buffer(u64, samples_for_avg),
         time_averager: [samples_for_avg]i32 = undefined,
 
-        pub fn init(update_rate: f64, update_multiplicity: i64) Timestep {
+        pub fn init(update_rate: f64) Timestep {
             var timestep = Timestep{
-                .update_multiplicity = update_multiplicity,
-
                 .fixed_deltatime = 1 / @floatCast(f32, update_rate),
                 .desired_frametime = @floatToInt(i32, @intToFloat(f64, sdl.SDL_GetPerformanceFrequency()) / update_rate),
 
@@ -174,12 +176,9 @@ pub const Time = struct {
             }
 
             // LOCKED FRAMERATE, NO INTERPOLATION
-            while (self.frame_accumulator >= self.desired_frametime * self.update_multiplicity) {
-                var j: usize = 0;
-                while (j < self.update_multiplicity) : (j += 1) {
-                    update();
-                    self.frame_accumulator -= self.desired_frametime;
-                }
+            while (self.frame_accumulator >= self.desired_frametime) {
+                update();
+                self.frame_accumulator -= self.desired_frametime;
             }
         }
     };

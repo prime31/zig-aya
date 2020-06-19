@@ -55,6 +55,7 @@ pub const Window = struct {
                 std.debug.warn("resize: {}x{}\n", .{ event.data1, event.data2 });
                 // TODO: make a resized event and let gfx resize itself
                 @import("aya.zig").gfx.resetBackbuffer(event.data1, event.data2);
+                @import("aya.zig").time.resync();
             },
             @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED) => self.focused = true,
             @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST) => self.focused = false,

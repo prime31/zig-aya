@@ -34,8 +34,6 @@ pub const Config = struct {
     render: fn () void,
 
     update_rate: f64 = 60, // desired fps
-    update_multiplicity: i64 = 1, // Makes the game always do a multiple of N updates at a time. Defaults to 1. 2 would be update_rate / multiplicity or 30fps.
-
     gfx_config: gfx.Config = gfx.Config{},
     win_config: WindowConfig = WindowConfig{},
 
@@ -63,7 +61,7 @@ pub fn run(config: Config) !void {
     try gfx.init(&params, config.gfx_config);
     defer gfx.deinit();
 
-    time = Time.init(config.update_rate, config.update_multiplicity);
+    time = Time.init(config.update_rate);
     input = Input.init(window.scale());
     debug = try Debug.init();
     defer debug.deinit();
