@@ -13,8 +13,8 @@ var state = struct {
 }{};
 
 // public methods
-pub fn init(device: *fna.Device, window: *sdl.SDL_Window) void {
-    state.renderer = Renderer.init();
+pub fn init(device: *fna.Device, window: *sdl.SDL_Window, docking: bool, viewports: bool) void {
+    state.renderer = Renderer.init(docking, viewports);
     state.events = Events.init();
 }
 

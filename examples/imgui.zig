@@ -9,6 +9,11 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
+        .imgui = true,
+        .window = .{
+            .width = 1024,
+            .height = 768,
+        }
     });
 }
 
@@ -23,4 +28,5 @@ fn update() void {
 
 fn render() void {
     aya.gfx.beginPass(.{});
+    aya.gfx.endPass();
 }

@@ -34,10 +34,10 @@ pub const Config = struct {
     render: fn () void,
 
     update_rate: f64 = 60, // desired fps
-    gfx_config: gfx.Config = gfx.Config{},
-    win_config: WindowConfig = WindowConfig{},
+    gfx: gfx.Config = gfx.Config{},
+    window: WindowConfig = WindowConfig{},
 
-    imgui_enabled: bool = true, // whether imgui should be disabled
+    imgui: bool = false, // whether imgui should be disabled
     imgui_viewports: bool = false, // whether imgui viewports should be enabled
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
@@ -50,15 +50,15 @@ pub fn run(config: Config) !void {
     }
     defer sdl.SDL_Quit();
 
-    window = try Window.init(config.win_config);
+    window = try Window.init(config.window);
     defer window.deinit();
 
     var params = fna.PresentationParameters{
-        .backBufferWidth = config.win_config.width,
-        .backBufferHeight = config.win_config.height,
+        .backBufferWidth = config.window.width,
+        .backBufferHeight = config.window.height,
         .deviceWindowHandle = window.sdl_window,
     };
-    try gfx.init(&params, config.gfx_config);
+    try gfx.init(&params, config.gfx);
     defer gfx.deinit();
 
     time = Time.init(config.update_rate);
@@ -66,17 +66,23 @@ pub fn run(config: Config) !void {
     debug = try Debug.init();
     defer debug.deinit();
 
-    if (config.imgui_enabled) imgui.init(gfx.device, window.sdl_window);
+    if (config.imgui) imgui.init(gfx.device, window.sdl_window, config.imgui_docking, config.imgui_viewports);
 
     config.init();
-    runLoop(config.update, config.render, config.imgui_enabled);
+    runLoop(config.update, config.render, config.imgui);
 
-    if (config.imgui_enabled) imgui.deinit();
+    if (config.imgui) imgui.deinit();
 }
 
 fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {
     while (!pollEvents(imgui_enabled)) {
-        if (imgui_enabled) imgui.newFrame();
+        // if ImGui is running we force a timer resync every frame. This ensures we get exactly one update call and one render call
+        // each frame which prevents ImGui from flickering due to skipped/doubled update calls.
+        if (imgui_enabled) {
+            imgui.newFrame();
+            time.resync();
+        }
+
         gfx.device.beginFrame();
 
         time.tick(update);

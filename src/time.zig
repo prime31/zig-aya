@@ -168,9 +168,9 @@ pub const Time = struct {
             // spiral of death protection
             if (self.frame_accumulator > self.desired_frametime * 8) self.resync = true;
 
-            // timer resync if requested
+            // TODO: should we zero out the frame_accumulator here? timer resync if requested so reset all state
             if (self.resync) {
-                self.frame_accumulator = 0;
+                self.frame_accumulator = self.desired_frametime;
                 delta_time = self.desired_frametime;
                 self.resync = false;
             }

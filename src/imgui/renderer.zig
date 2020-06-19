@@ -12,13 +12,13 @@ pub const Renderer = struct {
     index_buffer: gfx.IndexBuffer,
     shader: gfx.Shader,
 
-    pub fn init() Renderer {
+    pub fn init(docking: bool, viewports: bool) Renderer {
         var vert_buffer = gfx.VertexBuffer.init(gfx.Vertex, 0, true);
 
         _ = imgui.igCreateContext(null);
         var io = imgui.igGetIO();
-        io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
-        // io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+        if (docking) io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+        if (viewports) io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
         io.ConfigDockingWithShift = true;
 
         imgui.igStyleColorsDark(imgui.igGetStyle());
