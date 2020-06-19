@@ -170,8 +170,8 @@ pub const Shader = extern struct {
 
     fn setParamImpl(comptime T: type, effect_value: fna.mojo.EffectValue, value: T) void {
         switch (@typeInfo(T)) {
-            .Float => value.float.* = @floatCast(f32, value),
-            .Int => value.int.* = @intCast(c_int, value),
+            .Float => effect_value.value.float.* = @floatCast(f32, value),
+            .Int => effect_value.value.int.* = @intCast(c_int, value),
             .Struct => {
                 if (T == aya.math.Vec2) {
                     std.debug.assert(effect_value.type.parameter_class == .vector);
@@ -188,6 +188,15 @@ pub const Shader = extern struct {
                     floats[0] = value.x;
                     floats[1] = value.y;
                     floats[2] = value.z;
+                } else if (T == aya.math.Vec4) {
+                    std.debug.assert(effect_value.type.parameter_class == .vector);
+                    std.debug.assert(effect_value.type.parameter_type == .float);
+
+                    const floats = effect_value.value.float[0..4];
+                    floats[0] = value.x;
+                    floats[1] = value.y;
+                    floats[2] = value.z;
+                    floats[3] = value.w;
                 } else if (T == aya.math.Mat32) {
                     std.debug.assert(effect_value.type.parameter_class == .matrix_rows);
                     std.debug.assert(effect_value.type.parameter_type == .float);
