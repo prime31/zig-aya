@@ -169,8 +169,8 @@ pub const Events = struct {
         switch (event.type) {
             sdl.SDL_MOUSEWHEEL => {
                 const io = imgui.igGetIO();
-                if (event.wheel.x > 0) io.MouseWheelH += 1;
-                if (event.wheel.x < 0) io.MouseWheelH -= 1;
+                if (event.wheel.x > 0) io.MouseWheelH -= 1;
+                if (event.wheel.x < 0) io.MouseWheelH += 1;
                 if (event.wheel.y > 0) io.MouseWheel += 1;
                 if (event.wheel.y < 0) io.MouseWheel -= 1;
                 return io.WantCaptureMouse;
