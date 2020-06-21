@@ -1,4 +1,3 @@
-pub const tilemap = @import("tilemap.zig");
 pub const FixedList = @import("fixed_list.zig").FixedList;
 
 pub fn cstr_u8_cmp(a: [*:0]const u8, b: []const u8) i8 {

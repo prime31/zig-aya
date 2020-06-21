@@ -1,5 +1,5 @@
 const std = @import("std");
-const tilemap = @import("src/utils/tilemap.zig");
+const tilemap = @import("src/tilemap/tilemap.zig");
 
 test "tilemap" {
     var timer = try std.time.Timer.start();

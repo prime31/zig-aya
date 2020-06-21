@@ -14,6 +14,7 @@ pub const fs = @import("fs.zig");
 pub const math = @import("math/math.zig");
 pub const mem = @import("mem/mem.zig");
 pub const utils = @import("utils/utils.zig");
+pub const tilemap = @import("tilemap/tilemap.zig");
 
 // aya objects
 pub var window: Window = undefined;

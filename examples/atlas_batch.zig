@@ -12,8 +12,6 @@ pub fn main() anyerror!void {
         .update = update,
         .render = render,
     });
-
-    batch.deinit();
 }
 
 fn init() void {
