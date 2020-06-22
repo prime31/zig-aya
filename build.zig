@@ -44,6 +44,7 @@ pub fn build(b: *Builder) void {
 fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const u8, source: []const u8) void {
     var exe = b.addExecutable(name, source);
     exe.setBuildMode(b.standardReleaseOptions());
+    exe.setOutputDir("zig-cache/bin");
 
     // these dont seem to work yet? Should be able to get at them with: const build_options = @import("build_options");
     // for these to work we need the following:
