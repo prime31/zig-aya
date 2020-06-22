@@ -1,10 +1,9 @@
 const std = @import("std");
 const aya = @import("aya");
 const Map = aya.tilemap.Map;
-const MapRenderer = aya.tilemap.MapRenderer;
 
 // var map: *Map = undefined;
-var renderer: MapRenderer = undefined;
+var texture: aya.gfx.Texture = undefined;
 var batch: aya.gfx.AtlasBatch = undefined;
 
 pub fn main() anyerror!void {
@@ -25,8 +24,8 @@ fn init() void {
     const map = Map.initFromFile("assets/platformer.json");
     defer map.deinit();
 
-    renderer = MapRenderer.init(map, "assets");
-    batch = renderer.renderTileLayerIntoAtlasBatch(map.tile_layers[0]);
+    texture = map.loadTexture("assets");
+    batch = aya.tilemap.renderer.renderTileLayerIntoAtlasBatch(map, map.tile_layers[0], texture);
 }
 
 fn update() void {}

@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-pub const MapRenderer = @import("map_renderer.zig").MapRenderer;
+pub const renderer = @import("renderer.zig");
 
 pub const Map = struct {
     width: i32,
@@ -25,6 +25,12 @@ pub const Map = struct {
     pub fn deinit(self: *Map) void {
         const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
         std.json.parseFree(*Map, self, options);
+    }
+
+    /// currently loads just the first Tilesets image until multiple Tilesets are supported
+    pub fn loadTexture(self: *Map, map_folder: []const u8) aya.gfx.Texture {
+        const image_path = std.fmt.allocPrint(aya.mem.tmp_allocator, "{}/{}", .{ map_folder, self.tilesets[0].image }) catch unreachable;
+        return aya.gfx.Texture.initFromFile(image_path) catch unreachable;
     }
 };
 
