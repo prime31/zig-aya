@@ -13,7 +13,7 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
-        .gfx_config = .{
+        .gfx = .{
             .resolution_policy = .show_all_pixel_perfect,
         }
     });

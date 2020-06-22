@@ -4,6 +4,7 @@ const fna = @import("../deps/fna/fna.zig");
 const Vertex = @import("buffers.zig").Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;
 
+// TODO: who should own and deinit the Texture?
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers
 pub const AtlasBatch = struct {
     mesh: DynamicMesh(Vertex),
@@ -52,7 +53,7 @@ pub const AtlasBatch = struct {
     fn ensureCapacity(self: *AtlasBatch) !void {
         if (self.sprite_count < self.max_sprites) return;
 
-        // we dont update the max_sprites value unless all allocations succed. If they dont, we bail.
+        // we dont update the max_sprites value unless all allocations succeed. If they dont, we bail.
         const new_max_sprites = self.max_sprites + @floatToInt(i32, @intToFloat(f32, self.max_sprites) * 0.5);
         try self.mesh.expandBuffers(new_max_sprites * 4, new_max_sprites * 6);
         try self.setIndexBufferData(new_max_sprites);
@@ -70,7 +71,7 @@ pub const AtlasBatch = struct {
         self.buffer_dirty = true;
     }
 
-    pub fn setViewport(self: *AtlasBatch, index: usize, viewport: aya.math.Rect, mat: ?aya.math.Mat32, color: aya.math.Color) void {
+    pub fn setViewport(self: *AtlasBatch, index: usize, viewport: aya.math.RectI, mat: ?aya.math.Mat32, color: aya.math.Color) void {
         var quad = aya.math.Quad.init(viewport.x, viewport.y, viewport.w, viewport.h, self.texture.width, self.texture.height);
         self.set(index, quad, mat, color);
     }
@@ -88,8 +89,8 @@ pub const AtlasBatch = struct {
     }
 
     /// adds a new quad to the batch returning the index so that it can be updated with set* later
-    pub fn addViewport(self: *AtlasBatch, viewport: aya.math.Rect, mat: ?aya.math.Mat32, color: aya.math.Color) usize {
-        var quad = aya.math.Quad.init(viewport.x, viewport.y, viewport.w, viewport.h, self.texture.width, self.texture.height);
+    pub fn addViewport(self: *AtlasBatch, viewport: aya.math.RectI, mat: ?aya.math.Mat32, color: aya.math.Color) usize {
+        var quad = aya.math.Quad.init(@intToFloat(f32, viewport.x), @intToFloat(f32, viewport.y), @intToFloat(f32, viewport.w), @intToFloat(f32, viewport.h), self.texture.width, self.texture.height);
         return self.add(quad, mat, color);
     }
 

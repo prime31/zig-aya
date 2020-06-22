@@ -12,6 +12,20 @@ pub const Map = struct {
     object_layers: []ObjectLayer = &[_]ObjectLayer{},
     group_layers: []GroupLayer = &[_]GroupLayer{},
     image_layers: []ImageLayer = &[_]ImageLayer{},
+
+    pub fn initFromFile(file: []const u8) *Map {
+        var bytes = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
+        var tokens = std.json.TokenStream.init(bytes);
+
+        const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+        const map = std.json.parse(*Map, &tokens, options) catch unreachable;
+        return map;
+    }
+
+    pub fn deinit(self: *Map) void {
+        const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+        std.json.parseFree(*Map, self, options);
+    }
 };
 
 pub const Tileset = struct {
@@ -65,8 +79,8 @@ pub const TileLayer = struct {
     tiles: []TileId,
 
     /// used by the MapRenderer to optimize the AtlasBatch size
-    pub fn totalNonEmptyTiles(self: TileLayer) u32 {
-        var cnt = @as(u32, 0);
+    pub fn totalNonEmptyTiles(self: TileLayer) i32 {
+        var cnt = @as(i32, 0);
 
         for (self.tiles) |t| {
             if (t >= 0) {

@@ -8,6 +8,7 @@ const flipped_h: i32 = 0x08000000;
 const flipped_v: i32 = 0x04000000;
 const flipped_d: i32 = 0x02000000;
 
+// TODO: who should own and deinit the Texture?
 pub const MapRenderer = struct {
     map: *Map,
     textures: [1]gfx.Texture = undefined,
@@ -65,10 +66,16 @@ pub const MapRenderer = struct {
         return .{.map = map, .textures = [1]gfx.Texture{texture}};
     }
 
+    pub fn renderTileLayerIntoAtlasBatch(self: MapRenderer, layer: tilemap.TileLayer) gfx.AtlasBatch {
+        var batch = gfx.AtlasBatch.init(null, self.textures[0], layer.totalNonEmptyTiles()) catch unreachable;
+        self.renderTileLayer(layer, &batch);
+        return batch;
+    }
+
     pub fn render(self: MapRenderer) void {
         for (self.map.tile_layers) |tl| {
             if (tl.visible) {
-                self.renderTileLayer(tl);
+                self.renderTileLayer(tl, null);
             }
         }
 
@@ -79,7 +86,7 @@ pub const MapRenderer = struct {
         }
     }
 
-    pub fn renderTileLayer(self: MapRenderer, layer: tilemap.TileLayer) void {
+    pub fn renderTileLayer(self: MapRenderer, layer: tilemap.TileLayer, atlas_batch: ?*gfx.AtlasBatch) void {
         var i: usize = 0;
         var y: usize = 0;
         while (y < layer.height) : (y += 1) {
@@ -94,7 +101,12 @@ pub const MapRenderer = struct {
                     const tx = @intToFloat(f32, @intCast(i32, x) * self.map.tile_size) + info.ox;
                     const ty = @intToFloat(f32, @intCast(i32, y) * self.map.tile_size) + info.oy;
                     const mat = info.transformMatrix(tx, ty);
-                    aya.draw.texViewport(self.textures[0], vp, mat);
+
+                    if (atlas_batch) |batch| {
+                        _ = batch.addViewport(vp, mat, aya.math.Color.white);
+                    } else {
+                        aya.draw.texViewport(self.textures[0], vp, mat);
+                    }
                 }
             }
         }
