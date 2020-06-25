@@ -11,6 +11,8 @@ pub const RectI = @import("rect.zig").RectI;
 pub const Mat32 = @import("mat32.zig").Mat32;
 pub const Color = @import("color.zig").Color;
 pub const Quad = @import("quad.zig").Quad;
+pub const Edge = @import("edge.zig").Edge;
+pub const Axis = @import("axis.zig").Axis;
 
 pub const rand = @import("rand.zig");
 
@@ -27,6 +29,19 @@ pub fn toDegrees(rad: var) @typeOf(deg) {
 pub fn isEven(val: var) bool {
     std.debug.assert(@typeInfo(@TypeOf(val)) == .Int or @typeInfo(@TypeOf(val)) == .ComptimeInt);
     return @mod(val, 2) == 0;
+}
+
+pub fn ifloor(val: f32) i32 {
+    return @floatToInt(i32, @floor(val));
+}
+
+pub fn iclamp(x: i32, a: i32, b: i32) i32 {
+    return std.math.max(a, std.math.min(b, x));
+}
+
+// returns true if val is between start and end
+pub fn between(val: var, start: var, end: var) bool {
+    return start <= val and val <= end;
 }
 
 test "test math.rand" {

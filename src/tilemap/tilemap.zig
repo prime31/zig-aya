@@ -3,6 +3,12 @@ const aya = @import("../aya.zig");
 
 pub const renderer = @import("renderer.zig");
 
+pub const move = @import("collision.zig").move;
+
+const flipped_h: i32 = 0x08000000;
+const flipped_v: i32 = 0x04000000;
+const flipped_d: i32 = 0x02000000;
+
 pub const Map = struct {
     width: i32,
     height: i32,
@@ -19,6 +25,9 @@ pub const Map = struct {
 
         const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
         const map = std.json.parse(*Map, &tokens, options) catch unreachable;
+        for (map.tilesets) |ts| {
+            ts.initializeTiles();
+        }
         return map;
     }
 
@@ -27,10 +36,34 @@ pub const Map = struct {
         std.json.parseFree(*Map, self, options);
     }
 
-    /// currently loads just the first Tilesets image until multiple Tilesets are supported
+   	/// currently loads just the first Tilesets image until multiple Tilesets are supported
     pub fn loadTexture(self: *Map, map_folder: []const u8) aya.gfx.Texture {
         const image_path = std.fmt.allocPrint(aya.mem.tmp_allocator, "{}/{}", .{ map_folder, self.tilesets[0].image }) catch unreachable;
         return aya.gfx.Texture.initFromFile(image_path) catch unreachable;
+	}
+
+    pub fn worldToTileX(self: Map, x: f32) i32 {
+        const tile_x = aya.math.ifloor(x / @intToFloat(f32, self.tile_size));
+        return aya.math.iclamp(tile_x, 0, self.width - 1);
+    }
+
+    pub fn worldToTileY(self: Map, y: f32) i32 {
+        const tile_y = aya.math.ifloor(y / @intToFloat(f32, self.tile_size));
+        return aya.math.iclamp(tile_y, 0, self.height - 1);
+    }
+
+    pub fn tileToWorldX(self: Map, x: i32) i32 {
+        return self.tile_size * x;
+    }
+
+    pub fn tileToWorldY(self: Map, y: i32) i32 {
+        return self.tile_size * y;
+    }
+
+    /// attempts to find a Tileset tile for the tid. Note that tid is the raw tile id.
+    pub fn tryGetTilesetTile(self: Map, tid: TileId) ?*TilesetTile {
+        const id = tid & ~(flipped_h | flipped_v | flipped_d);
+        return self.tilesets[0].tryGetTilesetTile(id);
     }
 };
 
@@ -42,10 +75,16 @@ pub const Tileset = struct {
     image_columns: i32,
     tiles: []TilesetTile,
 
+    pub fn initializeTiles(self: Tileset) void {
+        for (self.tiles) |*tile| {
+            tile.initialize();
+        }
+    }
+
     // id is the index of the tile (with the flipped bits stripped off) in this tileset image
     pub fn viewportForTile(self: Tileset, id: i32) aya.math.RectI {
         const x = @mod(id, self.image_columns);
-        const y = @rem(id, self.image_columns);
+        const y = @divTrunc(id, self.image_columns);
 
         return .{
             .x = x * (self.tile_size + self.spacing) + self.margin,
@@ -53,6 +92,15 @@ pub const Tileset = struct {
             .w = self.tile_size,
             .h = self.tile_size,
         };
+    }
+
+    pub fn tryGetTilesetTile(self: Tileset, tid: TileId) ?*TilesetTile {
+        for (self.tiles) |*tile| {
+            if (tile.id == tid) {
+                return tile;
+            }
+        }
+        return null;
     }
 };
 
@@ -63,6 +111,32 @@ pub const TilesetTile = struct {
     slope_tl: i32 = 0,
     slope_tr: i32 = 0,
     props: []KeyValue,
+
+    pub fn initialize(self: *TilesetTile) void {
+        for (self.props) |prop| {
+            if (std.mem.eql(u8, prop.k, "nez:isOneWayPlatform")) {
+                self.oneway = true;
+            } else if (std.mem.eql(u8, prop.k, "nez:isSlope")) {
+                self.slope = true;
+            } else if (std.mem.eql(u8, prop.k, "nez:slopeTopLeft")) {
+                self.slope_tl = prop.v.int;
+            } else if (std.mem.eql(u8, prop.k, "nez:slopeTopRight")) {
+                self.slope_tr = prop.v.int;
+            }
+        }
+    }
+
+    pub fn nameMe(self: TilesetTile, tid: TileId, tile_size: i32, perp_pos: i32, tile_world_x: i32, tile_world_y: i32) i32 {
+        // rise over run
+        const flip_h = (tid & flipped_h) != 0;
+        const s_tr = if (flip_h) self.slope_tl else self.slope_tr;
+        const s_tl = if (flip_h) self.slope_tr else self.slope_tl;
+        const s = @intToFloat(f32, s_tr - s_tl) / @intToFloat(f32, tile_size);
+
+        // s_tl is the slope position on the left side of the tile. b in the y = mx + b equation
+        const y = s * @intToFloat(f32, perp_pos - tile_world_x) + @intToFloat(f32, s_tl + tile_world_y);
+        return @floatToInt(i32, y);
+    }
 };
 
 pub const KeyValue = struct {
@@ -72,8 +146,8 @@ pub const KeyValue = struct {
 
 pub const PropValue = union(enum) {
     bool: bool,
-    int: i64,
-    float: f64,
+    int: i32,
+    float: f32,
     string: []const u8,
 };
 
@@ -98,11 +172,11 @@ pub const TileLayer = struct {
     }
 
     pub fn hasTile(self: TileLayer, x: i32, y: i32) bool {
-        return l.tiles[x + y * l.width] >= 0;
+        return self.tiles[@intCast(usize, x + y * self.width)] >= 0;
     }
 
     pub fn getTileId(self: TileLayer, x: i32, y: i32) TileId {
-        return l.tiles[x + y * l.width];
+        return self.tiles[@intCast(usize, x + y * self.width)];
     }
 };
 
