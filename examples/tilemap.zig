@@ -3,9 +3,8 @@ const aya = @import("aya");
 const sdl = @import("sdl");
 const Map = aya.tilemap.Map;
 
-// var map: *Map = undefined;
 var map: *Map = undefined;
-var renderer: MapRenderer = undefined;
+var texture: aya.gfx.Texture = undefined;
 var batch: aya.gfx.AtlasBatch = undefined;
 var player: aya.math.RectI = undefined;
 var speed: f32 = 3;
@@ -26,9 +25,8 @@ fn init() void {
     var tokens = std.json.TokenStream.init(bytes);
 
     map = Map.initFromFile("assets/platformer.json");
-
-    renderer = MapRenderer.init(map, "assets");
-    batch = renderer.renderTileLayerIntoAtlasBatch(map.tile_layers[0]);
+    texture = map.loadTexture("assets");
+    batch = aya.tilemap.renderer.renderTileLayerIntoAtlasBatch(map, map.tile_layers[0], texture);
 
     const spawn = map.object_layers[0].getObject("spawn");
     player = aya.math.RectI{.x = @floatToInt(i32, spawn.x), .y = @floatToInt(i32, spawn.y), .w = @floatToInt(i32, spawn.w), .h = @floatToInt(i32, spawn.h)};
