@@ -13,8 +13,8 @@ pub const ScratchAllocator = struct {
     pub fn init(buffer: []u8) ScratchAllocator {
         return ScratchAllocator{
             .allocator = Allocator{
-                .reallocFn = realloc,
-                .shrinkFn = shrink,
+                .allocFn = alloc,
+                .resizeFn = resize,
             },
             // .backup_allocator = backup_allocator,
             .buffer = buffer,
@@ -22,10 +22,10 @@ pub const ScratchAllocator = struct {
         };
     }
 
-    fn alloc(allocator: *Allocator, n: usize, alignment: u29) ![]u8 {
+    fn alloc(allocator: *Allocator, n: usize, ptr_align: u29, len_align: u29) ![]u8 {
         const self = @fieldParentPtr(ScratchAllocator, "allocator", allocator);
         const addr = @ptrToInt(self.buffer.ptr) + self.end_index;
-        const adjusted_addr = mem.alignForward(addr, alignment);
+        const adjusted_addr = mem.alignForward(addr, ptr_align);
         const adjusted_index = self.end_index + (adjusted_addr - addr);
         const new_end_index = adjusted_index + n;
 
@@ -43,38 +43,35 @@ pub const ScratchAllocator = struct {
         return result;
     }
 
-    fn realloc(allocator: *Allocator, old_mem: []u8, old_align: u29, new_size: usize, new_align: u29) ![]u8 {
+    fn resize(allocator: *Allocator, old_mem: []u8, new_len: usize, len_align: u29) mem.Allocator.Error!usize {
         const self = @fieldParentPtr(ScratchAllocator, "allocator", allocator);
         std.debug.assert(old_mem.len <= self.end_index);
 
         // TODO: if the last allocation is being resized just extend the end_index
         if (old_mem.ptr == self.buffer.ptr + self.end_index - old_mem.len and
-            mem.alignForward(@ptrToInt(old_mem.ptr), new_align) == @ptrToInt(old_mem.ptr))
+            mem.alignForward(@ptrToInt(old_mem.ptr), len_align) == @ptrToInt(old_mem.ptr))
         {
             const start_index = self.end_index - old_mem.len;
-            const new_end_index = start_index + new_size;
+            const new_end_index = start_index + new_len;
 
             // not enough room so we reset the buffer and do an alloc
             if (new_end_index > self.buffer.len) {
                 self.end_index = 0;
-                return alloc(allocator, new_size, new_align);
+                _ = try alloc(allocator, new_len, len_align, len_align);
+                return new_len;
             }
 
             const result = self.buffer[start_index..new_end_index];
             self.end_index = new_end_index;
-            return result;
-        } else if (new_size <= old_mem.len and new_align <= old_align) {
+            return new_len;
+        } else if (new_len <= old_mem.len) {
             // We can't do anything with the memory, so tell the client to keep it.
             return error.OutOfMemory;
         } else {
-            const result = try alloc(allocator, new_size, new_align);
+            const result = try alloc(allocator, new_len, len_align, len_align);
             @memcpy(result.ptr, old_mem.ptr, std.math.min(old_mem.len, result.len));
-            return result;
+            return new_len;
         }
-    }
-
-    fn shrink(allocator: *Allocator, old_mem: []u8, old_align: u29, new_size: usize, new_align: u29) []u8 {
-        return old_mem[0..new_size];
     }
 };
 
