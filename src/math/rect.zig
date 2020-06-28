@@ -83,4 +83,8 @@ pub const RectI = struct {
             .bottom => self.y + self.h,
         };
     }
+
+    pub fn contains(x: i32, y: i32) bool {
+        return r.x <= x and x < r.right() and r.y <= y and y < r.bottom();
+    }
 };

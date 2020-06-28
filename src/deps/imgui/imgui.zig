@@ -253,8 +253,8 @@ pub const struct_ImVec4 = extern struct {
 };
 pub const ImVec4 = struct_ImVec4;
 pub const struct_ImVec2 = extern struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0,
+    y: f32 = 0,
 };
 pub const ImVec2 = struct_ImVec2;
 pub const struct_ImGuiWindowSettings = extern struct {
