@@ -2,30 +2,44 @@ const std = @import("std");
 const aya = @import("aya");
 
 pub const Map = struct {
+    w: i32 = 64,
+    h: i32 = 64,
     tile_w: i32 = 16,
     tile_h: i32 = 16,
     tile_spacing: i32 = 0,
     image: []const u8 = undefined,
-    data: std.ArrayList(u32),
+    data: []u32,
     rules: std.ArrayList(Rule),
     allocator: *std.mem.Allocator,
 
     pub fn init(allocator: ?*std.mem.Allocator) Map {
         const alloc = allocator orelse aya.mem.allocator;
-        return .{
-            .data = std.ArrayList(u32).initCapacity(alloc, 64 * 64) catch unreachable,
+        var map = .{
+            .data = alloc.alloc(u32, 64 * 64) catch unreachable,
             .rules = std.ArrayList(Rule).init(alloc),
             .allocator = alloc,
         };
+
+        std.mem.set(u32, map.data, 0);
+
+        return map;
+    }
+
+    pub fn deinit(self: Map) void {
+        self.allocator.free(self.data);
+        self.rules.deinit();
     }
 
     pub fn addRule(self: *Map) void {
         self.rules.append(Rule.init()) catch unreachable;
     }
 
-    pub fn deinit(self: Map) void {
-        self.data.deinit();
-        self.rules.deinit();
+    pub fn getTile(self: Map, x: usize, y: usize) u32 {
+        return self.data[x + y * @intCast(usize, self.w)];
+    }
+
+    pub fn setTile(self: Map, x: usize, y: usize, value: u32) void {
+        self.data[x + y * @intCast(usize, self.w)] = value;
     }
 };
 

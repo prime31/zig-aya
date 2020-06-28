@@ -1,34 +1,34 @@
 const std = @import("std");
 const print = std.debug.print;
 const aya = @import("aya");
+const tk = @import("tilekit.zig");
 const colors = @import("colors.zig");
 const brushes_win = @import("brushes_win.zig");
 usingnamespace @import("imgui");
 
-const Map = @import("data.zig").Map;
 const Rule = @import("data.zig").Rule;
 
 var label: [25]u8 = undefined;
 
-pub fn draw(open: *bool, map: *Map) void {
-    if (open.* and igBegin("Rules", open, ImGuiWindowFlags_None)) {
+pub fn draw(state: *tk.AppState) void {
+    if (state.rules and igBegin("Rules", &state.rules, ImGuiWindowFlags_None)) {
         var delete_index: usize = std.math.maxInt(usize);
         var i: usize = 0;
-        while (i < map.rules.items.len) : (i += 1) {
+        while (i < state.map.rules.items.len) : (i += 1) {
             igPushIDInt(@intCast(c_int, i));
-            if (renderRule(map, &map.rules.items[i])) {
+            if (renderRule(state, &state.map.rules.items[i])) {
                 delete_index = i;
             }
         }
 
-        if (delete_index < map.rules.items.len) {
-            _ = map.rules.swapRemove(delete_index);
+        if (delete_index < state.map.rules.items.len) {
+            _ = state.map.rules.swapRemove(delete_index);
         }
 
         if (igButton("Add Rule", ImVec2{})) {
-            map.addRule();
+            state.map.addRule();
         }
-        igSameLine(0, 0);
+        igSameLine(0, 10);
 
         if (igButton("Add 9-Slice", ImVec2{})) {}
 
@@ -36,60 +36,58 @@ pub fn draw(open: *bool, map: *Map) void {
     }
 }
 
-fn renderRule(map: *Map, rule: *Rule) bool {
+fn renderRule(state: *tk.AppState, rule: *Rule) bool {
     igPushItemWidth(100);
     std.mem.copy(u8, &label, &rule.name);
     if (igInputText("##name", &label, 100, ImGuiInputTextFlags_None, null, null)) {
         std.mem.copy(u8, &rule.name, &label);
     }
-    igSameLine(0, 0);
+    igSameLine(0, 4);
     igPopItemWidth();
 
     if (igButton("Pattern", ImVec2{})) {
         igOpenPopup("pattern_popup");
     }
-    igSameLine(0, 0);
+    igSameLine(0, 4);
 
     if (igButton("Result", ImVec2{})) {
         igOpenPopup("result_popup");
     }
-    igSameLine(0, 0);
+    igSameLine(0, 4);
 
     igPushItemWidth(50);
     var min: u8 = 0;
     var max: u8 = 100;
     _ = igDragScalar("", ImGuiDataType_U8, &rule.chance, 1, &min, &max, null, 1);
-    // _ = igDragFloat("", &rule.chance, 1, 0, 100, "%.0f", 1);
-    // igText("100%");
-    igSameLine(0, 0);
-    igPopItemWidth();
+    igSameLine(0, 4);
 
     if (igButton("Copy", ImVec2{})) {
-        map.rules.append(rule.clone()) catch unreachable;
+        state.map.rules.append(rule.clone()) catch unreachable;
     }
-    igSameLine(0, 0);
+    igSameLine(0, 4);
 
     if (igButton("Delete", ImVec2{})) {
         return true;
     }
 
+    // display the popup a bit to the left to center it under the mouse
     var pos = igGetIO().MousePos;
     pos.x -= 32 * 5 / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("pattern_popup", ImGuiWindowFlags_None)) {
-        patternPopup(rule);
+        patternPopup(state, rule);
         igEndPopup();
     }
 
-    if (igBeginPopup("result_popup", ImGuiWindowFlags_None)) {
-        resultPopup(rule);
+    if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        resultPopup(state, rule);
         igEndPopup();
     }
 
     return false;
 }
 
-fn patternPopup(rule: *Rule) void {
+fn patternPopup(state: *tk.AppState, rule: *Rule) void {
     igText("Pattern");
 
     const draw_list = igGetWindowDrawList();
@@ -101,7 +99,7 @@ fn patternPopup(rule: *Rule) void {
 
     var pos = ImVec2{};
     igGetCursorScreenPos(&pos);
-    _ = igInvisibleButton("##but", ImVec2{ .x = canvas_size, .y = canvas_size });
+    _ = igInvisibleButton("##pattern_button", ImVec2{ .x = canvas_size, .y = canvas_size });
     const mouse_pos = igGetIO().MousePos;
     const hovered = igIsItemHovered(ImGuiHoveredFlags_None);
 
@@ -118,7 +116,7 @@ fn patternPopup(rule: *Rule) void {
             var rule_tile = rule.get(x, y);
 
             if (rule_tile.tile > 0) {
-                brushes_win.drawBrush(rule_tile.tile - 1, tl);
+                brushes_win.drawBrush(32, rule_tile.tile - 1, tl);
             } else {
                 // if empty rule or just with a modifier
                 ImDrawList_AddQuadFilled(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + rect_size, .y = tl.y }, ImVec2{ .x = tl.x + rect_size, .y = tl.y + rect_size }, ImVec2{ .x = tl.x, .y = tl.y + rect_size }, colors.colorRgb(0, 0, 0));
@@ -150,9 +148,9 @@ fn patternPopup(rule: *Rule) void {
 
                     if (igIsMouseClicked(0, false)) {
                         if (aya.input.keyDown(.SDL_SCANCODE_LSHIFT)) {
-                            rule_tile.negate(brushes_win.selected_brush_index + 1);
+                            rule_tile.negate(state.selected_brush_index + 1);
                         } else {
-                            rule_tile.require(brushes_win.selected_brush_index + 1);
+                            rule_tile.require(state.selected_brush_index + 1);
                         }
                     }
                 }
@@ -161,7 +159,9 @@ fn patternPopup(rule: *Rule) void {
     }
 }
 
-fn resultPopup(rule: *Rule) void {
+fn resultPopup(state: *tk.AppState, rule: *Rule) void {
     igText("result mo-fo");
-    _ = igButton("wtf", ImVec2{});
+    if (igButton("wtf", ImVec2{})) {
+        igCloseCurrentPopup();
+    }
 }

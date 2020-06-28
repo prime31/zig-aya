@@ -6,19 +6,31 @@ const rules_win = @import("rules_win.zig");
 const brushes_win = @import("brushes_win.zig");
 const input_map_win = @import("input_map_win.zig");
 const output_map_win = @import("output_map_win.zig");
+const menu = @import("menu.zig");
 
-const Map = @import("data.zig").Map;
-const Menu = @import("menu.zig").Menu;
+pub const Map = @import("data.zig").Map;
+pub const drawBrush = brushes_win.drawBrush;
+
+
+pub const AppState = struct {
+    map: Map,
+    // general state
+    selected_brush_index: usize = 0,
+    map_rect_size: f32 = 32,
+    // menu state
+    brushes: bool = true,
+    rules: bool = true,
+    input_map: bool = true,
+    output_map: bool = false,
+};
 
 pub const TileKit = struct {
-    map: Map,
-    menu: Menu,
+    state: AppState,
 
     pub fn init() TileKit {
         @import("colors.zig").init();
         return .{
-            .map = Map.init(null),
-            .menu = Menu.init(),
+            .state = AppState{.map = Map.init(null)},
         };
     }
 
@@ -51,14 +63,14 @@ pub const TileKit = struct {
 
         igDockSpace(dockspace_id, ImVec2{}, ImGuiDockNodeFlags_None, null);
 
-        self.menu.draw();
+        menu.draw(&self.state);
 
-        rules_win.draw(&self.menu.rules, &self.map);
-        brushes_win.drawWindow(&self.menu.brushes);
-        input_map_win.drawWindow(&self.menu.input_map);
-        output_map_win.drawWindow(&self.menu.output_map);
+        rules_win.draw(&self.state);
+        brushes_win.drawWindow(&self.state);
+        input_map_win.drawWindow(&self.state);
+        output_map_win.drawWindow(&self.state.output_map);
 
-        brushes_win.drawPopup();
+        brushes_win.drawPopup(&self.state);
 
         // igShowDemoWindow(null);
         igEnd();

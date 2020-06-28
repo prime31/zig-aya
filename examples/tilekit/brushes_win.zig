@@ -1,32 +1,31 @@
 const std = @import("std");
-const colors = @import("colors.zig");
 usingnamespace @import("imgui");
+const colors = @import("colors.zig");
+const tk = @import("tilekit.zig");
 
-pub var selected_brush_index: usize = 0;
-
-const rect_size: f32 = 32;
-const canvas_size = 6 * rect_size;
 const thickness: f32 = 2;
 
-pub fn drawWindow(open: *bool) void {
-    if (open.* and igBegin("Brushes", open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        draw(false);
+pub fn drawWindow(state: *tk.AppState) void {
+    if (state.brushes and igBegin("Brushes", &state.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        draw(state, false);
         igEnd();
     }
 }
 
-pub fn drawPopup() void {
+pub fn drawPopup(state: *tk.AppState) void {
     var pos = igGetIO().MousePos;
-    pos.x -= rect_size * 6 / 2;
-    pos.y -= rect_size * 6 / 2;
+    pos.x -= state.map_rect_size * 6 / 2;
+    pos.y -= state.map_rect_size * 6 / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("brushes", ImGuiWindowFlags_NoTitleBar)) {
-        draw(true);
+        draw(state, true);
         igEndPopup();
     }
 }
 
-fn draw(popup: bool) void {
+fn draw(state: *tk.AppState, popup: bool) void {
+    const rect_size = state.map_rect_size;
+    const canvas_size = 6 * state.map_rect_size;
     const draw_list = igGetWindowDrawList();
 
     var pos = ImVec2{};
@@ -44,9 +43,9 @@ fn draw(popup: bool) void {
             const offset_y = @intToFloat(f32, y) * rect_size;
             var tl = ImVec2{ .x = pos.x + offset_x, .y = pos.y + offset_y };
 
-            drawBrush(index, tl);
+            drawBrush(state.map_rect_size, index, tl);
 
-            if (index == selected_brush_index) {
+            if (index == state.selected_brush_index) {
                 const size = rect_size - thickness;
                 tl.x += thickness / 2;
                 tl.y += thickness / 2;
@@ -56,7 +55,7 @@ fn draw(popup: bool) void {
             if (hovered) {
                 if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
                     if (igIsMouseClicked(0, false)) {
-                        selected_brush_index = index;
+                        state.selected_brush_index = index;
                     }
                 }
             }
@@ -64,7 +63,7 @@ fn draw(popup: bool) void {
     }
 }
 
-pub fn drawBrush(index: usize, tl: ImVec2) void {
+pub fn drawBrush(rect_size: f32, index: usize, tl: ImVec2) void {
     // we have 14 unique clors so collapse our index
     const color_index = @mod(index, 14);
     const set = @divTrunc(index, 14);
