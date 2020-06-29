@@ -45,8 +45,8 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
         var scroll_delta = ImVec2{};
         igGetMouseDragDelta(&scroll_delta, 0, 0);
 
-        igSetScrollXFloat(igGetScrollX() + scroll_delta.x * 2);
-        igSetScrollYFloat(igGetScrollY() + scroll_delta.y * 2);
+        igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
+        igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
         igResetMouseDragDelta(0);
         return;
     }

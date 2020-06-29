@@ -38,19 +38,27 @@ pub fn FixedList(comptime T: type, comptime len: usize) type {
             self.len = 0;
         }
 
-        pub fn pop(self: *Self) !T {
+        pub fn pop(self: *Self) T {
             var item = self.items[self.len - 1];
             self.len -= 1;
             return item;
         }
 
         pub fn contains(self: Self, value: T) bool {
-            return std.mem.indexOfScalar(T, self.items, value);
+            return self.indexOf(value) != null;
+        }
+
+        pub fn indexOf(self: Self, value: T) ?usize {
+            var i: usize = 0;
+            while (i < self.len) : (i += 1) {
+                if (self.items[i] == value) return i;
+            }
+            return null;
         }
 
         /// Removes the element at the specified index and returns it. The empty slot is filled from the end of the list.
         pub fn swapRemove(self: *Self, i: usize) T {
-            if (self.items.len - 1 == i) return self.pop();
+            if (self.len - 1 == i) return self.pop();
 
             const old_item = self.items[i];
             self.items[i] = self.pop();

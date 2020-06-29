@@ -27,7 +27,7 @@ pub const AppState = struct {
 
     /// returns the number of tiles in each row of the tileset image
     pub fn tilesPerRow(self: AppState) usize {
-        return @intCast(usize, self.texture.width) / self.map.tile_size;
+        return @intCast(usize, self.texture.width) / @intCast(usize, self.map.tile_size);
     }
 };
 
@@ -39,7 +39,7 @@ pub const TileKit = struct {
         return.{
             .state = AppState{
                 .map = Map.init(),
-                .texture = Texture.initFromFile("/Users/desaro/Desktop/Mimial_Tiles.png") catch unreachable,
+                .texture = Texture.initFromFile("/Users/desaro/Desktop/SimpleTileset2.png") catch unreachable,
                 // .texture = Texture.initCheckerboard(),
             },
         };

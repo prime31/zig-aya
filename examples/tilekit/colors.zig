@@ -8,6 +8,8 @@ pub var brush_required: ImU32 = 0;
 pub var brush_negated: ImU32 = 0;
 pub var brush_selected: ImU32 = 0;
 pub var pattern_center: ImU32 = 0;
+pub var rule_result_selected_outline: ImU32 = 0;
+pub var rule_result_selected_fill: ImU32 = 0;
 
 pub var white: ImU32 = 0;
 
@@ -35,6 +37,8 @@ pub fn init() void {
     brush_selected = colorRgb(82, 172, 247);
 
     pattern_center = colorRgb(255, 253, 84);
+    rule_result_selected_outline = colorRgb(116, 252, 253);
+    rule_result_selected_fill = colorRgba(116, 252, 253, 100);
 
     white = colorRgb(255, 255, 255);
 }

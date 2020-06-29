@@ -70,9 +70,9 @@ pub const Rule = struct {
         return &self.pattern_data[x + y * 5];
     }
 
-    pub fn toggleSelected(self: *Rule, index: usize) void {
-        if (self.selected_data.contains(index)) {
-            _ = self.selected_data.swapRemove(index);
+    pub fn toggleSelected(self: *Rule, index: u8) void {
+        if (self.selected_data.indexOf(index)) |slice_index| {
+            _ = self.selected_data.swapRemove(slice_index);
         } else {
             self.selected_data.append(index);
         }

@@ -91,6 +91,7 @@ fn renderRule(state: *tk.AppState, rule: *Rule) bool {
         igEndPopup();
     }
 
+    pos.x -= @intToFloat(f32, state.texture.width) / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
         resultPopup(state, rule);
@@ -216,17 +217,27 @@ fn rulesHamburgerPopup(rule: *Rule) void {
 
 fn resultPopup(state: *tk.AppState, rule: *Rule) void {
     var content_start_pos = ogGetCursorScreenPos();
-
     ogImage(state.texture);
+    const draw_list = igGetWindowDrawList();
 
     // draw selected tiles
     var iter = rule.selected_data.iter();
-    while (iter.next()) |index| {}
+    while (iter.next()) |index| {
+        const x = @mod(index, state.tilesPerRow());
+        const y = @divTrunc(index, state.tilesPerRow());
+
+        var tl = ImVec2{.x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size)};
+        tl.x += content_start_pos.x + 1;
+        tl.y += content_start_pos.y + 1;
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_outline, 2);
+    }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), content_start_pos);
+            var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            rule.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
         }
     }
 }
