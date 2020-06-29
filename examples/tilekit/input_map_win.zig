@@ -21,7 +21,10 @@ fn draw(state: *tk.AppState) void {
     var pos = ogGetCursorScreenPos();
     // std.debug.print("pos: {d}\n", .{pos});
 
-    _ = igInvisibleButton("##input_map_button", ImVec2{ .x = @intToFloat(f32, state.map.w) * state.map_rect_size, .y = @intToFloat(f32, state.map.h) * state.map_rect_size });
+    const map_size = ImVec2{ .x = @intToFloat(f32, state.map.w) * state.map_rect_size, .y = @intToFloat(f32, state.map.h) * state.map_rect_size };
+    ogAddRectFilled(igGetWindowDrawList(), pos, map_size, colors.colorRgb(0, 0, 0));
+
+    _ = igInvisibleButton("##input_map_button", map_size);
     if (igIsItemHovered(ImGuiHoveredFlags_None)) handleInput(state, pos);
 
     var y: usize = 0;

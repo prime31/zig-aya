@@ -38,11 +38,14 @@ pub const Map = struct {
     }
 
     pub fn toBinary(self: Map) !void {
-        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.bin", .write);
+        var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
+        const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.bin" });
+
+        var buf = aya.mem.SdlBufferStream.init(out_path, .write);
         defer buf.deinit();
 
         const out = buf.writer();
-        try out.writeIntLittle(i32, self.w,);
+        try out.writeIntLittle(i32, self.w);
         try out.writeIntLittle(i32, self.h);
         try out.writeIntLittle(i32, self.tile_size);
         try out.writeIntLittle(i32, self.tile_spacing);
@@ -57,7 +60,7 @@ pub const Map = struct {
             try out.writeAll(rule.name[0..std.mem.indexOfSentinel(u8, 0, rule.name[0..])]);
             try out.writeIntLittle(u8, rule.chance);
 
-            try out.writeIntLittle(usize, rule.pattern_data.len,);
+            try out.writeIntLittle(usize, rule.pattern_data.len);
             for (rule.pattern_data) |rule_tile| {
                 try out.writeIntLittle(usize, rule_tile.tile);
                 try out.writeIntLittle(usize, @enumToInt(rule_tile.state));
@@ -72,7 +75,10 @@ pub const Map = struct {
     }
 
     pub fn fromBinary(self: Map) !void {
-        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.bin", .read);
+        var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
+        const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.bin" });
+
+        var buf = aya.mem.SdlBufferStream.init(out_path, .read);
         defer buf.deinit();
 
         // std.mem.bytesAsValue for reading f32
@@ -90,11 +96,14 @@ pub const Map = struct {
 
         var data_len = try in.readIntLittle(usize);
 
-        std.debug.print("{}, {}, {}, {} img.len: {}, data.len: {}\n", .{w, h, tile_size, tile_spacing, image_len, data_len});
+        std.debug.print("{}, {}, {}, {} img.len: {}, data.len: {}\n", .{ w, h, tile_size, tile_spacing, image_len, data_len });
     }
 
     pub fn toJson(self: Map) !void {
-        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.json", .write);
+        var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
+        const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.json" });
+
+        var buf = aya.mem.SdlBufferStream.init(out_path, .write);
         defer buf.deinit();
         const out_stream = buf.writer();
 

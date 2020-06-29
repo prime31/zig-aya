@@ -7,7 +7,7 @@ const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
     if (state.brushes and igBegin("Brushes", &state.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        draw(state, state.map_rect_size);
+        draw(state, 32);
         igEnd();
     }
 }

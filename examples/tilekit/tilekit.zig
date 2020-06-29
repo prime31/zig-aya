@@ -39,7 +39,7 @@ pub const TileKit = struct {
         return.{
             .state = AppState{
                 .map = Map.init(),
-                .texture = Texture.initFromFile("/Users/desaro/Desktop/SimpleTileset2.png") catch unreachable,
+                .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
                 // .texture = Texture.initCheckerboard(),
             },
         };

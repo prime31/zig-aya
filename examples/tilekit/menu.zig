@@ -85,6 +85,22 @@ pub fn draw(state: *tk.AppState) void {
             if (igMenuItemBool("Output Map", null, state.output_map, true)) {
                 state.output_map = !state.output_map;
             }
+
+            igSeparator();
+
+            if (igBeginMenu("Map Display", true)) {
+                defer igEndMenu();
+
+                if (igMenuItemBool("8px", null, state.map_rect_size == 8, true)) {
+                    state.map_rect_size = 8;
+                }
+                if (igMenuItemBool("16px", null, state.map_rect_size == 16, true)) {
+                    state.map_rect_size = 16;
+                }
+                if (igMenuItemBool("32px", null, state.map_rect_size == 32, true)) {
+                    state.map_rect_size = 32;
+                }
+            }
         }
     }
 
