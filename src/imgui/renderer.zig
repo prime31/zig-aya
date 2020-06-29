@@ -12,6 +12,8 @@ pub const Renderer = struct {
     index_buffer: gfx.IndexBuffer,
     shader: gfx.Shader,
 
+    const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar {imgui.fonts.icon_min, imgui.fonts.icon_max, 0};
+
     pub fn init(docking: bool, viewports: bool) Renderer {
         var vert_buffer = gfx.VertexBuffer.init(gfx.Vertex, 0, true);
 
@@ -26,6 +28,16 @@ pub const Renderer = struct {
         imgui.igGetStyle().WindowRounding = 0;
 
         _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
+
+        // add FontAwesome
+        if (false) {
+            var icons_config = imgui.ImFontConfig_ImFontConfig();
+            icons_config[0].MergeMode = true;
+            icons_config[0].PixelSnapH = true;
+
+            var data = @embedFile(imgui.fonts.font_icon_filename_far);
+            _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 16, icons_config, &font_awesome_range[0]);
+        }
 
         var w: i32 = undefined;
         var h: i32 = undefined;

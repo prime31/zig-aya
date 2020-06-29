@@ -66,6 +66,13 @@ pub const Texture = extern struct {
         aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }
 
+    /// replaces the contents of the Texture with the file. Note that the texture must have the same size!
+    pub fn setDataFromFile(self: *Texture, file: []const u8) !void {
+        const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
+        const img_data = fna.img.load(c_file, &self.width, &self.height);
+        self.setData(img_data);
+    }
+
     pub fn setColorData(self: Texture, data: []u32) void {
         aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }

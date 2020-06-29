@@ -1,0 +1,33 @@
+usingnamespace @import("imgui.zig");
+const aya = @import("../../aya.zig");
+pub const fonts = @import("font_awesome.zig");
+
+pub fn ogButton(label: [*c]const u8) bool {
+    return igButton(label, ImVec2{});
+}
+
+pub fn ogImage(texture: aya.gfx.Texture) void {
+    const white = ImVec4{.x = 1, .y = 1, .z = 1, .w = 1};
+    const size = ImVec2{.x = @intToFloat(f32, texture.width), .y = @intToFloat(f32, texture.height)};
+    igImage(texture.tex, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, white);
+}
+
+pub fn ogGetCursorScreenPos() ImVec2 {
+    var pos = ImVec2{};
+    igGetCursorScreenPos(&pos);
+    return pos;
+}
+
+pub fn ogGetContentRegionAvail() ImVec2 {
+    var pos = ImVec2{};
+    igGetContentRegionAvail(&pos);
+    return pos;
+}
+
+pub fn ogAddQuad(draw_list: [*c]ImDrawList, tl: ImVec2, size: f32, col: ImU32, thickness: f32) void {
+    ImDrawList_AddQuad(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, col, thickness);
+}
+
+pub fn ogAddQuadFilled(draw_list: [*c]ImDrawList, tl: ImVec2, size: f32, col: ImU32) void {
+    ImDrawList_AddQuadFilled(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, col);
+}

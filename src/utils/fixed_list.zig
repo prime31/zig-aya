@@ -44,6 +44,19 @@ pub fn FixedList(comptime T: type, comptime len: usize) type {
             return item;
         }
 
+        pub fn contains(self: Self, value: T) bool {
+            return std.mem.indexOfScalar(T, self.items, value);
+        }
+
+        /// Removes the element at the specified index and returns it. The empty slot is filled from the end of the list.
+        pub fn swapRemove(self: *Self, i: usize) T {
+            if (self.items.len - 1 == i) return self.pop();
+
+            const old_item = self.items[i];
+            self.items[i] = self.pop();
+            return old_item;
+        }
+
         pub fn iter(self: Self) Iterator {
             return Iterator{ .list = self };
         }

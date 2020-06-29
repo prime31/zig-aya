@@ -1,41 +1,12 @@
+pub usingnamespace @import("wrapper.zig");
 
-pub const __darwin_pthread_attr_t = struct__opaque_pthread_attr_t;
-pub const __darwin_pthread_cond_t = struct__opaque_pthread_cond_t;
-pub const __darwin_pthread_condattr_t = struct__opaque_pthread_condattr_t;
-pub const __darwin_pthread_key_t = c_ulong;
-pub const __darwin_pthread_mutex_t = struct__opaque_pthread_mutex_t;
-pub const __darwin_pthread_mutexattr_t = struct__opaque_pthread_mutexattr_t;
-pub const __darwin_pthread_once_t = struct__opaque_pthread_once_t;
-pub const __darwin_pthread_rwlock_t = struct__opaque_pthread_rwlock_t;
-pub const __darwin_pthread_rwlockattr_t = struct__opaque_pthread_rwlockattr_t;
-pub const __darwin_pthread_t = [*c]struct__opaque_pthread_t;
-pub const __darwin_nl_item = c_int;
-pub const __darwin_wctrans_t = c_int;
-pub const __darwin_wctype_t = __uint32_t;
-pub const u_int8_t = u8;
-pub const u_int16_t = c_ushort;
-pub const u_int32_t = c_uint;
-pub const u_int64_t = c_ulonglong;
-pub const register_t = i64;
-pub const user_addr_t = u_int64_t;
-pub const user_size_t = u_int64_t;
-pub const user_ssize_t = i64;
-pub const user_long_t = i64;
-pub const user_ulong_t = u_int64_t;
-pub const user_time_t = i64;
-pub const user_off_t = i64;
-pub const syscall_arg_t = u_int64_t;
 pub const va_list = __darwin_va_list;
-pub extern fn renameat(c_int, [*c]const u8, c_int, [*c]const u8) c_int;
-pub extern fn renamex_np([*c]const u8, [*c]const u8, c_uint) c_int;
-pub extern fn renameatx_np(c_int, [*c]const u8, c_int, [*c]const u8, c_uint) c_int;
-
 pub const struct___sbuf = extern struct {
     _base: [*c]u8,
     _size: c_int,
 };
-pub const struct___sFILEX = @Type(.Opaque);
-pub const struct___sFILE = extern struct {
+
+pub const FILE = extern struct {
     _p: [*c]u8,
     _r: c_int,
     _w: c_int,
@@ -49,7 +20,7 @@ pub const struct___sFILE = extern struct {
     // _seek: ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t,
     _write: ?fn (?*c_void, [*c]const u8, c_int) callconv(.C) c_int,
     _ub: struct___sbuf,
-    _extra: ?*struct___sFILEX,
+    _extra: ?*@Type(.Opaque),
     _ur: c_int,
     _ubuf: [3]u8,
     _nbuf: [1]u8,
@@ -57,130 +28,21 @@ pub const struct___sFILE = extern struct {
     _blksize: c_int,
     // _offset: fpos_t,
 };
-pub const FILE = struct___sFILE;
-pub extern var __stdinp: [*c]FILE;
-pub extern var __stdoutp: [*c]FILE;
-pub extern var __stderrp: [*c]FILE;
-pub extern fn clearerr([*c]FILE) void;
-pub extern fn fclose([*c]FILE) c_int;
-pub extern fn feof([*c]FILE) c_int;
-pub extern fn ferror([*c]FILE) c_int;
-pub extern fn fflush([*c]FILE) c_int;
-pub extern fn fgetc([*c]FILE) c_int;
-pub extern fn fgetpos(noalias [*c]FILE, [*c]fpos_t) c_int;
-pub extern fn fgets(noalias [*c]u8, c_int, [*c]FILE) [*c]u8;
-pub extern fn fopen(__filename: [*c]const u8, __mode: [*c]const u8) [*c]FILE;
-pub extern fn fprintf([*c]FILE, [*c]const u8, ...) c_int;
-pub extern fn fputc(c_int, [*c]FILE) c_int;
-pub extern fn fputs(noalias [*c]const u8, noalias [*c]FILE) c_int;
-pub extern fn fread(__ptr: ?*c_void, __size: c_ulong, __nitems: c_ulong, __stream: [*c]FILE) c_ulong;
-pub extern fn freopen(noalias [*c]const u8, noalias [*c]const u8, noalias [*c]FILE) [*c]FILE;
-pub extern fn fscanf(noalias [*c]FILE, noalias [*c]const u8, ...) c_int;
-pub extern fn fseek([*c]FILE, c_long, c_int) c_int;
-pub extern fn fsetpos([*c]FILE, [*c]const fpos_t) c_int;
-pub extern fn ftell([*c]FILE) c_long;
-pub extern fn fwrite(__ptr: ?*const c_void, __size: c_ulong, __nitems: c_ulong, __stream: [*c]FILE) c_ulong;
-pub extern fn getc([*c]FILE) c_int;
-pub extern fn getchar() c_int;
-pub extern fn gets([*c]u8) [*c]u8;
-pub extern fn perror([*c]const u8) void;
-pub extern fn printf([*c]const u8, ...) c_int;
-pub extern fn putc(c_int, [*c]FILE) c_int;
-pub extern fn putchar(c_int) c_int;
-pub extern fn puts([*c]const u8) c_int;
-pub extern fn remove([*c]const u8) c_int;
-pub extern fn rename(__old: [*c]const u8, __new: [*c]const u8) c_int;
-pub extern fn rewind([*c]FILE) void;
-pub extern fn scanf(noalias [*c]const u8, ...) c_int;
-pub extern fn setbuf(noalias [*c]FILE, noalias [*c]u8) void;
-pub extern fn setvbuf(noalias [*c]FILE, noalias [*c]u8, c_int, usize) c_int;
-pub extern fn sprintf([*c]u8, [*c]const u8, ...) c_int;
-pub extern fn sscanf(noalias [*c]const u8, noalias [*c]const u8, ...) c_int;
-pub extern fn tmpfile() [*c]FILE;
-pub extern fn tmpnam([*c]u8) [*c]u8;
-pub extern fn ungetc(c_int, [*c]FILE) c_int;
+
 pub const struct___va_list_tag = extern struct {
     gp_offset: c_uint,
     fp_offset: c_uint,
     overflow_arg_area: ?*c_void,
     reg_save_area: ?*c_void,
 };
-pub extern fn vfprintf([*c]FILE, [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn vprintf([*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn vsprintf([*c]u8, [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn ctermid([*c]u8) [*c]u8;
-pub extern fn fdopen(c_int, [*c]const u8) [*c]FILE;
-pub extern fn fileno([*c]FILE) c_int;
-pub extern fn pclose([*c]FILE) c_int;
-pub extern fn popen([*c]const u8, [*c]const u8) [*c]FILE;
 
-pub extern fn flockfile([*c]FILE) void;
-pub extern fn ftrylockfile([*c]FILE) c_int;
-pub extern fn funlockfile([*c]FILE) void;
-pub extern fn getc_unlocked([*c]FILE) c_int;
-pub extern fn getchar_unlocked() c_int;
-pub extern fn putc_unlocked(c_int, [*c]FILE) c_int;
-pub extern fn putchar_unlocked(c_int) c_int;
-pub extern fn getw([*c]FILE) c_int;
-pub extern fn putw(c_int, [*c]FILE) c_int;
-pub extern fn tempnam(__dir: [*c]const u8, __prefix: [*c]const u8) [*c]u8;
-pub const off_t = __darwin_off_t;
-pub extern fn fseeko(__stream: [*c]FILE, __offset: off_t, __whence: c_int) c_int;
-pub extern fn ftello(__stream: [*c]FILE) off_t;
-pub extern fn snprintf(__str: [*c]u8, __size: c_ulong, __format: [*c]const u8, ...) c_int;
-pub extern fn vfscanf(noalias __stream: [*c]FILE, noalias __format: [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn vscanf(noalias __format: [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn vsnprintf(__str: [*c]u8, __size: c_ulong, __format: [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn vsscanf(noalias __str: [*c]const u8, noalias __format: [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn dprintf(c_int, noalias [*c]const u8, ...) c_int;
-pub extern fn vdprintf(c_int, noalias [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn getdelim(noalias __linep: [*c][*c]u8, noalias __linecapp: [*c]usize, __delimiter: c_int, noalias __stream: [*c]FILE) isize;
-pub extern fn getline(noalias __linep: [*c][*c]u8, noalias __linecapp: [*c]usize, noalias __stream: [*c]FILE) isize;
-pub extern fn fmemopen(noalias __buf: ?*c_void, __size: usize, noalias __mode: [*c]const u8) [*c]FILE;
-pub extern fn open_memstream(__bufp: [*c][*c]u8, __sizep: [*c]usize) [*c]FILE;
-pub extern const sys_nerr: c_int;
-pub extern const sys_errlist: [*c]const [*c]const u8;
-pub extern fn asprintf(noalias [*c][*c]u8, noalias [*c]const u8, ...) c_int;
-pub extern fn ctermid_r([*c]u8) [*c]u8;
-pub extern fn fgetln([*c]FILE, [*c]usize) [*c]u8;
-pub extern fn fmtcheck([*c]const u8, [*c]const u8) [*c]const u8;
-pub extern fn fpurge([*c]FILE) c_int;
-pub extern fn setbuffer([*c]FILE, [*c]u8, c_int) void;
-pub extern fn setlinebuf([*c]FILE) c_int;
-pub extern fn vasprintf(noalias [*c][*c]u8, noalias [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn zopen([*c]const u8, [*c]const u8, c_int) [*c]FILE;
-pub extern fn funopen(?*const c_void, ?fn (?*c_void, [*c]u8, c_int) callconv(.C) c_int, ?fn (?*c_void, [*c]const u8, c_int) callconv(.C) c_int, ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t, ?fn (?*c_void) callconv(.C) c_int) [*c]FILE;
-pub extern fn __sprintf_chk(noalias [*c]u8, c_int, usize, noalias [*c]const u8, ...) c_int;
-pub extern fn __snprintf_chk(noalias [*c]u8, usize, c_int, usize, noalias [*c]const u8, ...) c_int;
-pub extern fn __vsprintf_chk(noalias [*c]u8, c_int, usize, noalias [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub extern fn __vsnprintf_chk(noalias [*c]u8, usize, c_int, usize, noalias [*c]const u8, [*c]struct___va_list_tag) c_int;
-pub const int_least8_t = i8;
-pub const int_least16_t = i16;
-pub const int_least32_t = i32;
-pub const int_least64_t = i64;
-pub const uint_least8_t = u8;
-pub const uint_least16_t = u16;
-pub const uint_least32_t = u32;
-pub const uint_least64_t = u64;
-pub const int_fast8_t = i8;
-pub const int_fast16_t = i16;
-pub const int_fast32_t = i32;
-pub const int_fast64_t = i64;
-pub const uint_fast8_t = u8;
-pub const uint_fast16_t = u16;
-pub const uint_fast32_t = u32;
-pub const uint_fast64_t = u64;
-pub const intmax_t = c_long;
-pub const uintmax_t = c_ulong;
-pub const __gnuc_va_list = __builtin_va_list;
-const union_unnamed_2 = extern union {
-    val_i: c_int,
-    val_f: f32,
-    val_p: ?*c_void,
-};
 pub const struct_ImGuiStoragePair = extern struct {
     key: ImGuiID,
-    unnamed_0: union_unnamed_2,
+    unnamed_0: extern union {
+        val_i: c_int,
+        val_f: f32,
+        val_p: ?*c_void,
+    },
 };
 pub const ImGuiStoragePair = struct_ImGuiStoragePair;
 pub const struct_ImGuiTextRange = extern struct {
@@ -3330,7 +3192,7 @@ pub extern fn ImFontAtlas_destroy(self: [*c]ImFontAtlas) void;
 pub extern fn ImFontAtlas_AddFont(self: [*c]ImFontAtlas, font_cfg: [*c]const ImFontConfig) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontDefault(self: [*c]ImFontAtlas, font_cfg: [*c]const ImFontConfig) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontFromFileTTF(self: [*c]ImFontAtlas, filename: [*c]const u8, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
-pub extern fn ImFontAtlas_AddFontFromMemoryTTF(self: [*c]ImFontAtlas, font_data: ?*c_void, font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
+pub extern fn ImFontAtlas_AddFontFromMemoryTTF(self: [*c]ImFontAtlas, font_data: ?*const c_void, font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontFromMemoryCompressedTTF(self: [*c]ImFontAtlas, compressed_font_data: ?*const c_void, compressed_font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(self: [*c]ImFontAtlas, compressed_font_data_base85: [*c]const u8, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
 pub extern fn ImFontAtlas_ClearInputData(self: [*c]ImFontAtlas) void;
