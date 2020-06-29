@@ -1,6 +1,7 @@
 const std = @import("std");
 const print = std.debug.print;
 usingnamespace @import("imgui");
+const Texture = @import("aya").gfx.Texture;
 
 const rules_win = @import("rules_win.zig");
 const brushes_win = @import("brushes_win.zig");
@@ -11,17 +12,23 @@ const menu = @import("menu.zig");
 pub const Map = @import("data.zig").Map;
 pub const drawBrush = brushes_win.drawBrush;
 
-
 pub const AppState = struct {
     map: Map,
     // general state
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 32,
+    // tileset state
+    texture: Texture,
     // menu state
     brushes: bool = true,
     rules: bool = true,
     input_map: bool = true,
     output_map: bool = false,
+
+    /// returns the number of tiles in each row of the tileset image
+    pub fn tilesPerRow(self: AppState) usize {
+        return @intCast(usize, self.texture.width) / self.map.tile_size;
+    }
 };
 
 pub const TileKit = struct {
@@ -29,9 +36,17 @@ pub const TileKit = struct {
 
     pub fn init() TileKit {
         @import("colors.zig").init();
-        return .{
-            .state = AppState{.map = Map.init(null)},
+        return.{
+            .state = AppState{
+                .map = Map.init(),
+                .texture = Texture.initFromFile("/Users/desaro/Desktop/Mimial_Tiles.png") catch unreachable,
+                // .texture = Texture.initCheckerboard(),
+            },
         };
+    }
+
+    pub fn deinit(self: TileKit) void {
+        self.state.texture.deinit();
     }
 
     pub fn draw(self: *TileKit) void {

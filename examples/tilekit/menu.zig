@@ -19,7 +19,13 @@ var temp_state = struct {
     }
 }{};
 
-fn checkKeyboardShortcuts() void {
+fn checkKeyboardShortcuts(state: *tk.AppState) void {
+    // shortcuts for pressing 1-9 to set the brush
+    var key: c_int = 30;
+    while (key < 39) : (key += 1) {
+        if (aya.input.keyPressed(@intToEnum(aya.sdl.SDL_Scancode, key))) state.selected_brush_index = @intCast(usize, key - 30);
+    }
+
     if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
         if (igIsPopupOpenID(igGetIDStr("brushes"))) {
             igClosePopupToLevel(0, true);
@@ -30,7 +36,7 @@ fn checkKeyboardShortcuts() void {
 }
 
 pub fn draw(state: *tk.AppState) void {
-    checkKeyboardShortcuts();
+    checkKeyboardShortcuts(state);
 
     var showLoadTilesetPopup = false;
     var showResizePopup = false;
@@ -91,7 +97,6 @@ pub fn draw(state: *tk.AppState) void {
     resizeMapPopup();
 }
 
-
 fn loadTilesetPopup() void {
     if (igBeginPopupModal("Load Tileset", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
@@ -101,8 +106,7 @@ fn loadTilesetPopup() void {
         _ = igDragInt("Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8, null);
         igSeparator();
 
-        var size: ImVec2 = undefined;
-        igGetContentRegionAvail(&size);
+        var size = ogGetContentRegionAvail();
         if (igButton("Cancel", ImVec2{ .x = (size.x - 4) / 2 })) {
             igCloseCurrentPopup();
         }

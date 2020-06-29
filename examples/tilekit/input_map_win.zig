@@ -18,8 +18,7 @@ pub fn drawWindow(state: *tk.AppState) void {
 }
 
 fn draw(state: *tk.AppState) void {
-    var pos = ImVec2{};
-    igGetCursorScreenPos(&pos);
+    var pos = ogGetCursorScreenPos();
     // std.debug.print("pos: {d}\n", .{pos});
 
     _ = igInvisibleButton("##input_map_button", ImVec2{ .x = @intToFloat(f32, state.map.w) * state.map_rect_size, .y = @intToFloat(f32, state.map.h) * state.map_rect_size });
@@ -49,6 +48,7 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
         igSetScrollXFloat(igGetScrollX() + scroll_delta.x * 2);
         igSetScrollYFloat(igGetScrollY() + scroll_delta.y * 2);
         igResetMouseDragDelta(0);
+        return;
     }
 
     if (igIsMouseDragging(0, 0) and igGetIO().KeyShift) {
@@ -107,7 +107,6 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
                 state.map.setTile(@intCast(usize, x), @intCast(usize, y), @intCast(u32, state.selected_brush_index + 1));
             }
         }
-        std.debug.print("----------- {},{} - {},{}\n", .{start_x, start_y, end_x, end_y});
     }
 
     if (igIsMouseDown(0)) {

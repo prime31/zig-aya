@@ -7,7 +7,7 @@ const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
     if (state.brushes and igBegin("Brushes", &state.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        draw(state, false);
+        draw(state, state.map_rect_size);
         igEnd();
     }
 }
@@ -18,14 +18,13 @@ pub fn drawPopup(state: *tk.AppState) void {
     pos.y -= state.map_rect_size * 6 / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("brushes", ImGuiWindowFlags_NoTitleBar)) {
-        draw(state, true);
+        draw(state, state.map_rect_size);
         igEndPopup();
     }
 }
 
-fn draw(state: *tk.AppState, popup: bool) void {
-    const rect_size = state.map_rect_size;
-    const canvas_size = 6 * state.map_rect_size;
+pub fn draw(state: *tk.AppState, rect_size: f32) void {
+    const canvas_size = 6 * rect_size;
     const draw_list = igGetWindowDrawList();
 
     var pos = ImVec2{};
@@ -43,7 +42,7 @@ fn draw(state: *tk.AppState, popup: bool) void {
             const offset_y = @intToFloat(f32, y) * rect_size;
             var tl = ImVec2{ .x = pos.x + offset_x, .y = pos.y + offset_y };
 
-            drawBrush(state.map_rect_size, index, tl);
+            drawBrush(rect_size, index, tl);
 
             if (index == state.selected_brush_index) {
                 const size = rect_size - thickness;
