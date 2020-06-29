@@ -6,7 +6,7 @@ pub const Map = struct {
     h: i32 = 64,
     tile_size: i32 = 16,
     tile_spacing: i32 = 0,
-    image: []const u8 = undefined,
+    image: []const u8 = "",
     data: []u32,
     rules: std.ArrayList(Rule),
 
@@ -17,7 +17,6 @@ pub const Map = struct {
         };
 
         std.mem.set(u32, map.data, 0);
-
         return map;
     }
 
@@ -37,10 +36,137 @@ pub const Map = struct {
     pub fn setTile(self: Map, x: usize, y: usize, value: u32) void {
         self.data[x + y * @intCast(usize, self.w)] = value;
     }
+
+    pub fn toBinary(self: Map) !void {
+        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.bin", .write);
+        defer buf.deinit();
+
+        const out = buf.writer();
+        try out.writeIntLittle(i32, self.w,);
+        try out.writeIntLittle(i32, self.h);
+        try out.writeIntLittle(i32, self.tile_size);
+        try out.writeIntLittle(i32, self.tile_spacing);
+        try out.writeIntLittle(usize, self.image.len);
+        try out.writeAll(self.image);
+
+        try out.writeIntLittle(usize, self.data.len);
+        try out.writeAll(std.mem.sliceAsBytes(self.data));
+
+        try out.writeIntLittle(usize, self.rules.items.len);
+        for (self.rules.items) |rule| {
+            try out.writeAll(rule.name[0..std.mem.indexOfSentinel(u8, 0, rule.name[0..])]);
+            try out.writeIntLittle(u8, rule.chance);
+
+            try out.writeIntLittle(usize, rule.pattern_data.len,);
+            for (rule.pattern_data) |rule_tile| {
+                try out.writeIntLittle(usize, rule_tile.tile);
+                try out.writeIntLittle(usize, @enumToInt(rule_tile.state));
+            }
+
+            try out.writeIntLittle(usize, rule.selected_data.len);
+            for (rule.selected_data.items) |selected_data, i| {
+                if (i == rule.selected_data.len) break;
+                try out.writeIntLittle(u8, selected_data);
+            }
+        }
+    }
+
+    pub fn fromBinary(self: Map) !void {
+        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.bin", .read);
+        defer buf.deinit();
+
+        // std.mem.bytesAsValue for reading f32
+        const in = buf.reader();
+        var w = in.readIntLittle(i32);
+        var h = in.readIntLittle(i32);
+        var tile_size = in.readIntLittle(i32);
+        var tile_spacing = in.readIntLittle(i32);
+
+        var image_len = try in.readIntLittle(usize);
+        if (image_len > 0) {
+            const buffer = try aya.mem.tmp_allocator.alloc(u8, image_len);
+            _ = try in.readAll(buffer);
+        }
+
+        var data_len = try in.readIntLittle(usize);
+
+        std.debug.print("{}, {}, {}, {} img.len: {}, data.len: {}\n", .{w, h, tile_size, tile_spacing, image_len, data_len});
+    }
+
+    pub fn toJson(self: Map) !void {
+        var buf = aya.mem.SdlBufferStream.init("/Users/desaro/Desktop/tilekit.json", .write);
+        defer buf.deinit();
+        const out_stream = buf.writer();
+
+        var jw = std.json.writeStream(out_stream, 10);
+
+        try jw.beginObject();
+        try jw.objectField("w");
+        try jw.emitNumber(self.w);
+
+        try jw.objectField("h");
+        try jw.emitNumber(self.h);
+
+        try jw.objectField("tile_size");
+        try jw.emitNumber(self.tile_size);
+
+        try jw.objectField("tile_spacing");
+        try jw.emitNumber(self.tile_spacing);
+
+        try jw.objectField("image");
+        try jw.emitString(self.image);
+
+        try jw.objectField("data");
+        try jw.beginArray();
+        for (self.data) |d| {
+            try jw.arrayElem();
+            try jw.emitNumber(d);
+        }
+        try jw.endArray();
+
+        try jw.objectField("rules");
+        try jw.beginArray();
+        for (self.rules.items) |rule| {
+            try jw.arrayElem();
+            try jw.beginObject();
+            try jw.objectField("name");
+            try jw.emitString(rule.name[0..std.mem.indexOfSentinel(u8, 0, rule.name[0..])]);
+
+            try jw.objectField("chance");
+            try jw.emitNumber(rule.chance);
+
+            try jw.objectField("pattern_data");
+            try jw.beginArray();
+            for (rule.pattern_data) |rule_tile| {
+                try jw.arrayElem();
+                try jw.beginObject();
+                try jw.objectField("tile");
+                try jw.emitNumber(rule_tile.tile);
+                try jw.objectField("state");
+                try jw.emitNumber(@enumToInt(rule_tile.state));
+                try jw.endObject();
+            }
+            try jw.endArray();
+
+            try jw.objectField("selected_data");
+            try jw.beginArray();
+            for (rule.selected_data.items) |selected_data, i| {
+                if (i == rule.selected_data.len) break;
+                try jw.arrayElem();
+                try jw.emitNumber(selected_data);
+            }
+            try jw.endArray();
+
+            try jw.endObject();
+        }
+        try jw.endArray();
+
+        try jw.endObject();
+    }
 };
 
 pub const Rule = struct {
-    name: [25]u8 = undefined,
+    name: [25:0]u8 = [_:0]u8{0} ** 25,
     pattern_data: [25]RuleTile = undefined,
     chance: u8 = 100,
     selected_data: aya.utils.FixedList(u8, 25),

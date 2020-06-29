@@ -47,8 +47,16 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("TileKit", true)) {
             defer igEndMenu();
 
-            if (igMenuItemBool("Menu Thing", null, false, true)) {
-                std.debug.print("fucker\n", .{});
+            if (igMenuItemBool("to json", null, false, true)) {
+                state.map.toJson() catch unreachable;
+            }
+
+            if (igMenuItemBool("to binary", null, false, true)) {
+                state.map.toBinary() catch unreachable;
+            }
+
+            if (igMenuItemBool("from binary", null, false, true)) {
+                state.map.fromBinary() catch unreachable;
             }
         }
 
