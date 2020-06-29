@@ -1,6 +1,8 @@
 const std = @import("std");
 const ScratchAllocator = @import("scratch_allocator.zig").ScratchAllocator;
 
+pub const SdlBufferStream = @import("sdl_stream.zig").SdlBufferStream;
+
 // temp allocator is a ring buffer so memory doesnt need to be freed
 pub const tmp_allocator = &tmp_allocator_instance.allocator;
 var tmp_allocator_instance = ScratchAllocator.init(allocator_mem[0..]);

@@ -9,11 +9,22 @@ pub fn read(allocator: *std.mem.Allocator, file: []const u8) ![]u8 {
     if (rw == null) return error.FileNotFound;
 
     const file_size = sdl.SDL_RWsize(rw);
+    if (file_size == 0) {
+        return error.ZeroSizeFile;
+    }
+
     const bytes = try allocator.alloc(u8, @intCast(usize, file_size));
     const read_len = sdl.SDL_RWread(rw, @ptrCast(*c_void, bytes), 1, @intCast(usize, file_size));
     _ = sdl.SDL_RWclose(rw);
 
     return bytes;
+}
+
+pub fn write(file: []const u8, data: []u8) !void {
+    const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
+    var rw = sdl.SDL_RWFromFile(c_file, "w");
+    _ = sdl.SDL_RWwrite(rw, data.ptr, data.len, 1);
+    _ = sdl.SDL_RWclose(rw);
 }
 
 test "test fs read" {

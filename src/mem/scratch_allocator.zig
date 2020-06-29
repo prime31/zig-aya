@@ -14,7 +14,7 @@ pub const ScratchAllocator = struct {
         return ScratchAllocator{
             .allocator = Allocator{
                 .allocFn = alloc,
-                .resizeFn = resize,
+                .resizeFn = Allocator.noResize, // resize, TODO: maybe resize should do something?
             },
             // .backup_allocator = backup_allocator,
             .buffer = buffer,
