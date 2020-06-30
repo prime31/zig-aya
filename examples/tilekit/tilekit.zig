@@ -8,6 +8,7 @@ const brushes_win = @import("brushes_win.zig");
 const input_map_win = @import("input_map_win.zig");
 const output_map_win = @import("output_map_win.zig");
 const menu = @import("menu.zig");
+const persistence = @import("persistence.zig");
 
 pub const Map = @import("data.zig").Map;
 pub const drawBrush = brushes_win.drawBrush;
@@ -28,6 +29,14 @@ pub const AppState = struct {
     /// returns the number of tiles in each row of the tileset image
     pub fn tilesPerRow(self: AppState) usize {
         return @intCast(usize, self.texture.width) / @intCast(usize, self.map.tile_size);
+    }
+
+    pub fn saveMap(self: AppState, file: []const u8) !void {
+        try persistence.save(self.map, file);
+    }
+
+    pub fn loadMap(self: *AppState, file: []const u8) !void {
+        self.map = try persistence.load(file);
     }
 };
 

@@ -47,16 +47,20 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("TileKit", true)) {
             defer igEndMenu();
 
+            if (igMenuItemBool("New", null, false, true)) {
+                state.map = tk.Map.init();
+            }
+
+            if (igMenuItemBool("Save", null, false, true)) {
+                state.saveMap("tilekit.bin") catch unreachable;
+            }
+
+            if (igMenuItemBool("Load", null, false, true)) {
+                state.loadMap("tilekit.bin") catch unreachable;
+            }
+
             if (igMenuItemBool("to json", null, false, true)) {
-                state.map.toJson() catch unreachable;
-            }
-
-            if (igMenuItemBool("to binary", null, false, true)) {
-                state.map.toBinary() catch unreachable;
-            }
-
-            if (igMenuItemBool("from binary", null, false, true)) {
-                state.map.fromBinary() catch unreachable;
+                @import("persistence.zig").toJson(state.map) catch unreachable;
             }
         }
 
