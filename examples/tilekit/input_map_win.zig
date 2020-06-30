@@ -25,7 +25,8 @@ fn draw(state: *tk.AppState) void {
     ogAddRectFilled(igGetWindowDrawList(), pos, map_size, colors.colorRgb(0, 0, 0));
 
     _ = igInvisibleButton("##input_map_button", map_size);
-    if (igIsItemHovered(ImGuiHoveredFlags_None)) handleInput(state, pos);
+    const is_hovered = igIsItemHovered(ImGuiHoveredFlags_None);
+    if (is_hovered) handleInput(state, pos);
 
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
@@ -39,6 +40,13 @@ fn draw(state: *tk.AppState) void {
             var tl = ImVec2{ .x = pos.x + offset_x, .y = pos.y + offset_y };
             tk.drawBrush(state.map_rect_size, tile - 1, tl);
         }
+    }
+
+    // draw a rect over the current tile
+    if (is_hovered) {
+        var tile = tileIndexUnderMouse(state, pos);
+        const tl = ImVec2{.x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size};
+        ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, colors.rule_result_selected_outline, 1);
     }
 }
 

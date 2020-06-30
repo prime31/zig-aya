@@ -63,7 +63,7 @@ pub fn draw(state: *tk.AppState, rect_size: f32) void {
 }
 
 pub fn drawBrush(rect_size: f32, index: usize, tl: ImVec2) void {
-    // we have 14 unique clors so collapse our index
+    // we have 14 unique colors so collapse our index
     const color_index = @mod(index, 14);
     const set = @divTrunc(index, 14);
 

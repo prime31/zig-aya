@@ -32,6 +32,11 @@ pub fn ogAddQuadFilled(draw_list: [*c]ImDrawList, tl: ImVec2, size: f32, col: Im
     ImDrawList_AddQuadFilled(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, col);
 }
 
+/// adds a rect with possibly non-matched width/height to the draw list
 pub fn ogAddRectFilled(draw_list: [*c]ImDrawList, tl: ImVec2, size: ImVec2, col: ImU32) void {
     ImDrawList_AddQuadFilled(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size.x, .y = tl.y }, ImVec2{ .x = tl.x + size.x, .y = tl.y + size.y }, ImVec2{ .x = tl.x, .y = tl.y + size.y }, col);
+}
+
+pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
+    return igInputText(label, buf, buf_size, ImGuiInputTextFlags_None, null, null);
 }
