@@ -18,6 +18,12 @@ pub fn ogGetCursorScreenPos() ImVec2 {
     return pos;
 }
 
+pub fn ogGetCursorPos() ImVec2 {
+    var pos = ImVec2{};
+    igGetCursorPos(&pos);
+    return pos;
+}
+
 pub fn ogGetContentRegionAvail() ImVec2 {
     var pos = ImVec2{};
     igGetContentRegionAvail(&pos);

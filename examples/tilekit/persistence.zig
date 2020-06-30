@@ -9,7 +9,7 @@ const RuleTile = @import("data.zig").RuleTile;
 
 pub fn save(map: Map, file: []const u8) !void {
     var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
-    const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.bin" });
+    const out_path = try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ path_or_null.?, "tilekit.bin" });
 
     var buf = aya.mem.SdlBufferStream.init(out_path, .write);
     defer buf.deinit();
@@ -53,7 +53,7 @@ fn writeRule(out: Writer, rule: Rule) !void {
 
 pub fn load(file: []const u8) !Map {
     var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
-    const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.bin" });
+    const out_path = try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ path_or_null.?, "tilekit.bin" });
 
     var buf = aya.mem.SdlBufferStream.init(out_path, .read);
     defer buf.deinit();
@@ -61,6 +61,7 @@ pub fn load(file: []const u8) !Map {
     var map = Map{
         .data = undefined,
         .rules = std.ArrayList(Rule).init(aya.mem.allocator),
+        .pre_rules = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
     };
 
     // std.mem.bytesAsValue for reading f32

@@ -86,6 +86,10 @@ pub fn draw(state: *tk.AppState) void {
                 state.input_map = !state.input_map;
             }
 
+            if (igMenuItemBool("Post Processed Map", null, state.post_processed_map, true)) {
+                state.post_processed_map = !state.post_processed_map;
+            }
+
             if (igMenuItemBool("Output Map", null, state.output_map, true)) {
                 state.output_map = !state.output_map;
             }

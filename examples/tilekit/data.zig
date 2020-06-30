@@ -9,11 +9,13 @@ pub const Map = struct {
     image: []const u8 = "",
     data: []u32,
     rules: std.ArrayList(Rule),
+    pre_rules: std.ArrayList(std.ArrayList(Rule)),
 
     pub fn init() Map {
         var map = .{
             .data = aya.mem.allocator.alloc(u32, 64 * 64) catch unreachable,
             .rules = std.ArrayList(Rule).init(aya.mem.allocator),
+            .pre_rules = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
         };
 
         std.mem.set(u32, map.data, 0);
@@ -22,11 +24,18 @@ pub const Map = struct {
 
     pub fn deinit(self: Map) void {
         aya.mem.allocator.free(self.data);
+        for (self.pre_rules) |pr| {
+            pr.deinit();
+        }
         self.rules.deinit();
     }
 
     pub fn addRule(self: *Map) void {
         self.rules.append(Rule.init()) catch unreachable;
+    }
+
+    pub fn addPreRulesPage(self: *Map) void {
+        self.pre_rules.append(std.ArrayList(Rule).init(aya.mem.allocator)) catch unreachable;
     }
 
     pub fn getTile(self: Map, x: usize, y: usize) u32 {

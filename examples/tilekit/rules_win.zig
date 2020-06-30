@@ -13,39 +13,97 @@ var nine_slice_selected: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
     if (state.rules and igBegin("Rules", &state.rules, ImGuiWindowFlags_None)) {
-        var delete_index: usize = std.math.maxInt(usize);
-        var i: usize = 0;
-        while (i < state.map.rules.items.len) : (i += 1) {
-            igPushIDInt(@intCast(c_int, i));
-            if (renderRule(state, &state.map.rules.items[i])) {
-                delete_index = i;
+        defer igEnd();
+
+        // save the cursor position so we can hack a button on the tab bar itself
+        var cursor = ogGetCursorPos();
+        if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_None)) {
+            defer igEndTabBar();
+
+            cursor.x += igGetWindowContentRegionWidth() - 25;
+            igSetCursorPos(cursor);
+            if (igButton(" + ", ImVec2{})) {
+                state.map.addPreRulesPage();
+            }
+
+            if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
+                defer igEndTabItem();
+                renderRulesTab(state);
+            }
+
+            renderPreRulesTabs(state);
+        } // end beginTabBar
+    }
+}
+
+fn renderRulesTab(state: *tk.AppState) void {
+    var delete_index: usize = std.math.maxInt(usize);
+    var i: usize = 0;
+    while (i < state.map.rules.items.len) : (i += 1) {
+        igPushIDInt(@intCast(c_int, i) + 1000);
+        if (renderRule(state, &state.map.rules.items[i])) {
+            delete_index = i;
+        }
+        igPopID();
+    }
+
+    if (delete_index < state.map.rules.items.len) {
+        _ = state.map.rules.swapRemove(delete_index);
+    }
+
+    if (igButton("Add Rule", ImVec2{})) {
+        state.map.addRule();
+    }
+    igSameLine(0, 10);
+
+    if (igButton("Add 9-Slice", ImVec2{})) {
+        igOpenPopup("nine-slice-wizard");
+        // reset nine slice state
+        std.mem.set(u8, &label, 0);
+        nine_slice_selected = null;
+    }
+
+    var pos = igGetIO().MousePos;
+    pos.x -= 150;
+    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
+    if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
+        nineSlicePopup(state);
+    }
+}
+
+fn renderPreRulesTabs(state: *tk.AppState) void {
+    var delete_index: usize = std.math.maxInt(usize);
+    for (state.map.pre_rules.items) |*pre_rule, i| {
+        var is_tab_open = true;
+        igPushIDInt(@intCast(c_int, i) + 3000);
+        if (igBeginTabItem("#1", &is_tab_open, ImGuiTabItemFlags_None)) {
+            defer igEndTabItem();
+
+            var delete_rule_index: usize = std.math.maxInt(usize);
+            for (pre_rule.items) |*rule, j| {
+                if (renderRule(state, rule)) {
+                    delete_rule_index = j;
+                }
+            }
+
+            if (igButton("Add Rule", ImVec2{})) {
+                pre_rule.append(Rule.init()) catch unreachable;
+            }
+
+            if (delete_rule_index < pre_rule.items.len) {
+                _ = pre_rule.swapRemove(delete_rule_index);
             }
         }
+        igPopID();
 
-        if (delete_index < state.map.rules.items.len) {
-            _ = state.map.rules.swapRemove(delete_index);
+        if (!is_tab_open) {
+            delete_index = i;
         }
+    } // end pre_rules loop
 
-        if (igButton("Add Rule", ImVec2{})) {
-            state.map.addRule();
-        }
-        igSameLine(0, 10);
-
-        if (igButton("Add 9-Slice", ImVec2{})) {
-            igOpenPopup("nine-slice-wizard");
-            // reset nine slice state
-            std.mem.set(u8, &label, 0);
-            nine_slice_selected = null;
-        }
-
-        var pos = igGetIO().MousePos;
-        pos.x -= 150;
-        igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
-        if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
-            nineSlicePopup(state);
-        }
-
-        igEnd();
+    if (delete_index < state.map.pre_rules.items.len) {
+        const removed_rules_page = state.map.pre_rules.swapRemove(delete_index);
+        removed_rules_page.deinit();
     }
 }
 

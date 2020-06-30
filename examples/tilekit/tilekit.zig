@@ -7,6 +7,8 @@ const rules_win = @import("rules_win.zig");
 const brushes_win = @import("brushes_win.zig");
 const input_map_win = @import("input_map_win.zig");
 const output_map_win = @import("output_map_win.zig");
+const post_proc_map_win = @import("post_processed_map_win.zig");
+
 const menu = @import("menu.zig");
 const persistence = @import("persistence.zig");
 
@@ -24,6 +26,7 @@ pub const AppState = struct {
     brushes: bool = true,
     rules: bool = true,
     input_map: bool = true,
+    post_processed_map: bool = false,
     output_map: bool = false,
 
     /// returns the number of tiles in each row of the tileset image
@@ -93,7 +96,7 @@ pub const TileKit = struct {
         brushes_win.drawWindow(&self.state);
         input_map_win.drawWindow(&self.state);
         output_map_win.drawWindow(&self.state.output_map);
-
+        post_proc_map_win.drawWindow(&self.state);
         brushes_win.drawPopup(&self.state);
 
         // igShowDemoWindow(null);
