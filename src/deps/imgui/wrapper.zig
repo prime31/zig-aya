@@ -9,7 +9,7 @@ pub fn ogButton(label: [*c]const u8) bool {
 pub fn ogImage(texture: aya.gfx.Texture) void {
     const white = ImVec4{.x = 1, .y = 1, .z = 1, .w = 1};
     const size = ImVec2{.x = @intToFloat(f32, texture.width), .y = @intToFloat(f32, texture.height)};
-    igImage(texture.tex, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, white);
+    igImage(texture.tex, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, ImVec4{});
 }
 
 pub fn ogGetCursorScreenPos() ImVec2 {

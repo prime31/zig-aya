@@ -39,11 +39,30 @@ pub const Map = struct {
     }
 
     pub fn getTile(self: Map, x: usize, y: usize) u32 {
+        if (x < 0 or y < 0 or x > self.w or y > self.h) {
+            return 0;
+        }
         return self.data[x + y * @intCast(usize, self.w)];
     }
 
     pub fn setTile(self: Map, x: usize, y: usize, value: u32) void {
         self.data[x + y * @intCast(usize, self.w)] = value;
+    }
+
+    pub fn transformTileWithRules(self: Map, tile: u32) u32 {
+        for (self.rules.items) |*rule| {
+            const rule_tile = rule.get(2, 2);
+            if (rule_tile.tile == tile) {
+                if (rule.selected_data.len == 0) {
+                    return 0;
+                }
+                return rule.selected_data.items[0] + 1;
+            }
+
+            for (rule.pattern_data) |pattern| {}
+        }
+
+        return 0;
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
@@ -53,7 +72,7 @@ pub const Map = struct {
         const y = @divTrunc(index, tiles_per_row);
 
         var rule = Rule.init();
-        const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-tl"}) catch unreachable;
+        const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tl_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 1).negate(selected_brush_index + 1);
@@ -62,7 +81,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-tr"}) catch unreachable;
+        const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tr" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tr_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 1).negate(selected_brush_index + 1);
@@ -71,7 +90,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-bl"}) catch unreachable;
+        const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-bl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, bl_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 3).negate(selected_brush_index + 1);
@@ -80,7 +99,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-br"}) catch unreachable;
+        const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-br" }) catch unreachable;
         std.mem.copy(u8, &rule.name, br_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(3, 2).negate(selected_brush_index + 1);
@@ -89,7 +108,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const t_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-t"}) catch unreachable;
+        const t_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-t" }) catch unreachable;
         std.mem.copy(u8, &rule.name, t_name);
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
@@ -97,7 +116,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const b_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-b"}) catch unreachable;
+        const b_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-b" }) catch unreachable;
         std.mem.copy(u8, &rule.name, b_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
@@ -105,7 +124,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const l_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-l"}) catch unreachable;
+        const l_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-l" }) catch unreachable;
         std.mem.copy(u8, &rule.name, l_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
@@ -113,7 +132,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const r_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-r"}) catch unreachable;
+        const r_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-r" }) catch unreachable;
         std.mem.copy(u8, &rule.name, r_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
@@ -121,7 +140,7 @@ pub const Map = struct {
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
-        const c_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{name_prefix, "-c"}) catch unreachable;
+        const c_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-c" }) catch unreachable;
         std.mem.copy(u8, &rule.name, c_name);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));

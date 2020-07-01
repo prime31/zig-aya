@@ -108,10 +108,10 @@ pub const struct_ImFontAtlasCustomRect = extern struct {
 };
 pub const ImFontAtlasCustomRect = struct_ImFontAtlasCustomRect;
 pub const struct_ImVec4 = extern struct {
-    x: f32,
-    y: f32,
-    z: f32,
-    w: f32,
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = 0,
+    w: f32 = 0,
 };
 pub const ImVec4 = struct_ImVec4;
 pub const struct_ImVec2 = extern struct {

@@ -139,6 +139,9 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
             end_y -= 1;
         }
 
+        start_x = std.math.clamp(start_x, 0, std.math.maxInt(c_int));
+        start_y = std.math.clamp(start_y, 0, std.math.maxInt(c_int));
+
         var y = start_y;
         while (y <= end_y) : (y += 1) {
             var x = start_x;

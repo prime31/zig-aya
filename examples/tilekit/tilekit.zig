@@ -26,7 +26,7 @@ pub const AppState = struct {
     rules: bool = true,
     input_map: bool = true,
     post_processed_map: bool = false,
-    output_map: bool = false,
+    output_map: bool = true,
 
     /// returns the number of tiles in each row of the tileset image
     pub fn tilesPerRow(self: AppState) usize {
@@ -85,8 +85,8 @@ pub const TileKit = struct {
         igPopStyleVar(2);
 
         const io = igGetIO();
-        const dockspace_id = igGetIDStr("MyDockSpace");
-        // igDockBuilderRemoveNode(dockspace_id);
+        const dockspace_id = igGetIDStr("default-dockspace");
+        // igDockBuilderRemoveNode(dockspace_id); // uncomment for setting up initial layout
         if (igDockBuilderGetNode(dockspace_id) == null) {
             self.initialLayout(dockspace_id, work_size);
         }
@@ -114,6 +114,13 @@ pub const TileKit = struct {
         var dock_main_id = id;
         const right_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.3, null, &dock_main_id);
         igDockBuilderDockWindow("Rules", right_id);
+
+        const br_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.5, null, &dock_main_id);
+        igDockBuilderDockWindow("Output Map", br_id);
+
+        const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 1, null, &dock_main_id);
+        igDockBuilderDockWindow("Input Map", tl_id);
+
         igDockBuilderFinish(id);
     }
 };
