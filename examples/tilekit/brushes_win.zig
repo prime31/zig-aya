@@ -7,7 +7,7 @@ const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
     if (state.brushes and igBegin("Brushes", &state.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        draw(state, 32);
+        draw(state, 32, false);
         igEnd();
     }
 }
@@ -18,12 +18,13 @@ pub fn drawPopup(state: *tk.AppState) void {
     pos.y -= state.map_rect_size * 6 / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("brushes", ImGuiWindowFlags_NoTitleBar)) {
-        draw(state, state.map_rect_size);
+        draw(state, state.map_rect_size, false);
         igEndPopup();
     }
 }
 
-pub fn draw(state: *tk.AppState, rect_size: f32) void {
+/// draws the palette. If skip_input_processing is true, no input processing will occur and the selected brush will not be highlighted.
+pub fn draw(state: *tk.AppState, rect_size: f32, skip_input_processing: bool) void {
     const canvas_size = 6 * rect_size;
     const draw_list = igGetWindowDrawList();
 
@@ -44,14 +45,14 @@ pub fn draw(state: *tk.AppState, rect_size: f32) void {
 
             drawBrush(rect_size, index, tl);
 
-            if (index == state.selected_brush_index) {
+            if (index == state.selected_brush_index and !skip_input_processing) {
                 const size = rect_size - thickness;
                 tl.x += thickness / 2;
                 tl.y += thickness / 2;
                 ImDrawList_AddQuad(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, colors.brush_selected, 2);
             }
 
-            if (hovered) {
+            if (hovered and !skip_input_processing) {
                 if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
                     if (igIsMouseClicked(0, false)) {
                         state.selected_brush_index = index;

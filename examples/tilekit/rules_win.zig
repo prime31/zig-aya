@@ -17,7 +17,7 @@ pub fn draw(state: *tk.AppState) void {
 
         // save the cursor position so we can hack a button on the tab bar itself
         var cursor = ogGetCursorPos();
-        if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_None)) {
+        if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_AutoSelectNewTabs)) {
             defer igEndTabBar();
 
             cursor.x += igGetWindowContentRegionWidth() - 25;
@@ -32,7 +32,7 @@ pub fn draw(state: *tk.AppState) void {
             }
 
             renderPreRulesTabs(state);
-        } // end beginTabBar
+        }
     }
 }
 
@@ -41,7 +41,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     var i: usize = 0;
     while (i < state.map.rules.items.len) : (i += 1) {
         igPushIDInt(@intCast(c_int, i) + 1000);
-        if (renderRule(state, &state.map.rules.items[i])) {
+        if (renderRule(state, &state.map.rules, &state.map.rules.items[i], false)) {
             delete_index = i;
         }
         igPopID();
@@ -81,7 +81,8 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
 
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
-                if (renderRule(state, rule)) {
+                igPushIDPtr(rule);
+                if (renderRule(state, pre_rule, rule, true)) {
                     delete_rule_index = j;
                 }
             }
@@ -93,6 +94,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             if (delete_rule_index < pre_rule.items.len) {
                 _ = pre_rule.swapRemove(delete_rule_index);
             }
+            igPopID();
         }
         igPopID();
 
@@ -107,7 +109,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
-fn renderRule(state: *tk.AppState, rule: *Rule) bool {
+fn renderRule(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, is_pre_rule: bool) bool {
     igPushItemWidth(125);
     std.mem.copy(u8, &label, &rule.name);
     if (ogInputText("##name", &label, label.len)) {
@@ -133,7 +135,7 @@ fn renderRule(state: *tk.AppState, rule: *Rule) bool {
     igSameLine(0, 4);
 
     if (igButton("Copy", ImVec2{})) {
-        state.map.rules.append(rule.clone()) catch unreachable;
+        parent.append(rule.clone()) catch unreachable;
     }
     igSameLine(0, 4);
 
@@ -162,10 +164,14 @@ fn renderRule(state: *tk.AppState, rule: *Rule) bool {
         igEndPopup();
     }
 
-    pos.x -= @intToFloat(f32, state.texture.width) / 2;
+    if (is_pre_rule) {
+        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.map.tile_size) * 5.0 / 2.0;
+    } else {
+        pos.x = igGetIO().MousePos.x -  @intToFloat(f32, state.texture.width) / 2;
+    }
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        resultPopup(state, rule);
+        resultPopup(state, rule, is_pre_rule);
         igEndPopup();
     }
 
@@ -285,9 +291,15 @@ fn rulesHamburgerPopup(rule: *Rule) void {
     }
 }
 
-fn resultPopup(state: *tk.AppState, rule: *Rule) void {
+/// shows the tileset or brush palette allowing multiple tiles to be selected
+fn resultPopup(state: *tk.AppState, rule: *Rule, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture);
+    if (is_pre_rule) {
+        brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
+    } else {
+        ogImage(state.texture);
+    }
+
     const draw_list = igGetWindowDrawList();
 
     // draw selected tiles
@@ -313,7 +325,7 @@ fn resultPopup(state: *tk.AppState, rule: *Rule) void {
 }
 
 fn nineSlicePopup(state: *tk.AppState) void {
-    brushes_win.draw(state, 16);
+    brushes_win.draw(state, 16, false);
     igSameLine(0, 5);
 
     var content_start_pos = ogGetCursorScreenPos();

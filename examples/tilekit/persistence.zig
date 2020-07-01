@@ -30,6 +30,14 @@ pub fn save(map: Map, file: []const u8) !void {
     for (map.rules.items) |rule| {
         try writeRule(out, rule);
     }
+
+    try out.writeIntLittle(usize, map.pre_rules.items.len);
+    for (map.pre_rules.items) |rule_page| {
+        try out.writeIntLittle(usize, rule_page.items.len);
+        for (rule_page.items) |rule| {
+            try writeRule(out, rule);
+        }
+    }
 }
 
 fn writeRule(out: Writer, rule: Rule) !void {
@@ -92,6 +100,22 @@ pub fn load(file: []const u8) !Map {
         try map.rules.append(try readRule(in));
     }
 
+    const pre_rules_pages = try in.readIntLittle(usize);
+    std.debug.print("pages: {}\n", .{pre_rules_pages});
+    _ = try map.pre_rules.ensureCapacity(pre_rules_pages);
+    i = 0;
+    while (i < pre_rules_pages) : (i += 1) {
+        _ = try map.pre_rules.append(std.ArrayList(Rule).init(aya.mem.allocator));
+
+        const rules_cnt = try in.readIntLittle(usize);
+        _ = try new_page.ensureCapacity(rules_cnt);
+        var j: usize = 0;
+        while (j < rules_cnt) : (j += 1) {
+            try map.pre_rules.items[i].append(try readRule(in));
+        }
+        std.debug.print("--- rules on page: {}\n", .{rules_cnt});
+    }
+
     return map;
 }
 
@@ -118,7 +142,6 @@ fn readRule(in: Reader) !Rule {
 
     return rule;
 }
-
 
 /// deprecated
 pub fn toJson(map: Map) !void {
