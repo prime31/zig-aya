@@ -2,10 +2,10 @@ const std = @import("std");
 const aya = @import("aya");
 
 pub const Map = struct {
-    w: i32 = 64,
-    h: i32 = 64,
-    tile_size: i32 = 16,
-    tile_spacing: i32 = 0,
+    w: usize = 64,
+    h: usize = 64,
+    tile_size: usize = 16,
+    tile_spacing: usize = 0,
     image: []const u8 = "",
     data: []u32,
     rules: std.ArrayList(Rule),
@@ -39,7 +39,7 @@ pub const Map = struct {
     }
 
     pub fn getTile(self: Map, x: usize, y: usize) u32 {
-        if (x < 0 or y < 0 or x > self.w or y > self.h) {
+        if (x > self.w or y > self.h) {
             return 0;
         }
         return self.data[x + y * @intCast(usize, self.w)];
@@ -49,17 +49,21 @@ pub const Map = struct {
         self.data[x + y * @intCast(usize, self.w)] = value;
     }
 
-    pub fn transformTileWithRules(self: Map, tile: u32) u32 {
+    pub fn transformTileWithRules(self: Map, x: usize, y: usize) u32 {
         for (self.rules.items) |*rule| {
-            const rule_tile = rule.get(2, 2);
-            if (rule_tile.tile == tile) {
-                if (rule.selected_data.len == 0) {
-                    return 0;
-                }
-                return rule.selected_data.items[0] + 1;
-            }
+            if (rule.selected_data.len == 0) continue;
 
-            for (rule.pattern_data) |pattern| {}
+            // const rule_tile = rule.get(2, 2);
+            // if (rule_tile.tile == tile) {
+            //     return rule.selected_data.items[0] + 1;
+            // }
+
+            for (rule.pattern_data) |pattern, i| {
+                if (pattern.state == .none) continue;
+                const x_offset = @intCast(i4, @mod(i, 5)) - 2;
+                const y_offset = @intCast(i4, @divTrunc(i, 5)) - 2;
+                std.debug.print("x,y {}, {}\n", .{x_offset, y_offset});
+            }
         }
 
         return 0;

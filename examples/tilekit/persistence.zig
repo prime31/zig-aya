@@ -15,10 +15,10 @@ pub fn save(map: Map, file: []const u8) !void {
     defer buf.deinit();
 
     const out = buf.writer();
-    try out.writeIntLittle(i32, map.w);
-    try out.writeIntLittle(i32, map.h);
-    try out.writeIntLittle(i32, map.tile_size);
-    try out.writeIntLittle(i32, map.tile_spacing);
+    try out.writeIntLittle(usize, map.w);
+    try out.writeIntLittle(usize, map.h);
+    try out.writeIntLittle(usize, map.tile_size);
+    try out.writeIntLittle(usize, map.tile_spacing);
     try out.writeIntLittle(usize, map.image.len);
     try out.writeAll(map.image);
 
@@ -74,10 +74,10 @@ pub fn load(file: []const u8) !Map {
 
     // std.mem.bytesAsValue for reading f32
     const in = buf.reader();
-    map.w = try in.readIntLittle(i32);
-    map.h = try in.readIntLittle(i32);
-    map.tile_size = try in.readIntLittle(i32);
-    map.tile_spacing = try in.readIntLittle(i32);
+    map.w = try in.readIntLittle(usize);
+    map.h = try in.readIntLittle(usize);
+    map.tile_size = try in.readIntLittle(usize);
+    map.tile_spacing = try in.readIntLittle(usize);
 
     var image_len = try in.readIntLittle(usize);
     if (image_len > 0) {

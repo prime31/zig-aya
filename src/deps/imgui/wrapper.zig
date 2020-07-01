@@ -46,3 +46,9 @@ pub fn ogAddRectFilled(draw_list: [*c]ImDrawList, tl: ImVec2, size: ImVec2, col:
 pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
     return igInputText(label, buf, buf_size, ImGuiInputTextFlags_None, null, null);
 }
+
+pub fn ogDragUsize(label: [*c]const u8, p_data: *usize, v_speed: f32, p_max: usize) bool {
+    var min: usize = 0;
+    var max = p_max;
+    return igDragScalar(label, ImGuiDataType_U64, p_data, v_speed, &min, &max, null, 1);
+}

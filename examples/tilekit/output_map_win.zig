@@ -18,7 +18,7 @@ fn draw(state: *tk.AppState) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = state.map.transformTileWithRules(state.map.getTile(x, y));
+            const tile = state.map.transformTileWithRules(x, y);
             if (tile == 0) continue;
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;

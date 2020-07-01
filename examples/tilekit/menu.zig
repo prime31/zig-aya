@@ -6,10 +6,10 @@ const aya = @import("aya");
 var buffer: [100]u8 = undefined;
 
 var temp_state = struct {
-    tile_size: c_int = 16,
-    tile_spacing: c_int = 0,
-    map_width: c_int = 64,
-    map_height: c_int = 64,
+    tile_size: usize = 16,
+    tile_spacing: usize = 0,
+    map_width: usize = 64,
+    map_height: usize = 64,
 
     pub fn reset(self: *@This()) void {
         self.tile_size = 16;
@@ -134,8 +134,8 @@ fn loadTilesetPopup() void {
         defer igEndPopup();
 
         _ = igInputText("Tileset file", &buffer, 100, ImGuiInputTextFlags_None, null, null);
-        _ = igDragInt("Tile Size", &temp_state.tile_size, 0.5, 0, 32, null);
-        _ = igDragInt("Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8, null);
+        _ = ogDragUsize("Tile Size", &temp_state.tile_size, 0.5, 32);
+        _ = ogDragUsize("Tile Spacing", &temp_state.tile_spacing, 0.5, 8);
         igSeparator();
 
         var size = ogGetContentRegionAvail();
@@ -153,8 +153,8 @@ fn resizeMapPopup() void {
     if (igBeginPopupModal("Resize Map", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
-        _ = igDragInt("Width", &temp_state.map_width, 0.5, 0, 256, null);
-        _ = igDragInt("Height", &temp_state.map_height, 0.5, 0, 256, null);
+        _ = ogDragUsize("Width", &temp_state.map_width, 0.5, 256);
+        _ = ogDragUsize("Height", &temp_state.map_height, 0.5, 256);
         igSeparator();
 
         var size: ImVec2 = undefined;
