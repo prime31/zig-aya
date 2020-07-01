@@ -62,7 +62,10 @@ pub const Map = struct {
                 if (pattern.state == .none) continue;
                 const x_offset = @intCast(i4, @mod(i, 5)) - 2;
                 const y_offset = @intCast(i4, @divTrunc(i, 5)) - 2;
-                std.debug.print("x,y {}, {}\n", .{x_offset, y_offset});
+
+                if (pattern.tile == self.getTile(x, y)) {
+                    return @intCast(u32, rule.selected_data.items[0] + 1);
+                }
             }
         }
 
