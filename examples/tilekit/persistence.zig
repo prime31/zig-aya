@@ -101,19 +101,17 @@ pub fn load(file: []const u8) !Map {
     }
 
     const pre_rules_pages = try in.readIntLittle(usize);
-    std.debug.print("pages: {}\n", .{pre_rules_pages});
     _ = try map.pre_rules.ensureCapacity(pre_rules_pages);
     i = 0;
     while (i < pre_rules_pages) : (i += 1) {
         _ = try map.pre_rules.append(std.ArrayList(Rule).init(aya.mem.allocator));
 
         const rules_cnt = try in.readIntLittle(usize);
-        _ = try new_page.ensureCapacity(rules_cnt);
+        _ = try map.pre_rules.items[i].ensureCapacity(rules_cnt);
         var j: usize = 0;
         while (j < rules_cnt) : (j += 1) {
             try map.pre_rules.items[i].append(try readRule(in));
         }
-        std.debug.print("--- rules on page: {}\n", .{rules_cnt});
     }
 
     return map;
@@ -141,79 +139,4 @@ fn readRule(in: Reader) !Rule {
     }
 
     return rule;
-}
-
-/// deprecated
-pub fn toJson(map: Map) !void {
-    var path_or_null = try @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop);
-    const out_path = try std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, "/", "tilekit.json" });
-
-    var buf = aya.mem.SdlBufferStream.init(out_path, .write);
-    defer buf.deinit();
-    const out_stream = buf.writer();
-
-    var jw = std.json.writeStream(out_stream, 10);
-
-    try jw.beginObject();
-    try jw.objectField("w");
-    try jw.emitNumber(map.w);
-
-    try jw.objectField("h");
-    try jw.emitNumber(map.h);
-
-    try jw.objectField("tile_size");
-    try jw.emitNumber(map.tile_size);
-
-    try jw.objectField("tile_spacing");
-    try jw.emitNumber(map.tile_spacing);
-
-    try jw.objectField("image");
-    try jw.emitString(map.image);
-
-    try jw.objectField("data");
-    try jw.beginArray();
-    for (map.data) |d| {
-        try jw.arrayElem();
-        try jw.emitNumber(d);
-    }
-    try jw.endArray();
-
-    try jw.objectField("rules");
-    try jw.beginArray();
-    for (map.rules.items) |rule| {
-        try jw.arrayElem();
-        try jw.beginObject();
-        try jw.objectField("name");
-        try jw.emitString(rule.name[0..std.mem.indexOfSentinel(u8, 0, rule.name[0..])]);
-
-        try jw.objectField("chance");
-        try jw.emitNumber(rule.chance);
-
-        try jw.objectField("pattern_data");
-        try jw.beginArray();
-        for (rule.pattern_data) |rule_tile| {
-            try jw.arrayElem();
-            try jw.beginObject();
-            try jw.objectField("tile");
-            try jw.emitNumber(rule_tile.tile);
-            try jw.objectField("state");
-            try jw.emitNumber(@enumToInt(rule_tile.state));
-            try jw.endObject();
-        }
-        try jw.endArray();
-
-        try jw.objectField("selected_data");
-        try jw.beginArray();
-        for (rule.selected_data.items) |selected_data, i| {
-            if (i == rule.selected_data.len) break;
-            try jw.arrayElem();
-            try jw.emitNumber(selected_data);
-        }
-        try jw.endArray();
-
-        try jw.endObject();
-    }
-    try jw.endArray();
-
-    try jw.endObject();
 }

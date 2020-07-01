@@ -5,9 +5,8 @@ const Texture = @import("aya").gfx.Texture;
 
 const rules_win = @import("rules_win.zig");
 const brushes_win = @import("brushes_win.zig");
-const input_map_win = @import("input_map_win.zig");
+const input_map_wins = @import("map_windows.zig");
 const output_map_win = @import("output_map_win.zig");
-const post_proc_map_win = @import("post_processed_map_win.zig");
 
 const menu = @import("menu.zig");
 const persistence = @import("persistence.zig");
@@ -19,7 +18,7 @@ pub const AppState = struct {
     map: Map,
     // general state
     selected_brush_index: usize = 0,
-    map_rect_size: f32 = 32,
+    map_rect_size: f32 = 16,
     // tileset state
     texture: Texture,
     // menu state
@@ -32,6 +31,10 @@ pub const AppState = struct {
     /// returns the number of tiles in each row of the tileset image
     pub fn tilesPerRow(self: AppState) usize {
         return @intCast(usize, self.texture.width) / @intCast(usize, self.map.tile_size);
+    }
+
+    pub fn mapSize(self: AppState) ImVec2 {
+        return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.map_rect_size };
     }
 
     pub fn saveMap(self: AppState, file: []const u8) !void {
@@ -94,9 +97,8 @@ pub const TileKit = struct {
 
         rules_win.draw(&self.state);
         brushes_win.drawWindow(&self.state);
-        input_map_win.drawWindow(&self.state);
-        output_map_win.drawWindow(&self.state.output_map);
-        post_proc_map_win.drawWindow(&self.state);
+        input_map_wins.drawWindows(&self.state);
+        output_map_win.drawWindow(&self.state);
         brushes_win.drawPopup(&self.state);
 
         // igShowDemoWindow(null);

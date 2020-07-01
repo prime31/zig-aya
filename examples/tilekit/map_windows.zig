@@ -10,24 +10,43 @@ var drag_rect_data = struct {
     drag_br: ImVec2 = ImVec2{},
 }{};
 
-pub fn drawWindow(state: *tk.AppState) void {
+pub fn drawWindows(state: *tk.AppState) void {
     if (state.input_map and igBegin("Input Map", &state.input_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
-        draw(state);
+        draw(state, true);
+        igEnd();
+    }
+
+    if (state.post_processed_map and igBegin("Post Processed Map", &state.post_processed_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+        draw(state, false);
         igEnd();
     }
 }
 
-fn draw(state: *tk.AppState) void {
+fn draw(state: *tk.AppState, input_map: bool) void {
     var pos = ogGetCursorScreenPos();
-    // std.debug.print("pos: {d}\n", .{pos});
 
-    const map_size = ImVec2{ .x = @intToFloat(f32, state.map.w) * state.map_rect_size, .y = @intToFloat(f32, state.map.h) * state.map_rect_size };
+    const map_size = state.mapSize();
     ogAddRectFilled(igGetWindowDrawList(), pos, map_size, colors.colorRgb(0, 0, 0));
 
     _ = igInvisibleButton("##input_map_button", map_size);
     const is_hovered = igIsItemHovered(ImGuiHoveredFlags_None);
     if (is_hovered) handleInput(state, pos);
 
+    if (input_map) {
+        drawInputMap(state, pos);
+    } else {
+        drawPostProcessedMap(state, pos);
+    }
+
+    // draw a rect over the current tile
+    if (is_hovered and !drag_rect_data.dragged) {
+        var tile = tileIndexUnderMouse(state, pos);
+        const tl = ImVec2{.x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size};
+        ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, colors.rule_result_selected_outline, 1);
+    }
+}
+
+fn drawInputMap(state: *tk.AppState, origin: ImVec2) void {
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
@@ -37,16 +56,25 @@ fn draw(state: *tk.AppState) void {
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
             const offset_y = @intToFloat(f32, y) * state.map_rect_size;
-            var tl = ImVec2{ .x = pos.x + offset_x, .y = pos.y + offset_y };
+            var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
             tk.drawBrush(state.map_rect_size, tile - 1, tl);
         }
     }
+}
 
-    // draw a rect over the current tile
-    if (is_hovered) {
-        var tile = tileIndexUnderMouse(state, pos);
-        const tl = ImVec2{.x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size};
-        ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, colors.rule_result_selected_outline, 1);
+fn drawPostProcessedMap(state: *tk.AppState, origin: ImVec2) void {
+    var y: usize = 0;
+    while (y < state.map.h) : (y += 1) {
+        var x: usize = 0;
+        while (x < state.map.w) : (x += 1) {
+            const tile = state.map.getTile(x, y);
+            if (tile == 0) continue;
+
+            const offset_x = @intToFloat(f32, x) * state.map_rect_size;
+            const offset_y = @intToFloat(f32, y) * state.map_rect_size;
+            var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
+            tk.drawBrush(state.map_rect_size, tile - 1, tl);
+        }
     }
 }
 
@@ -129,8 +157,6 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
         var tile = tileIndexUnderMouse(state, screen_space_offset);
         state.map.setTile(tile.x, tile.y, 0);
     }
-
-    // _ = tileIndexUnderMouse(state, screen_space_offset);
 }
 
 fn tileIndexUnderMouse(state: *tk.AppState, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
@@ -140,8 +166,6 @@ fn tileIndexUnderMouse(state: *tk.AppState, screen_space_offset: ImVec2) struct 
 
     const x = @divTrunc(@floatToInt(c_int, pos.x), @floatToInt(c_int, state.map_rect_size));
     const y = @divTrunc(@floatToInt(c_int, pos.y), @floatToInt(c_int, state.map_rect_size));
-
-    // std.debug.print("tile: {},{}  -  {d}\n", .{x, y, pos});
 
     return .{ .x = @intCast(usize, x), .y = @intCast(usize, y) };
 }

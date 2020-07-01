@@ -55,12 +55,12 @@ pub fn draw(state: *tk.AppState) void {
                 state.saveMap("tilekit.bin") catch unreachable;
             }
 
-            if (igMenuItemBool("Load", null, false, true)) {
-                state.loadMap("tilekit.bin") catch unreachable;
+            if (igMenuItemBool("Save As...", null, false, true)) {
+                state.saveMap("tilekit.bin") catch unreachable;
             }
 
-            if (igMenuItemBool("to json", null, false, true)) {
-                @import("persistence.zig").toJson(state.map) catch unreachable;
+            if (igMenuItemBool("Load", null, false, true)) {
+                state.loadMap("tilekit.bin") catch unreachable;
             }
         }
 
