@@ -11,6 +11,10 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .imgui = true,
+        .gfx = .{
+            .disable_debug_render = true,
+            .resolution_policy = .none,
+        },
         .window = .{
             .width = 1024,
             .height = 768,
@@ -22,11 +26,18 @@ fn init() void {
     tk = TileKit.init();
 }
 
-fn update() void {
-    tk.draw();
-}
+fn update() void {}
 
 fn render() void {
-    aya.gfx.beginPass(.{});
+    tk.draw();
+
+    aya.gfx.beginNullPass();
     aya.gfx.endPass();
+
+    // slow down rendering when we arent active
+    if (!aya.window.focused) {
+        aya.time.sleep(1000);
+    } else if (!imgui.igGetIO().WantCaptureKeyboard and !imgui.igGetIO().WantCaptureMouse) {
+        aya.time.sleep(100);
+    }
 }

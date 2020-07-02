@@ -45,10 +45,6 @@ pub const Window = struct {
         sdl.SDL_DestroyWindow(self.sdl_window);
     }
 
-    pub fn swap(self: Window, device: *fna.Device) void {
-        device.swapBuffers(self.sdl_window);
-    }
-
     pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
         switch (event.event) {
             @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_SIZE_CHANGED) => {

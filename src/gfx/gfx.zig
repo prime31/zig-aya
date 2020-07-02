@@ -194,6 +194,12 @@ pub const Pass = struct {
     render_texture: ?RenderTexture = null,
 };
 
+/// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
+/// will not be set and no render texture will be set. This is useful when making a full ImGui application.
+pub fn beginNullPass() void {
+    state.blitted_to_screen = true;
+}
+
 // OffscreenPasses should be rendered first. If no pass is in the PassConfig rendering will be done to the
 // DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
 // If another pass is run after blitToScreen rendering will be to the backbuffer.
@@ -239,7 +245,7 @@ pub fn postProcess(stack: *PostProcessStack) void {
     stack.process(&state.default_pass.render_tex);
 }
 
-// renders the default OffscreenPass to the backbuffer using the ResolutionScaler
+/// renders the default OffscreenPass to the backbuffer using the ResolutionScaler
 pub fn blitToScreen(letterbox_color: math.Color) void {
     state.blitted_to_screen = true;
 

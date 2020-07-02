@@ -92,7 +92,7 @@ fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {
 
         gfx.commit();
         if (imgui_enabled) imgui.render();
-        window.swap(gfx.device);
+        gfx.device.swapBuffers(window.sdl_window);
     }
 }
 

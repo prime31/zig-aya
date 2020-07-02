@@ -62,7 +62,7 @@ pub const Time = struct {
         return self.timestep.fixed_deltatime;
     }
 
-    pub fn now(self: Time) u32 {
+    pub fn now(self: Time) u64 {
         return sdl.SDL_GetPerformanceCounter();
     }
 

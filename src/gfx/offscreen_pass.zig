@@ -3,7 +3,7 @@ const gfx = @import("gfx.zig");
 const aya = @import("../aya.zig");
 
 pub const DefaultOffscreenPass = struct {
-    render_tex: gfx.RenderTexture,
+    render_tex: gfx.RenderTexture = undefined,
     policy: gfx.ResolutionPolicy,
     scaler: gfx.ResolutionScaler,
     design_w: i32,
@@ -14,7 +14,7 @@ pub const DefaultOffscreenPass = struct {
         var scaler = policy.getScaler(w, h);
 
         const pass = DefaultOffscreenPass{
-            .render_tex = gfx.RenderTexture.init(w, h),
+            .render_tex = if (policy != .none) gfx.RenderTexture.init(w, h) else undefined,
             .policy = policy,
             .scaler = scaler,
             .design_w = w,
@@ -34,7 +34,6 @@ pub const DefaultOffscreenPass = struct {
     }
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {
-        // TODO: if the policy is .default we need to recreate the render textures with the new backbuffer size
         var w: i32 = 0;
         var h: i32 = 0;
         aya.window.drawableSize(&w, &h);

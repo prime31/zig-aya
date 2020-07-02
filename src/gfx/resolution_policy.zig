@@ -10,6 +10,7 @@ pub const ResolutionScaler = struct {
 };
 
 pub const ResolutionPolicy = enum {
+    none, /// here be dragons: if you use this no faux backbuffer will be created. You must NOT
     default,
     no_border,
     no_border_pixel_perfect,
@@ -18,6 +19,8 @@ pub const ResolutionPolicy = enum {
     best_fit,
 
     pub fn getScaler(self: ResolutionPolicy, design_w: i32, design_h: i32) ResolutionScaler {
+        if (self == .none) return .{.w = 0, .h = 0};
+
         // non-default policy requires a design size
         std.debug.assert((self != .default and design_w > 0 and design_h > 0) or self == .default);
 
@@ -115,6 +118,7 @@ pub const ResolutionPolicy = enum {
                     .scale = final_scale,
                 };
             },
+            else => unreachable,
         }
 
         return ResolutionScaler{

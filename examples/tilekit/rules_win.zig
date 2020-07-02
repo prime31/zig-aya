@@ -12,6 +12,8 @@ var label: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
+    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{.x=365});
+    defer igPopStyleVar(0);
     if (state.rules and igBegin("Rules", &state.rules, ImGuiWindowFlags_None)) {
         defer igEnd();
 
