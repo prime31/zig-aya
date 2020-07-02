@@ -2,29 +2,35 @@ const std = @import("std");
 usingnamespace @import("imgui");
 const aya = @import("aya");
 const tk = @import("tilekit.zig");
+const colors = @import("colors.zig");
+const processor = @import("rule_processor.zig");
 
 pub fn drawWindow(state: *tk.AppState) void {
-    if (state.output_map and igBegin("Output Map", &state.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (state.output_map and igBegin("Output Map", &state.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state);
         igEnd();
     }
 }
 
 fn draw(state: *tk.AppState) void {
-    var origin = ogGetCursorScreenPos();
-    _ = igInvisibleButton("", state.mapSize());
+    const origin = ogGetCursorScreenPos();
+
+    const map_size = state.mapSize();
+    ogAddRectFilled(igGetWindowDrawList(), origin, map_size, colors.colorRgb(0, 0, 0));
+    _ = igInvisibleButton("##output-map-button", map_size);
+
+    processor.preprocessInputMap(state);
 
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = state.map.transformTileWithRules(x, y);
+            const tile = processor.transformTileWithRules(state, x, y);
             if (tile == 0) continue;
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
             const offset_y = @intToFloat(f32, y) * state.map_rect_size;
             var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
-
             drawTile(state, tl, tile - 1);
         }
     }

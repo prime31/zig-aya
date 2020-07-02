@@ -1,7 +1,8 @@
 const std = @import("std");
 const print = std.debug.print;
 usingnamespace @import("imgui");
-const Texture = @import("aya").gfx.Texture;
+const aya = @import("aya");
+const Texture = aya.gfx.Texture;
 
 const rules_win = @import("rules_win.zig");
 const brushes_win = @import("brushes_win.zig");
@@ -19,6 +20,7 @@ pub const AppState = struct {
     // general state
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 16,
+    processed_map_data: []u8,
     // tileset state
     texture: Texture,
     // menu state
@@ -35,6 +37,13 @@ pub const AppState = struct {
 
     pub fn mapSize(self: AppState) ImVec2 {
         return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.map_rect_size };
+    }
+
+    pub fn getProcessedTile(self: AppState, x: usize, y: usize) u32 {
+        if (x >= self.map.w or y >= self.map.h) {
+            return 0;
+        }
+        return self.processed_map_data[x + y * @intCast(usize, self.map.w)];
     }
 
     pub fn saveMap(self: AppState, file: []const u8) !void {
@@ -54,6 +63,7 @@ pub const TileKit = struct {
         return.{
             .state = AppState{
                 .map = Map.init(),
+                .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
                 .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
                 // .texture = Texture.initCheckerboard(),
             },
@@ -62,6 +72,8 @@ pub const TileKit = struct {
 
     pub fn deinit(self: TileKit) void {
         self.state.texture.deinit();
+        self.state.map.deinit();
+        aya.mem.allocator.free(self.state.processed_map_data);
     }
 
     pub fn draw(self: *TileKit) void {
@@ -115,11 +127,14 @@ pub const TileKit = struct {
         const right_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.3, null, &dock_main_id);
         igDockBuilderDockWindow("Rules", right_id);
 
-        const br_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.5, null, &dock_main_id);
-        igDockBuilderDockWindow("Output Map", br_id);
+        // dock_main_id = id;
+        const left_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 1, null, &dock_main_id);
 
-        const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 1, null, &dock_main_id);
+        const tl_id = igDockBuilderSplitNode(left_id, ImGuiDir_Up, 0.5, null, &dock_main_id);
         igDockBuilderDockWindow("Input Map", tl_id);
+
+        const br_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 1, null, &dock_main_id);
+        igDockBuilderDockWindow("Output Map", br_id);
 
         igDockBuilderFinish(id);
     }

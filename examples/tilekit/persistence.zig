@@ -87,11 +87,8 @@ pub fn load(file: []const u8) !Map {
     }
 
     const data_len = try in.readIntLittle(usize);
-    const data_as_bytes = try aya.mem.allocator.alignedAlloc(u8, @alignOf(u32), data_len);
-    _ = try in.readAll(data_as_bytes);
-    map.data = std.mem.bytesAsSlice(u32, data_as_bytes);
-
-    std.debug.print("{}, {}, {}, {} img.len: {}, data.len: {}\n", .{ map.w, map.h, map.tile_size, map.tile_spacing, image_len, data_len });
+    map.data = try aya.mem.allocator.alloc(u8, data_len);
+    _ = try in.readAll(map.data);
 
     const rules_len = try in.readIntLittle(usize);
     _ = try map.rules.ensureCapacity(rules_len);

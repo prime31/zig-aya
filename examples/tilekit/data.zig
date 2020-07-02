@@ -7,18 +7,20 @@ pub const Map = struct {
     tile_size: usize = 16,
     tile_spacing: usize = 0,
     image: []const u8 = "",
-    data: []u32,
+    data: []u8,
     rules: std.ArrayList(Rule),
     pre_rules: std.ArrayList(std.ArrayList(Rule)),
 
     pub fn init() Map {
         var map = .{
-            .data = aya.mem.allocator.alloc(u32, 64 * 64) catch unreachable,
+            .w = 64,
+            .h = 64,
+            .data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .rules = std.ArrayList(Rule).init(aya.mem.allocator),
             .pre_rules = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
         };
 
-        std.mem.set(u32, map.data, 0);
+        std.mem.set(u8, map.data, 0);
         return map;
     }
 
@@ -45,31 +47,8 @@ pub const Map = struct {
         return self.data[x + y * @intCast(usize, self.w)];
     }
 
-    pub fn setTile(self: Map, x: usize, y: usize, value: u32) void {
+    pub fn setTile(self: Map, x: usize, y: usize, value: u8) void {
         self.data[x + y * @intCast(usize, self.w)] = value;
-    }
-
-    pub fn transformTileWithRules(self: Map, x: usize, y: usize) u32 {
-        for (self.rules.items) |*rule| {
-            if (rule.selected_data.len == 0) continue;
-
-            // const rule_tile = rule.get(2, 2);
-            // if (rule_tile.tile == tile) {
-            //     return rule.selected_data.items[0] + 1;
-            // }
-
-            for (rule.pattern_data) |pattern, i| {
-                if (pattern.state == .none) continue;
-                const x_offset = @intCast(i4, @mod(i, 5)) - 2;
-                const y_offset = @intCast(i4, @divTrunc(i, 5)) - 2;
-
-                if (pattern.tile == self.getTile(x, y)) {
-                    return @intCast(u32, rule.selected_data.items[0] + 1);
-                }
-            }
-        }
-
-        return 0;
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
@@ -186,6 +165,10 @@ pub const Rule = struct {
         return &self.pattern_data[x + y * 5];
     }
 
+    pub fn resultTile(self: *Rule) usize {
+        return self.selected_data.items[aya.math.rand.range(usize, 0, self.selected_data.len)];
+    }
+
     pub fn toggleSelected(self: *Rule, index: u8) void {
         if (self.selected_data.indexOf(index)) |slice_index| {
             _ = self.selected_data.swapRemove(slice_index);
@@ -260,6 +243,14 @@ pub const RuleTile = struct {
     pub fn reset(self: *RuleTile) void {
         self.tile = 0;
         self.state = .none;
+    }
+
+    pub fn passes(self: RuleTile, tile: usize) bool {
+        if (self.state == .none) return false;
+        if (tile == self.tile) {
+            return self.state == .required;
+        }
+        return self.state == .negated;
     }
 
     pub fn toggleState(self: *RuleTile, new_state: RuleTileState) void {

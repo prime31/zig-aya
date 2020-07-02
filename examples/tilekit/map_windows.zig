@@ -146,14 +146,14 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
         while (y <= end_y) : (y += 1) {
             var x = start_x;
             while (x <= end_x) : (x += 1) {
-                state.map.setTile(@intCast(usize, x), @intCast(usize, y), @intCast(u32, state.selected_brush_index + 1));
+                state.map.setTile(@intCast(usize, x), @intCast(usize, y), @intCast(u8, state.selected_brush_index + 1));
             }
         }
     }
 
     if (igIsMouseDown(0)) {
         var tile = tileIndexUnderMouse(state, screen_space_offset);
-        state.map.setTile(tile.x, tile.y, @intCast(u32, state.selected_brush_index + 1));
+        state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
     }
 
     if (igIsMouseDown(1)) {
