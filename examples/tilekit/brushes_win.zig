@@ -6,7 +6,7 @@ const tk = @import("tilekit.zig");
 const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
-    if (state.brushes and igBegin("Brushes", &state.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (state.brushes_win and igBegin("Brushes", &state.brushes_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
         draw(state, 32, false);
         igEnd();
     }

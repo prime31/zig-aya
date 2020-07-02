@@ -30,7 +30,9 @@ pub const DefaultOffscreenPass = struct {
 
     pub fn deinit(self: DefaultOffscreenPass) void {
         // TODO: unsubscribe from window resize event
-        self.render_tex.deinit();
+        if (self.policy != .none) {
+            self.render_tex.deinit();
+        }
     }
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {

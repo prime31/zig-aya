@@ -11,12 +11,12 @@ var drag_rect_data = struct {
 }{};
 
 pub fn drawWindows(state: *tk.AppState) void {
-    if (state.input_map and igBegin("Input Map", &state.input_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.input_map_win and igBegin("Input Map", &state.input_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state, true);
         igEnd();
     }
 
-    if (state.post_processed_map and igBegin("Post Processed Map", &state.post_processed_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.post_processed_map_win and igBegin("Post Processed Map", &state.post_processed_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state, false);
         igEnd();
     }

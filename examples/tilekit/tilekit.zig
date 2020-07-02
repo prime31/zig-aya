@@ -22,15 +22,28 @@ pub const AppState = struct {
     // general state
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 16,
+    seed: u64 = 0,
+    map_data_dirty: bool = true,
     processed_map_data: []u8,
+    final_map_data: []u8,
     // tileset state
     texture: Texture,
     // menu state
-    brushes: bool = true,
-    rules: bool = true,
-    input_map: bool = true,
-    post_processed_map: bool = false,
-    output_map: bool = true,
+    brushes_win: bool = true,
+    rules_win: bool = true,
+    input_map_win: bool = true,
+    post_processed_map_win: bool = false,
+    output_map_win: bool = true,
+
+    pub fn init() AppState {
+        return .{
+            .map = Map.init(),
+            .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
+            .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
+            .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
+            // .texture = Texture.initCheckerboard(),
+        };
+    }
 
     /// returns the number of tiles in each row of the tileset image
     pub fn tilesPerRow(self: AppState) usize {
@@ -54,6 +67,16 @@ pub const AppState = struct {
 
     pub fn loadMap(self: *AppState, file: []const u8) !void {
         self.map = try persistence.load(file);
+
+        // unload old texture
+        // load new texture
+
+        // resize and clear processed_map_data and final_map_data
+        aya.mem.allocator.free(self.processed_map_data);
+        aya.mem.allocator.free(self.final_map_data);
+
+        self.processed_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
+        self.final_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
     }
 };
 
@@ -62,20 +85,14 @@ pub const TileKit = struct {
 
     pub fn init() TileKit {
         @import("colors.zig").init();
-        return.{
-            .state = AppState{
-                .map = Map.init(),
-                .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
-                .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
-                // .texture = Texture.initCheckerboard(),
-            },
-        };
+        return .{ .state = AppState.init() };
     }
 
     pub fn deinit(self: TileKit) void {
         self.state.texture.deinit();
         self.state.map.deinit();
         aya.mem.allocator.free(self.state.processed_map_data);
+        aya.mem.allocator.free(self.state.final_map_data);
     }
 
     pub fn draw(self: *TileKit) void {

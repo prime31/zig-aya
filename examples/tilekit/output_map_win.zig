@@ -6,7 +6,7 @@ const colors = @import("colors.zig");
 const processor = @import("rule_processor.zig");
 
 pub fn drawWindow(state: *tk.AppState) void {
-    if (state.output_map and igBegin("Output Map", &state.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.output_map_win and igBegin("Output Map", &state.output_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state);
         igEnd();
     }
@@ -14,18 +14,25 @@ pub fn drawWindow(state: *tk.AppState) void {
 
 fn draw(state: *tk.AppState) void {
     const origin = ogGetCursorScreenPos();
-
     const map_size = state.mapSize();
+
     ogAddRectFilled(igGetWindowDrawList(), origin, map_size, colors.colorRgb(0, 0, 0));
     _ = igInvisibleButton("##output-map-button", map_size);
 
-    processor.preprocessInputMap(state);
+    // only process map data when it changes
+    if (state.map_data_dirty) {
+        processor.generateProcessedMap(state);
+        processor.generateOutputMap(state);
+        // TODO: fix this to only process when necessary
+        //state.map_data_dirty = false;
+    }
 
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = processor.transformTileWithRules(state, x, y);
+            // const tile = processor.transformTileWithRules(state, x, y);
+            const tile = state.final_map_data[x + y * state.map.w];
             if (tile == 0) continue;
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;

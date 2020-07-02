@@ -96,24 +96,24 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            if (igMenuItemBool("Brushes", null, state.brushes, true)) {
-                state.brushes = !state.brushes;
+            if (igMenuItemBool("Brushes", null, state.brushes_win, true)) {
+                state.brushes_win = !state.brushes_win;
             }
 
-            if (igMenuItemBool("Rules", null, state.rules, true)) {
-                state.rules = !state.rules;
+            if (igMenuItemBool("Rules", null, state.rules_win, true)) {
+                state.rules_win = !state.rules_win;
             }
 
-            if (igMenuItemBool("Input Map", null, state.input_map, true)) {
-                state.input_map = !state.input_map;
+            if (igMenuItemBool("Input Map", null, state.input_map_win, true)) {
+                state.input_map_win = !state.input_map_win;
             }
 
-            if (igMenuItemBool("Post Processed Map", null, state.post_processed_map, true)) {
-                state.post_processed_map = !state.post_processed_map;
+            if (igMenuItemBool("Post Processed Map", null, state.post_processed_map_win, true)) {
+                state.post_processed_map_win = !state.post_processed_map_win;
             }
 
-            if (igMenuItemBool("Output Map", null, state.output_map, true)) {
-                state.output_map = !state.output_map;
+            if (igMenuItemBool("Output Map", null, state.output_map_win, true)) {
+                state.output_map_win = !state.output_map_win;
             }
 
             igSeparator();
@@ -131,6 +131,12 @@ pub fn draw(state: *tk.AppState) void {
                     state.map_rect_size = 32;
                 }
             }
+        }
+
+        igSetCursorPosX(igGetWindowWidth() - 40);
+        if (igBeginMenu("Seed", true)){
+            defer igEndMenu();
+            _ = ogDragUsize("##seed", &state.seed, 1, 0, 1000);
         }
     }
 

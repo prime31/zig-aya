@@ -14,7 +14,8 @@ var nine_slice_selected: ?usize = null;
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{.x=365});
     defer igPopStyleVar(0);
-    if (state.rules and igBegin("Rules", &state.rules, ImGuiWindowFlags_None)) {
+
+    if (state.rules_win and igBegin("Rules", &state.rules_win, ImGuiWindowFlags_None)) {
         defer igEnd();
 
         // save the cursor position so we can hack a button on the tab bar itself
