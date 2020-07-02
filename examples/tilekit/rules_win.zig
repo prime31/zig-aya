@@ -257,33 +257,33 @@ fn rulesHamburgerPopup(rule: *Rule) void {
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         igText("Shift:");
         igSameLine(0, 10);
-        if (ogButton("<")) {
+        if (ogButton(fonts.icon_arrow_left)) {
             rule.shift(.left);
         }
 
         igSameLine(0, 7);
-        if (ogButton("^")) {
+        if (ogButton(fonts.icon_arrow_up)) {
             rule.shift(.up);
         }
 
         igSameLine(0, 7);
-        if (ogButton("\\/")) {
+        if (ogButton(fonts.icon_arrow_down)) {
             rule.shift(.down);
         }
 
         igSameLine(0, 7);
-        if (ogButton(">")) {
+        if (ogButton(fonts.icon_arrow_right)) {
             rule.shift(.right);
         }
 
         igText("Flip: ");
         igSameLine(0, 10);
-        if (ogButton("Horiz")) {
+        if (ogButton(fonts.icon_arrows_alt_h)) {
             rule.flip(.horizontal);
         }
 
         igSameLine(0, 4);
-        if (ogButton("Vert")) {
+        if (ogButton(fonts.icon_arrows_alt_v)) {
             rule.flip(.vertical);
         }
 

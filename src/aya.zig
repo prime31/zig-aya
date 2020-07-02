@@ -41,6 +41,7 @@ pub const Config = struct {
     imgui: bool = false, // whether imgui should be disabled
     imgui_viewports: bool = false, // whether imgui viewports should be enabled
     imgui_docking: bool = true, // whether imgui docking should be enabled
+    imgui_icon_font: bool = true, // whether to include a utf8 icon font
 };
 
 pub fn run(config: Config) !void {
@@ -67,7 +68,7 @@ pub fn run(config: Config) !void {
     debug = try Debug.init();
     defer debug.deinit();
 
-    if (config.imgui) imgui.init(gfx.device, window.sdl_window, config.imgui_docking, config.imgui_viewports);
+    if (config.imgui) imgui.init(gfx.device, window.sdl_window, config.imgui_docking, config.imgui_viewports, config.imgui_icon_font);
 
     config.init();
     runLoop(config.update, config.render, config.imgui);
