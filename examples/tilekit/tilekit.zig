@@ -15,6 +15,8 @@ const persistence = @import("persistence.zig");
 pub const Map = @import("data.zig").Map;
 pub const drawBrush = brushes_win.drawBrush;
 
+const files = @import("filebrowser");
+
 pub const AppState = struct {
     map: Map,
     // general state

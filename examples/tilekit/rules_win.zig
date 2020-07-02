@@ -6,7 +6,7 @@ const colors = @import("colors.zig");
 const brushes_win = @import("brushes_win.zig");
 usingnamespace @import("imgui");
 
-const Rule = @import("data.zig").Rule;
+const RuleSet = @import("data.zig").RuleSet;
 
 var label: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
@@ -39,16 +39,16 @@ pub fn draw(state: *tk.AppState) void {
 fn renderRulesTab(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
-    while (i < state.map.rules.items.len) : (i += 1) {
+    while (i < state.map.rulesets.items.len) : (i += 1) {
         igPushIDInt(@intCast(c_int, i) + 1000);
-        if (renderRule(state, &state.map.rules, &state.map.rules.items[i], false)) {
+        if (renderRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], false)) {
             delete_index = i;
         }
         igPopID();
     }
 
-    if (delete_index < state.map.rules.items.len) {
-        _ = state.map.rules.swapRemove(delete_index);
+    if (delete_index < state.map.rulesets.items.len) {
+        _ = state.map.rulesets.swapRemove(delete_index);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -58,7 +58,15 @@ fn renderRulesTab(state: *tk.AppState) void {
 
     if (igButton("Add 9-Slice", ImVec2{})) {
         igOpenPopup("nine-slice-wizard");
-        // reset nine slice state
+        // reset temp state
+        std.mem.set(u8, &label, 0);
+        nine_slice_selected = null;
+    }
+    igSameLine(0, 10);
+
+    if (igButton("Add Inner-4", ImVec2{})) {
+        igOpenPopup("inner-four-wizard");
+        // reset temp state
         std.mem.set(u8, &label, 0);
         nine_slice_selected = null;
     }
@@ -67,13 +75,17 @@ fn renderRulesTab(state: *tk.AppState) void {
     pos.x -= 150;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
-        nineSlicePopup(state);
+        nineSlicePopup(state, 3);
+    }
+
+    if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
+        nineSlicePopup(state, 2);
     }
 }
 
 fn renderPreRulesTabs(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
-    for (state.map.pre_rules.items) |*pre_rule, i| {
+    for (state.map.pre_rulesets.items) |*pre_rule, i| {
         var is_tab_open = true;
         igPushIDInt(@intCast(c_int, i) + 3000);
         if (igBeginTabItem("#1", &is_tab_open, ImGuiTabItemFlags_None)) {
@@ -82,13 +94,13 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
                 igPushIDPtr(rule);
-                if (renderRule(state, pre_rule, rule, true)) {
+                if (renderRuleSet(state, pre_rule, rule, true)) {
                     delete_rule_index = j;
                 }
             }
 
             if (igButton("Add Rule", ImVec2{})) {
-                pre_rule.append(Rule.init()) catch unreachable;
+                pre_rule.append(RuleSet.init()) catch unreachable;
             }
 
             if (delete_rule_index < pre_rule.items.len) {
@@ -103,13 +115,13 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
         }
     } // end pre_rules loop
 
-    if (delete_index < state.map.pre_rules.items.len) {
-        const removed_rules_page = state.map.pre_rules.swapRemove(delete_index);
+    if (delete_index < state.map.pre_rulesets.items.len) {
+        const removed_rules_page = state.map.pre_rulesets.swapRemove(delete_index);
         removed_rules_page.deinit();
     }
 }
 
-fn renderRule(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, is_pre_rule: bool) bool {
+fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, is_pre_rule: bool) bool {
     igPushItemWidth(125);
     std.mem.copy(u8, &label, &rule.name);
     if (ogInputText("##name", &label, label.len)) {
@@ -134,12 +146,12 @@ fn renderRule(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, is
     _ = igDragScalar("", ImGuiDataType_U8, &rule.chance, 1, &min, &max, null, 1);
     igSameLine(0, 4);
 
-    if (igButton("Copy", ImVec2{})) {
+    if (igButton(fonts.icon_copy, ImVec2{})) {
         parent.append(rule.clone()) catch unreachable;
     }
     igSameLine(0, 4);
 
-    if (ogButton("Delete")) {
+    if (ogButton(fonts.icon_trash)) {
         return true;
     }
 
@@ -167,7 +179,7 @@ fn renderRule(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, is
     if (is_pre_rule) {
         pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.map.tile_size) * 5.0 / 2.0;
     } else {
-        pos.x = igGetIO().MousePos.x -  @intToFloat(f32, state.texture.width) / 2;
+        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.texture.width) / 2;
     }
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -178,7 +190,7 @@ fn renderRule(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, is
     return false;
 }
 
-fn patternPopup(state: *tk.AppState, rule: *Rule) void {
+fn patternPopup(state: *tk.AppState, rule: *RuleSet) void {
     igText("Pattern");
 
     const draw_list = igGetWindowDrawList();
@@ -249,7 +261,7 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
     }
 }
 
-fn rulesHamburgerPopup(rule: *Rule) void {
+fn rulesHamburgerPopup(rule: *RuleSet) void {
     var pos = igGetIO().MousePos;
     pos.x -= 100;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
@@ -292,7 +304,7 @@ fn rulesHamburgerPopup(rule: *Rule) void {
 }
 
 /// shows the tileset or brush palette allowing multiple tiles to be selected
-fn resultPopup(state: *tk.AppState, rule: *Rule, is_pre_rule: bool) void {
+fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
@@ -303,7 +315,7 @@ fn resultPopup(state: *tk.AppState, rule: *Rule, is_pre_rule: bool) void {
     const draw_list = igGetWindowDrawList();
 
     // draw selected tiles
-    var iter = rule.selected_data.iter();
+    var iter = ruleset.result_tiles.iter();
     while (iter.next()) |index| {
         const x = @mod(index, state.tilesPerRow());
         const y = @divTrunc(index, state.tilesPerRow());
@@ -319,12 +331,16 @@ fn resultPopup(state: *tk.AppState, rule: *Rule, is_pre_rule: bool) void {
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
             var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
-            rule.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
+            ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
         }
+    }
+
+    if (igButton("Clear", ImVec2{ .x = -1 })) {
+        ruleset.result_tiles.clear();
     }
 }
 
-fn nineSlicePopup(state: *tk.AppState) void {
+fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     brushes_win.draw(state, 16, false);
     igSameLine(0, 5);
 
@@ -339,8 +355,8 @@ fn nineSlicePopup(state: *tk.AppState) void {
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
         tl.x += content_start_pos.x + 1;
         tl.y += content_start_pos.y + 1;
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size * 3), colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size * 3), colors.rule_result_selected_outline, 2);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size * selection_size), colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size * selection_size), colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state
@@ -349,7 +365,7 @@ fn nineSlicePopup(state: *tk.AppState) void {
             var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
 
             // does the nine-slice fit?
-            if (tile.x + 3 <= state.tilesPerRow()) {
+            if (tile.x + selection_size <= state.tilesPerRow()) {
                 nine_slice_selected = @intCast(usize, tile.x + tile.y * state.tilesPerRow());
             }
         }
@@ -367,7 +383,11 @@ fn nineSlicePopup(state: *tk.AppState) void {
     }
 
     if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
-        state.map.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, label[0..], nine_slice_selected.?);
+        if (selection_size == 3) {
+            state.map.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, label[0..], nine_slice_selected.?);
+        } else {
+            state.map.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, label[0..], nine_slice_selected.?);
+        }
         igCloseCurrentPopup();
     }
 
@@ -376,6 +396,35 @@ fn nineSlicePopup(state: *tk.AppState) void {
         igPopStyleVar(1);
     }
 }
+
+// fn innerFourPopup(state: *tk.AppState) void {
+//     var content_start_pos = ogGetCursorScreenPos();
+//     ogImage(state.texture);
+//     const draw_list = igGetWindowDrawList();
+
+//     if (nine_slice_selected) |index| {
+//         const x = @mod(index, state.tilesPerRow());
+//         const y = @divTrunc(index, state.tilesPerRow());
+
+//         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
+//         tl.x += content_start_pos.x + 1;
+//         tl.y += content_start_pos.y + 1;
+//         ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size * 2), colors.rule_result_selected_fill);
+//         ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size * 2), colors.rule_result_selected_outline, 2);
+//     }
+
+//     // check input for toggling state
+//     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+//         if (igIsMouseClicked(0, false)) {
+//             var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+
+//             // does the inner-4 fit?
+//             if (tile.x + 2 <= state.tilesPerRow()) {
+//                 nine_slice_selected = @intCast(usize, tile.x + tile.y * state.tilesPerRow());
+//             }
+//         }
+//     }
+// }
 
 // TODO: this is duplicated elsewhere
 fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {

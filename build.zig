@@ -61,6 +61,13 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
     imgui_build.linkArtifact(b, exe, target, @intToEnum(imgui_build.LibType, lib_type), "src/deps/imgui");
     fontstash_build.linkArtifact(b, exe, target, @intToEnum(fontstash_build.LibType, lib_type), "src/deps/fontstash");
 
+    // only required for tilekit
+    if (std.mem.eql(u8, name, "tilekit") or std.mem.endsWith(u8, source, "index.zig")) {
+        const filebrowser_build = @import("deps/filebrowser/build.zig");
+        filebrowser_build.linkArtifact(b, exe, target, @intToEnum(filebrowser_build.LibType, lib_type), "src/deps/filebrowser");
+        exe.addPackagePath("filebrowser", "deps/filebrowser/filebrowser.zig");
+    }
+
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
 

@@ -1,8 +1,9 @@
 const std = @import("std");
-const tk = @import("tilekit.zig");
 usingnamespace @import("imgui");
+const tk = @import("tilekit.zig");
 
 const aya = @import("aya");
+const files = @import("filebrowser");
 var buffer: [100]u8 = undefined;
 
 var temp_state = struct {
@@ -10,12 +11,14 @@ var temp_state = struct {
     tile_spacing: usize = 0,
     map_width: usize = 64,
     map_height: usize = 64,
+    image: [255]u8 = undefined,
 
     pub fn reset(self: *@This()) void {
         self.tile_size = 16;
         self.tile_spacing = 0;
         self.map_width = 64;
         self.map_height = 64;
+        std.mem.set(u8, &self.image, 0);
     }
 }{};
 
@@ -52,15 +55,34 @@ pub fn draw(state: *tk.AppState) void {
             }
 
             if (igMenuItemBool("Save", null, false, true)) {
-                state.saveMap("tilekit.bin") catch unreachable;
+                std.debug.print("doesnt work yet\n", .{});
+                // state.saveMap("tilekit.tk") catch unreachable;
             }
 
             if (igMenuItemBool("Save As...", null, false, true)) {
-                state.saveMap("tilekit.bin") catch unreachable;
+                const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
+                const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str, "tilekit.tk" }) catch unreachable;
+                const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+
+                const res = files.saveFileDialog("Save project", desktop, "*.tk");
+                if (res != null) {
+                    var out_file = res[0..std.mem.lenZ(res)];
+                    if (!std.mem.endsWith(u8, out_file, ".tk")) {
+                        out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{out_file, ".tk"}) catch unreachable;
+                    }
+                    state.saveMap(out_file) catch unreachable;
+                }
             }
 
-            if (igMenuItemBool("Load", null, false, true)) {
-                state.loadMap("tilekit.bin") catch unreachable;
+            if (igMenuItemBool("Load...", null, false, true)) {
+                const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
+                const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str }) catch unreachable;
+                const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+
+                const res = files.openFileDialog("Open project", desktop, "*.tk");
+                if (res != null) {
+                    state.loadMap(std.mem.spanZ(res)) catch unreachable;
+                }
             }
         }
 
@@ -133,9 +155,21 @@ fn loadTilesetPopup() void {
     if (igBeginPopupModal("Load Tileset", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
-        _ = igInputText("Tileset file", &buffer, 100, ImGuiInputTextFlags_None, null, null);
-        _ = ogDragUsize("Tile Size", &temp_state.tile_size, 0.5, 32);
-        _ = ogDragUsize("Tile Spacing", &temp_state.tile_spacing, 0.5, 8);
+        igText(&temp_state.image);
+        igSameLine(0, 5);
+        if (igButton("Choose", ImVec2{ .x = -1, .y = 0 })) {
+            const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
+            const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str }) catch unreachable;
+            const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+
+            const res = files.openFileDialog("Import tileset image", desktop, "*.png");
+            if (res != null) {
+                std.mem.copy(u8, &temp_state.image, std.mem.spanZ(res));
+            }
+        }
+
+        _ = ogDragUsize("Tile Size", &temp_state.tile_size, 0.5, 8, 32);
+        _ = ogDragUsize("Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8);
         igSeparator();
 
         var size = ogGetContentRegionAvail();
@@ -153,8 +187,8 @@ fn resizeMapPopup() void {
     if (igBeginPopupModal("Resize Map", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
-        _ = ogDragUsize("Width", &temp_state.map_width, 0.5, 256);
-        _ = ogDragUsize("Height", &temp_state.map_height, 0.5, 256);
+        _ = ogDragUsize("Width", &temp_state.map_width, 0.5, 16, 512);
+        _ = ogDragUsize("Height", &temp_state.map_height, 0.5, 16, 512);
         igSeparator();
 
         var size: ImVec2 = undefined;
