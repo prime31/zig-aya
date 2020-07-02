@@ -44,7 +44,8 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         },
     }
 
-    // artifact.addPackagePath("filebrowser", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "filebrowser.zig" }) catch unreachable);
+    // we can leave the zig file in this folder only for filebrowser because it is not used by aya and only by consuming exe's
+    artifact.addPackagePath("filebrowser", "deps/filebrowser/filebrowser.zig");
 }
 
 fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
