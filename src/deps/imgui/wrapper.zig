@@ -1,6 +1,6 @@
 usingnamespace @import("imgui.zig");
 const aya = @import("../../aya.zig");
-pub const fonts = @import("font_awesome.zig");
+pub const icons = @import("font_awesome.zig");
 
 pub fn ogButton(label: [*c]const u8) bool {
     return igButton(label, ImVec2{});
