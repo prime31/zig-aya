@@ -402,35 +402,6 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     }
 }
 
-// fn innerFourPopup(state: *tk.AppState) void {
-//     var content_start_pos = ogGetCursorScreenPos();
-//     ogImage(state.texture);
-//     const draw_list = igGetWindowDrawList();
-
-//     if (nine_slice_selected) |index| {
-//         const x = @mod(index, state.tilesPerRow());
-//         const y = @divTrunc(index, state.tilesPerRow());
-
-//         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
-//         tl.x += content_start_pos.x + 1;
-//         tl.y += content_start_pos.y + 1;
-//         ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size * 2), colors.rule_result_selected_fill);
-//         ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size * 2), colors.rule_result_selected_outline, 2);
-//     }
-
-//     // check input for toggling state
-//     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-//         if (igIsMouseClicked(0, false)) {
-//             var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
-
-//             // does the inner-4 fit?
-//             if (tile.x + 2 <= state.tilesPerRow()) {
-//                 nine_slice_selected = @intCast(usize, tile.x + tile.y * state.tilesPerRow());
-//             }
-//         }
-//     }
-// }
-
 // TODO: this is duplicated elsewhere
 fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
     var pos = igGetIO().MousePos;
