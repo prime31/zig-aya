@@ -24,6 +24,12 @@ pub fn ogGetCursorPos() ImVec2 {
     return pos;
 }
 
+pub fn ogGetMouseDragDelta(button: ImGuiMouseButton, lock_threshold: f32) ImVec2 {
+    var pos = ImVec2{};
+    igGetMouseDragDelta(&pos, button, lock_threshold);
+    return pos;
+}
+
 pub fn ogGetContentRegionAvail() ImVec2 {
     var pos = ImVec2{};
     igGetContentRegionAvail(&pos);

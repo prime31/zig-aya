@@ -4,11 +4,7 @@ const colors = @import("colors.zig");
 const tk = @import("tilekit.zig");
 
 // helper to maintain state during a drag selection
-var drag_rect_data = struct {
-    dragged: bool = false,
-    drag_tl: ImVec2 = ImVec2{},
-    drag_br: ImVec2 = ImVec2{},
-}{};
+var dragged = false;
 
 pub fn drawWindows(state: *tk.AppState) void {
     if (state.input_map_win and igBegin("Input Map", &state.input_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
@@ -39,9 +35,9 @@ fn draw(state: *tk.AppState, input_map: bool) void {
     }
 
     // draw a rect over the current tile
-    if (is_hovered and !drag_rect_data.dragged) {
+    if (is_hovered and !dragged) {
         var tile = tileIndexUnderMouse(state, pos);
-        const tl = ImVec2{.x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size};
+        const tl = ImVec2{ .x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size };
         ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, colors.rule_result_selected_outline, 1);
     }
 }
@@ -91,67 +87,47 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
     }
 
     if (igIsMouseDragging(0, 0) and igGetIO().KeyShift) {
-        var drag_delta = ImVec2{};
-        igGetMouseDragDelta(&drag_delta, 0, 0);
+        var drag_delta = ogGetMouseDragDelta(0, 0);
 
-        // translate into world local space so we can get our selection clamped to our rect size then translate back to screen space
-        var tl = igGetIO().MouseClickedPos[0];
-        tl.x -= screen_space_offset.x;
-        tl.y -= screen_space_offset.y;
-        tl.x = tl.x - @mod(tl.x, state.map_rect_size);
-        tl.y = tl.y - @mod(tl.y, state.map_rect_size);
-        tl.x += screen_space_offset.x;
-        tl.y += screen_space_offset.y;
+        var tile1 = tileIndexUnderMouse(state, screen_space_offset);
+        drag_delta.x += screen_space_offset.x;
+        drag_delta.y += screen_space_offset.y;
+        var tile2 = tileIndexUnderMouse(state, drag_delta);
 
-        // clamp to a multiple of our rect size rounding up
-        const width = drag_delta.x + state.map_rect_size - 1 - @mod(drag_delta.x - 1, state.map_rect_size);
-        const height = drag_delta.y + state.map_rect_size - 1 - @mod(drag_delta.y - 1, state.map_rect_size);
+        const min_x = @intToFloat(f32, std.math.min(tile1.x, tile2.x)) * state.map_rect_size + screen_space_offset.x;
+        const min_y = @intToFloat(f32, std.math.max(tile1.y, tile2.y)) * state.map_rect_size + state.map_rect_size + screen_space_offset.y;
+        const max_x = @intToFloat(f32, std.math.max(tile1.x, tile2.x)) * state.map_rect_size + state.map_rect_size + screen_space_offset.x;
+        const max_y = @intToFloat(f32, std.math.min(tile1.y, tile2.y)) * state.map_rect_size + screen_space_offset.y;
 
-        ImDrawList_AddQuad(igGetWindowDrawList(), tl, ImVec2{ .x = tl.x + width, .y = tl.y }, ImVec2{ .x = tl.x + width, .y = tl.y + height }, ImVec2{ .x = tl.x, .y = tl.y + height }, colors.colorRgb(255, 255, 0), 2);
+        ImDrawList_AddQuad(igGetWindowDrawList(), ImVec2{ .x = min_x, .y = max_y }, ImVec2{ .x = max_x, .y = max_y }, ImVec2{ .x = max_x, .y = min_y }, ImVec2{ .x = min_x, .y = min_y }, colors.colorRgb(255, 255, 255), 2);
 
-        drag_rect_data.dragged = true;
-        drag_rect_data.drag_tl = tl;
-        drag_rect_data.drag_tl.x -= screen_space_offset.x;
-        drag_rect_data.drag_tl.y -= screen_space_offset.y;
-
-        drag_rect_data.drag_br = drag_rect_data.drag_tl;
-        drag_rect_data.drag_br.x += width;
-        drag_rect_data.drag_br.y += height;
+        dragged = true;
         return;
     }
 
-    if (igIsMouseReleased(0) and drag_rect_data.dragged) {
-        drag_rect_data.dragged = false;
-        var start_x = @divTrunc(@floatToInt(c_int, drag_rect_data.drag_tl.x), @floatToInt(c_int, state.map_rect_size));
-        var start_y = @divTrunc(@floatToInt(c_int, drag_rect_data.drag_tl.y), @floatToInt(c_int, state.map_rect_size));
-        var end_x = @divTrunc(@floatToInt(c_int, drag_rect_data.drag_br.x - state.map_rect_size), @floatToInt(c_int, state.map_rect_size));
-        var end_y = @divTrunc(@floatToInt(c_int, drag_rect_data.drag_br.y - state.map_rect_size), @floatToInt(c_int, state.map_rect_size));
+    if (igIsMouseReleased(0) and dragged) {
+        dragged = false;
 
-        // if we dragged backwards swap the values and undo the ceil clamping that we did
-        if (start_x > end_x) {
-            std.mem.swap(c_int, &start_x, &end_x);
-            start_x += 1;
-            end_x -= 1;
-        }
-        if (start_y > end_y) {
-            std.mem.swap(c_int, &start_y, &end_y);
-            start_y += 1;
-            end_y -= 1;
-        }
+        var drag_delta = ogGetMouseDragDelta(0, 0);
+        var tile1 = tileIndexUnderMouse(state, screen_space_offset);
+        drag_delta.x += screen_space_offset.x;
+        drag_delta.y += screen_space_offset.y;
+        var tile2 = tileIndexUnderMouse(state, drag_delta);
 
-        start_x = std.math.clamp(start_x, 0, std.math.maxInt(c_int));
-        start_y = std.math.clamp(start_y, 0, std.math.maxInt(c_int));
+        const min_x = std.math.min(tile1.x, tile2.x);
+        var min_y = std.math.min(tile1.y, tile2.y);
+        const max_x = std.math.max(tile1.x, tile2.x);
+        const max_y = std.math.max(tile1.y, tile2.y);
 
-        var y = start_y;
-        while (y <= end_y) : (y += 1) {
-            var x = start_x;
-            while (x <= end_x) : (x += 1) {
-                state.map.setTile(@intCast(usize, x), @intCast(usize, y), @intCast(u8, state.selected_brush_index + 1));
+        while (min_y <= max_y) : (min_y += 1) {
+            var x = min_x;
+            while (x <= max_x) : (x += 1) {
+                state.map.setTile(x, min_y, @intCast(u8, state.selected_brush_index + 1));
             }
         }
     }
 
-    if (igIsMouseDown(0)) {
+    if (igIsMouseDown(0) and !igGetIO().KeyShift) {
         var tile = tileIndexUnderMouse(state, screen_space_offset);
         state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
     }
