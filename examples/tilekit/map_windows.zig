@@ -51,7 +51,7 @@ fn drawInputMap(state: *tk.AppState, origin: ImVec2) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = state.map.getTile(x, y);
+            const tile = state.map.data[x + y * state.map.w];
             if (tile == 0) continue;
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
@@ -67,7 +67,7 @@ fn drawPostProcessedMap(state: *tk.AppState, origin: ImVec2) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = state.map.getTile(x, y);
+            const tile = state.processed_map_data[x + y * state.map.w];
             if (tile == 0) continue;
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;

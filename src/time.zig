@@ -47,11 +47,11 @@ pub const Time = struct {
     }
 
     pub fn ticks(self: Time) u32 {
-        return sdl.GetTicks();
+        return sdl.SDL_GetTicks();
     }
 
     pub fn seconds(self: Time) f32 {
-        return @intToFloat(f32, sdl.GetTicks()) / 1000;
+        return @intToFloat(f32, sdl.SDL_GetTicks()) / 1000;
     }
 
     pub fn fps(self: Time) u32 {

@@ -68,7 +68,7 @@ pub fn draw(state: *tk.AppState) void {
                 if (res != null) {
                     var out_file = res[0..std.mem.lenZ(res)];
                     if (!std.mem.endsWith(u8, out_file, ".tk")) {
-                        out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{out_file, ".tk"}) catch unreachable;
+                        out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ out_file, ".tk" }) catch unreachable;
                     }
                     state.saveMap(out_file) catch unreachable;
                 }
@@ -133,10 +133,24 @@ pub fn draw(state: *tk.AppState) void {
             }
         }
 
-        igSetCursorPosX(igGetWindowWidth() - 40);
-        if (igBeginMenu("Seed", true)){
+        igSetCursorPosX(igGetWindowWidth() - 120);
+        if (igBeginMenu("Pre Processing", true)) {
             defer igEndMenu();
-            _ = ogDragUsize("##seed", &state.seed, 1, 0, 1000);
+
+            if (igBeginMenu("Seed", true)) {
+                defer igEndMenu();
+                if (ogDrag(usize, "##seed", &state.seed, 1, 0, 1000)) {
+                    state.map_data_dirty = true;
+                }
+
+            }
+
+            if (igBeginMenu("Repeat", true)) {
+                defer igEndMenu();
+                if (ogDrag(u8, "##repeat", &state.repeat, 0.2, 0, 100)) {
+                    state.map_data_dirty = true;
+                }
+            }
         }
     }
 
@@ -174,8 +188,8 @@ fn loadTilesetPopup() void {
             }
         }
 
-        _ = ogDragUsize("Tile Size", &temp_state.tile_size, 0.5, 8, 32);
-        _ = ogDragUsize("Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8);
+        _ = ogDrag(usize, "Tile Size", &temp_state.tile_size, 0.5, 8, 32);
+        _ = ogDrag(usize, "Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8);
         igSeparator();
 
         var size = ogGetContentRegionAvail();
@@ -184,6 +198,7 @@ fn loadTilesetPopup() void {
         }
         igSameLine(0, 4);
         if (igButton("Load", ImVec2{ .x = -1, .y = 0 })) {
+            // load the image and validate that its width is divisible by the tile size (take spacing into account to)
             igCloseCurrentPopup();
         }
     }
@@ -193,8 +208,8 @@ fn resizeMapPopup() void {
     if (igBeginPopupModal("Resize Map", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
-        _ = ogDragUsize("Width", &temp_state.map_width, 0.5, 16, 512);
-        _ = ogDragUsize("Height", &temp_state.map_height, 0.5, 16, 512);
+        _ = ogDrag(usize, "Width", &temp_state.map_width, 0.5, 16, 512);
+        _ = ogDrag(usize, "Height", &temp_state.map_height, 0.5, 16, 512);
         igSeparator();
 
         var size: ImVec2 = undefined;

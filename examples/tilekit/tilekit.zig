@@ -23,6 +23,7 @@ pub const AppState = struct {
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 16,
     seed: u64 = 0,
+    repeat: u8 = 20,
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
@@ -32,7 +33,7 @@ pub const AppState = struct {
     brushes_win: bool = true,
     rules_win: bool = true,
     input_map_win: bool = true,
-    post_processed_map_win: bool = false,
+    post_processed_map_win: bool = true,
     output_map_win: bool = true,
 
     pub fn init() AppState {

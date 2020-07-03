@@ -47,8 +47,16 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
     return igInputText(label, buf, buf_size, ImGuiInputTextFlags_None, null, null);
 }
 
-pub fn ogDragUsize(label: [*c]const u8, p_data: *usize, v_speed: f32, p_min: usize, p_max: usize) bool {
+pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: usize, p_max: usize) bool {
     var min = p_min;
     var max = p_max;
-    return igDragScalar(label, ImGuiDataType_U64, p_data, v_speed, &min, &max, null, 1);
+    const data_type = switch(T)
+    {
+        u8 => ImGuiDataType_U8,
+        u16 => ImGuiDataType_U16,
+        u32 => ImGuiDataType_U32,
+        usize => ImGuiDataType_U64,
+        else => unreachable,
+    };
+    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
 }

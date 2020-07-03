@@ -44,7 +44,7 @@ pub const Map = struct {
         if (x > self.w or y > self.h) {
             return 0;
         }
-        return self.data[x + y * @intCast(usize, self.w)];
+        return self.data[x + y * self.w];
     }
 
     pub fn setTile(self: Map, x: usize, y: usize, value: u8) void {

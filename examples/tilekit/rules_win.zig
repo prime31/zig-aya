@@ -320,8 +320,9 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     // draw selected tiles
     var iter = ruleset.result_tiles.iter();
     while (iter.next()) |index| {
-        const x = @mod(index, state.tilesPerRow());
-        const y = @divTrunc(index, state.tilesPerRow());
+        const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
+        const x = @mod(index, per_row);
+        const y = @divTrunc(index, per_row);
 
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
         tl.x += content_start_pos.x + 1;
@@ -334,7 +335,8 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
             var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
-            ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
+            const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
+            ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
         }
     }
 

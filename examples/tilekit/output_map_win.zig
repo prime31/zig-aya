@@ -6,6 +6,14 @@ const colors = @import("colors.zig");
 const processor = @import("rule_processor.zig");
 
 pub fn drawWindow(state: *tk.AppState) void {
+    // only process map data when it changes
+    if (state.map_data_dirty) {
+        processor.generateProcessedMap(state);
+        processor.generateOutputMap(state);
+        // TODO: fix this to only process when necessary
+        //state.map_data_dirty = false;
+    }
+
     if (state.output_map_win and igBegin("Output Map", &state.output_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state);
         igEnd();
@@ -18,14 +26,6 @@ fn draw(state: *tk.AppState) void {
 
     ogAddRectFilled(igGetWindowDrawList(), origin, map_size, colors.colorRgb(0, 0, 0));
     _ = igInvisibleButton("##output-map-button", map_size);
-
-    // only process map data when it changes
-    if (state.map_data_dirty) {
-        processor.generateProcessedMap(state);
-        processor.generateOutputMap(state);
-        // TODO: fix this to only process when necessary
-        //state.map_data_dirty = false;
-    }
 
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
