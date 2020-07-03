@@ -15,7 +15,7 @@ pub fn generateProcessedMap(state: *AppState) void {
         return;
     }
 
-    // we need an extra buffer so that we can write into it for each iteration
+    // we need an extra buffer so that we can write into it for each iteration so our rules dont go hog-crazy as we iterate
     var buffer = aya.mem.tmp_allocator.alloc(u8, state.map.data.len) catch unreachable;
     @memcpy(buffer.ptr, state.map.data.ptr, buffer.len);
 

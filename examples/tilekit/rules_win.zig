@@ -8,7 +8,8 @@ usingnamespace @import("imgui");
 
 const RuleSet = @import("data.zig").RuleSet;
 
-var label: [25]u8 = undefined;
+var rule_label_buf: [25]u8 = undefined;
+var new_rule_label_buf: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
@@ -62,7 +63,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     if (igButton("Add 9-Slice", ImVec2{})) {
         igOpenPopup("nine-slice-wizard");
         // reset temp state
-        std.mem.set(u8, &label, 0);
+        std.mem.set(u8, &new_rule_label_buf, 0);
         nine_slice_selected = null;
     }
     igSameLine(0, 10);
@@ -70,7 +71,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     if (igButton("Add Inner-4", ImVec2{})) {
         igOpenPopup("inner-four-wizard");
         // reset temp state
-        std.mem.set(u8, &label, 0);
+        std.mem.set(u8, &new_rule_label_buf, 0);
         nine_slice_selected = null;
     }
 
@@ -126,9 +127,9 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
 
 fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, is_pre_rule: bool) bool {
     igPushItemWidth(125);
-    std.mem.copy(u8, &label, &rule.name);
-    if (ogInputText("##name", &label, label.len)) {
-        std.mem.copy(u8, &rule.name, &label);
+    std.mem.copy(u8, &rule_label_buf, &rule.name);
+    if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
+        std.mem.copy(u8, &rule.name, &rule_label_buf);
     }
     igSameLine(0, 4);
     igPopItemWidth();
@@ -149,12 +150,12 @@ fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Ru
     _ = igDragScalar("", ImGuiDataType_U8, &rule.chance, 1, &min, &max, null, 1);
     igSameLine(0, 4);
 
-    if (igButton(fonts.icon_copy, ImVec2{})) {
+    if (igButton(icons.copy, ImVec2{})) {
         parent.append(rule.clone()) catch unreachable;
     }
     igSameLine(0, 4);
 
-    if (ogButton(fonts.icon_trash)) {
+    if (ogButton(icons.trash)) {
         return true;
     }
 
@@ -272,33 +273,33 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         igText("Shift:");
         igSameLine(0, 10);
-        if (ogButton(fonts.icon_arrow_left)) {
+        if (ogButton(icons.arrow_left)) {
             rule.shift(.left);
         }
 
         igSameLine(0, 7);
-        if (ogButton(fonts.icon_arrow_up)) {
+        if (ogButton(icons.arrow_up)) {
             rule.shift(.up);
         }
 
         igSameLine(0, 7);
-        if (ogButton(fonts.icon_arrow_down)) {
+        if (ogButton(icons.arrow_down)) {
             rule.shift(.down);
         }
 
         igSameLine(0, 7);
-        if (ogButton(fonts.icon_arrow_right)) {
+        if (ogButton(icons.arrow_right)) {
             rule.shift(.right);
         }
 
         igText("Flip: ");
         igSameLine(0, 10);
-        if (ogButton(fonts.icon_arrows_alt_h)) {
+        if (ogButton(icons.arrows_alt_h)) {
             rule.flip(.horizontal);
         }
 
         igSameLine(0, 4);
-        if (ogButton(fonts.icon_arrows_alt_v)) {
+        if (ogButton(icons.arrows_alt_v)) {
             rule.flip(.vertical);
         }
 
@@ -378,10 +379,11 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
 
     var size = ogGetContentRegionAvail();
     igSetNextItemWidth(size.x * 0.6);
-    _ = ogInputText("##nine-slice-name", &label, label.len);
+    _ = ogInputText("##nine-slice-name", &new_rule_label_buf, new_rule_label_buf.len);
     igSameLine(0, 5);
 
-    const disabled = std.mem.indexOfScalar(u8, &label, 0).? == 0 or nine_slice_selected == null;
+    const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+    const disabled = label_sentinel_index == 0 or nine_slice_selected == null;
     if (disabled) {
         igPushItemFlag(ImGuiItemFlags_Disabled, true);
         igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
@@ -389,9 +391,9 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
 
     if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
         if (selection_size == 3) {
-            state.map.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, label[0..], nine_slice_selected.?);
+            state.map.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         } else {
-            state.map.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, label[0..], nine_slice_selected.?);
+            state.map.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         }
         igCloseCurrentPopup();
     }

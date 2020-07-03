@@ -52,8 +52,7 @@ pub const Map = struct {
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
-    pub fn addNinceSliceRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, prefix: []const u8, index: usize) void {
-        const name_prefix = prefix[0..std.mem.indexOfScalar(u8, prefix[0..], 0).?];
+    pub fn addNinceSliceRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
 
