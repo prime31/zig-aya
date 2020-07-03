@@ -14,7 +14,7 @@ pub const ScratchAllocator = struct {
         return ScratchAllocator{
             .allocator = Allocator{
                 .allocFn = alloc,
-                .resizeFn = Allocator.noResize, // resize, TODO: maybe resize should do something?
+                .resizeFn = Allocator.noResize,
             },
             // .backup_allocator = backup_allocator,
             .buffer = buffer,
@@ -41,37 +41,6 @@ pub const ScratchAllocator = struct {
         self.end_index = new_end_index;
 
         return result;
-    }
-
-    fn resize(allocator: *Allocator, old_mem: []u8, new_len: usize, len_align: u29) mem.Allocator.Error!usize {
-        const self = @fieldParentPtr(ScratchAllocator, "allocator", allocator);
-        std.debug.assert(old_mem.len <= self.end_index);
-
-        // TODO: if the last allocation is being resized just extend the end_index
-        if (old_mem.ptr == self.buffer.ptr + self.end_index - old_mem.len and
-            mem.alignForward(@ptrToInt(old_mem.ptr), len_align) == @ptrToInt(old_mem.ptr))
-        {
-            const start_index = self.end_index - old_mem.len;
-            const new_end_index = start_index + new_len;
-
-            // not enough room so we reset the buffer and do an alloc
-            if (new_end_index > self.buffer.len) {
-                self.end_index = 0;
-                _ = try alloc(allocator, new_len, len_align, len_align);
-                return new_len;
-            }
-
-            const result = self.buffer[start_index..new_end_index];
-            self.end_index = new_end_index;
-            return new_len;
-        } else if (new_len <= old_mem.len) {
-            // We can't do anything with the memory, so tell the client to keep it.
-            return error.OutOfMemory;
-        } else {
-            const result = try alloc(allocator, new_len, len_align, len_align);
-            @memcpy(result.ptr, old_mem.ptr, std.math.min(old_mem.len, result.len));
-            return new_len;
-        }
     }
 };
 
