@@ -662,7 +662,7 @@ pub extern fn SDL_FreeSurface(surface: [*c]SDL_Surface) void;
 pub extern fn SDL_SetSurfacePalette(surface: [*c]SDL_Surface, palette: [*c]SDL_Palette) c_int;
 pub extern fn SDL_LockSurface(surface: [*c]SDL_Surface) c_int;
 pub extern fn SDL_UnlockSurface(surface: [*c]SDL_Surface) void;
-pub extern fn SDL_LoadBMP_RW(src: [*c]SDL_RWops, freesrc: c_int) [*c]SDL_Surface;
+pub extern fn SDL_LoadBMP_RW(src: [*c]SDL_RWops, freesrc: c_int) [*]SDL_Surface;
 pub extern fn SDL_SaveBMP_RW(surface: [*c]SDL_Surface, dst: [*c]SDL_RWops, freedst: c_int) c_int;
 pub extern fn SDL_SetSurfaceRLE(surface: [*c]SDL_Surface, flag: c_int) c_int;
 pub extern fn SDL_SetColorKey(surface: [*c]SDL_Surface, flag: c_int, key: Uint32) c_int;
