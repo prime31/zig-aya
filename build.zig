@@ -65,6 +65,9 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
     if (std.mem.eql(u8, name, "tilekit") or std.mem.endsWith(u8, source, "index.zig")) {
         const filebrowser_build = @import("deps/filebrowser/build.zig");
         filebrowser_build.linkArtifact(b, exe, target, @intToEnum(filebrowser_build.LibType, lib_type), "deps/filebrowser");
+
+        const stb_image_build = @import("deps/stb_image/build.zig");
+        stb_image_build.linkArtifact(b, exe, target, @intToEnum(stb_image_build.LibType, lib_type), "deps/stb_image");
     }
 
     exe.linkSystemLibrary("c");
