@@ -25,6 +25,10 @@ pub fn FixedList(comptime T: type, comptime len: usize) type {
             return Self{ .items = [_]T{0} ** len };
         }
 
+        pub fn initWithValue(comptime value: T) Self {
+            return Self{ .items = [_]T{value} ** len };
+        }
+
         pub fn append(self: *Self, item: T) void {
             if (self.len == self.items.len) {
                 std.debug.warn("attemped to append to a full FixedList\n", .{});

@@ -4,6 +4,7 @@ const tk = @import("../tilekit.zig");
 usingnamespace @import("imgui");
 
 var buffer: [25]u8 = undefined;
+var inspected_object_index: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
@@ -15,48 +16,93 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginChildEx("##obj-editor-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
             defer igEndChild();
 
-            var delete_index: usize = std.math.maxInt(usize);
-            for (state.map.objects.items) |*obj, i| {
-                igPushIDInt(@intCast(c_int, i));
+            if (inspected_object_index) |obj_index| {
+                var obj = &state.map.objects.items[obj_index];
 
                 igPushItemWidth(igGetWindowContentRegionWidth());
                 if (ogInputText("##name", &obj.name, obj.name.len)) {}
                 igPopItemWidth();
 
-                _ = ogDrag(usize, "Tile X", &obj.x, 0.5, 0, state.map.w);
-                _ = ogDrag(usize, "Tile Y", &obj.y, 0.5, 0, state.map.h);
+                _ = ogDrag(usize, "Tile X", &obj.x, 0.5, 0, state.map.w - 1);
+                _ = ogDrag(usize, "Tile Y", &obj.y, 0.5, 0, state.map.h - 1);
 
                 igSeparator();
 
                 // custom properties
-                {
-                    var props: usize = 0;
-                    while (props < 5) : (props += 1) {
-                        igPushIDInt(@intCast(c_int, props));
+                var delete_index: usize = std.math.maxInt(usize);
+                for (obj.props.items) |*prop, i| {
+                    igPushIDPtr(prop);
 
-                        igPushItemWidth(igGetWindowContentRegionWidth() / 2 - 15);
-                        if (ogInputText("##key", &buffer, buffer.len)) {}
-                        igSameLine(0, 5);
-                        if (ogInputText("##value", &buffer, buffer.len)) {}
-                        igSameLine(0, 5);
-                        igPopItemWidth();
+                    igPushItemWidth(igGetWindowContentRegionWidth() / 2 - 15);
+                    if (ogInputText("##key", &prop.name, prop.name.len)) {}
+                    igSameLine(0, 5);
 
-                        if (ogButton(icons.trash)) {}
-
-                        igPopID();
+                    switch (prop.type) {
+                        .string => |*str| {
+                            _ = ogInputText("##value", str, str.len);
+                        },
+                        .float => |*flt| {
+                            _ = ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32));
+                        },
+                        .int => |*int| {
+                            _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32));
+                        },
                     }
+
+                    igSameLine(0, 5);
+                    igPopItemWidth();
+
+                    igSameLine(0, 5);
+                    if (ogButton(icons.trash)) {
+                        delete_index = i;
+                    }
+
+                    igPopID();
                 }
 
-                igPopID();
+                if (delete_index < std.math.maxInt(usize)) {
+                    _ = obj.props.orderedRemove(delete_index);
+                }
             }
+        }
 
-            if (delete_index < std.math.maxInt(usize)) {
-                _ = state.map.objects.orderedRemove(delete_index);
-            }
+        if (inspected_object_index == null) {
+            igPushItemFlag(ImGuiItemFlags_Disabled, true);
+            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
         }
 
         if (igButton("Add Property", ImVec2{})) {
-            // state.map.addTag();
+            igOpenPopup("##add-property");
+        }
+
+        if (inspected_object_index == null) {
+            igPopItemFlag();
+            igPopStyleVar(1);
+        }
+
+        if (igBeginPopup("##add-property", ImGuiWindowFlags_None)) {
+            addPropertyPopup(state);
+            igEndPopup();
         }
     }
+}
+
+fn addPropertyPopup(state: *tk.AppState) void {
+    igText("Property Type");
+    if (igButton("string", ImVec2{.x = 100})) {
+        state.map.objects.items[inspected_object_index.?].addProp(.{ .string = undefined });
+        igCloseCurrentPopup();
+    }
+    if (igButton("float", ImVec2{.x = 100})) {
+        state.map.objects.items[inspected_object_index.?].addProp(.{ .float = undefined });
+        igCloseCurrentPopup();
+    }
+    if (igButton("int", ImVec2{.x = 100})) {
+        state.map.objects.items[inspected_object_index.?].addProp(.{ .int = undefined });
+        igCloseCurrentPopup();
+    }
+}
+
+pub fn setSelectedObject(index: ?usize) void {
+    inspected_object_index = index;
 }

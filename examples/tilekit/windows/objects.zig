@@ -3,6 +3,8 @@ const aya = @import("aya");
 const tk = @import("../tilekit.zig");
 usingnamespace @import("imgui");
 
+const object_editor = @import("object_editor.zig");
+
 var buffer: [25]u8 = undefined;
 var selected_index: usize = std.math.maxInt(usize);
 
@@ -24,8 +26,9 @@ pub fn draw(state: *tk.AppState) void {
             for (state.map.objects.items) |*obj, i| {
                 igPushIDInt(@intCast(c_int, i));
 
-                if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 20})) {
+                if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 24})) {
                     selected_index = i;
+                    object_editor.setSelectedObject(selected_index);
                 }
 
                 igSameLine(igGetWindowContentRegionWidth() - 20, 0);
@@ -39,8 +42,10 @@ pub fn draw(state: *tk.AppState) void {
             if (delete_index < std.math.maxInt(usize)) {
                 if (delete_index == selected_index) {
                     selected_index = std.math.maxInt(usize);
-                } else if (delete_index < selected_index) {
+                    object_editor.setSelectedObject(null);
+                } else if (delete_index < selected_index and selected_index != std.math.maxInt(usize)) {
                     selected_index -= 1;
+                    object_editor.setSelectedObject(selected_index);
                 }
 
                 _ = state.map.objects.orderedRemove(delete_index);
@@ -49,8 +54,10 @@ pub fn draw(state: *tk.AppState) void {
 
         if (igButton("Add Object", ImVec2{})) {
             state.map.addObject();
-            var obj = &state.map.objects.items[state.map.objects.items.len - 1];
-            std.mem.copy(u8, &obj.name, "whatever man");
+            selected_index = state.map.objects.items.len - 1;
+            var obj = &state.map.objects.items[selected_index];
+            _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{selected_index}) catch unreachable;
+            object_editor.setSelectedObject(selected_index);
         }
     }
 }

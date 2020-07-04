@@ -15,10 +15,11 @@ const output_map_win = @import("windows/output_map.zig");
 const menu = @import("menu.zig");
 const persistence = @import("persistence.zig");
 
+pub const data = @import("data.zig");
 pub const history = @import("history.zig");
 pub const colors = @import("colors.zig");
 
-pub const Map = @import("data.zig").Map;
+pub const Map = data.Map;
 pub const drawBrush = brushes_win.drawBrush;
 
 const files = @import("filebrowser");
@@ -66,6 +67,39 @@ pub const AppState = struct {
 
     pub fn mapSize(self: AppState) ImVec2 {
         return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.map_rect_size };
+    }
+
+    /// resizes the map and all of the sub-maps
+    pub fn resizeMap(self: *AppState, w: usize, h: usize) void {
+        history.reset();
+        self.map_data_dirty = true;
+
+        // map data is our source so we need to copy the old data over
+        var new_slice = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
+        std.mem.set(u8, new_slice, 0);
+
+        // copy taking into account that we may have shrunk
+        const max_x = std.math.min(self.map.w, w);
+        const max_y = std.math.min(self.map.h, h);
+        var y: usize = 0;
+        while (y < max_y) : (y += 1) {
+            var x: usize = 0;
+            while (x < max_x) : (x += 1) {
+                new_slice[x + y * w] = self.map.getTile(x, y);
+            }
+        }
+
+        self.map.w = w;
+        self.map.h = h;
+
+        aya.mem.allocator.free(self.map.data);
+        self.map.data = new_slice;
+
+        // resize our two generate maps
+        aya.mem.allocator.free(self.processed_map_data);
+        aya.mem.allocator.free(self.final_map_data);
+        self.processed_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
+        self.final_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
     }
 
     pub fn getProcessedTile(self: AppState, x: usize, y: usize) u32 {
@@ -177,3 +211,12 @@ pub const TileKit = struct {
         igDockBuilderFinish(id);
     }
 };
+
+/// helper to find the tile under the mouse given a top-left position of the grid and a grid size
+pub fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
+    var pos = igGetIO().MousePos;
+    pos.x -= screen_space_offset.x;
+    pos.y -= screen_space_offset.y;
+
+    return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
+}

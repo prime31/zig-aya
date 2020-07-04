@@ -190,14 +190,14 @@ pub fn draw(state: *tk.AppState) void {
     }
 
     if (showResizePopup) {
+        temp_state.reset();
         temp_state.map_width = state.map.w;
         temp_state.map_height = state.map.h;
-
         igOpenPopup("Resize Map");
     }
 
     loadTilesetPopup();
-    resizeMapPopup();
+    resizeMapPopup(state);
 }
 
 fn loadTilesetPopup() void {
@@ -230,7 +230,6 @@ fn loadTilesetPopup() void {
         _ = ogDrag(usize, "Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8);
 
         // error messages
-        // igPushTextWrapPos(ogGetContentRegionAvail().x);
         if (temp_state.invalid_image_selected) {
             igSpacing();
             igTextWrapped("Error: image width not compatible with tile size/spacing");
@@ -242,7 +241,6 @@ fn loadTilesetPopup() void {
             igTextWrapped("Error: could not load file");
             igSpacing();
         }
-        // igPopTextWrapPos();
 
         igSeparator();
 
@@ -286,13 +284,23 @@ fn validateImage() bool {
     return false;
 }
 
-fn resizeMapPopup() void {
+fn resizeMapPopup(state: *tk.AppState) void {
     if (igBeginPopupModal("Resize Map", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
         _ = ogDrag(usize, "Width", &temp_state.map_width, 0.5, 16, 512);
         _ = ogDrag(usize, "Height", &temp_state.map_height, 0.5, 16, 512);
         igSeparator();
+
+        if (temp_state.map_width < state.map.w or temp_state.map_height < state.map.h) {
+            igSpacing();
+            igTextWrapped("Warning: resizing to a smaller size will result in map data loss");
+            igSpacing();
+        }
+
+        igSpacing();
+        igTextWrapped("Note: when resizing a map all undo/redo data will be purged");
+        igSpacing();
 
         var size: ImVec2 = undefined;
         igGetContentRegionAvail(&size);
@@ -301,6 +309,7 @@ fn resizeMapPopup() void {
         }
         igSameLine(0, 4);
         if (igButton("Apply", ImVec2{ .x = -1, .y = 0 })) {
+            state.resizeMap(temp_state.map_width, temp_state.map_height);
             igCloseCurrentPopup();
         }
     }

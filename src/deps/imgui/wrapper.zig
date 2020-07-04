@@ -1,3 +1,4 @@
+const std = @import("std");
 usingnamespace @import("imgui.zig");
 const aya = @import("../../aya.zig");
 pub const icons = @import("font_awesome.zig");
@@ -53,7 +54,8 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
     return igInputText(label, buf, buf_size, ImGuiInputTextFlags_None, null, null);
 }
 
-pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: usize, p_max: usize) bool {
+pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
+    std.debug.assert(std.meta.trait.isUnsignedInt(T));
     var min = p_min;
     var max = p_max;
     const data_type = switch(T)
@@ -62,6 +64,19 @@ pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p
         u16 => ImGuiDataType_U16,
         u32 => ImGuiDataType_U32,
         usize => ImGuiDataType_U64,
+        else => unreachable,
+    };
+    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
+}
+
+pub fn ogDragSigned(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
+    var min = p_min;
+    var max = p_max;
+    const data_type = switch(T)
+    {
+        i16 => ImGuiDataType_S16,
+        i32 => ImGuiDataType_S32,
+        f32 => ImGuiDataType_Float,
         else => unreachable,
     };
     return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);

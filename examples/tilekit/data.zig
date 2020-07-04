@@ -54,7 +54,7 @@ pub const Map = struct {
         self.pre_rulesets.append(std.ArrayList(RuleSet).init(aya.mem.allocator)) catch unreachable;
     }
 
-    pub fn getTile(self: Map, x: usize, y: usize) u32 {
+    pub fn getTile(self: Map, x: usize, y: usize) u8 {
         if (x > self.w or y > self.h) {
             return 0;
         }
@@ -344,10 +344,18 @@ pub const Rule = struct {
 
 pub const Tag = struct {
     key: [25]u8,
-    val: [25]u8,
+    tiles: aya.utils.FixedList(u8, 10),
 
     pub fn init() Tag {
-        return .{ .key = undefined, .val = undefined };
+        return .{ .key = undefined, .tiles = aya.utils.FixedList(u8, 10).init() };
+    }
+
+    pub fn toggleSelected(self: *Tag, index: u8) void {
+        if (self.tiles.indexOf(index)) |slice_index| {
+            _ = self.tiles.swapRemove(slice_index);
+        } else {
+            self.tiles.append(index);
+        }
     }
 };
 
@@ -355,8 +363,29 @@ pub const Object = struct {
     name: [25]u8 = undefined,
     x: usize = 0,
     y: usize = 0,
+    props: std.ArrayList(Prop),
+
+    pub const Prop = struct {
+        name: [25]u8,
+        val: [25]u8,
+        type: PropType,
+    };
+
+    pub const PropType = union(enum) {
+        string: [25]u8,
+        int: i32,
+        float: f32,
+    };
 
     pub fn init() Object {
-        return .{};
+        return .{ .props = std.ArrayList(Prop).init(aya.mem.allocator) };
+    }
+
+    pub fn deinit(self: Object) void {
+        self.props.deinit();
+    }
+
+    pub fn addProp(self: *Object, prop_type: PropType) void {
+        self.props.append(.{ .name = undefined, .val = undefined, .type = prop_type }) catch unreachable;
     }
 };

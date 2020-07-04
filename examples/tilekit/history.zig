@@ -23,6 +23,28 @@ var history = struct {
         self.redo.deinit();
         self.temp.deinit();
     }
+
+    pub fn reset(self: *@This()) void {
+        for (self.undo.items) |item| {
+            if (item.size > 0) {
+                aya.mem.allocator.free(item.data);
+            }
+        }
+        for (self.redo.items) |item| {
+            if (item.size > 0) {
+                aya.mem.allocator.free(item.data);
+            }
+        }
+        for (self.temp.items) |item| {
+            if (item.size > 0) {
+                aya.mem.allocator.free(item.data);
+            }
+        }
+
+        self.undo.items.len = 0;
+        self.redo.items.len = 0;
+        self.temp.items.len = 0;
+    }
 }{};
 
 pub fn init() void {
@@ -41,10 +63,8 @@ pub fn push(slice: []u8) void {
         if (temp.ptr == @ptrToInt(slice.ptr)) return;
     }
 
-    const data = std.mem.dupe(aya.mem.allocator, u8, slice) catch unreachable;
-
     history.temp.append(.{
-        .data = data,
+        .data = std.mem.dupe(aya.mem.allocator, u8, slice) catch unreachable,
         .ptr = @ptrToInt(slice.ptr),
         .size = slice.len,
     }) catch unreachable;
@@ -112,4 +132,8 @@ pub fn redo() void {
 
         history.undo.append(item) catch unreachable;
     }
+}
+
+pub fn reset() void {
+    history.reset();
 }

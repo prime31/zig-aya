@@ -334,7 +334,7 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
             const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
             ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
         }
@@ -367,7 +367,7 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
 
             // does the nine-slice fit?
             if (tile.x + selection_size <= state.tilesPerRow()) {
@@ -403,11 +403,3 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     }
 }
 
-// TODO: this is duplicated elsewhere
-fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
-    var pos = igGetIO().MousePos;
-    pos.x -= screen_space_offset.x;
-    pos.y -= screen_space_offset.y;
-
-    return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
-}
