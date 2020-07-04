@@ -6,6 +6,8 @@ const Reader = aya.mem.SdlBufferStream.Reader;
 const Map = @import("data.zig").Map;
 const RuleSet = @import("data.zig").RuleSet;
 const Rule = @import("data.zig").Rule;
+const Tag = @import("data.zig").Tag;
+const Object = @import("data.zig").Object;
 
 pub fn save(map: Map, file: []const u8) !void {
     var buf = aya.mem.SdlBufferStream.init(file, .write);
@@ -64,6 +66,8 @@ pub fn load(file: []const u8) !Map {
         .data = undefined,
         .rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
         .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
+        .tags = std.ArrayList(Tag).init(aya.mem.allocator),
+        .objects = std.ArrayList(Object).init(aya.mem.allocator),
     };
 
     // std.mem.bytesAsValue for reading f32

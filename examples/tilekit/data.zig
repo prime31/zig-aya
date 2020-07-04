@@ -10,6 +10,8 @@ pub const Map = struct {
     data: []u8,
     rulesets: std.ArrayList(RuleSet),
     pre_rulesets: std.ArrayList(std.ArrayList(RuleSet)),
+    tags: std.ArrayList(Tag),
+    objects: std.ArrayList(Object),
 
     pub fn init() Map {
         var map = .{
@@ -18,6 +20,8 @@ pub const Map = struct {
             .data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
             .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
+            .tags = std.ArrayList(Tag).init(aya.mem.allocator),
+            .objects = std.ArrayList(Object).init(aya.mem.allocator),
         };
 
         std.mem.set(u8, map.data, 0);
@@ -30,10 +34,20 @@ pub const Map = struct {
             pr.deinit();
         }
         self.rulesets.deinit();
+        self.tags.deinit();
+        self.objects.deinit();
     }
 
     pub fn addRule(self: *Map) void {
         self.rulesets.append(RuleSet.init()) catch unreachable;
+    }
+
+    pub fn addTag(self: *Map) void {
+        self.tags.append(Tag.init()) catch unreachable;
+    }
+
+    pub fn addObject(self: *Map) void {
+        self.objects.append(Object.init()) catch unreachable;
     }
 
     pub fn addPreRulesPage(self: *Map) void {
@@ -325,5 +339,24 @@ pub const Rule = struct {
             self.tile = 0;
             self.state = .none;
         }
+    }
+};
+
+pub const Tag = struct {
+    key: [25]u8,
+    val: [25]u8,
+
+    pub fn init() Tag {
+        return .{ .key = undefined, .val = undefined };
+    }
+};
+
+pub const Object = struct {
+    name: [25]u8 = undefined,
+    x: usize = 0,
+    y: usize = 0,
+
+    pub fn init() Object {
+        return .{};
     }
 };

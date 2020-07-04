@@ -4,13 +4,19 @@ usingnamespace @import("imgui");
 const aya = @import("aya");
 const Texture = aya.gfx.Texture;
 
-const rules_win = @import("rules_win.zig");
-const brushes_win = @import("brushes_win.zig");
-const input_map_wins = @import("map_windows.zig");
-const output_map_win = @import("output_map_win.zig");
+const rules_win = @import("windows/rules.zig");
+const brushes_win = @import("windows/brushes.zig");
+const tags_win = @import("windows/tags.zig");
+const objects_win = @import("windows/objects.zig");
+const object_editor_win = @import("windows/object_editor.zig");
+const input_map_wins = @import("windows/maps.zig");
+const output_map_win = @import("windows/output_map.zig");
 
 const menu = @import("menu.zig");
 const persistence = @import("persistence.zig");
+
+pub const history = @import("history.zig");
+pub const colors = @import("colors.zig");
 
 pub const Map = @import("data.zig").Map;
 pub const drawBrush = brushes_win.drawBrush;
@@ -20,6 +26,7 @@ const files = @import("filebrowser");
 pub const AppState = struct {
     map: Map,
     // general state
+    object_edit_mode: bool = false,
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 16,
     seed: u64 = 0,
@@ -30,11 +37,16 @@ pub const AppState = struct {
     // tileset state
     texture: Texture,
     // menu state
-    brushes_win: bool = true,
-    rules_win: bool = true,
-    input_map_win: bool = true,
-    post_processed_map_win: bool = true,
-    output_map_win: bool = true,
+    windows: struct {
+        brushes: bool = true,
+        rules: bool = true,
+        objects: bool = true,
+        object_editor: bool = true,
+        tag_editor: bool = true,
+        input_map: bool = true,
+        post_processed_map: bool = true,
+        output_map: bool = true,
+    },
 
     pub fn init() AppState {
         return .{
@@ -43,6 +55,7 @@ pub const AppState = struct {
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
+            .windows = .{},
         };
     }
 
@@ -85,13 +98,13 @@ pub const TileKit = struct {
     state: AppState,
 
     pub fn init() TileKit {
-        @import("colors.zig").init();
-        @import("history.zig").init();
+        colors.init();
+        history.init();
         return .{ .state = AppState.init() };
     }
 
     pub fn deinit(self: TileKit) void {
-        @import("history.zig").deinit();
+        history.deinit();
         self.state.texture.deinit();
         self.state.map.deinit();
         aya.mem.allocator.free(self.state.processed_map_data);
@@ -134,6 +147,9 @@ pub const TileKit = struct {
         input_map_wins.drawWindows(&self.state);
         output_map_win.drawWindow(&self.state);
         brushes_win.drawPopup(&self.state);
+        tags_win.draw(&self.state);
+        objects_win.draw(&self.state);
+        object_editor_win.draw(&self.state);
 
         // igShowDemoWindow(null);
         igEnd();

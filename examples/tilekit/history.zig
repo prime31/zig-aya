@@ -51,26 +51,34 @@ pub fn push(slice: []u8) void {
 }
 
 pub fn commit() void {
+    var added_commit_boundary = false;
     while (history.temp.popOrNull()) |item| {
-        // var src = std.mem.bytesAsSlice(u8, @intToPtr([*]u8, item.ptr)[0..item.size]);
         var src = @intToPtr([*]u8, item.ptr);
         if (std.mem.eql(u8, src[0..item.size], item.data)) {
             aya.mem.allocator.free(item.data);
         } else {
-            std.debug.print("changed. src: {}, item.data: {}\n", .{src[0], item.data[0]});
+            if (!added_commit_boundary) {
+                history.undo.append(.{.ptr = 0, .size = 0}) catch unreachable;
+                added_commit_boundary = true;
+            }
+
             history.undo.append(item) catch unreachable;
         }
     }
 }
 
 pub fn undo() void {
+    var added_commit_boundary = false;
     var last_ptr: usize = 0;
     while (history.undo.popOrNull()) |item| {
-        if (last_ptr != 0 and last_ptr != item.ptr) {
-            history.undo.appendAssumeCapacity(item);
-            return;
+        if (item.ptr == 0) {
+            break;
         }
-        last_ptr = item.ptr;
+
+        if (!added_commit_boundary) {
+            history.redo.append(.{.ptr = 0, .size = 0}) catch unreachable;
+            added_commit_boundary = true;
+        }
 
         var dst = @intToPtr([*]u8, item.ptr);
 
@@ -84,13 +92,16 @@ pub fn undo() void {
 }
 
 pub fn redo() void {
-    var last_ptr: usize = 0;
+    var added_commit_boundary = false;
     while (history.redo.popOrNull()) |item| {
-        if (last_ptr != 0 and last_ptr != item.ptr) {
-            history.redo.appendAssumeCapacity(item);
+        if (item.ptr == 0) {
             return;
         }
-        last_ptr = item.ptr;
+
+        if (!added_commit_boundary) {
+            history.undo.append(.{.ptr = 0, .size = 0}) catch unreachable;
+            added_commit_boundary = true;
+        }
 
         var dst = @intToPtr([*]u8, item.ptr);
 

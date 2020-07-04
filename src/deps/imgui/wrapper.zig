@@ -66,3 +66,9 @@ pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p
     };
     return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
 }
+
+pub fn ogColorConvertU32ToFloat4(in: ImU32) ImVec4 {
+    var col = ImVec4{};
+    igColorConvertU32ToFloat4(&col, in);
+    return col;
+}

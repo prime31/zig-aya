@@ -1,8 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
-const tk = @import("tilekit.zig");
-const history = @import("history.zig");
 
+const tk = @import("tilekit.zig");
 const aya = @import("aya");
 const files = @import("filebrowser");
 const stb_image = @import("stb_image");
@@ -39,6 +38,7 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
         if (aya.input.keyPressed(@intToEnum(aya.sdl.SDL_Scancode, key))) state.selected_brush_index = @intCast(usize, key - 30);
     }
 
+    // show the quick brush selector
     if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
         if (igIsPopupOpenID(igGetIDStr("brushes"))) {
             igClosePopupToLevel(0, true);
@@ -47,10 +47,16 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
         }
     }
 
+    // undo/redo
     if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper and igGetIO().KeyShift) {
-        history.redo();
+        tk.history.redo();
     } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper) {
-        history.undo();
+        tk.history.undo();
+    }
+
+    if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
+        state.object_edit_mode = !state.object_edit_mode;
+        tk.colors.toggleObjectMode(state.object_edit_mode);
     }
 }
 
@@ -112,24 +118,32 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            if (igMenuItemBool("Brushes", null, state.brushes_win, true)) {
-                state.brushes_win = !state.brushes_win;
+            if (igMenuItemBool("Brushes", null, state.windows.brushes, true)) {
+                state.windows.brushes = !state.windows.brushes;
             }
 
-            if (igMenuItemBool("Rules", null, state.rules_win, true)) {
-                state.rules_win = !state.rules_win;
+            if (igMenuItemBool("Rules", null, state.windows.rules, true)) {
+                state.windows.rules = !state.windows.rules;
             }
 
-            if (igMenuItemBool("Input Map", null, state.input_map_win, true)) {
-                state.input_map_win = !state.input_map_win;
+            if (igMenuItemBool("Objects", null, state.windows.objects, true)) {
+                state.windows.objects = !state.windows.objects;
             }
 
-            if (igMenuItemBool("Post Processed Map", null, state.post_processed_map_win, true)) {
-                state.post_processed_map_win = !state.post_processed_map_win;
+            if (igMenuItemBool("Tags", null, state.windows.tag_editor, true)) {
+                state.windows.tag_editor = !state.windows.tag_editor;
             }
 
-            if (igMenuItemBool("Output Map", null, state.output_map_win, true)) {
-                state.output_map_win = !state.output_map_win;
+            if (igMenuItemBool("Input Map", null, state.windows.input_map, true)) {
+                state.windows.input_map = !state.windows.input_map;
+            }
+
+            if (igMenuItemBool("Post Processed Map", null, state.windows.post_processed_map, true)) {
+                state.windows.post_processed_map = !state.windows.post_processed_map;
+            }
+
+            if (igMenuItemBool("Output Map", null, state.windows.output_map, true)) {
+                state.windows.output_map = !state.windows.output_map;
             }
 
             igSeparator();
@@ -194,7 +208,7 @@ fn loadTilesetPopup() void {
             // only display the filename here so there is room for the button
             const last_sep = std.mem.lastIndexOf(u8, &temp_state.image, std.fs.path.sep_str) orelse 0;
             const sentinel_index = std.mem.indexOfScalar(u8, &temp_state.image, 0) orelse temp_state.image.len;
-            const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, temp_state.image[last_sep + 1..sentinel_index]) catch unreachable;
+            const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, temp_state.image[last_sep + 1 .. sentinel_index]) catch unreachable;
             igText(c_file);
         }
         igSameLine(0, 5);
