@@ -2154,7 +2154,7 @@ pub extern fn SDL_PollEvent(event: [*c]SDL_Event) c_int;
 pub extern fn SDL_WaitEvent(event: [*c]SDL_Event) c_int;
 pub extern fn SDL_WaitEventTimeout(event: [*c]SDL_Event, timeout: c_int) c_int;
 pub extern fn SDL_PushEvent(event: [*c]SDL_Event) c_int;
-pub const SDL_EventFilter = ?fn (?*c_void, [*c]SDL_Event) callconv(.C) c_int;
+pub const SDL_EventFilter = ?fn (?*c_void, *SDL_Event) callconv(.C) c_int;
 pub extern fn SDL_SetEventFilter(filter: SDL_EventFilter, userdata: ?*c_void) void;
 pub extern fn SDL_GetEventFilter(filter: [*c]SDL_EventFilter, userdata: [*c]?*c_void) SDL_bool;
 pub extern fn SDL_AddEventWatch(filter: SDL_EventFilter, userdata: ?*c_void) void;
