@@ -1,12 +1,11 @@
 const std = @import("std");
-const print = std.debug.print;
 const aya = @import("aya");
-const tk = @import("tilekit.zig");
-const colors = @import("colors.zig");
-const brushes_win = @import("brushes_win.zig");
+const tk = @import("../tilekit.zig");
+const colors = @import("../colors.zig");
+const brushes_win = @import("brushes.zig");
 usingnamespace @import("imgui");
 
-const RuleSet = @import("data.zig").RuleSet;
+const RuleSet = @import("../data.zig").RuleSet;
 
 var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
@@ -14,9 +13,9 @@ var nine_slice_selected: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{.x=365});
-    defer igPopStyleVar(0);
+    defer igPopStyleVar(1);
 
-    if (state.rules_win and igBegin("Rules", &state.rules_win, ImGuiWindowFlags_None)) {
+    if (state.windows.rules and igBegin("Rules", &state.windows.rules, ImGuiWindowFlags_None)) {
         defer igEnd();
 
         // save the cursor position so we can hack a button on the tab bar itself
@@ -52,7 +51,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     }
 
     if (delete_index < state.map.rulesets.items.len) {
-        _ = state.map.rulesets.swapRemove(delete_index);
+        _ = state.map.rulesets.orderedRemove(delete_index);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -108,7 +107,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             }
 
             if (delete_rule_index < pre_rule.items.len) {
-                _ = pre_rule.swapRemove(delete_rule_index);
+                _ = pre_rule.orderedRemove(delete_rule_index);
             }
             igPopID();
         }
@@ -120,7 +119,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
     } // end pre_rules loop
 
     if (delete_index < state.map.pre_rulesets.items.len) {
-        const removed_rules_page = state.map.pre_rulesets.swapRemove(delete_index);
+        const removed_rules_page = state.map.pre_rulesets.orderedRemove(delete_index);
         removed_rules_page.deinit();
     }
 }

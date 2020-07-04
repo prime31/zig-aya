@@ -1,12 +1,12 @@
 const std = @import("std");
 usingnamespace @import("imgui");
-const colors = @import("colors.zig");
-const tk = @import("tilekit.zig");
+const colors = @import("../colors.zig");
+const tk = @import("../tilekit.zig");
 
 const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
-    if (state.brushes_win and igBegin("Brushes", &state.brushes_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (state.windows.brushes and igBegin("Brushes", &state.windows.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
         draw(state, 32, false);
         igEnd();
     }

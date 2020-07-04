@@ -1,9 +1,9 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const aya = @import("aya");
-const tk = @import("tilekit.zig");
-const colors = @import("colors.zig");
-const processor = @import("rule_processor.zig");
+const tk = @import("../tilekit.zig");
+const colors = @import("../colors.zig");
+const processor = @import("../rule_processor.zig");
 
 pub fn drawWindow(state: *tk.AppState) void {
     // only process map data when it changes
@@ -14,7 +14,7 @@ pub fn drawWindow(state: *tk.AppState) void {
         //state.map_data_dirty = false;
     }
 
-    if (state.output_map_win and igBegin("Output Map", &state.output_map_win, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.windows.output_map and igBegin("Output Map", &state.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state);
         igEnd();
     }
