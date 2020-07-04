@@ -1,6 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const colors = @import("colors.zig");
+const history = @import("history.zig");
 const tk = @import("tilekit.zig");
 
 // helper to maintain state during a drag selection
@@ -129,12 +130,20 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
 
     if (igIsMouseDown(0) and !igGetIO().KeyShift) {
         var tile = tileIndexUnderMouse(state, screen_space_offset);
+
+        const index = tile.x + tile.y * state.map.w;
+        history.push(state.map.data[index..index + 1]);
         state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
+        history.commit();
     }
 
     if (igIsMouseDown(1)) {
         var tile = tileIndexUnderMouse(state, screen_space_offset);
+
+        const index = tile.x + tile.y * state.map.w;
+        history.push(state.map.data[index..index + 1]);
         state.map.setTile(tile.x, tile.y, 0);
+        history.commit();
     }
 }
 

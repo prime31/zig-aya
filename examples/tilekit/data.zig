@@ -48,7 +48,7 @@ pub const Map = struct {
     }
 
     pub fn setTile(self: Map, x: usize, y: usize, value: u8) void {
-        self.data[x + y * @intCast(usize, self.w)] = value;
+        self.data[x + y * self.w] = value;
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice

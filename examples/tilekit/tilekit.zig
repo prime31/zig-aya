@@ -86,10 +86,12 @@ pub const TileKit = struct {
 
     pub fn init() TileKit {
         @import("colors.zig").init();
+        @import("history.zig").init();
         return .{ .state = AppState.init() };
     }
 
     pub fn deinit(self: TileKit) void {
+        @import("history.zig").deinit();
         self.state.texture.deinit();
         self.state.map.deinit();
         aya.mem.allocator.free(self.state.processed_map_data);

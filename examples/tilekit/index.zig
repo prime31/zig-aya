@@ -19,6 +19,7 @@ pub fn main() !void {
         .window = .{
             .width = 1024,
             .height = 768,
+            .title = "Aya Tile",
         },
     });
 }

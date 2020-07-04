@@ -1,6 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const tk = @import("tilekit.zig");
+const history = @import("history.zig");
 
 const aya = @import("aya");
 const files = @import("filebrowser");
@@ -44,6 +45,12 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
         } else {
             igOpenPopup("brushes");
         }
+    }
+
+    if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper and igGetIO().KeyShift) {
+        history.redo();
+    } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper) {
+        history.undo();
     }
 }
 
