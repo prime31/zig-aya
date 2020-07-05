@@ -1,7 +1,7 @@
 const std = @import("std");
 
 /// fixed size array wrapper that provides ArrayList-like semantics. Appending more items than fit in the
-/// list ignores the item and logs a warning.
+/// list ignores the item and logs a warning. Use the FixedList.len field to get the actual number of items present.
 pub fn FixedList(comptime T: type, comptime len: usize) type {
     return struct {
         const Self = @This();

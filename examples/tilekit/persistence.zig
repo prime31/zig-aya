@@ -25,11 +25,13 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, data_bytes.len);
     try out.writeAll(data_bytes);
 
+    // rulesets
     try out.writeIntLittle(usize, map.rulesets.items.len);
     for (map.rulesets.items) |rule| {
         try writeRuleSet(out, rule);
     }
 
+    // pre-rulesets
     try out.writeIntLittle(usize, map.pre_rulesets.items.len);
     for (map.pre_rulesets.items) |rule_page| {
         try out.writeIntLittle(usize, rule_page.items.len);
@@ -37,12 +39,36 @@ pub fn save(map: Map, file: []const u8) !void {
             try writeRuleSet(out, rule);
         }
     }
+
+    // tags
+    try out.writeIntLittle(usize, map.tags.items.len);
+    for (map.tags.items) |tag| {
+        try writeFixedSliceZ(out, &tag.key);
+
+        try out.writeIntLittle(usize, tag.tiles.len);
+        for (tag.tiles.items) |tile, i| {
+            if (i == tag.tiles.len) break;
+            try out.writeIntLittle(u8, tile);
+        }
+    }
+
+    // objects
+    try out.writeIntLittle(usize, map.objects.items.len);
+    for (map.objects.items) |obj| {
+        try writeFixedSliceZ(out, &obj.name);
+        try out.writeIntLittle(usize, obj.x);
+        try out.writeIntLittle(usize, obj.y);
+
+        try out.writeIntLittle(usize, obj.props.items.len);
+        for (obj.props.items) |prop| {
+            try writeFixedSliceZ(out, &prop.name);
+            try writeUnion(out, prop.value);
+        }
+    }
 }
 
 fn writeRuleSet(out: Writer, rule: RuleSet) !void {
-    const name = rule.name[0..std.mem.indexOfSentinel(u8, 0, rule.name[0..])];
-    try out.writeIntLittle(usize, name.len);
-    try out.writeAll(name);
+    try writeFixedSliceZ(out, &rule.name);
 
     for (rule.rules) |rule_tile| {
         try out.writeIntLittle(usize, rule_tile.tile);
@@ -79,22 +105,25 @@ pub fn load(file: []const u8) !Map {
 
     var image_len = try in.readIntLittle(usize);
     if (image_len > 0) {
-        const buffer = try aya.mem.tmp_allocator.alloc(u8, image_len);
+        const buffer = try aya.mem.allocator.alloc(u8, image_len);
         _ = try in.readAll(buffer);
         map.image = buffer;
     }
 
+    // map data
     const data_len = try in.readIntLittle(usize);
     map.data = try aya.mem.allocator.alloc(u8, data_len);
     _ = try in.readAll(map.data);
 
-    const rules_len = try in.readIntLittle(usize);
-    _ = try map.rulesets.ensureCapacity(rules_len);
+    // rulesets
+    const rulesets_len = try in.readIntLittle(usize);
+    _ = try map.rulesets.ensureCapacity(rulesets_len);
     var i: usize = 0;
-    while (i < rules_len) : (i += 1) {
+    while (i < rulesets_len) : (i += 1) {
         try map.rulesets.append(try readRuleSet(in));
     }
 
+    // pre rules
     const pre_rules_pages = try in.readIntLittle(usize);
     _ = try map.pre_rulesets.ensureCapacity(pre_rules_pages);
     i = 0;
@@ -109,16 +138,58 @@ pub fn load(file: []const u8) !Map {
         }
     }
 
+    // tags
+    const tag_cnt = try in.readIntLittle(usize);
+    _ = try map.tags.ensureCapacity(tag_cnt);
+
+    i = 0;
+    while (i < tag_cnt) : (i += 1) {
+        var tag = Tag.init();
+
+        try readFixedSliceZ(in, &tag.key);
+
+        var tile_len = try in.readIntLittle(usize);
+        while (tile_len > 0) : (tile_len -= 1) {
+            tag.tiles.append(try in.readIntLittle(u8));
+        }
+
+        try map.tags.append(tag);
+    }
+
+    // objects
+    const obj_cnt = try in.readIntLittle(usize);
+    _ = try map.objects.ensureCapacity(obj_cnt);
+
+    i = 0;
+    while (i < obj_cnt) : (i += 1) {
+        var obj = Object.init();
+
+        try readFixedSliceZ(in, &obj.name);
+        obj.x = try in.readIntLittle(usize);
+        obj.y = try in.readIntLittle(usize);
+
+        var props_len = try in.readIntLittle(usize);
+        std.debug.print("--- read props len: {}\n", .{props_len});
+        try obj.props.ensureCapacity(props_len);
+        while (props_len > 0) : (props_len -= 1) {
+            var prop = Object.Prop.init();
+
+            try readFixedSliceZ(in, &prop.name);
+            try readUnionInto(in, &prop.value);
+
+            obj.props.appendAssumeCapacity(prop);
+        }
+
+        map.objects.appendAssumeCapacity(obj);
+    }
+
     return map;
 }
 
 fn readRuleSet(in: Reader) !RuleSet {
     var rule = RuleSet.init();
 
-    const name_len = try in.readIntLittle(usize);
-    const buffer = try aya.mem.tmp_allocator.alloc(u8, name_len);
-    _ = try in.readAll(buffer);
-    std.mem.copy(u8, rule.name[0..], buffer);
+    try readFixedSliceZ(in, &rule.name);
 
     for (rule.rules) |*rule_tile| {
         rule_tile.tile = try in.readIntLittle(usize);
@@ -134,4 +205,101 @@ fn readRuleSet(in: Reader) !RuleSet {
     }
 
     return rule;
+}
+
+// generic write helpers
+fn writeFixedSliceZ(out: Writer, slice: []const u8) !void {
+    const sentinel_index = std.mem.indexOfScalar(u8, slice, 0) orelse slice.len;
+    const txt = slice[0..sentinel_index];
+    try out.writeIntLittle(usize, txt.len);
+    try out.writeAll(txt);
+}
+
+fn writeUnion(out: Writer, value: var) !void {
+    const info = @typeInfo(@TypeOf(value)).Union;
+    if (info.tag_type) |TagType| {
+        const active_tag = std.meta.activeTag(value);
+        try writeValue(out, active_tag);
+
+        inline for (info.fields) |field_info| {
+            if (field_info.enum_field.?.value == @enumToInt(active_tag)) {
+                const name = field_info.name;
+                const FieldType = field_info.field_type;
+                try writeValue(out, @field(value, name));
+            }
+        }
+    }
+}
+
+fn writeValue(out: Writer, value: var) !void {
+    const T = comptime @TypeOf(value);
+
+    if (comptime std.meta.trait.isIndexable(T)) {
+        for (value) |v|
+            try writeValue(out, v);
+        return;
+    }
+
+    switch (@typeInfo(T)) {
+        .Int => try out.writeIntLittle(T, value),
+        .Float => try out.writeIntLittle(T, value),
+        .Enum => try writeValue(out, @enumToInt(value)),
+        else => unreachable,
+    }
+}
+
+// generic read helpers
+fn readUnionInto(in: Reader, ptr: var) !void {
+    const T = @TypeOf(ptr);
+    const C = comptime std.meta.Child(T);
+    const info = @typeInfo(C).Union;
+
+    if (info.tag_type) |TagType| {
+        const TagInt = @TagType(TagType);
+        // TODO: why is this a u2 for PropValue when std.meta.activeTag is a u8???
+        //const tag = try in.readIntLittle(TagInt);
+        // const tag = try in.readIntLittle(TagInt);
+        const tag = try in.readIntLittle(u8);
+        std.debug.print("---- read tag: {}\n", .{tag});
+
+        inline for (info.fields) |field_info| {
+            if (field_info.enum_field.?.value == tag) {
+                const name = field_info.name;
+                const FieldType = field_info.field_type;
+                ptr.* = @unionInit(C, name, undefined);
+                try readValueInto(in, &@field(ptr, name));
+            }
+        }
+    }
+}
+
+fn readValueInto(in: Reader, ptr: var) !void {
+    const T = @TypeOf(ptr);
+    comptime std.debug.assert(std.meta.trait.is(.Pointer)(T));
+
+    if (comptime std.meta.trait.isSlice(T) or comptime std.meta.trait.isPtrTo(.Array)(T)) {
+        for (ptr) |*v|
+            try readValueInto(in, v);
+        return;
+    }
+
+    comptime std.debug.assert(std.meta.trait.isSingleItemPtr(T));
+
+    const C = comptime std.meta.Child(T);
+    const child_type_id = @typeInfo(C);
+
+    switch (child_type_id) {
+        .Float, .Int => ptr.* = try in.readIntLittle(C),
+        else => unreachable,
+    }
+}
+
+// generic read helpers
+fn readFixedSliceZ(in: Reader, dst: []u8) !void {
+    const len = try in.readIntLittle(usize);
+    if (len > 0) {
+        const buffer = try aya.mem.tmp_allocator.alloc(u8, len);
+        _ = try in.readAll(buffer);
+        std.mem.copy(u8, dst, buffer);
+    }
 }

@@ -36,6 +36,10 @@ pub const Map = struct {
         self.rulesets.deinit();
         self.tags.deinit();
         self.objects.deinit();
+
+        if (self.image.len > 0) {
+            aya.mem.allocator.free(self.image);
+        }
     }
 
     pub fn addRule(self: *Map) void {
@@ -367,8 +371,11 @@ pub const Object = struct {
 
     pub const Prop = struct {
         name: [25]u8,
-        val: [25]u8,
-        type: PropType,
+        value: PropType,
+
+        pub fn init() Prop {
+            return .{ .name = undefined, .value = undefined };
+        }
     };
 
     pub const PropType = union(enum) {
@@ -386,6 +393,6 @@ pub const Object = struct {
     }
 
     pub fn addProp(self: *Object, prop_type: PropType) void {
-        self.props.append(.{ .name = undefined, .val = undefined, .type = prop_type }) catch unreachable;
+        self.props.append(.{ .name = undefined, .value = prop_type }) catch unreachable;
     }
 };

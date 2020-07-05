@@ -37,7 +37,7 @@ pub fn draw(state: *tk.AppState) void {
                     if (ogInputText("##key", &prop.name, prop.name.len)) {}
                     igSameLine(0, 5);
 
-                    switch (prop.type) {
+                    switch (prop.value) {
                         .string => |*str| {
                             _ = ogInputText("##value", str, str.len);
                         },

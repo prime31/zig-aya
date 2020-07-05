@@ -73,12 +73,13 @@ pub fn draw(state: *tk.AppState) void {
             defer igEndMenu();
 
             if (igMenuItemBool("New", null, false, true)) {
+                @import("windows/object_editor.zig").setSelectedObject(null);
                 state.map = tk.Map.init();
             }
 
             if (igMenuItemBool("Save", null, false, true)) {
                 std.debug.print("doesnt work yet\n", .{});
-                // state.saveMap("tilekit.tk") catch unreachable;
+                state.saveMap("/Users/desaro/Desktop/tilekit.tk") catch unreachable;
             }
 
             if (igMenuItemBool("Save As...", null, false, true)) {
