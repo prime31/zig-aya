@@ -96,7 +96,6 @@ pub fn load(file: []const u8) !Map {
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
     };
 
-    // std.mem.bytesAsValue for reading f32
     const in = buf.reader();
     map.w = try in.readIntLittle(usize);
     map.h = try in.readIntLittle(usize);
@@ -169,14 +168,11 @@ pub fn load(file: []const u8) !Map {
         obj.y = try in.readIntLittle(usize);
 
         var props_len = try in.readIntLittle(usize);
-        std.debug.print("--- read props len: {}\n", .{props_len});
         try obj.props.ensureCapacity(props_len);
         while (props_len > 0) : (props_len -= 1) {
             var prop = Object.Prop.init();
-
             try readFixedSliceZ(in, &prop.name);
             try readUnionInto(in, &prop.value);
-
             obj.props.appendAssumeCapacity(prop);
         }
 
@@ -256,11 +252,10 @@ fn readUnionInto(in: Reader, ptr: var) !void {
 
     if (info.tag_type) |TagType| {
         const TagInt = @TagType(TagType);
-        // TODO: why is this a u2 for PropValue when std.meta.activeTag is a u8???
-        //const tag = try in.readIntLittle(TagInt);
+        // TODO: why is this a u2 for PropValue when std.meta.activeTag is a u8? i believe this is due to requiring to write unpacked
+        // data (u8 aligned). Reading dies in @divExact in std.mem.readIntNative
         // const tag = try in.readIntLittle(TagInt);
         const tag = try in.readIntLittle(u8);
-        std.debug.print("---- read tag: {}\n", .{tag});
 
         inline for (info.fields) |field_info| {
             if (field_info.enum_field.?.value == tag) {
