@@ -15,7 +15,7 @@ pub fn build(b: *std.build.Builder) anyerror!void {
 }
 
 /// rel_path is used to add package paths. It should be the the same path used to include this build file
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType, rel_path: []const u8) void {
+pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType) void {
     switch (lib_type) {
         .static => {
             const lib = b.addStaticLibrary("FNA3D", null);
@@ -35,8 +35,6 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
             compileFna(b, artifact, target);
         },
     }
-
-    artifact.addPackagePath("fna", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "fna.zig" }) catch unreachable);
 }
 
 fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
@@ -85,20 +83,20 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
     const cflags = lib_cflags ++ platform_cflags;
 
     // for builds from the root dir of the project
-    exe.addIncludeDir("deps/fna/FNA3D/include");
-    exe.addIncludeDir("deps/fna/FNA3D/MojoShader");
+    exe.addIncludeDir("aya/deps/fna/FNA3D/include");
+    exe.addIncludeDir("aya/deps/fna/FNA3D/MojoShader");
 
     // for local builds with this build file as the root of the build
     exe.addIncludeDir("FNA3D/include");
     exe.addIncludeDir("FNA3D/MojoShader");
 
     for (fna_src_files) |src_file| {
-        const file = b.fmt("deps/fna/FNA3D/src/{}", .{src_file});
+        const file = b.fmt("aya/deps/fna/FNA3D/src/{}", .{src_file});
         exe.addCSourceFile(file, cflags);
     }
 
     for (mojo_src_files) |src_file| {
-        const file = b.fmt("deps/fna/FNA3D/MojoShader/{}", .{src_file});
+        const file = b.fmt("aya/deps/fna/FNA3D/MojoShader/{}", .{src_file});
         exe.addCSourceFile(file, cflags);
     }
 }

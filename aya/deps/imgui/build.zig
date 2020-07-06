@@ -15,7 +15,7 @@ pub fn build(b: *std.build.Builder) anyerror!void {
 }
 
 /// rel_path is used to add package paths. It should be the the same path used to include this build file
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType, rel_path: []const u8) void {
+pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType) void {
     switch (lib_type) {
         .static => {
             const lib = b.addStaticLibrary("imgui", null);
@@ -34,9 +34,6 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
             compileImGui(b, artifact, target);
         },
     }
-
-    artifact.addPackagePath("imgui_manual", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "imgui_manual.zig" }) catch unreachable);
-    artifact.addPackagePath("imgui", std.fs.path.join(b.allocator, &[_][]const u8{ rel_path, "imgui.zig" }) catch unreachable);
 }
 
 fn compileImGui(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
@@ -64,11 +61,11 @@ fn compileImGui(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Ta
     exe.addIncludeDir("deps/imgui/cimgui/imgui");
 
     const cpp_args = [_][]const u8{"-Wno-return-type-c-linkage"};
-    exe.addCSourceFile("deps/imgui/cimgui/imgui/imgui.cpp", &cpp_args);
-    exe.addCSourceFile("deps/imgui/cimgui/imgui/imgui_demo.cpp", &cpp_args);
-    exe.addCSourceFile("deps/imgui/cimgui/imgui/imgui_draw.cpp", &cpp_args);
-    exe.addCSourceFile("deps/imgui/cimgui/imgui/imgui_widgets.cpp", &cpp_args);
-    exe.addCSourceFile("deps/imgui/cimgui/cimgui.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui_demo.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui_draw.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui_widgets.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/cimgui/cimgui.cpp", &cpp_args);
 }
 
 
