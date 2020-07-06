@@ -20,7 +20,7 @@ pub fn draw(state: *tk.AppState) void {
             for (state.map.tags.items) |*tag, i| {
                 igPushIDInt(@intCast(c_int, i));
 
-                if (ogInputText("##key", &tag.key, tag.key.len)) {}
+                if (ogInputText("##key", &tag.name, tag.name.len)) {}
                 igSameLine(0, 5);
 
                 igPushItemWidth(100);

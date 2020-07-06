@@ -43,7 +43,7 @@ pub fn save(map: Map, file: []const u8) !void {
     // tags
     try out.writeIntLittle(usize, map.tags.items.len);
     for (map.tags.items) |tag| {
-        try writeFixedSliceZ(out, &tag.key);
+        try writeFixedSliceZ(out, &tag.name);
 
         try out.writeIntLittle(usize, tag.tiles.len);
         for (tag.tiles.items) |tile, i| {
@@ -145,7 +145,7 @@ pub fn load(file: []const u8) !Map {
     while (i < tag_cnt) : (i += 1) {
         var tag = Tag.init();
 
-        try readFixedSliceZ(in, &tag.key);
+        try readFixedSliceZ(in, &tag.name);
 
         var tile_len = try in.readIntLittle(usize);
         while (tile_len > 0) : (tile_len -= 1) {
@@ -296,5 +296,107 @@ fn readFixedSliceZ(in: Reader, dst: []u8) !void {
         const buffer = try aya.mem.tmp_allocator.alloc(u8, len);
         _ = try in.readAll(buffer);
         std.mem.copy(u8, dst, buffer);
+    }
+}
+
+// export
+pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
+    var buf = aya.mem.SdlBufferStream.init(file, .write);
+    defer buf.deinit();
+    const out_stream = buf.writer();
+
+    var jw = std.json.writeStream(out_stream, 10);
+    {
+        try jw.beginObject();
+        defer jw.endObject() catch unreachable;
+
+        try jw.objectField("w");
+        try jw.emitNumber(map.w);
+
+        try jw.objectField("h");
+        try jw.emitNumber(map.h);
+
+        try jw.objectField("tile_size");
+        try jw.emitNumber(map.tile_size);
+
+        try jw.objectField("tile_spacing");
+        try jw.emitNumber(map.tile_spacing);
+
+        try jw.objectField("image");
+        try jw.emitString(map.image);
+
+        // tags
+        try jw.objectField("tags");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            for (map.tags.items) |tag| {
+                try jw.arrayElem();
+                try jw.beginObject();
+
+                const sentinel_index = std.mem.indexOfScalar(u8, &tag.name, 0) orelse tag.name.len;
+                const name = tag.name[0..sentinel_index];
+                try jw.objectField("name");
+                try jw.emitString(name);
+
+                try jw.objectField("tiles");
+                try jw.beginArray();
+                for (tag.tiles.items) |tile, i| {
+                    if (i == tag.tiles.len) break;
+                    try jw.arrayElem();
+                    try jw.emitNumber(tile);
+                }
+                try jw.endArray();
+
+                try jw.endObject();
+            }
+        }
+
+        // objects
+        try jw.objectField("objects");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            for (map.objects.items) |obj| {
+                try jw.arrayElem();
+                try jw.beginObject();
+
+                const sentinel_index = std.mem.indexOfScalar(u8, &obj.name, 0) orelse obj.name.len;
+                try jw.objectField("name");
+                try jw.emitString(obj.name[0..sentinel_index]);
+
+                try jw.objectField("x");
+                try jw.emitNumber(obj.x);
+
+                try jw.objectField("y");
+                try jw.emitNumber(obj.y);
+
+                for (obj.props.items) |prop| {
+                    const prop_sentinel_index = std.mem.indexOfScalar(u8, &prop.name, 0) orelse prop.name.len;
+                    try jw.objectField(prop.name[0..prop_sentinel_index]);
+
+                    switch (prop.value) {
+                        .string => |str| {
+                            const prop_value_sentinel_index = std.mem.indexOfScalar(u8, &str, 0) orelse str.len;
+                            try jw.emitString(str[0..prop_value_sentinel_index]);
+                        },
+                        .int => |int| try jw.emitNumber(int),
+                        .float => |float| try jw.emitNumber(float),
+                    }
+                }
+
+                try jw.endObject();
+            }
+        }
+
+        try jw.objectField("data");
+        try jw.beginArray();
+        for (map_data) |d| {
+            try jw.arrayElem();
+            try jw.emitNumber(d);
+        }
+        try jw.endArray();
     }
 }

@@ -5,7 +5,8 @@ usingnamespace @import("imgui");
 
 const object_editor = @import("object_editor.zig");
 
-var buffer: [25]u8 = undefined;
+var filter_buffer: [25]u8 = undefined;
+var filter = false;
 var selected_index: usize = std.math.maxInt(usize);
 
 pub fn draw(state: *tk.AppState) void {
@@ -19,11 +20,17 @@ pub fn draw(state: *tk.AppState) void {
             defer igEndChild();
 
             igPushItemWidth(igGetWindowContentRegionWidth());
-            _ = ogInputText("##obj-filter", &buffer, buffer.len);
+            if (ogInputText("##obj-filter", &filter_buffer, filter_buffer.len)) {
+                const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+                filter = null_index > 0;
+            }
             igPopItemWidth();
 
             var delete_index: usize = std.math.maxInt(usize);
             for (state.map.objects.items) |*obj, i| {
+                if (filter) {
+                    std.debug.print("filter\n", .{});
+                }
                 igPushIDInt(@intCast(c_int, i));
 
                 if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 24})) {
@@ -57,6 +64,7 @@ pub fn draw(state: *tk.AppState) void {
             selected_index = state.map.objects.items.len - 1;
             var obj = &state.map.objects.items[selected_index];
             _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{selected_index}) catch unreachable;
+            obj.name[8 + 1 + @divTrunc(selected_index, 10)] = 0;
             object_editor.setSelectedObject(selected_index);
         }
     }

@@ -113,6 +113,10 @@ pub const AppState = struct {
         try persistence.save(self.map, file);
     }
 
+    pub fn exportJson(self: AppState, file: []const u8) !void {
+        try persistence.exportJson(self.map, self.final_map_data, file);
+    }
+
     pub fn loadMap(self: *AppState, file: []const u8) !void {
         self.map = try persistence.load(file);
 

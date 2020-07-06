@@ -60,6 +60,12 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     }
 }
 
+fn getDefaultPath() [:0]const u8 {
+    const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
+    const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str }) catch unreachable;
+    return std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+}
+
 pub fn draw(state: *tk.AppState) void {
     checkKeyboardShortcuts(state);
 
@@ -77,17 +83,21 @@ pub fn draw(state: *tk.AppState) void {
                 state.map = tk.Map.init();
             }
 
+            if (igMenuItemBool("Open...", null, false, true)) {
+                const res = files.openFileDialog("Open project", getDefaultPath(), "*.tk");
+                if (res != null) {
+                    state.loadMap(std.mem.spanZ(res)) catch unreachable;
+                }
+            }
+
+            // TODO: disable if we didnt first call Load or Save As
             if (igMenuItemBool("Save", null, false, true)) {
-                std.debug.print("doesnt work yet\n", .{});
+                std.debug.print("dumping to desktop\n", .{});
                 state.saveMap("/Users/desaro/Desktop/tilekit.tk") catch unreachable;
             }
 
             if (igMenuItemBool("Save As...", null, false, true)) {
-                const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
-                const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str, "tilekit.tk" }) catch unreachable;
-                const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
-
-                const res = files.saveFileDialog("Save project", desktop, "*.tk");
+                const res = files.saveFileDialog("Save project", getDefaultPath(), "*.tk");
                 if (res != null) {
                     var out_file = res[0..std.mem.lenZ(res)];
                     if (!std.mem.endsWith(u8, out_file, ".tk")) {
@@ -97,14 +107,18 @@ pub fn draw(state: *tk.AppState) void {
                 }
             }
 
-            if (igMenuItemBool("Load...", null, false, true)) {
-                const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
-                const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str }) catch unreachable;
-                const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+            igSeparator();
 
-                const res = files.openFileDialog("Open project", desktop, "*.tk");
-                if (res != null) {
-                    state.loadMap(std.mem.spanZ(res)) catch unreachable;
+            if (igBeginMenu("Export", true)) {
+                defer igEndMenu();
+
+                if (igMenuItemBool("JSON", null, false, true)) {
+                    std.debug.print("dumping to desktop\n", .{});
+                    state.exportJson("/Users/desaro/Desktop/tilekit_export.json") catch unreachable;
+                }
+
+                if (igMenuItemBool("Binary", null, false, true)) {
+                    std.debug.print("doesnt work yet\n", .{});
                 }
             }
         }

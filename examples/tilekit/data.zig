@@ -347,11 +347,11 @@ pub const Rule = struct {
 };
 
 pub const Tag = struct {
-    key: [25]u8,
+    name: [25]u8,
     tiles: aya.utils.FixedList(u8, 10),
 
     pub fn init() Tag {
-        return .{ .key = undefined, .tiles = aya.utils.FixedList(u8, 10).init() };
+        return .{ .name = [_]u8{0} ** 25, .tiles = aya.utils.FixedList(u8, 10).init() };
     }
 
     pub fn toggleSelected(self: *Tag, index: u8) void {
@@ -371,14 +371,14 @@ pub const Object = struct {
 
     pub const Prop = struct {
         name: [25]u8,
-        value: PropType,
+        value: PropValue,
 
         pub fn init() Prop {
-            return .{ .name = undefined, .value = undefined };
+            return .{ .name = [_]u8{0} ** 25, .value = undefined };
         }
     };
 
-    pub const PropType = union(enum) {
+    pub const PropValue = union(enum) {
         string: [25]u8,
         int: i32,
         float: f32,
@@ -392,7 +392,7 @@ pub const Object = struct {
         self.props.deinit();
     }
 
-    pub fn addProp(self: *Object, prop_type: PropType) void {
-        self.props.append(.{ .name = undefined, .value = prop_type }) catch unreachable;
+    pub fn addProp(self: *Object, value: PropValue) void {
+        self.props.append(.{ .name = undefined, .value = value }) catch unreachable;
     }
 };
