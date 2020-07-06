@@ -1,7 +1,7 @@
-const sdl = @import("deps/sdl/sdl.zig");
-const mem = @import("mem/mem.zig");
-const fna = @import("deps/fna/fna.zig");
 const std = @import("std");
+const sdl = @import("sdl");
+const fna = @import("fna");
+const mem = @import("mem/mem.zig");
 
 pub const WindowConfig = struct {
     title: []const u8 = "zig aya", // the window title as UTF-8 encoded string

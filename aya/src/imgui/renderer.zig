@@ -1,6 +1,6 @@
 const std = @import("std");
-const imgui = @import("../deps/imgui/imgui.zig");
-const fna = @import("../deps/fna/fna.zig");
+const imgui = @import("imgui");
+const fna = @import("fna");
 const aya = @import("../aya.zig");
 const gfx = aya.gfx;
 
@@ -35,7 +35,7 @@ pub const Renderer = struct {
             icons_config[0].MergeMode = true;
             icons_config[0].PixelSnapH = true;
 
-            var data = @embedFile(imgui.icons.font_icon_filename_fas);
+            var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
             _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 14, icons_config, &font_awesome_range[0]);
         }
 
@@ -54,7 +54,7 @@ pub const Renderer = struct {
             .vert_buffer = vert_buffer,
             .index_buffer_size = 0,
             .index_buffer = gfx.IndexBuffer.init(0, true),
-            .shader = gfx.Shader.initFromBytes(@embedFile("VertexColorTexture.fxb")) catch unreachable,
+            .shader = gfx.Shader.initFromBytes(@embedFile("assets/VertexColorTexture.fxb")) catch unreachable,
         };
     }
 

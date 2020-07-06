@@ -1,5 +1,5 @@
 const std = @import("std");
-const imgui = @import("../deps/imgui/imgui.zig");
+const imgui = @import("imgui");
 const aya = @import("../aya.zig");
 const sdl = aya.sdl;
 const fna = aya.fna;
