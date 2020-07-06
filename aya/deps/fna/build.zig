@@ -28,7 +28,8 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
             artifact.linkLibrary(lib);
         },
         .dynamic => {
-            artifact.addLibPath("deps/fna/FNA3D/build");
+            std.debug.print("ensure FNA3D gets build as a static lib via CMAKE\n", .{});
+            artifact.addLibPath("aya/deps/fna/FNA3D/build");
             artifact.linkSystemLibrary("FNA3D");
         },
         .exe_compiled => {
@@ -39,8 +40,8 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
 
 fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
     if (exe.target.cpu_arch != null and exe.target.cpu_arch.? == .wasm32) {
-        exe.addIncludeDir("/Users/desaro/emsdk/upstream/emscripten/system/include");
-        exe.addIncludeDir("/Users/desaro/emsdk/upstream/emscripten/system/include/SDL");
+        exe.addIncludeDir("~/emsdk/upstream/emscripten/system/include");
+        exe.addIncludeDir("~/emsdk/upstream/emscripten/system/include/SDL");
     } else if (target.isDarwin()) {
         const frameworks_dir = macosFrameworksDir(b) catch unreachable;
         exe.addFrameworkDir(frameworks_dir);

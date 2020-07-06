@@ -1,16 +1,15 @@
 const std = @import("std");
 usingnamespace @import("imgui.zig");
-const aya = @import("../../aya.zig");
 pub const icons = @import("font_awesome.zig");
 
 pub fn ogButton(label: [*c]const u8) bool {
     return igButton(label, ImVec2{});
 }
 
-pub fn ogImage(texture: aya.gfx.Texture) void {
+pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
     const white = ImVec4{.x = 1, .y = 1, .z = 1, .w = 1};
-    const size = ImVec2{.x = @intToFloat(f32, texture.width), .y = @intToFloat(f32, texture.height)};
-    igImage(texture.tex, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, ImVec4{});
+    const size = ImVec2{.x = @intToFloat(f32, width), .y = @intToFloat(f32, height)};
+    igImage(texture, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, ImVec4{});
 }
 
 pub fn ogGetCursorScreenPos() ImVec2 {
