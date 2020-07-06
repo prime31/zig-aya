@@ -4,7 +4,7 @@ const tilemap = @import("src/tilemap/tilemap.zig");
 test "tilemap" {
     var timer = try std.time.Timer.start();
 
-    const buffer = @embedFile("assets/platformer.json");
+    const buffer = @embedFile("test_assets/platformer.json");
     var tokens = std.json.TokenStream.init(buffer);
 
     const options = std.json.ParseOptions{ .allocator = std.testing.allocator };
