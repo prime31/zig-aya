@@ -1,6 +1,6 @@
-const sdl = @import("../sdl/sdl.zig");
-const fna = @import("fna.zig");
 const std = @import("std");
+const sdl = @import("sdl");
+const fna = @import("fna.zig");
 const win_hack = @import("win_img_load_hack.zig");
 
 pub const ReadFunc = ?fn (?*c_void, [*c]u8, i32) callconv(.C) i32;

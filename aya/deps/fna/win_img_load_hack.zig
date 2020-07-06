@@ -1,4 +1,4 @@
-const sdl = @import("../sdl/sdl.zig");
+const sdl = @import("sdl");
 const fna = @import("fna.zig");
 const fna_image = @import("fna_image.zig");
 const std = @import("std");
