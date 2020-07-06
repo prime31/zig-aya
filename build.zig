@@ -2,9 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 
-const fna_build = @import("deps/fna/build.zig");
-const imgui_build = @import("deps/imgui/build.zig");
-const fontstash_build = @import("deps/fontstash/build.zig");
+const aya_build = @import("aya/build.zig");
 
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
@@ -38,7 +36,7 @@ pub fn build(b: *Builder) void {
         }
     }
 
-    addTests(b, target);
+    aya_build.addTests(b, target);
 }
 
 // creates an exe with all the required dependencies
@@ -47,21 +45,15 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
     exe.setBuildMode(b.standardReleaseOptions());
     exe.setOutputDir("zig-cache/bin");
 
+    aya_build.linkArtifact(b, exe, target, @intToEnum(aya_build.LibType, lib_type));
+
     // these dont seem to work yet? Should be able to get at them with: const build_options = @import("build_options");
     // for these to work we need the following:
     // in main.zig: pub const build_options = @import("build_options");
     // in aya.zig: pub const build_options = @import("root").build_options;
     exe.addBuildOption(bool, "debug", true);
 
-    exe.addPackagePath("aya", "src/aya.zig");
-    exe.addPackagePath("sdl", "src/deps/sdl/sdl.zig");
-
-    // fna can be dynamic, static or compiled in
-    fna_build.linkArtifact(b, exe, target, @intToEnum(fna_build.LibType, lib_type), "src/deps/fna");
-    imgui_build.linkArtifact(b, exe, target, @intToEnum(imgui_build.LibType, lib_type), "src/deps/imgui");
-    fontstash_build.linkArtifact(b, exe, target, @intToEnum(fontstash_build.LibType, lib_type), "src/deps/fontstash");
-
-    // only required for tilekit
+    // dependencies only required for tilekit
     if (std.mem.eql(u8, name, "tilekit") or std.mem.endsWith(u8, source, "index.zig")) {
         const filebrowser_build = @import("deps/filebrowser/build.zig");
         filebrowser_build.linkArtifact(b, exe, target, @intToEnum(filebrowser_build.LibType, lib_type), "deps/filebrowser");
@@ -70,26 +62,8 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
         stb_image_build.linkArtifact(b, exe, target, @intToEnum(stb_image_build.LibType, lib_type), "deps/stb_image");
     }
 
-    exe.linkSystemLibrary("c");
-    exe.linkSystemLibrary("SDL2");
-
     const run_cmd = exe.run();
     const exe_step = b.step(name, b.fmt("run {}.zig", .{name}));
     exe_step.dependOn(&run_cmd.step);
 }
 
-// add tests.zig file runnable via "zig build test"
-fn addTests(b: *Builder, target: std.build.Target) void {
-    var t = b.addTest("tests.zig");
-    t.addPackagePath("aya", "src/aya.zig");
-    t.addPackagePath("sdl", "src/deps/sdl/sdl.zig");
-
-    fna_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fna");
-    fontstash_build.linkArtifact(b, t, target, .exe_compiled, "src/deps/fontstash");
-
-    t.linkSystemLibrary("c");
-    t.linkSystemLibrary("SDL2");
-
-    const test_step = b.step("test", "Run tests in tests.zig");
-    test_step.dependOn(&t.step);
-}
