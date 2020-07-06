@@ -12,6 +12,7 @@ pub const Map = struct {
     pre_rulesets: std.ArrayList(std.ArrayList(RuleSet)),
     tags: std.ArrayList(Tag),
     objects: std.ArrayList(Object),
+    animations: std.ArrayList(Animation),
 
     pub fn init() Map {
         var map = .{
@@ -22,6 +23,7 @@ pub const Map = struct {
             .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
             .tags = std.ArrayList(Tag).init(aya.mem.allocator),
             .objects = std.ArrayList(Object).init(aya.mem.allocator),
+            .animations = std.ArrayList(Animation).init(aya.mem.allocator),
         };
 
         std.mem.set(u8, map.data, 0);
@@ -30,12 +32,13 @@ pub const Map = struct {
 
     pub fn deinit(self: Map) void {
         aya.mem.allocator.free(self.data);
-        for (self.pre_rulesets) |pr| {
+        for (self.pre_rulesets.items) |pr| {
             pr.deinit();
         }
         self.rulesets.deinit();
         self.tags.deinit();
         self.objects.deinit();
+        self.animations.deinit();
 
         if (self.image.len > 0) {
             aya.mem.allocator.free(self.image);
@@ -52,6 +55,10 @@ pub const Map = struct {
 
     pub fn addObject(self: *Map) void {
         self.objects.append(Object.init()) catch unreachable;
+    }
+
+    pub fn addAnimation(self: *Map, tile: u8) void {
+        self.animations.append(Animation.init(tile)) catch unreachable;
     }
 
     pub fn addPreRulesPage(self: *Map) void {
@@ -394,5 +401,23 @@ pub const Object = struct {
 
     pub fn addProp(self: *Object, value: PropValue) void {
         self.props.append(.{ .name = undefined, .value = value }) catch unreachable;
+    }
+};
+
+pub const Animation = struct {
+    tile: u8,
+    rate: u16 = 500,
+    tiles: aya.utils.FixedList(u8, 10),
+
+    pub fn init(tile: u8) Animation {
+        return .{ .tile = tile, .tiles = aya.utils.FixedList(u8, 10).init() };
+    }
+
+    pub fn toggleSelected(self: *Animation, index: u8) void {
+        if (self.tiles.indexOf(index)) |slice_index| {
+            _ = self.tiles.swapRemove(slice_index);
+        } else {
+            self.tiles.append(index);
+        }
     }
 };

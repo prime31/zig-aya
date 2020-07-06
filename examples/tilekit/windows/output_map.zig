@@ -49,24 +49,9 @@ fn drawTile(state: *tk.AppState, tl: ImVec2, tile: usize) void {
     br.y += @intToFloat(f32, state.map.tile_size);
 
     // tk.drawBrush(state.map_rect_size, tile, tl);
-    const rect = uvsForTile(state, tile);
+    const rect = tk.uvsForTile(state, tile);
     const uv0 = ImVec2{.x = rect.x, .y = rect.y};
     const uv1 = ImVec2{.x = rect.x + rect.w, .y = rect.y + rect.h};
 
     ImDrawList_AddImage(igGetWindowDrawList(), state.texture.tex, tl, br, uv0, uv1, 0xffffffff);
-}
-
-fn uvsForTile(state: *tk.AppState, tile: usize) aya.math.Rect {
-    const x = @intToFloat(f32, @mod(tile, state.tilesPerRow()));
-    const y = @intToFloat(f32, @divTrunc(tile, state.tilesPerRow()));
-
-    const inv_w = 1.0 / @intToFloat(f32, state.texture.width);
-    const inv_h = 1.0 / @intToFloat(f32, state.texture.height);
-
-    return .{
-        .x = x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_w,
-        .y = y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_h,
-        .w = @intToFloat(f32, state.map.tile_size) * inv_w,
-        .h = @intToFloat(f32, state.map.tile_size) * inv_h,
-    };
 }

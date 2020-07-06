@@ -8,6 +8,7 @@ const RuleSet = @import("data.zig").RuleSet;
 const Rule = @import("data.zig").Rule;
 const Tag = @import("data.zig").Tag;
 const Object = @import("data.zig").Object;
+const Animation = @import("data.zig").Animation;
 
 pub fn save(map: Map, file: []const u8) !void {
     var buf = aya.mem.SdlBufferStream.init(file, .write);
@@ -65,6 +66,19 @@ pub fn save(map: Map, file: []const u8) !void {
             try writeUnion(out, prop.value);
         }
     }
+
+    // animations
+    try out.writeIntLittle(usize, map.animations.items.len);
+    for (map.animations.items) |anim| {
+        try out.writeIntLittle(u8, anim.tile);
+        try out.writeIntLittle(u16, anim.rate);
+
+        try out.writeIntLittle(usize, anim.tiles.len);
+        for (anim.tiles.items) |tile, i| {
+            if (i == anim.tiles.len) break;
+            try out.writeIntLittle(u8, tile);
+        }
+    }
 }
 
 fn writeRuleSet(out: Writer, rule: RuleSet) !void {
@@ -94,6 +108,7 @@ pub fn load(file: []const u8) !Map {
         .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
         .tags = std.ArrayList(Tag).init(aya.mem.allocator),
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
+        .animations = std.ArrayList(Animation).init(aya.mem.allocator),
     };
 
     const in = buf.reader();
@@ -177,6 +192,23 @@ pub fn load(file: []const u8) !Map {
         }
 
         map.objects.appendAssumeCapacity(obj);
+    }
+
+    // animations
+    const anim_cnt = try in.readIntLittle(usize);
+    _ = try map.animations.ensureCapacity(anim_cnt);
+
+    i = 0;
+    while (i < anim_cnt) : (i += 1) {
+        var anim = Animation.init(try in.readIntLittle(u8));
+        anim.rate = try in.readIntLittle(u16);
+
+        var tile_len = try in.readIntLittle(usize);
+        while (tile_len > 0) : (tile_len -= 1) {
+            anim.tiles.append(try in.readIntLittle(u8));
+        }
+
+        try map.animations.append(anim);
     }
 
     return map;
@@ -391,6 +423,36 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
             }
         }
 
+        // animations
+        try jw.objectField("animations");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            for (map.animations.items) |anim| {
+                try jw.arrayElem();
+                try jw.beginObject();
+
+                try jw.objectField("tile");
+                try jw.emitNumber(anim.tile);
+
+                try jw.objectField("rate");
+                try jw.emitNumber(anim.rate);
+
+                try jw.objectField("tiles");
+                try jw.beginArray();
+                for (anim.tiles.items) |tile, i| {
+                    if (i == anim.tiles.len) break;
+                    try jw.arrayElem();
+                    try jw.emitNumber(tile);
+                }
+                try jw.endArray();
+
+                try jw.endObject();
+            }
+        }
+
+        // map data
         try jw.objectField("data");
         try jw.beginArray();
         for (map_data) |d| {

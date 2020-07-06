@@ -80,6 +80,7 @@ pub fn draw(state: *tk.AppState) void {
 
             if (igMenuItemBool("New", null, false, true)) {
                 @import("windows/object_editor.zig").setSelectedObject(null);
+                state.map.deinit();
                 state.map = tk.Map.init();
             }
 
@@ -133,33 +134,14 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            if (igMenuItemBool("Brushes", null, state.windows.brushes, true)) {
-                state.windows.brushes = !state.windows.brushes;
-            }
-
-            if (igMenuItemBool("Rules", null, state.windows.rules, true)) {
-                state.windows.rules = !state.windows.rules;
-            }
-
-            if (igMenuItemBool("Objects", null, state.windows.objects, true)) {
-                state.windows.objects = !state.windows.objects;
-            }
-
-            if (igMenuItemBool("Tags", null, state.windows.tag_editor, true)) {
-                state.windows.tag_editor = !state.windows.tag_editor;
-            }
-
-            if (igMenuItemBool("Input Map", null, state.windows.input_map, true)) {
-                state.windows.input_map = !state.windows.input_map;
-            }
-
-            if (igMenuItemBool("Post Processed Map", null, state.windows.post_processed_map, true)) {
-                state.windows.post_processed_map = !state.windows.post_processed_map;
-            }
-
-            if (igMenuItemBool("Output Map", null, state.windows.output_map, true)) {
-                state.windows.output_map = !state.windows.output_map;
-            }
+            _ = igMenuItemBoolPtr("Brushes", null, &state.windows.brushes, true);
+            _ = igMenuItemBoolPtr("Rules", null, &state.windows.rules, true);
+            _ = igMenuItemBoolPtr("Objects", null, &state.windows.objects, true);
+            _ = igMenuItemBoolPtr("Tags", null, &state.windows.tag_editor, true);
+            _ = igMenuItemBoolPtr("Animations", null, &state.windows.animations, true);
+            _ = igMenuItemBoolPtr("Input Map", null, &state.windows.input_map, true);
+            _ = igMenuItemBoolPtr("Post Processed Map", null, &state.windows.post_processed_map, true);
+            _ = igMenuItemBoolPtr("Output Map", null, &state.windows.output_map, true);
 
             igSeparator();
 
@@ -176,6 +158,8 @@ pub fn draw(state: *tk.AppState) void {
                     state.map_rect_size = 32;
                 }
             }
+
+            _ = igMenuItemBoolPtr("Show Animations", null, &state.show_animations, true);
         }
 
         igSetCursorPosX(igGetWindowWidth() - 120);
@@ -309,7 +293,9 @@ fn resizeMapPopup(state: *tk.AppState) void {
 
         if (temp_state.map_width < state.map.w or temp_state.map_height < state.map.h) {
             igSpacing();
-            igTextWrapped("Warning: resizing to a smaller size will result in map data loss");
+            igPushStyleColorU32(ImGuiCol_Text, tk.colors.colorRgb(200, 200, 30));
+            igTextWrapped("Warning: resizing to a smaller size will result in map data loss and objects outside of the map boundary will be moved.");
+            igPopStyleColor(1);
             igSpacing();
         }
 

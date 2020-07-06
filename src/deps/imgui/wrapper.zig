@@ -55,6 +55,10 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
 }
 
 pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
+    return ogDragUnsignedFormat(T, label, p_data, v_speed, p_min, p_max, null);
+}
+
+pub fn ogDragUnsignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T, format: [*c]const u8) bool {
     std.debug.assert(std.meta.trait.isUnsignedInt(T));
     var min = p_min;
     var max = p_max;
@@ -66,7 +70,7 @@ pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p
         usize => ImGuiDataType_U64,
         else => unreachable,
     };
-    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
+    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, format, 1);
 }
 
 pub fn ogDragSigned(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {

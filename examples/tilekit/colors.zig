@@ -75,3 +75,7 @@ pub fn colorRgb(r: i32, g: i32, b: i32) ImU32 {
 pub fn colorRgba(r: i32, g: i32, b: i32, a: i32) ImU32 {
     return igGetColorU32Vec4(.{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) / 255 });
 }
+
+pub fn colorRgbaVec4(r: i32, g: i32, b: i32, a: i32) ImVec4 {
+    return .{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) / 255 };
+}

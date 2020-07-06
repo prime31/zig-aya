@@ -28,6 +28,14 @@ pub fn draw(state: *tk.AppState) void {
             if (igButton(" + ", ImVec2{})) {
                 state.map.addPreRulesPage();
             }
+            if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+                igBeginTooltip();
+                defer igEndTooltip();
+
+                igPushTextWrapPos(igGetFontSize() * 20);
+                igTextUnformatted("Adds a new pre-rule, which will transform the input map before regular rules are run", null);
+                igPopTextWrapPos();
+            }
 
             if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
                 defer igEndTabItem();

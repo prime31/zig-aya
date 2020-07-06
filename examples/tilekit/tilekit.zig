@@ -9,6 +9,7 @@ const brushes_win = @import("windows/brushes.zig");
 const tags_win = @import("windows/tags.zig");
 const objects_win = @import("windows/objects.zig");
 const object_editor_win = @import("windows/object_editor.zig");
+const animations_win = @import("windows/animations.zig");
 const input_map_wins = @import("windows/maps.zig");
 const output_map_win = @import("windows/output_map.zig");
 
@@ -28,6 +29,7 @@ pub const AppState = struct {
     map: Map,
     // general state
     object_edit_mode: bool = false,
+    show_animations: bool = true,
     selected_brush_index: usize = 0,
     map_rect_size: f32 = 16,
     seed: u64 = 0,
@@ -44,6 +46,7 @@ pub const AppState = struct {
         objects: bool = true,
         object_editor: bool = true,
         tag_editor: bool = true,
+        animations: bool = true,
         input_map: bool = true,
         post_processed_map: bool = true,
         output_map: bool = true,
@@ -73,8 +76,9 @@ pub const AppState = struct {
     pub fn resizeMap(self: *AppState, w: usize, h: usize) void {
         history.reset();
         self.map_data_dirty = true;
+        const shrunk = self.map.w > w or self.map.h > h;
 
-        // map data is our source so we need to copy the old data over
+        // map_data is our source so we need to copy the old data into a temporary slice
         var new_slice = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
         std.mem.set(u8, new_slice, 0);
 
@@ -95,11 +99,19 @@ pub const AppState = struct {
         aya.mem.allocator.free(self.map.data);
         self.map.data = new_slice;
 
-        // resize our two generate maps
+        // resize our two generated maps
         aya.mem.allocator.free(self.processed_map_data);
         aya.mem.allocator.free(self.final_map_data);
         self.processed_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
         self.final_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
+
+        // if we shrunk handle anything that needs to be fixed
+        if (shrunk) {
+            for (self.map.objects.items) |*anim| {
+                if (anim.x >= w) anim.x = w - 1;
+                if (anim.y >= h) anim.y = h - 1;
+            }
+        }
     }
 
     pub fn getProcessedTile(self: AppState, x: usize, y: usize) u32 {
@@ -188,6 +200,7 @@ pub const TileKit = struct {
         tags_win.draw(&self.state);
         objects_win.draw(&self.state);
         object_editor_win.draw(&self.state);
+        animations_win.draw(&self.state);
 
         // igShowDemoWindow(null);
         igEnd();
@@ -216,6 +229,8 @@ pub const TileKit = struct {
     }
 };
 
+// TODO: move these to a common utility file along with methods to draw brushes popup and tileset popup with single/multiple selection
+
 /// helper to find the tile under the mouse given a top-left position of the grid and a grid size
 pub fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
     var pos = igGetIO().MousePos;
@@ -223,4 +238,29 @@ pub fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct
     pos.y -= screen_space_offset.y;
 
     return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
+}
+
+/// helper to draw an image button with an image from the tileset
+pub fn tileImageButton(state: *AppState, size: f32, tile: usize) bool {
+    const rect = uvsForTile(state, tile);
+    const uv0 = ImVec2{ .x = rect.x, .y = rect.y };
+    const uv1 = ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
+
+    const tint = colors.colorRgbaVec4(255, 255, 255, 255);
+    return igImageButton(state.texture.tex, ImVec2{ .x = size, .y = size }, uv0, uv1, 2, ImVec4{ .w = 1 }, tint);
+}
+
+pub fn uvsForTile(state: *AppState, tile: usize) aya.math.Rect {
+    const x = @intToFloat(f32, @mod(tile, state.tilesPerRow()));
+    const y = @intToFloat(f32, @divTrunc(tile, state.tilesPerRow()));
+
+    const inv_w = 1.0 / @intToFloat(f32, state.texture.width);
+    const inv_h = 1.0 / @intToFloat(f32, state.texture.height);
+
+    return .{
+        .x = x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_w,
+        .y = y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_h,
+        .w = @intToFloat(f32, state.map.tile_size) * inv_w,
+        .h = @intToFloat(f32, state.map.tile_size) * inv_h,
+    };
 }
