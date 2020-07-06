@@ -1,6 +1,6 @@
 const std = @import("std");
-const imgui = @import("../deps/imgui/imgui.zig");
-const sdl = @import("../deps/sdl/sdl.zig");
+const imgui = @import("imgui");
+const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 
 pub const Events = struct {

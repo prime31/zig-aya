@@ -38,7 +38,7 @@ pub const Config = struct {
 
 // locals
 const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
-const fna = @import("../deps/fna/fna.zig");
+const fna = @import("fna");
 const math = @import("../math/math.zig");
 
 var state = struct {

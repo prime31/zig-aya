@@ -1,5 +1,5 @@
 const std = @import("std");
-const sdl = @import("deps/sdl/sdl.zig");
+const sdl = @import("sdl");
 const gfx = @import("gfx/gfx.zig");
 const math = @import("math/math.zig");
 const FixedList = @import("utils/fixed_list.zig").FixedList;

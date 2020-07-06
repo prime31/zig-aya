@@ -3,8 +3,8 @@ const std = @import("std");
 pub const WindowConfig = @import("window.zig").WindowConfig;
 
 // libs
-pub const sdl = @import("deps/sdl/sdl.zig");
-pub const fna = @import("deps/fna/fna.zig");
+pub const sdl = @import("sdl");
+pub const fna = @import("fna");
 
 // aya namespaces
 pub const gfx = @import("gfx/gfx.zig");

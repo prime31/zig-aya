@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const fna = @import("../deps/fna/fna.zig");
-const fons = @import("../deps/fontstash/fontstash.zig");
+const fna = @import("fna");
+const fons = @import("fontstash");
 
 pub const FontBook = struct {
     stash: *fons.Context,

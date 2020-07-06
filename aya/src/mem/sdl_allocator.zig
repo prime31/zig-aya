@@ -1,5 +1,5 @@
 const std = @import("std");
-const sdl = @import("../deps/sdl/sdl.zig");
+const sdl = @import("sdl");
 
 pub const sdl_allocator = &sdl_allocator_state;
 var sdl_allocator_state = std.mem.Allocator{

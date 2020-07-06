@@ -1,4 +1,4 @@
-const sdl = @import("deps/sdl/sdl.zig");
+const sdl = @import("sdl");
 const std = @import("std");
 const math = @import("math/math.zig");
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const sdl = @import("../deps/sdl/sdl.zig");
+const sdl = @import("sdl");
 const io = std.io;
 
 pub const SdlBufferStream = struct {

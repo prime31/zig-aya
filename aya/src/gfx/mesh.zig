@@ -1,5 +1,5 @@
 const std = @import("std");
-const fna = @import("../deps/fna/fna.zig");
+const fna = @import("fna");
 const aya = @import("../aya.zig");
 const gfx = @import("gfx.zig");
 const buffers = @import("buffers.zig");
