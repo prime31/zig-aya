@@ -71,7 +71,7 @@ pub fn draw(state: *tk.AppState) void {
 
 fn addAnimationPopup(state: *tk.AppState) void {
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture);
+    ogImage(state.texture.tex, state.texture.width, state.texture.height);
 
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
@@ -87,7 +87,7 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
     const per_row = if (false) 6 else state.tilesPerRow();
 
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture);
+    ogImage(state.texture.tex, state.texture.width, state.texture.height);
 
     const draw_list = igGetWindowDrawList();
 

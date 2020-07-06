@@ -320,7 +320,7 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
     } else {
-        ogImage(state.texture);
+        ogImage(state.texture.tex, state.texture.width, state.texture.height);
     }
 
     const draw_list = igGetWindowDrawList();
@@ -358,7 +358,7 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     igSameLine(0, 5);
 
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture);
+    ogImage(state.texture.tex, state.texture.width, state.texture.height);
     const draw_list = igGetWindowDrawList();
 
     if (nine_slice_selected) |index| {
