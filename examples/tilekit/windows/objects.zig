@@ -13,7 +13,7 @@ pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
     defer igPopStyleVar(1);
 
-    if (state.windows.tag_editor and igBegin("Objects", &state.windows.tag_editor, ImGuiWindowFlags_None)) {
+    if (state.windows.objects and igBegin("Objects", &state.windows.objects, ImGuiWindowFlags_None)) {
         defer igEnd();
 
         if (igBeginChildEx("##obj-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
