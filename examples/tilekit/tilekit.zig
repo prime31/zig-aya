@@ -146,6 +146,8 @@ pub const AppState = struct {
 
 pub const TileKit = struct {
     state: AppState,
+    toast_timer: i32 = -1,
+    toast_text: [255]u8 = undefined,
 
     pub fn init() TileKit {
         colors.init();
@@ -167,6 +169,11 @@ pub const TileKit = struct {
         } else if (std.mem.endsWith(u8, file, ".png")) {
             menu.loadTileset(file);
         }
+    }
+
+    pub fn showToast(self: *TileKit, text: []const u8, duration: i32) void {
+        std.mem.copy(u8, &self.toast_text, text);
+        self.toast_timer = duration;
     }
 
     pub fn draw(self: *TileKit) void {
@@ -209,6 +216,24 @@ pub const TileKit = struct {
         objects_win.draw(&self.state);
         object_editor_win.draw(&self.state);
         animations_win.draw(&self.state);
+
+        // toast notifications
+        if (self.toast_timer > 0) {
+            self.toast_timer -= 1;
+
+            igPushStyleColorU32(ImGuiCol_WindowBg, colors.colorRgba(90, 90, 130, 255));
+            igSetNextWindowPos(ImVec2{ .x = 5, .y = 40 }, ImGuiCond_Always, ImVec2{});
+            if (igBegin("Toast Notification", null, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
+                defer igEnd();
+
+                igText(&self.toast_text[0]);
+
+                if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                    self.toast_timer = -1;
+                }
+            }
+            igPopStyleColor(1);
+        }
 
         // igShowDemoWindow(null);
         igEnd();
