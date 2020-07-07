@@ -248,6 +248,14 @@ pub fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct
     return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
 }
 
+pub fn tileIndexUnderPos(position: ImVec2, rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
+    var pos = position;
+    pos.x -= screen_space_offset.x;
+    pos.y -= screen_space_offset.y;
+
+    return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
+}
+
 /// helper to draw an image button with an image from the tileset
 pub fn tileImageButton(state: *AppState, size: f32, tile: usize) bool {
     const rect = uvsForTile(state, tile);
