@@ -161,6 +161,14 @@ pub const TileKit = struct {
         aya.mem.allocator.free(self.state.final_map_data);
     }
 
+    pub fn handleDroppedFile(self: *TileKit, file: []const u8) void {
+        if (std.mem.endsWith(u8, file, ".tk")) {
+            self.state.loadMap(file) catch unreachable;
+        } else if (std.mem.endsWith(u8, file, ".png")) {
+            menu.loadTileset(file);
+        }
+    }
+
     pub fn draw(self: *TileKit) void {
         var window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_MenuBar;
         const vp = igGetMainViewport();

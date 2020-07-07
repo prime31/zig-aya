@@ -18,6 +18,7 @@ var temp_state = struct {
     invalid_image_selected: bool = false,
     error_loading_file: bool = false,
     image: [255:0]u8 = undefined,
+    show_load_tileset_popup: bool = false,
 
     pub fn reset(self: *@This()) void {
         self.tile_size = 16;
@@ -69,8 +70,8 @@ fn getDefaultPath() [:0]const u8 {
 pub fn draw(state: *tk.AppState) void {
     checkKeyboardShortcuts(state);
 
-    var showLoadTilesetPopup = false;
-    var showResizePopup = false;
+    var show_load_tileset_popup = false;
+    var show_resize_popup = false;
 
     if (igBeginMenuBar()) {
         defer igEndMenuBar();
@@ -127,8 +128,8 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("Map", true)) {
             defer igEndMenu();
 
-            showLoadTilesetPopup = igMenuItemBool("Load Tileset", null, false, true);
-            showResizePopup = igMenuItemBool("Resize Map", null, false, true);
+            show_load_tileset_popup = igMenuItemBool("Load Tileset", null, false, true);
+            show_resize_popup = igMenuItemBool("Resize Map", null, false, true);
         }
 
         if (igBeginMenu("View", true)) {
@@ -183,12 +184,18 @@ pub fn draw(state: *tk.AppState) void {
     }
 
     // handle popups in the same scope
-    if (showLoadTilesetPopup) {
+    if (show_load_tileset_popup) {
         temp_state.reset();
         igOpenPopup("Load Tileset");
     }
 
-    if (showResizePopup) {
+    // handle a dragged-in file
+    if (temp_state.show_load_tileset_popup) {
+        temp_state.show_load_tileset_popup = false;
+        igOpenPopup("Load Tileset");
+    }
+
+    if (show_resize_popup) {
         temp_state.reset();
         temp_state.map_width = state.map.w;
         temp_state.map_height = state.map.h;
@@ -199,12 +206,20 @@ pub fn draw(state: *tk.AppState) void {
     resizeMapPopup(state);
 }
 
+/// sets the file in our state and triggers the load-tileset popup to be shown
+pub fn loadTileset(file: []const u8) void {
+    temp_state.reset();
+    temp_state.has_image = true;
+    temp_state.show_load_tileset_popup = true;
+    std.mem.copy(u8, &temp_state.image, file);
+}
+
 fn loadTilesetPopup() void {
     if (igBeginPopupModal("Load Tileset", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
         if (temp_state.has_image) {
-            // only display the filename here so there is room for the button
+            // only display the filename here (not the full path) so there is room for the button
             const last_sep = std.mem.lastIndexOf(u8, &temp_state.image, std.fs.path.sep_str) orelse 0;
             const sentinel_index = std.mem.indexOfScalar(u8, &temp_state.image, 0) orelse temp_state.image.len;
             const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, temp_state.image[last_sep + 1 .. sentinel_index]) catch unreachable;
@@ -212,9 +227,7 @@ fn loadTilesetPopup() void {
         }
         igSameLine(0, 5);
         if (igButton("Choose", ImVec2{ .x = -1, .y = 0 })) {
-            const path_or_null = @import("known-folders.zig").getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
-            const tmp_path = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ path_or_null.?, std.fs.path.sep_str }) catch unreachable;
-            const desktop = std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
+            const desktop = getDefaultPath();
 
             const res = files.openFileDialog("Import tileset image", desktop, "*.png");
             if (res != null) {

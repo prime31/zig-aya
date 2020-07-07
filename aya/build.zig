@@ -45,8 +45,9 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     };
 
     // packages exported to userland
-    artifact.addPackage(imgui);
     artifact.addPackage(aya);
+    artifact.addPackage(sdl);
+    artifact.addPackage(imgui);
 }
 
 // add tests.zig file runnable via "zig build test"
