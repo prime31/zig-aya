@@ -52,7 +52,7 @@ pub const VertexBuffer = struct {
     }
 
     pub fn vertexDeclarationForType(comptime T: type) !fna.VertexDeclaration {
-        if (vert_decl_cache.getValue(@typeName(T))) |decl| return decl;
+        if (vert_decl_cache.get(@typeName(T))) |decl| return decl;
 
         const vert_decl = switch (T) {
             Vertex => blk: {
