@@ -89,7 +89,7 @@ pub const Texture = extern struct {
         // avoid binding already bound textures
         if (bound_textures[slot] == fna_texture) return;
 
-        var sampler_state = sampler_state_cache.getValue(fna_texture);
+        var sampler_state = sampler_state_cache.get(fna_texture);
         if (sampler_state == null) {
             sampler_state = fna.SamplerState{};
             _ = sampler_state_cache.put(fna_texture, sampler_state.?) catch |err| std.debug.warn("failed caching sampler state: {}\n", .{err});
