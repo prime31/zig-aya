@@ -62,7 +62,7 @@ pub const AppState = struct {
     };
 
     pub fn init() AppState {
-        const prefs = aya.fs.readPrefs(AppState.Prefs, "aya_tile", "prefs.bin") catch AppState.Prefs{.windows = .{}};
+        const prefs = aya.fs.readPrefsJson(AppState.Prefs, "aya_tile", "prefs.json") catch AppState.Prefs{.windows = .{}};
 
         return .{
             .map = Map.init(12, 1),
@@ -75,7 +75,7 @@ pub const AppState = struct {
     }
 
     pub fn savePrefs(self: AppState) void {
-        aya.fs.savePrefs("aya_tile", "prefs.bin", self.prefs) catch unreachable;
+        aya.fs.savePrefsJson("aya_tile", "prefs.json", self.prefs) catch unreachable;
     }
 
     /// returns the number of tiles in each row of the tileset image
