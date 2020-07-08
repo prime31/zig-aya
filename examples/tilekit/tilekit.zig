@@ -29,14 +29,17 @@ pub const AppState = struct {
     map: Map,
     // general state
     object_edit_mode: bool = false,
-    show_animations: bool = true,
     selected_brush_index: usize = 0,
-    map_rect_size: f32 = 16,
     seed: u64 = 0,
     repeat: u8 = 20,
+    // map data
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
+    // ui state
+    show_animations: bool = false,
+    show_objects: bool = true,
+    map_rect_size: f32 = 16,
     // tileset state
     texture: Texture,
     // menu state
@@ -44,9 +47,9 @@ pub const AppState = struct {
         brushes: bool = true,
         rules: bool = true,
         objects: bool = true,
-        object_editor: bool = true,
-        tag_editor: bool = true,
-        animations: bool = true,
+        object_editor: bool = false,
+        tags: bool = false,
+        animations: bool = false,
         input_map: bool = true,
         post_processed_map: bool = true,
         output_map: bool = true,
@@ -265,18 +268,18 @@ pub const TileKit = struct {
 // TODO: move these to a common utility file along with methods to draw brushes popup and tileset popup with single/multiple selection
 
 /// helper to find the tile under the mouse given a top-left position of the grid and a grid size
-pub fn tileIndexUnderMouse(rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
+pub fn tileIndexUnderMouse(rect_size: usize, origin: ImVec2) struct { x: usize, y: usize } {
     var pos = igGetIO().MousePos;
-    pos.x -= screen_space_offset.x;
-    pos.y -= screen_space_offset.y;
+    pos.x -= origin.x;
+    pos.y -= origin.y;
 
     return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
 }
 
-pub fn tileIndexUnderPos(position: ImVec2, rect_size: usize, screen_space_offset: ImVec2) struct { x: usize, y: usize } {
+pub fn tileIndexUnderPos(position: ImVec2, rect_size: usize, origin: ImVec2) struct { x: usize, y: usize } {
     var pos = position;
-    pos.x -= screen_space_offset.x;
-    pos.y -= screen_space_offset.y;
+    pos.x -= origin.x;
+    pos.y -= origin.y;
 
     return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
 }
