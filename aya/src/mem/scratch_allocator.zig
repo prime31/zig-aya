@@ -6,18 +6,20 @@ const Allocator = mem.Allocator;
 // and free them periodically.
 pub const ScratchAllocator = struct {
     allocator: Allocator,
-    // backup_allocator: *Allocator,
+    backup_allocator: *Allocator,
     end_index: usize,
     buffer: []u8,
 
-    pub fn init(buffer: []u8) ScratchAllocator {
+    pub fn init(allocator: *Allocator) ScratchAllocator {
+        const scratch_buffer = allocator.alloc(u8, 2 * 1024 * 1024) catch unreachable;
+
         return ScratchAllocator{
             .allocator = Allocator{
                 .allocFn = alloc,
                 .resizeFn = Allocator.noResize,
             },
-            // .backup_allocator = backup_allocator,
-            .buffer = buffer,
+            .backup_allocator = allocator,
+            .buffer = scratch_buffer,
             .end_index = 0,
         };
     }
@@ -30,8 +32,11 @@ pub const ScratchAllocator = struct {
         const new_end_index = adjusted_index + n;
 
         if (new_end_index > self.buffer.len) {
-            // irrecoverable if more memory is requested then we have in our buffer.
-            if (n > self.buffer.len) return error.OutOfMemory;
+            // if more memory is requested then we have in our buffer leak like a sieve!
+            if (n > self.buffer.len) {
+                std.debug.warn("\n---------\nwarning: tmp allocated more than is in our temp allocator. This memory WILL leak!\n--------\n", .{});
+                return self.allocator.allocFn(allocator, n, ptr_align, len_align);
+            }
 
             const result = self.buffer[0..n];
             self.end_index = n;
