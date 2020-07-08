@@ -31,12 +31,16 @@ pub fn getSaveGamesDir(org: []const u8, app: []const u8) [*c]u8 {
     return sdl.SDL_GetPrefPath(&org[0], &app[0]);
 }
 
+/// gets a path to `filename` in the save games directory
+pub fn getSaveGamesFile(app: []const u8, filename: []const u8) ![]u8 {
+    const dir = try std.fs.getAppDataDir(aya.mem.tmp_allocator, app);
+    try std.fs.cwd().makePath(dir);
+    return try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ dir, filename });
+}
+
 /// saves a serializable struct to disk
 pub fn savePrefs(app: []const u8, filename: []const u8, data: var) !void {
-    const dir = try std.fs.getAppDataDir(aya.mem.tmp_allocator, "aya-tile");
-    try std.fs.cwd().makePath(dir);
-    const file = try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{dir, filename});
-
+    const file = try getSaveGamesFile(app, filename);
     var buf = aya.mem.SdlBufferStream.init(file, .write);
     defer buf.deinit();
 
@@ -45,15 +49,34 @@ pub fn savePrefs(app: []const u8, filename: []const u8, data: var) !void {
 }
 
 pub fn readPrefs(comptime T: type, app: []const u8, filename: []const u8) !T {
-    const dir = try std.fs.getAppDataDir(aya.mem.tmp_allocator, "aya-tile");
-    try std.fs.cwd().access(dir, .{});
-    const file = try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{dir, filename});
-
+    const file = try getSaveGamesFile(app, filename);
     var buf = aya.mem.SdlBufferStream.init(file, .read);
     defer buf.deinit();
 
     var deserializer = std.io.deserializer(.Little, .Byte, buf.reader());
     return deserializer.deserialize(T);
+}
+
+pub fn savePrefsJson(app: []const u8, filename: []const u8, data: var) !void {
+    const file = try getSaveGamesFile(app, filename);
+    var buf = aya.mem.SdlBufferStream.init(file, .write);
+
+    try std.json.stringify(data, .{.whitespace = .{}}, buf.writer());
+}
+
+pub fn readPrefsJson(comptime T: type, app: []const u8, filename: []const u8) !T {
+    const file = try getSaveGamesFile(app, filename);
+    var bytes = try aya.fs.read(aya.mem.tmp_allocator, file);
+    var tokens = std.json.TokenStream.init(bytes);
+
+    const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+    return try std.json.parse(T, &tokens, options);
+}
+
+/// for prefs loaded with `readPrefsJson` that have allocated fields, this must be called to free them
+pub fn freePrefsJson(data: var) void {
+    const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+    std.json.parseFree(@TypeOf(data), data, options);
 }
 
 test "test fs read" {
