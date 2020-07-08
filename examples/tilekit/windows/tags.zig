@@ -10,7 +10,7 @@ pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
     defer igPopStyleVar(1);
 
-    if (state.windows.tag_editor and igBegin("Tags", &state.windows.tag_editor, ImGuiWindowFlags_None)) {
+    if (state.windows.tags and igBegin("Tags", &state.windows.tags, ImGuiWindowFlags_None)) {
         defer igEnd();
 
         if (igBeginChildEx("##tag-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {

@@ -29,16 +29,21 @@ pub fn draw(state: *tk.AppState) void {
             var delete_index: usize = std.math.maxInt(usize);
             for (state.map.objects.items) |*obj, i| {
                 if (filter) {
-                    std.debug.print("filter\n", .{});
+                    const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+                    if (std.mem.indexOf(u8, &obj.name, filter_buffer[0..null_index]) == null) {
+                        continue;
+                    }
                 }
                 igPushIDInt(@intCast(c_int, i));
 
                 if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 24})) {
                     selected_index = i;
                     object_editor.setSelectedObject(selected_index);
+                    state.windows.object_editor = true;
                 }
 
                 igSameLine(igGetWindowContentRegionWidth() - 20, 0);
+                igSetCursorPosY(igGetCursorPosY() - 3);
                 if (ogButton(icons.trash)) {
                     delete_index = i;
                 }
@@ -66,6 +71,11 @@ pub fn draw(state: *tk.AppState) void {
             _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{selected_index}) catch unreachable;
             obj.name[8 + 1 + @divTrunc(selected_index, 10)] = 0;
             object_editor.setSelectedObject(selected_index);
+            state.windows.object_editor = true;
         }
     }
+}
+
+pub fn setSelectedObject(index: usize) void {
+    selected_index = index;
 }

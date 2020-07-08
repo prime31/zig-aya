@@ -138,7 +138,7 @@ pub fn draw(state: *tk.AppState) void {
             _ = igMenuItemBoolPtr("Brushes", null, &state.windows.brushes, true);
             _ = igMenuItemBoolPtr("Rules", null, &state.windows.rules, true);
             _ = igMenuItemBoolPtr("Objects", null, &state.windows.objects, true);
-            _ = igMenuItemBoolPtr("Tags", null, &state.windows.tag_editor, true);
+            _ = igMenuItemBoolPtr("Tags", null, &state.windows.tags, true);
             _ = igMenuItemBoolPtr("Animations", null, &state.windows.animations, true);
             _ = igMenuItemBoolPtr("Input Map", null, &state.windows.input_map, true);
             _ = igMenuItemBoolPtr("Post Processed Map", null, &state.windows.post_processed_map, true);
@@ -146,7 +146,7 @@ pub fn draw(state: *tk.AppState) void {
 
             igSeparator();
 
-            if (igBeginMenu("Map Display", true)) {
+            if (igBeginMenu("Map Display Size", true)) {
                 defer igEndMenu();
 
                 if (igMenuItemBool("8px", null, state.map_rect_size == 8, true)) {
@@ -161,6 +161,7 @@ pub fn draw(state: *tk.AppState) void {
             }
 
             _ = igMenuItemBoolPtr("Show Animations", null, &state.show_animations, true);
+            _ = igMenuItemBoolPtr("Show Objects", null, &state.show_objects, true);
         }
 
         igSetCursorPosX(igGetWindowWidth() - 120);
