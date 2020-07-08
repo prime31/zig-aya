@@ -99,10 +99,9 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
 
 fn drawTile(state: *tk.AppState, tl: ImVec2, tile: usize) void {
     var br = tl;
-    br.x += @intToFloat(f32, state.map.tile_size);
-    br.y += @intToFloat(f32, state.map.tile_size);
+    br.x += @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
+    br.y += @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
 
-    // tk.drawBrush(state.map_rect_size, tile, tl);
     const rect = tk.uvsForTile(state, tile);
     const uv0 = ImVec2{ .x = rect.x, .y = rect.y };
     const uv1 = ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };

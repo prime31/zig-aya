@@ -31,6 +31,7 @@ pub const AppState = struct {
     object_edit_mode: bool = false,
     selected_brush_index: usize = 0,
     texture: Texture,
+    tiles_per_row: usize = 0,
     // map data
     map_data_dirty: bool = true,
     processed_map_data: []u8,
@@ -39,12 +40,14 @@ pub const AppState = struct {
         .windows = .{}
     },
 
+    /// persisted data
     pub const Prefs = struct {
-        // ui state (persisted)
+        // ui state
         show_animations: bool = false,
         show_objects: bool = true,
+        tile_size_multiplier: usize = 1,
         map_rect_size: f32 = 16,
-        // menu state (persisted)
+        // menu state
         windows: struct {
             brushes: bool = true,
             rules: bool = true,
@@ -62,10 +65,10 @@ pub const AppState = struct {
         const prefs = aya.fs.readPrefs(AppState.Prefs, "aya_tile", "prefs.bin") catch AppState.Prefs{.windows = .{}};
 
         return .{
-            .map = Map.init(),
+            .map = Map.init(16, 0),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
-            .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
+            .texture = Texture.initFromFile("assets/SimpleTileset.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
             .prefs = prefs,
         };
@@ -76,8 +79,19 @@ pub const AppState = struct {
     }
 
     /// returns the number of tiles in each row of the tileset image
-    pub fn tilesPerRow(self: AppState) usize {
-        return @intCast(usize, self.texture.width) / @intCast(usize, self.map.tile_size);
+    pub fn tilesPerRow(self: *AppState) usize {
+        // calculate tiles_per_row if needed
+        if (self.tiles_per_row == 0) {
+            var accum: usize = 0;
+            while (true) {
+                self.tiles_per_row += 1;
+                accum += self.map.tile_size + 2 * self.map.tile_spacing;
+                if (accum >= self.texture.width) {
+                    break;
+                }
+            }
+        }
+        return self.tiles_per_row;
     }
 
     pub fn mapSize(self: AppState) ImVec2 {
@@ -153,6 +167,8 @@ pub const AppState = struct {
 
         self.processed_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
         self.final_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
+        self.map_data_dirty = true;
+        self.tiles_per_row = 0;
     }
 };
 
