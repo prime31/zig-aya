@@ -20,7 +20,7 @@ pub fn generateProcessedMap(state: *AppState) void {
     @memcpy(buffer.ptr, state.map.data.ptr, buffer.len);
 
     var i: usize = 0;
-    while (i < state.repeat) : (i += 1) {
+    while (i < state.map.repeat) : (i += 1) {
         var y: usize = 0;
         while (y < state.map.h) : (y += 1) {
             var x: usize = 0;

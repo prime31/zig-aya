@@ -170,14 +170,14 @@ pub fn draw(state: *tk.AppState) void {
 
             if (igBeginMenu("Seed", true)) {
                 defer igEndMenu();
-                if (ogDrag(usize, "##seed", &state.seed, 1, 0, 1000)) {
+                if (ogDrag(usize, "##seed", &state.map.seed, 1, 0, 1000)) {
                     state.map_data_dirty = true;
                 }
             }
 
             if (igBeginMenu("Repeat", true)) {
                 defer igEndMenu();
-                if (ogDrag(u8, "##repeat", &state.repeat, 0.2, 0, 100)) {
+                if (ogDrag(u8, "##repeat", &state.map.repeat, 0.2, 0, 100)) {
                     state.map_data_dirty = true;
                 }
             }

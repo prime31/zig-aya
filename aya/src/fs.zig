@@ -27,6 +27,10 @@ pub fn write(file: []const u8, data: []u8) !void {
     _ = sdl.SDL_RWclose(rw);
 }
 
+pub fn getSaveGamesDir(org: []const u8, app: []const u8) [*c]u8 {
+    return sdl.SDL_GetPrefPath(org, app);
+}
+
 test "test fs read" {
     std.testing.expectError(error.FileNotFound, read(std.testing.allocator, "junk.png"));
     var bytes = try read(std.testing.allocator, "assets/font.png");

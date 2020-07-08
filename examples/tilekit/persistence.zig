@@ -19,6 +19,8 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, map.h);
     try out.writeIntLittle(usize, map.tile_size);
     try out.writeIntLittle(usize, map.tile_spacing);
+    try out.writeIntLittle(usize, map.seed);
+    try out.writeIntLittle(usize, map.repeat);
     try out.writeIntLittle(usize, map.image.len);
     try out.writeAll(map.image);
 
@@ -116,6 +118,8 @@ pub fn load(file: []const u8) !Map {
     map.h = try in.readIntLittle(usize);
     map.tile_size = try in.readIntLittle(usize);
     map.tile_spacing = try in.readIntLittle(usize);
+    map.seed = try in.readIntLittle(u64);
+    map.repeat = try in.readIntLittle(u8);
 
     var image_len = try in.readIntLittle(usize);
     if (image_len > 0) {
