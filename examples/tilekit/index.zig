@@ -11,6 +11,7 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
+        .shutdown = shutdown,
         .imgui = true,
         .gfx = .{
             .disable_debug_render = true,
@@ -31,6 +32,10 @@ fn init() void {
 }
 
 fn update() void {}
+
+fn shutdown() void {
+    tk.state.savePrefs();
+}
 
 fn render() void {
     tk.draw();

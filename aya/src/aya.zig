@@ -33,6 +33,7 @@ pub const Config = struct {
     init: fn () void,
     update: fn () void,
     render: fn () void,
+    shutdown: ?fn () void = null,
 
     update_rate: f64 = 60, // desired fps
     gfx: gfx.Config = gfx.Config{},
@@ -72,6 +73,10 @@ pub fn run(config: Config) !void {
 
     config.init();
     runLoop(config.update, config.render, config.imgui);
+
+    if (config.shutdown) |shutdown| {
+        shutdown();
+    }
 
     if (config.imgui) imgui.deinit();
 }

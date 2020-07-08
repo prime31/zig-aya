@@ -35,32 +35,44 @@ pub const AppState = struct {
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
-    // ui state (persisted)
-    show_animations: bool = false,
-    show_objects: bool = true,
-    map_rect_size: f32 = 16,
-    // menu state (persisted)
-    windows: struct {
-        brushes: bool = true,
-        rules: bool = true,
-        objects: bool = true,
-        object_editor: bool = false,
-        tags: bool = false,
-        animations: bool = false,
-        input_map: bool = true,
-        post_processed_map: bool = true,
-        output_map: bool = true,
+    prefs: Prefs = .{
+        .windows = .{}
     },
 
+    pub const Prefs = struct {
+        // ui state (persisted)
+        show_animations: bool = false,
+        show_objects: bool = true,
+        map_rect_size: f32 = 16,
+        // menu state (persisted)
+        windows: struct {
+            brushes: bool = true,
+            rules: bool = true,
+            objects: bool = true,
+            object_editor: bool = false,
+            tags: bool = false,
+            animations: bool = false,
+            input_map: bool = true,
+            post_processed_map: bool = true,
+            output_map: bool = true,
+        },
+    };
+
     pub fn init() AppState {
+        const prefs = aya.fs.readPrefs(AppState.Prefs, "aya_tile", "prefs.bin") catch AppState.Prefs{.windows = .{}};
+
         return .{
             .map = Map.init(),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .texture = Texture.initFromFile("assets/minimal_tiles.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
-            .windows = .{},
+            .prefs = prefs,
         };
+    }
+
+    pub fn savePrefs(self: AppState) void {
+        aya.fs.savePrefs("aya_tile", "prefs.bin", self.prefs) catch unreachable;
     }
 
     /// returns the number of tiles in each row of the tileset image
@@ -69,7 +81,7 @@ pub const AppState = struct {
     }
 
     pub fn mapSize(self: AppState) ImVec2 {
-        return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.map_rect_size };
+        return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.prefs.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.prefs.map_rect_size };
     }
 
     /// resizes the map and all of the sub-maps
@@ -152,19 +164,6 @@ pub const TileKit = struct {
     pub fn init() TileKit {
         colors.init();
         history.init();
-
-        const Sett = struct {
-            pub fn readOpen(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: [*c]const u8) callconv(.C) ?*c_void {
-                std.debug.print("readOpen: {}\n", .{dont_know});
-                return null;
-            }
-            pub fn readLine(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: ?*c_void, dont_know2: [*c]const u8) callconv(.C) void {
-                std.debug.print("readLine: {}, {}\n", .{ dont_know, dont_know2 });
-            }
-            pub fn writeAll(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: [*c]ImGuiTextBuffer) callconv(.C) void {
-                std.debug.print("writeAll: {}\n", .{dont_know});
-            }
-        };
         return .{ .state = AppState.init() };
     }
 
