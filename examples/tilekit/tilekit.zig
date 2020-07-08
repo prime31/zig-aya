@@ -94,6 +94,19 @@ pub const AppState = struct {
         return self.tiles_per_row;
     }
 
+    pub fn tilesPerCol(self: *AppState) usize {
+        var tiles_per_col: usize = 0;
+        var accum: usize = 0;
+        while (true) {
+            tiles_per_col += 1;
+            accum += self.map.tile_size + 2 * self.map.tile_spacing;
+            if (accum >= self.texture.height) {
+                break;
+            }
+        }
+        return tiles_per_col;
+    }
+
     pub fn mapSize(self: AppState) ImVec2 {
         return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.prefs.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.prefs.map_rect_size };
     }
