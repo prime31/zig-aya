@@ -6,6 +6,8 @@ pub const Map = struct {
     h: usize = 64,
     tile_size: usize = 16,
     tile_spacing: usize = 0,
+    seed: u64 = 0,
+    repeat: u8 = 20,
     image: []const u8 = "",
     data: []u8,
     rulesets: std.ArrayList(RuleSet),

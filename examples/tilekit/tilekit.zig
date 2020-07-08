@@ -30,19 +30,16 @@ pub const AppState = struct {
     // general state
     object_edit_mode: bool = false,
     selected_brush_index: usize = 0,
-    seed: u64 = 0,
-    repeat: u8 = 20,
+    texture: Texture,
     // map data
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
-    // ui state
+    // ui state (persisted)
     show_animations: bool = false,
     show_objects: bool = true,
     map_rect_size: f32 = 16,
-    // tileset state
-    texture: Texture,
-    // menu state
+    // menu state (persisted)
     windows: struct {
         brushes: bool = true,
         rules: bool = true,
@@ -155,6 +152,19 @@ pub const TileKit = struct {
     pub fn init() TileKit {
         colors.init();
         history.init();
+
+        const Sett = struct {
+            pub fn readOpen(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: [*c]const u8) callconv(.C) ?*c_void {
+                std.debug.print("readOpen: {}\n", .{dont_know});
+                return null;
+            }
+            pub fn readLine(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: ?*c_void, dont_know2: [*c]const u8) callconv(.C) void {
+                std.debug.print("readLine: {}, {}\n", .{ dont_know, dont_know2 });
+            }
+            pub fn writeAll(ctx: [*c]ImGuiContext, handler: [*c]ImGuiSettingsHandler, dont_know: [*c]ImGuiTextBuffer) callconv(.C) void {
+                std.debug.print("writeAll: {}\n", .{dont_know});
+            }
+        };
         return .{ .state = AppState.init() };
     }
 
