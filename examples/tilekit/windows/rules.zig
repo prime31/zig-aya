@@ -12,7 +12,7 @@ var new_rule_label_buf: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
-    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{.x=365});
+    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
     defer igPopStyleVar(1);
 
     if (state.prefs.windows.rules and igBegin("Rules", &state.prefs.windows.rules, ImGuiWindowFlags_None)) {
@@ -317,6 +317,7 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 /// shows the tileset or brush palette allowing multiple tiles to be selected
 fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
+
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
     } else {
@@ -328,11 +329,12 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     // draw selected tiles
     var iter = ruleset.result_tiles.iter();
     while (iter.next()) |index| {
+        const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
         const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
         const x = @mod(index, per_row);
         const y = @divTrunc(index, per_row);
 
-        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
+        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size + tile_spacing) };
         tl.x += content_start_pos.x + 1;
         tl.y += content_start_pos.y + 1;
         ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_fill);
@@ -342,7 +344,8 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size + tile_spacing), content_start_pos);
             const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
             ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
         }
@@ -410,4 +413,3 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
         igPopStyleVar(1);
     }
 }
-
