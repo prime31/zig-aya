@@ -17,7 +17,7 @@ pub fn drawWindow(state: *tk.AppState) void {
         //state.map_data_dirty = false;
     }
 
-    if (state.windows.output_map and igBegin("Output Map", &state.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.prefs.windows.output_map and igBegin("Output Map", &state.prefs.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         draw(state);
         igEnd();
     }
@@ -37,19 +37,19 @@ fn draw(state: *tk.AppState) void {
             const tile = state.final_map_data[x + y * state.map.w];
             if (tile == 0) continue;
 
-            const offset_x = @intToFloat(f32, x) * state.map_rect_size;
-            const offset_y = @intToFloat(f32, y) * state.map_rect_size;
+            const offset_x = @intToFloat(f32, x) * state.prefs.map_rect_size;
+            const offset_y = @intToFloat(f32, y) * state.prefs.map_rect_size;
             var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
             drawTile(state, tl, tile - 1);
         }
     }
 
     // draw objects
-    if (state.show_objects) {
+    if (state.prefs.show_objects) {
         for (state.map.objects.items) |obj, i| {
-            const tl = ImVec2{ .x = origin.x + @intToFloat(f32, obj.x) * state.map_rect_size, .y = origin.y + @intToFloat(f32, obj.y) * state.map_rect_size };
+            const tl = ImVec2{ .x = origin.x + @intToFloat(f32, obj.x) * state.prefs.map_rect_size, .y = origin.y + @intToFloat(f32, obj.y) * state.prefs.map_rect_size };
             const color = if (dragged_obj_index != null and dragged_obj_index.? == i) colors.object_selected else colors.object;
-            ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, color, 1);
+            ogAddQuad(igGetWindowDrawList(), tl, state.prefs.map_rect_size, color, 1);
         }
     }
 
@@ -78,7 +78,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
 
     if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
         // figure out if we clicked on any of our objects
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.prefs.map_rect_size), origin);
         for (state.map.objects.items) |obj, i| {
             if (obj.x == tile.x and obj.y == tile.y) {
                 dragged_obj_index = i;
@@ -88,7 +88,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
             }
         }
     } else if (dragged_obj_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 0)) {
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.prefs.map_rect_size), origin);
         var obj = &state.map.objects.items[dragged_obj_index.?];
         obj.x = tile.x;
         obj.y = tile.y;

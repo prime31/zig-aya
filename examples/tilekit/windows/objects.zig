@@ -13,7 +13,7 @@ pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
     defer igPopStyleVar(1);
 
-    if (state.windows.objects and igBegin("Objects", &state.windows.objects, ImGuiWindowFlags_None)) {
+    if (state.prefs.windows.objects and igBegin("Objects", &state.prefs.windows.objects, ImGuiWindowFlags_None)) {
         defer igEnd();
 
         if (igBeginChildEx("##obj-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
@@ -39,7 +39,7 @@ pub fn draw(state: *tk.AppState) void {
                 if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 24})) {
                     selected_index = i;
                     object_editor.setSelectedObject(selected_index);
-                    state.windows.object_editor = true;
+                    state.prefs.windows.object_editor = true;
                 }
 
                 igSameLine(igGetWindowContentRegionWidth() - 20, 0);
@@ -71,7 +71,7 @@ pub fn draw(state: *tk.AppState) void {
             _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{selected_index}) catch unreachable;
             obj.name[8 + 1 + @divTrunc(selected_index, 10)] = 0;
             object_editor.setSelectedObject(selected_index);
-            state.windows.object_editor = true;
+            state.prefs.windows.object_editor = true;
         }
     }
 }

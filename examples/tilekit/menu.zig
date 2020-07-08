@@ -135,33 +135,33 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            _ = igMenuItemBoolPtr("Brushes", null, &state.windows.brushes, true);
-            _ = igMenuItemBoolPtr("Rules", null, &state.windows.rules, true);
-            _ = igMenuItemBoolPtr("Objects", null, &state.windows.objects, true);
-            _ = igMenuItemBoolPtr("Tags", null, &state.windows.tags, true);
-            _ = igMenuItemBoolPtr("Animations", null, &state.windows.animations, true);
-            _ = igMenuItemBoolPtr("Input Map", null, &state.windows.input_map, true);
-            _ = igMenuItemBoolPtr("Post Processed Map", null, &state.windows.post_processed_map, true);
-            _ = igMenuItemBoolPtr("Output Map", null, &state.windows.output_map, true);
+            _ = igMenuItemBoolPtr("Brushes", null, &state.prefs.windows.brushes, true);
+            _ = igMenuItemBoolPtr("Rules", null, &state.prefs.windows.rules, true);
+            _ = igMenuItemBoolPtr("Objects", null, &state.prefs.windows.objects, true);
+            _ = igMenuItemBoolPtr("Tags", null, &state.prefs.windows.tags, true);
+            _ = igMenuItemBoolPtr("Animations", null, &state.prefs.windows.animations, true);
+            _ = igMenuItemBoolPtr("Input Map", null, &state.prefs.windows.input_map, true);
+            _ = igMenuItemBoolPtr("Post Processed Map", null, &state.prefs.windows.post_processed_map, true);
+            _ = igMenuItemBoolPtr("Output Map", null, &state.prefs.windows.output_map, true);
 
             igSeparator();
 
             if (igBeginMenu("Map Display Size", true)) {
                 defer igEndMenu();
 
-                if (igMenuItemBool("8px", null, state.map_rect_size == 8, true)) {
-                    state.map_rect_size = 8;
+                if (igMenuItemBool("8px", null, state.prefs.map_rect_size == 8, true)) {
+                    state.prefs.map_rect_size = 8;
                 }
-                if (igMenuItemBool("16px", null, state.map_rect_size == 16, true)) {
-                    state.map_rect_size = 16;
+                if (igMenuItemBool("16px", null, state.prefs.map_rect_size == 16, true)) {
+                    state.prefs.map_rect_size = 16;
                 }
-                if (igMenuItemBool("32px", null, state.map_rect_size == 32, true)) {
-                    state.map_rect_size = 32;
+                if (igMenuItemBool("32px", null, state.prefs.map_rect_size == 32, true)) {
+                    state.prefs.map_rect_size = 32;
                 }
             }
 
-            _ = igMenuItemBoolPtr("Show Animations", null, &state.show_animations, true);
-            _ = igMenuItemBoolPtr("Show Objects", null, &state.show_objects, true);
+            _ = igMenuItemBoolPtr("Show Animations", null, &state.prefs.show_animations, true);
+            _ = igMenuItemBoolPtr("Show Objects", null, &state.prefs.show_objects, true);
         }
 
         igSetCursorPosX(igGetWindowWidth() - 120);
