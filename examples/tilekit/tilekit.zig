@@ -32,12 +32,13 @@ pub const AppState = struct {
     selected_brush_index: usize = 0,
     texture: Texture,
     tiles_per_row: usize = 0,
+    map_rect_size: f32 = 12,
     // map data
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
     prefs: Prefs = .{
-        .windows = .{}
+        .windows = .{},
     },
 
     /// persisted data
@@ -46,7 +47,6 @@ pub const AppState = struct {
         show_animations: bool = false,
         show_objects: bool = true,
         tile_size_multiplier: usize = 1,
-        map_rect_size: f32 = 12,
         // menu state
         windows: struct {
             brushes: bool = true,
@@ -62,10 +62,15 @@ pub const AppState = struct {
     };
 
     pub fn init() AppState {
-        const prefs = aya.fs.readPrefsJson(AppState.Prefs, "aya_tile", "prefs.json") catch AppState.Prefs{.windows = .{}};
+        const prefs = aya.fs.readPrefsJson(AppState.Prefs, "aya_tile", "prefs.json") catch AppState.Prefs{ .windows = .{} };
+
+        // load up a temp map
+        const tile_size = 12;
+        const map = Map.init(tile_size, 1);
 
         return .{
-            .map = Map.init(12, 1),
+            .map = map,
+            .map_rect_size = @intToFloat(f32, tile_size * prefs.tile_size_multiplier),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .texture = Texture.initFromFile("assets/blacknwhite.png") catch unreachable,
@@ -82,7 +87,7 @@ pub const AppState = struct {
     pub fn tilesPerRow(self: *AppState) usize {
         // calculate tiles_per_row if needed
         if (self.tiles_per_row == 0) {
-            var accum: usize = 0;
+            var accum: usize = self.map.tile_margin * 2;
             while (true) {
                 self.tiles_per_row += 1;
                 accum += self.map.tile_size + 2 * self.map.tile_spacing;
@@ -96,7 +101,7 @@ pub const AppState = struct {
 
     pub fn tilesPerCol(self: *AppState) usize {
         var tiles_per_col: usize = 0;
-        var accum: usize = 0;
+        var accum: usize = self.map.tile_margin * 2;
         while (true) {
             tiles_per_col += 1;
             accum += self.map.tile_size + 2 * self.map.tile_spacing;
@@ -108,7 +113,7 @@ pub const AppState = struct {
     }
 
     pub fn mapSize(self: AppState) ImVec2 {
-        return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.prefs.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.prefs.map_rect_size };
+        return ImVec2{ .x = @intToFloat(f32, self.map.w) * self.map_rect_size, .y = @intToFloat(f32, self.map.h) * self.map_rect_size };
     }
 
     /// resizes the map and all of the sub-maps
@@ -340,8 +345,8 @@ pub fn uvsForTile(state: *AppState, tile: usize) aya.math.Rect {
     const inv_h = 1.0 / @intToFloat(f32, state.texture.height);
 
     return .{
-        .x = x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_w,
-        .y = y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) * inv_h,
+        .x = (x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_margin)) * inv_w,
+        .y = (y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_margin)) * inv_h,
         .w = @intToFloat(f32, state.map.tile_size) * inv_w,
         .h = @intToFloat(f32, state.map.tile_size) * inv_h,
     };

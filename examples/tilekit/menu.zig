@@ -151,15 +151,15 @@ pub fn draw(state: *tk.AppState) void {
 
                 if (igMenuItemBool("1x", null, state.prefs.tile_size_multiplier == 1, true)) {
                     state.prefs.tile_size_multiplier = 1;
-                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size);
+                    state.map_rect_size = @intToFloat(f32, state.map.tile_size);
                 }
                 if (igMenuItemBool("2x", null, state.prefs.tile_size_multiplier == 2, true)) {
                     state.prefs.tile_size_multiplier = 2;
-                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size * 2);
+                    state.map_rect_size = @intToFloat(f32, state.map.tile_size * 2);
                 }
                 if (igMenuItemBool("3x", null, state.prefs.tile_size_multiplier == 3, true)) {
                     state.prefs.tile_size_multiplier = 3;
-                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size * 3);
+                    state.map_rect_size = @intToFloat(f32, state.map.tile_size * 3);
                 }
             }
 
@@ -206,7 +206,7 @@ pub fn draw(state: *tk.AppState) void {
         igOpenPopup("Resize Map");
     }
 
-    loadTilesetPopup();
+    loadTilesetPopup(state);
     resizeMapPopup(state);
 }
 
@@ -218,7 +218,7 @@ pub fn loadTileset(file: []const u8) void {
     std.mem.copy(u8, &temp_state.image, file);
 }
 
-fn loadTilesetPopup() void {
+fn loadTilesetPopup(state: *tk.AppState) void {
     if (igBeginPopupModal("Load Tileset", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
@@ -230,6 +230,7 @@ fn loadTilesetPopup() void {
             igText(c_file);
         }
         igSameLine(0, 5);
+
         if (igButton("Choose", ImVec2{ .x = -1, .y = 0 })) {
             const desktop = getDefaultPath();
 
@@ -274,7 +275,11 @@ fn loadTilesetPopup() void {
         if (igButton("Load", ImVec2{ .x = -1, .y = 0 })) {
             // load the image and validate that its width is divisible by the tile size (take spacing into account to)
             if (validateImage()) {
-                std.debug.print("fuck yeah\n", .{});
+                std.debug.print("validated. fuck yeah. load the image\n", .{});
+                state.map.image = aya.mem.allocator.dupe(u8, &temp_state.image) catch unreachable;
+                state.map.tile_spacing = temp_state.tile_size;
+                state.map.tile_spacing = temp_state.tile_spacing;
+                state.map.tile_margin = temp_state.tile_spacing;
                 igCloseCurrentPopup();
             }
         }
@@ -292,6 +297,16 @@ fn validateImage() bool {
     var h: c_int = 0;
     var comp: c_int = 0;
     if (stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &comp) == 1) {
+        const max_tiles = @intCast(usize, w) / temp_state.tile_size;
+        var i: usize = 3;
+        while (i <= max_tiles) : (i += 1) {
+            const space = (2 * temp_state.tile_spacing) + (i - 1) * temp_state.tile_spacing;
+            const filled = i * temp_state.tile_size;
+            if (space + filled == w) {
+                return true;
+            }
+        }
+
         temp_state.invalid_image_selected = true;
         return false;
     }

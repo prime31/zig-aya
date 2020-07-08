@@ -19,6 +19,7 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, map.h);
     try out.writeIntLittle(usize, map.tile_size);
     try out.writeIntLittle(usize, map.tile_spacing);
+    try out.writeIntLittle(usize, map.tile_margin);
     try out.writeIntLittle(usize, map.seed);
     try out.writeIntLittle(usize, map.repeat);
     try out.writeIntLittle(usize, map.image.len);
@@ -118,6 +119,7 @@ pub fn load(file: []const u8) !Map {
     map.h = try in.readIntLittle(usize);
     map.tile_size = try in.readIntLittle(usize);
     map.tile_spacing = try in.readIntLittle(usize);
+    map.tile_margin = try in.readIntLittle(usize);
     map.seed = try in.readIntLittle(u64);
     map.repeat = try in.readIntLittle(u8);
 
@@ -357,6 +359,9 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
 
         try jw.objectField("tile_spacing");
         try jw.emitNumber(map.tile_spacing);
+
+        try jw.objectField("tile_margin");
+        try jw.emitNumber(map.tile_margin);
 
         try jw.objectField("image");
         try jw.emitString(map.image);

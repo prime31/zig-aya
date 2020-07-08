@@ -14,11 +14,11 @@ pub fn drawWindow(state: *tk.AppState) void {
 
 pub fn drawPopup(state: *tk.AppState) void {
     var pos = igGetIO().MousePos;
-    pos.x -= state.prefs.map_rect_size * 6 / 2;
-    pos.y -= state.prefs.map_rect_size * 6 / 2;
+    pos.x -= state.map_rect_size * 6 / 2;
+    pos.y -= state.map_rect_size * 6 / 2;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("brushes", ImGuiWindowFlags_NoTitleBar)) {
-        draw(state, state.prefs.map_rect_size, false);
+        draw(state, state.map_rect_size, false);
         igEndPopup();
     }
 }
