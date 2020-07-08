@@ -16,10 +16,12 @@ pub const Map = struct {
     objects: std.ArrayList(Object),
     animations: std.ArrayList(Animation),
 
-    pub fn init() Map {
+    pub fn init(tile_size: usize, tile_spacing: usize) Map {
         var map = .{
             .w = 64,
             .h = 64,
+            .tile_size = tile_size,
+            .tile_spacing = tile_spacing,
             .data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
             .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),

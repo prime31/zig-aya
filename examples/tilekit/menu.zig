@@ -82,7 +82,7 @@ pub fn draw(state: *tk.AppState) void {
             if (igMenuItemBool("New", null, false, true)) {
                 @import("windows/object_editor.zig").setSelectedObject(null);
                 state.map.deinit();
-                state.map = tk.Map.init();
+                state.map = tk.Map.init(16, 0);
             }
 
             if (igMenuItemBool("Open...", null, false, true)) {
@@ -149,14 +149,17 @@ pub fn draw(state: *tk.AppState) void {
             if (igBeginMenu("Map Display Size", true)) {
                 defer igEndMenu();
 
-                if (igMenuItemBool("8px", null, state.prefs.map_rect_size == 8, true)) {
-                    state.prefs.map_rect_size = 8;
+                if (igMenuItemBool("1x", null, state.prefs.tile_size_multiplier == 1, true)) {
+                    state.prefs.tile_size_multiplier = 1;
+                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size);
                 }
-                if (igMenuItemBool("16px", null, state.prefs.map_rect_size == 16, true)) {
-                    state.prefs.map_rect_size = 16;
+                if (igMenuItemBool("2x", null, state.prefs.tile_size_multiplier == 2, true)) {
+                    state.prefs.tile_size_multiplier = 2;
+                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size * 2);
                 }
-                if (igMenuItemBool("32px", null, state.prefs.map_rect_size == 32, true)) {
-                    state.prefs.map_rect_size = 32;
+                if (igMenuItemBool("3x", null, state.prefs.tile_size_multiplier == 3, true)) {
+                    state.prefs.tile_size_multiplier = 3;
+                    state.prefs.map_rect_size = @intToFloat(f32, state.map.tile_size * 3);
                 }
             }
 
