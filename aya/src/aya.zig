@@ -53,6 +53,8 @@ pub fn run(config: Config) !void {
     }
     defer sdl.SDL_Quit();
 
+    mem.initTmpAllocator();
+
     window = try Window.init(config.window);
     defer window.deinit();
 
