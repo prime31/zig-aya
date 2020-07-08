@@ -46,7 +46,7 @@ pub const AppState = struct {
         show_animations: bool = false,
         show_objects: bool = true,
         tile_size_multiplier: usize = 1,
-        map_rect_size: f32 = 16,
+        map_rect_size: f32 = 12,
         // menu state
         windows: struct {
             brushes: bool = true,
@@ -65,10 +65,10 @@ pub const AppState = struct {
         const prefs = aya.fs.readPrefs(AppState.Prefs, "aya_tile", "prefs.bin") catch AppState.Prefs{.windows = .{}};
 
         return .{
-            .map = Map.init(16, 0),
+            .map = Map.init(12, 1),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
-            .texture = Texture.initFromFile("assets/SimpleTileset.png") catch unreachable,
+            .texture = Texture.initFromFile("assets/blacknwhite.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
             .prefs = prefs,
         };
