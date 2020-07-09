@@ -66,11 +66,21 @@ fn renderRulesTab(state: *tk.AppState) void {
         _ = state.map.rulesets.orderedRemove(delete_index);
     }
 
+    // handle drag and drop swapping
     if (swap_rules) {
         swap_rules = false;
-        // TODO: this shouldnt be a swap but instead a full move
-        // TODO: name gets overwritten someone after the swap occurs
-        std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_to]);
+
+        // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
+        var total_swaps = if (swap_from > swap_to) swap_from - swap_to else swap_to - swap_from - 1;
+        while (total_swaps > 0) : (total_swaps -= 1) {
+            if (swap_from > swap_to) {
+                std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_from - 1]);
+                swap_from -= 1;
+            } else {
+                std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_from + 1]);
+                swap_from += 1;
+            }
+        }
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -148,28 +158,49 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
-fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
-    igPushItemWidth(125);
-    std.mem.copy(u8, &rule_label_buf, &rule.name);
-    if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
-        std.mem.copy(u8, &rule.name, &rule_label_buf);
+/// handles drag/drop sources and targets
+fn rulesDragDrop(index: usize, rule: *RuleSet) void {
+    if (index == 0) {
+        _ = igInvisibleButton("", ImVec2{ .x = -1, .y = 4 });
+    } else {
+        _ = ogButton(icons.grip_horizontal);
+        igSameLine(0, 4);
+        var drag_drop_index = index - 1;
+        if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+            _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
+            _ = igText(&rule.name);
+            igEndDragDropSource();
+        }
     }
 
-    // drag and drop to/from the InputText for now
-    var drag_drop_index = index;
-    if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
-        _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
-        _ = igText(&rule.name);
-        igEndDragDropSource();
-    }
     if (igBeginDragDropTarget()) {
         if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
             var index_ptr = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data));
             swap_rules = true;
             swap_from = index_ptr.*;
             swap_to = index;
+
+            // dont allow swapping to the same location. this is a drop from n + 1 to n so instead we'll just do a swap
+            if (swap_from == swap_to) {
+                swap_to -= 1;
+            }
         }
         igEndDragDropTarget();
+    }
+}
+
+fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
+    // drop target before all items
+    if (index == 0) {
+        rulesDragDrop(0, rule);
+    }
+
+    rulesDragDrop(index + 1, rule);
+
+    igPushItemWidth(115);
+    std.mem.copy(u8, &rule_label_buf, &rule.name);
+    if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
+        std.mem.copy(u8, &rule.name, &rule_label_buf);
     }
 
     igSameLine(0, 4);
@@ -352,6 +383,7 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
+    const tile_margin = if (is_pre_rule) 0 else state.map.tile_margin;
 
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
@@ -369,10 +401,14 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
         const y = @divTrunc(index, per_row);
 
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size + tile_spacing) };
-        tl.x += content_start_pos.x + 1;
-        tl.y += content_start_pos.y + 1;
+        tl.x += content_start_pos.x + @intToFloat(f32, tile_margin);
+        tl.y += content_start_pos.y + @intToFloat(f32, tile_margin);
         ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_outline, 2);
+
+        // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
+        tl.x += 1;
+        tl.y += 1;
+        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state
@@ -405,8 +441,8 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) };
         tl.x += content_start_pos.x + 1 + @intToFloat(f32, state.map.tile_spacing);
         tl.y += content_start_pos.y + 1 + @intToFloat(f32, state.map.tile_spacing);
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size * selection_size), colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size * selection_size) - 1, colors.rule_result_selected_outline, 2);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (state.map.tile_size + state.map.tile_spacing) * selection_size), colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, (state.map.tile_size + state.map.tile_spacing) * selection_size) - 1, colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state

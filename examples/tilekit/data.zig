@@ -163,8 +163,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
     }
 
-    pub fn addInnerFourRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, prefix: []const u8, index: usize) void {
-        const name_prefix = prefix[0..std.mem.indexOfScalar(u8, prefix[0..], 0).?];
+    pub fn addInnerFourRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
 
@@ -185,7 +184,7 @@ pub const Map = struct {
         rule.get(3, 2).require(selected_brush_index + 1);
         rule.get(2, 1).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 2 + y * tiles_per_row));
+        rule.toggleSelected(@intCast(u8, x + 1 + y * tiles_per_row));
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
@@ -195,7 +194,7 @@ pub const Map = struct {
         rule.get(2, 3).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(1, 3).negate(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + (y + 2) * tiles_per_row));
+        rule.toggleSelected(@intCast(u8, x + (y + 1) * tiles_per_row));
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
@@ -205,7 +204,7 @@ pub const Map = struct {
         rule.get(3, 2).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(3, 3).negate(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 2 + (y + 2) * tiles_per_row));
+        rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
         self.rulesets.append(rule) catch unreachable;
     }
 };

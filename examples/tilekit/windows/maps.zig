@@ -152,7 +152,6 @@ fn handleInput(state: *tk.AppState, screen_space_offset: ImVec2) void {
         history.push(state.map.data[index .. index + 1]);
         state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
     } else if (igIsMouseDown(ImGuiMouseButton_Right)) {
-        dragged = true;
         var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), screen_space_offset);
 
         // if the mouse down last frame, get last mouse pos and ensure we dont skip tiles when drawing
