@@ -52,7 +52,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     var i: usize = 0;
     while (i < state.map.rulesets.items.len) : (i += 1) {
         igPushIDInt(@intCast(c_int, i) + 1000);
-        if (renderRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], false)) {
+        if (renderRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
             delete_index = i;
         }
         igPopID();
@@ -105,7 +105,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
                 igPushIDPtr(rule);
-                if (renderRuleSet(state, pre_rule, rule, true)) {
+                if (renderRuleSet(state, pre_rule, rule, j, true)) {
                     delete_rule_index = j;
                 }
             }
@@ -132,12 +132,32 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
-fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, is_pre_rule: bool) bool {
+var dragging = false;
+fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
     igPushItemWidth(125);
     std.mem.copy(u8, &rule_label_buf, &rule.name);
     if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
         std.mem.copy(u8, &rule.name, &rule_label_buf);
     }
+
+    // drag and drop from the InputText for now
+    var drag_drop_index = index;
+    if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+
+        _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
+        _ = igText(&rule.name);
+        dragging = true;
+        igEndDragDropSource();
+    }
+    if (igBeginDragDropTarget()) {
+        if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
+            var index_ptr = @ptrCast(*usize,  @alignCast(@alignOf(usize), payload.Data));
+            std.debug.print("swap dropped index: {} with: {}\n", .{index_ptr.*, index});
+            std.mem.swap(RuleSet, &parent.items[index_ptr.*], &parent.items[index]);
+        }
+        igEndDragDropTarget();
+    }
+
     igSameLine(0, 4);
     igPopItemWidth();
 
