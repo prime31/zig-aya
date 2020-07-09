@@ -11,6 +11,10 @@ var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 
+var swap_rules = false;
+var swap_from: usize = undefined;
+var swap_to: usize = undefined;
+
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
     defer igPopStyleVar(1);
@@ -60,6 +64,13 @@ fn renderRulesTab(state: *tk.AppState) void {
 
     if (delete_index < state.map.rulesets.items.len) {
         _ = state.map.rulesets.orderedRemove(delete_index);
+    }
+
+    if (swap_rules) {
+        swap_rules = false;
+        // TODO: this shouldnt be a swap but instead a full move
+        // TODO: name gets overwritten someone after the swap occurs
+        std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_to]);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -117,6 +128,11 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             if (delete_rule_index < pre_rule.items.len) {
                 _ = pre_rule.orderedRemove(delete_rule_index);
             }
+
+            if (swap_rules) {
+                swap_rules = false;
+                std.mem.swap(RuleSet, &pre_rule.items[swap_from], &pre_rule.items[swap_to]);
+            }
             igPopID();
         }
         igPopID();
@@ -132,7 +148,6 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
-var dragging = false;
 fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
     igPushItemWidth(125);
     std.mem.copy(u8, &rule_label_buf, &rule.name);
@@ -140,20 +155,19 @@ fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Ru
         std.mem.copy(u8, &rule.name, &rule_label_buf);
     }
 
-    // drag and drop from the InputText for now
+    // drag and drop to/from the InputText for now
     var drag_drop_index = index;
     if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
-
         _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
         _ = igText(&rule.name);
-        dragging = true;
         igEndDragDropSource();
     }
     if (igBeginDragDropTarget()) {
         if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
-            var index_ptr = @ptrCast(*usize,  @alignCast(@alignOf(usize), payload.Data));
-            std.debug.print("swap dropped index: {} with: {}\n", .{index_ptr.*, index});
-            std.mem.swap(RuleSet, &parent.items[index_ptr.*], &parent.items[index]);
+            var index_ptr = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data));
+            swap_rules = true;
+            swap_from = index_ptr.*;
+            swap_to = index;
         }
         igEndDragDropTarget();
     }
