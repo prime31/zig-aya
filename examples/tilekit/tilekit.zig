@@ -37,6 +37,7 @@ pub const AppState = struct {
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
+    random_map_data: []f32,
     prefs: Prefs = .{
         .windows = .{},
     },
@@ -73,6 +74,7 @@ pub const AppState = struct {
             .map_rect_size = @intToFloat(f32, tile_size * prefs.tile_size_multiplier),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
+            .random_map_data = aya.mem.allocator.alloc(f32, 64 * 64) catch unreachable,
             .texture = Texture.initFromFile("assets/blacknwhite.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
             .prefs = prefs,
@@ -146,8 +148,10 @@ pub const AppState = struct {
         // resize our two generated maps
         aya.mem.allocator.free(self.processed_map_data);
         aya.mem.allocator.free(self.final_map_data);
+        aya.mem.allocator.free(self.random_map_data);
         self.processed_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
         self.final_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
+        self.random_map_data = aya.mem.allocator.alloc(f32, w * h) catch unreachable;
 
         // if we shrunk handle anything that needs to be fixed
         if (shrunk) {
@@ -182,9 +186,11 @@ pub const AppState = struct {
         // resize and clear processed_map_data and final_map_data
         aya.mem.allocator.free(self.processed_map_data);
         aya.mem.allocator.free(self.final_map_data);
+        aya.mem.allocator.free(self.random_map_data);
 
         self.processed_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
         self.final_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
+        self.random_map_data = aya.mem.allocator.alloc(f32, self.map.w * self.map.h) catch unreachable;
         self.map_data_dirty = true;
         self.tiles_per_row = 0;
     }
@@ -207,6 +213,7 @@ pub const TileKit = struct {
         self.state.map.deinit();
         aya.mem.allocator.free(self.state.processed_map_data);
         aya.mem.allocator.free(self.state.final_map_data);
+        aya.mem.allocator.free(self.state.random_map_data);
     }
 
     pub fn handleDroppedFile(self: *TileKit, file: []const u8) void {

@@ -241,6 +241,8 @@ pub const RuleSet = struct {
     }
 
     pub fn resultTile(self: *RuleSet) usize {
+        // TODO: pass in a stored random usize from the outside
+        // const index = std.rand.limitRangeBiased(usize, random_value, self.result_tiles.len);
         return self.result_tiles.items[aya.math.rand.range(usize, 0, self.result_tiles.len)];
     }
 

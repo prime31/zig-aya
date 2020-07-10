@@ -187,10 +187,6 @@ pub const SDL_errorcode = extern enum(c_int) {
 };
 
 pub extern fn SDL_Error(code: SDL_errorcode) c_int; // /usr/local/include/SDL2/SDL_endian.h:83:3: warning: TODO implement translation of stmt class GCCAsmStmtClass
-pub const SDL_Swap16 = @compileError("unable to translate function"); // /usr/local/include/SDL2/SDL_endian.h:127:3: warning: TODO implement translation of stmt class GCCAsmStmtClass
-pub const SDL_Swap32 = @compileError("unable to translate function"); // /usr/local/include/SDL2/SDL_endian.h:194:3: warning: TODO implement translation of stmt class GCCAsmStmtClass
-pub const SDL_Swap64 = @compileError("unable to translate function"); // /usr/local/include/SDL2/SDL_endian.h:218:5: warning: TODO implement translation of DeclStmt kind Record
-pub const SDL_SwapFloat = @compileError("unable to translate function");
 pub const SDL_mutex = @Type(.Opaque);
 pub extern fn SDL_CreateMutex() ?*SDL_mutex;
 pub extern fn SDL_LockMutex(mutex: ?*SDL_mutex) c_int;
