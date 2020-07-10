@@ -72,7 +72,10 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
         }
 
         // all Rules passed. we use the chance to decide if we will return a tile
-        if (rule_passed and aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100)) {
+        // const chance = aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100);
+        const random_chance = state.random_map_data[x + y * state.map.w];
+        const chance = random_chance < @intToFloat(f32, ruleset.chance) / 100;
+        if (rule_passed and chance) {
             return @intCast(u8, ruleset.resultTile() + 1);
         }
     }

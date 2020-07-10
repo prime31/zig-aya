@@ -11,6 +11,14 @@ var dragged_obj_index: ?usize = null;
 pub fn drawWindow(state: *tk.AppState) void {
     // only process map data when it changes
     if (state.map_data_dirty) {
+        aya.math.rand.seed(state.map.seed);
+
+        // pre-generate random data per tile
+        // TODO: generate two random values per tile
+        var i: usize = 0;
+        while (i < state.map.w * state.map.h) : (i += 1) {
+            state.random_map_data[i] = aya.math.rand.float(f32);
+        }
         processor.generateProcessedMap(state);
         processor.generateOutputMap(state);
         // TODO: fix this to only process when necessary

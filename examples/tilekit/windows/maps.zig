@@ -97,6 +97,13 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
             igEnd();
         }
 
+        if (state.prefs.windows.output_map) {
+            _ = igBegin("Output Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+            igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
+            igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
+            igEnd();
+        }
+
         igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
         igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
         igResetMouseDragDelta(ImGuiMouseButton_Left);

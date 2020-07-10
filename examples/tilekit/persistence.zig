@@ -290,9 +290,7 @@ fn readUnionInto(in: Reader, ptr: var) !void {
 
     if (info.tag_type) |TagType| {
         const TagInt = @TagType(TagType);
-        // TODO: why is this a u2 for PropValue when std.meta.activeTag is a u8? i believe this is due to requiring to write unpacked
-        // data (u8 aligned). Reading dies in @divExact in std.mem.readIntNative
-        // const tag = try in.readIntLittle(TagInt);
+        // this is a technically a u2 but we read it as a u8 because there is no bit packing in this reader/writer
         const tag = try in.readIntLittle(u8);
 
         inline for (info.fields) |field_info| {
