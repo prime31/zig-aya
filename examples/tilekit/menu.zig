@@ -161,6 +161,10 @@ pub fn draw(state: *tk.AppState) void {
                     state.prefs.tile_size_multiplier = 3;
                     state.map_rect_size = @intToFloat(f32, state.map.tile_size * 3);
                 }
+                if (igMenuItemBool("4x", null, state.prefs.tile_size_multiplier == 4, true)) {
+                    state.prefs.tile_size_multiplier = 4;
+                    state.map_rect_size = @intToFloat(f32, state.map.tile_size * 4);
+                }
             }
 
             _ = igMenuItemBoolPtr("Show Animations", null, &state.prefs.show_animations, true);
