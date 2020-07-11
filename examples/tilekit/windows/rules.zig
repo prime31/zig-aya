@@ -383,7 +383,6 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
-    const tile_margin = if (is_pre_rule) 0 else state.map.tile_margin;
 
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
@@ -401,8 +400,8 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
         const y = @divTrunc(index, per_row);
 
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size + tile_spacing) };
-        tl.x += content_start_pos.x + @intToFloat(f32, tile_margin);
-        tl.y += content_start_pos.y + @intToFloat(f32, tile_margin);
+        tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
+        tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
         ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_fill);
 
         // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width

@@ -88,6 +88,7 @@ pub const Time = struct {
     /// forces a resync of the timing code. Useful after some slower operations such as level loads or window resizes
     pub fn resync(self: *Time) void {
         self.timestep.resync = true;
+        self.timestep.prev_frame_time = sdl.SDL_GetPerformanceCounter() + @floatToInt(u64, self.timestep.fixed_deltatime);
     }
 
     // converted from Tyler Glaiel's: https://github.com/TylerGlaiel/FrameTimingControl/blob/master/frame_timer.cpp

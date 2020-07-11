@@ -76,35 +76,60 @@ pub fn draw(state: *tk.AppState) void {
     if (igBeginMenuBar()) {
         defer igEndMenuBar();
 
-        if (igBeginMenu("TileKit", true)) {
+        if (igBeginMenu("File", true)) {
             defer igEndMenu();
 
             if (igMenuItemBool("New", null, false, true)) {
+                // TODO: fix loading of map getting wrong margin/size/tiles-per-row or something...
                 @import("windows/object_editor.zig").setSelectedObject(null);
+                const tile_size = state.map.tile_size;
+                const tile_spacing = state.map.tile_spacing;
+
                 state.map.deinit();
-                state.map = tk.Map.init(16, 0);
+                state.map = tk.Map.init(tile_size, tile_spacing);
+                if (state.opened_file != null) {
+                    aya.mem.allocator.free(state.opened_file.?);
+                    state.opened_file = null;
+                }
             }
 
             if (igMenuItemBool("Open...", null, false, true)) {
                 const res = files.openFileDialog("Open project", getDefaultPath(), "*.tk");
+                aya.time.resync();
                 if (res != null) {
-                    state.loadMap(std.mem.spanZ(res)) catch unreachable;
+                    state.loadMap(std.mem.spanZ(res)) catch |err| {
+                        state.showToast("Error loading map. Could not find tileset image.", 300);
+                    };
                 }
             }
 
             // TODO: disable if we didnt first call Load or Save As
-            if (igMenuItemBool("Save", null, false, true)) {
-                std.debug.print("dumping to desktop\n", .{});
-                state.saveMap("/Users/desaro/Desktop/tilekit.tk") catch unreachable;
+            if (igMenuItemBool("Save", null, false, state.opened_file != null)) {
+                state.saveMap(state.opened_file.?) catch unreachable;
             }
 
             if (igMenuItemBool("Save As...", null, false, true)) {
                 const res = files.saveFileDialog("Save project", getDefaultPath(), "*.tk");
+                aya.time.resync();
                 if (res != null) {
                     var out_file = res[0..std.mem.lenZ(res)];
                     if (!std.mem.endsWith(u8, out_file, ".tk")) {
                         out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ out_file, ".tk" }) catch unreachable;
                     }
+
+                    // validate our image path and copy the image to our save dir if its absolute
+                    if (std.fs.path.isAbsolute(state.map.image)) {
+                        const my_cwd = std.fs.cwd();
+                        const dst_dir = std.fs.cwd().openDir(std.fs.path.dirname(out_file).?, .{}) catch unreachable;
+                        const image_name = std.fs.path.basename(state.map.image);
+                        std.fs.Dir.copyFile(my_cwd, state.map.image, dst_dir, image_name, .{}) catch unreachable;
+
+                        // dupe the image before we free it
+                        const duped_image_name = aya.mem.allocator.dupe(u8, image_name) catch unreachable;
+                        aya.mem.allocator.free(state.map.image);
+                        state.map.image = duped_image_name;
+                    }
+
                     state.saveMap(out_file) catch unreachable;
                 }
             }
@@ -239,6 +264,7 @@ fn loadTilesetPopup(state: *tk.AppState) void {
             const desktop = getDefaultPath();
 
             const res = files.openFileDialog("Import tileset image", desktop, "*.png");
+            aya.time.resync();
             if (res != null) {
                 std.mem.copy(u8, &temp_state.image, std.mem.spanZ(res));
                 temp_state.has_image = true;
@@ -279,11 +305,13 @@ fn loadTilesetPopup(state: *tk.AppState) void {
         if (igButton("Load", ImVec2{ .x = -1, .y = 0 })) {
             // load the image and validate that its width is divisible by the tile size (take spacing into account to)
             if (validateImage()) {
-                std.debug.print("validated. fuck yeah. load the image\n", .{});
-                state.map.image = aya.mem.allocator.dupe(u8, &temp_state.image) catch unreachable;
-                state.map.tile_spacing = temp_state.tile_size;
+                state.map.image = aya.mem.allocator.dupe(u8, temp_state.image[0..std.mem.lenZ(temp_state.image)]) catch unreachable;
+                state.map.tile_size = temp_state.tile_size;
                 state.map.tile_spacing = temp_state.tile_spacing;
-                state.map.tile_margin = temp_state.tile_spacing;
+                state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
+
+                state.texture.deinit();
+                state.texture = aya.gfx.Texture.initFromFile(state.map.image) catch unreachable;
                 igCloseCurrentPopup();
             }
         }

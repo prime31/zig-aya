@@ -12,6 +12,7 @@ const Map = tk.Map;
 pub const AppState = struct {
     map: Map,
     // general state
+    opened_file: ?[]const u8 = null,
     object_edit_mode: bool = false,
     selected_brush_index: usize = 0,
     texture: Texture,
@@ -61,7 +62,7 @@ pub const AppState = struct {
         const tile_size = 12;
         const map = Map.init(tile_size, 1);
 
-        var state = AppState {
+        var state = AppState{
             .map = map,
             .map_rect_size = @intToFloat(f32, tile_size * prefs.tile_size_multiplier),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
@@ -83,7 +84,7 @@ pub const AppState = struct {
     pub fn tilesPerRow(self: *AppState) usize {
         // calculate tiles_per_row if needed
         if (self.tiles_per_row == 0) {
-            var accum: usize = self.map.tile_margin * 2;
+            var accum: usize = self.map.tile_spacing * 2;
             while (true) {
                 self.tiles_per_row += 1;
                 accum += self.map.tile_size + 2 * self.map.tile_spacing;
@@ -97,7 +98,7 @@ pub const AppState = struct {
 
     pub fn tilesPerCol(self: *AppState) usize {
         var tiles_per_col: usize = 0;
-        var accum: usize = self.map.tile_margin * 2;
+        var accum: usize = self.map.tile_spacing * 2;
         while (true) {
             tiles_per_col += 1;
             accum += self.map.tile_size + 2 * self.map.tile_spacing;
@@ -194,9 +195,16 @@ pub const AppState = struct {
 
     pub fn loadMap(self: *AppState, file: []const u8) !void {
         self.map = try persistence.load(file);
+        self.map_rect_size = @intToFloat(f32, self.map.tile_size * self.prefs.tile_size_multiplier);
 
-        // unload old texture
-        // load new texture
+        const curr_dir = try std.fs.cwd().openDir(std.fs.path.dirname(file).?, .{});
+        try curr_dir.setAsCwd();
+
+        // unload old texture and load new texture
+        std.debug.print("self.map.image: {}\n", .{self.map.image});
+        try std.fs.cwd().access(self.map.image, .{});
+        self.texture.deinit();
+        self.texture = try Texture.initFromFile(self.map.image);
 
         // resize and clear processed_map_data and final_map_data
         aya.mem.allocator.free(self.processed_map_data);
@@ -210,5 +218,11 @@ pub const AppState = struct {
         self.tiles_per_row = 0;
 
         self.generateRandomData();
+
+        // keep our file so we can save later
+        if (self.opened_file != null) {
+            aya.mem.allocator.free(self.opened_file.?);
+        }
+        self.opened_file = try aya.mem.allocator.dupe(u8, file);
     }
 };
