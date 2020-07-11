@@ -14,6 +14,7 @@ var nine_slice_selected: ?usize = null;
 var swap_rules = false;
 var swap_from: usize = undefined;
 var swap_to: usize = undefined;
+var drag_dropping = false;
 
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
@@ -48,6 +49,24 @@ pub fn draw(state: *tk.AppState) void {
 
             renderPreRulesTabs(state);
         }
+
+        if (drag_dropping and igIsMouseReleased(ImGuiMouseButton_Left)) {
+            drag_dropping = false;
+        }
+    }
+}
+
+fn swapRules(ruleset: *std.ArrayList(RuleSet)) void {
+    // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
+    var total_swaps = if (swap_from > swap_to) swap_from - swap_to else swap_to - swap_from - 1;
+    while (total_swaps > 0) : (total_swaps -= 1) {
+        if (swap_from > swap_to) {
+            std.mem.swap(RuleSet, &ruleset.items[swap_from], &ruleset.items[swap_from - 1]);
+            swap_from -= 1;
+        } else {
+            std.mem.swap(RuleSet, &ruleset.items[swap_from], &ruleset.items[swap_from + 1]);
+            swap_from += 1;
+        }
     }
 }
 
@@ -69,18 +88,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     // handle drag and drop swapping
     if (swap_rules) {
         swap_rules = false;
-
-        // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
-        var total_swaps = if (swap_from > swap_to) swap_from - swap_to else swap_to - swap_from - 1;
-        while (total_swaps > 0) : (total_swaps -= 1) {
-            if (swap_from > swap_to) {
-                std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_from - 1]);
-                swap_from -= 1;
-            } else {
-                std.mem.swap(RuleSet, &state.map.rulesets.items[swap_from], &state.map.rulesets.items[swap_from + 1]);
-                swap_from += 1;
-            }
-        }
+        swapRules(&state.map.rulesets);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -141,7 +149,7 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
 
             if (swap_rules) {
                 swap_rules = false;
-                std.mem.swap(RuleSet, &pre_rule.items[swap_from], &pre_rule.items[swap_to]);
+                swapRules(pre_rule);
             }
             igPopID();
         }
@@ -159,52 +167,56 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
 }
 
 /// handles drag/drop sources and targets
-fn rulesDragDrop(index: usize, rule: *RuleSet) void {
-    if (index == 0) {
-        _ = igInvisibleButton("", ImVec2{ .x = -1, .y = 4 });
-    } else {
+fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
+    var cursor = ogGetCursorPos();
+
+    if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
         igSameLine(0, 4);
-        var drag_drop_index = index - 1;
+        var drag_drop_index = index;
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+            drag_dropping = true;
             _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
             _ = igText(&rule.name);
             igEndDragDropSource();
         }
     }
 
-    if (igBeginDragDropTarget()) {
-        if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
-            var index_ptr = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data));
-            swap_rules = true;
-            swap_from = index_ptr.*;
-            swap_to = index;
+    if (drag_dropping) {
+        const old_pos = ogGetCursorPos();
+        cursor.y -= 5;
+        igSetCursorPos(cursor);
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
+        igSetCursorPos(old_pos);
 
-            // dont allow swapping to the same location. this is a drop from n + 1 to n so instead we'll just do a swap
-            if (swap_from == swap_to) {
-                swap_to -= 1;
+        if (igBeginDragDropTarget()) {
+            if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                var index_ptr = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data));
+                swap_rules = true;
+                swap_from = index_ptr.*;
+                swap_to = index;
+
+                // dont allow swapping to the same location, which is the drop target above or below the dragged item
+                if (swap_from == swap_to or (swap_to > 0 and swap_from == swap_to - 1)) {
+                    swap_rules = false;
+                }
+                drag_dropping = false;
             }
+            igEndDragDropTarget();
         }
-        igEndDragDropTarget();
     }
 }
 
 fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
-    // drop target before all items
-    if (index == 0) {
-        rulesDragDrop(0, rule);
-    }
-
-    rulesDragDrop(index + 1, rule);
+    rulesDragDrop(index, rule, false);
 
     igPushItemWidth(115);
     std.mem.copy(u8, &rule_label_buf, &rule.name);
     if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
         std.mem.copy(u8, &rule.name, &rule_label_buf);
     }
-
-    igSameLine(0, 4);
     igPopItemWidth();
+    igSameLine(0, 4);
 
     if (igButton("Pattern", ImVec2{})) {
         igOpenPopup("##pattern_popup");
@@ -229,6 +241,11 @@ fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Ru
 
     if (ogButton(icons.trash)) {
         return true;
+    }
+
+    // if this is the last item, add an extra drop zone for reordering
+    if (index == parent.items.len - 1) {
+        rulesDragDrop(index + 1, rule, true);
     }
 
     // display the popup a bit to the left to center it under the mouse
