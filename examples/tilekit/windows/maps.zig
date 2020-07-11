@@ -10,12 +10,16 @@ var dragged = false;
 var prev_mouse_pos: ImVec2 = undefined;
 
 pub fn drawWindows(state: *tk.AppState) void {
-    if (state.prefs.windows.input_map and igBegin("Input Map", &state.prefs.windows.input_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    // if the alt key is dont dont allow scrolling with the mouse since we will be zooming
+    var window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
+    if (igGetIO().KeyAlt) window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
+
+    if (state.prefs.windows.input_map and igBegin("Input Map", &state.prefs.windows.input_map, window_flags)) {
         draw(state, true);
         igEnd();
     }
 
-    if (state.prefs.windows.post_processed_map and igBegin("Post Processed Map", &state.prefs.windows.post_processed_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+    if (state.prefs.windows.post_processed_map and igBegin("Post Processed Map", &state.prefs.windows.post_processed_map, window_flags)) {
         draw(state, false);
         igEnd();
     }
@@ -88,26 +92,32 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         var scroll_delta = ImVec2{};
         igGetMouseDragDelta(&scroll_delta, 0, 0);
 
-        // sync scroll position with the opposite map window if it is visible
-        var needs_sync = (input_map and state.prefs.windows.post_processed_map) or (!input_map and state.prefs.windows.input_map);
-        if (needs_sync) {
-            _ = igBegin(if (input_map) "Post Processed Map" else "Input Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
-            igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
-            igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
-            igEnd();
-        }
-
-        if (state.prefs.windows.output_map) {
-            _ = igBegin("Output Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
-            igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
-            igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
-            igEnd();
-        }
-
         igSetScrollXFloat(igGetScrollX() - scroll_delta.x);
         igSetScrollYFloat(igGetScrollY() - scroll_delta.y);
         igResetMouseDragDelta(ImGuiMouseButton_Left);
+
+        syncScrollPosition(state, input_map);
+
         return;
+    }
+
+    // zoom
+    if (igGetIO().KeyAlt and igGetIO().MouseWheel != 0) {
+        if (igGetIO().MouseWheel > 0) {
+            if (state.prefs.tile_size_multiplier < 4) {
+                state.prefs.tile_size_multiplier += 1;
+            }
+        } else if (state.prefs.tile_size_multiplier >= 2) {
+            state.prefs.tile_size_multiplier -= 1;
+        }
+
+        igGetIO().MouseWheel = 0;
+        state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
+        return;
+    }
+
+    if (igGetIO().MouseWheel != 0 or igGetIO().MouseWheelH != 0) {
+        syncScrollPosition(state, input_map);
     }
 
     if (state.object_edit_mode) {
@@ -184,6 +194,27 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
     } else if (igIsMouseReleased(ImGuiMouseButton_Left) or igIsMouseReleased(ImGuiMouseButton_Right)) {
         dragged = false;
         history.commit();
+    }
+}
+
+fn syncScrollPosition(state: *tk.AppState, input_map: bool) void {
+    const new_scroll_x = igGetScrollX();
+    const new_scroll_y = igGetScrollY();
+
+    // sync scroll position with the opposite map window if it is visible
+    var needs_sync = (input_map and state.prefs.windows.post_processed_map) or (!input_map and state.prefs.windows.input_map);
+    if (needs_sync) {
+        _ = igBegin(if (input_map) "Post Processed Map" else "Input Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+        igSetScrollXFloat(new_scroll_x);
+        igSetScrollYFloat(new_scroll_y);
+        igEnd();
+    }
+
+    if (state.prefs.windows.output_map) {
+        _ = igBegin("Output Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+        igSetScrollXFloat(new_scroll_x);
+        igSetScrollYFloat(new_scroll_y);
+        igEnd();
     }
 }
 
