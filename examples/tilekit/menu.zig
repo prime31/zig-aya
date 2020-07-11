@@ -120,7 +120,7 @@ pub fn draw(state: *tk.AppState) void {
                 }
 
                 if (igMenuItemBool("Binary", null, false, true)) {
-                    std.debug.print("doesnt work yet\n", .{});
+                    state.showToast("Doesn't work yet...", 100);
                 }
             }
         }
