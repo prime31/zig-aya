@@ -80,6 +80,7 @@ pub fn freePrefsJson(data: var) void {
 }
 
 test "test fs read" {
+    aya.mem.initTmpAllocator();
     std.testing.expectError(error.FileNotFound, read(std.testing.allocator, "junk.png"));
     var bytes = try read(std.testing.allocator, "assets/font.png");
     std.testing.allocator.free(bytes);
