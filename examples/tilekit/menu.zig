@@ -174,7 +174,7 @@ pub fn draw(state: *tk.AppState) void {
             if (igBeginMenu("Seed", true)) {
                 defer igEndMenu();
                 if (ogDrag(usize, "##seed", &state.map.seed, 1, 0, 1000)) {
-                    state.map_data_dirty = true;
+                    state.generateRandomData();
                 }
             }
 

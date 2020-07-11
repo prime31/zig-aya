@@ -240,10 +240,9 @@ pub const RuleSet = struct {
         return &self.rules[x + y * 5];
     }
 
-    pub fn resultTile(self: *RuleSet) usize {
-        // TODO: pass in a stored random usize from the outside
-        // const index = std.rand.limitRangeBiased(usize, random_value, self.result_tiles.len);
-        return self.result_tiles.items[aya.math.rand.range(usize, 0, self.result_tiles.len)];
+    pub fn resultTile(self: *RuleSet, random: usize) usize {
+        const index = std.rand.limitRangeBiased(usize, random, self.result_tiles.len);
+        return self.result_tiles.items[index];
     }
 
     pub fn toggleSelected(self: *RuleSet, index: u8) void {

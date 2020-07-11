@@ -37,10 +37,15 @@ pub const AppState = struct {
     map_data_dirty: bool = true,
     processed_map_data: []u8,
     final_map_data: []u8,
-    random_map_data: []f32,
+    random_map_data: []Randoms,
     prefs: Prefs = .{
         .windows = .{},
     },
+
+    pub const Randoms = struct {
+        float: f32,
+        int: usize,
+    };
 
     /// persisted data
     pub const Prefs = struct {
@@ -69,16 +74,18 @@ pub const AppState = struct {
         const tile_size = 12;
         const map = Map.init(tile_size, 1);
 
-        return .{
+        var state = AppState {
             .map = map,
             .map_rect_size = @intToFloat(f32, tile_size * prefs.tile_size_multiplier),
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
-            .random_map_data = aya.mem.allocator.alloc(f32, 64 * 64) catch unreachable,
+            .random_map_data = aya.mem.allocator.alloc(Randoms, 64 * 64) catch unreachable,
             .texture = Texture.initFromFile("assets/blacknwhite.png") catch unreachable,
             // .texture = Texture.initCheckerboard(),
             .prefs = prefs,
         };
+        state.generateRandomData();
+        return state;
     }
 
     pub fn savePrefs(self: AppState) void {
@@ -151,7 +158,9 @@ pub const AppState = struct {
         aya.mem.allocator.free(self.random_map_data);
         self.processed_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
         self.final_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
-        self.random_map_data = aya.mem.allocator.alloc(f32, w * h) catch unreachable;
+        self.random_map_data = aya.mem.allocator.alloc(Randoms, w * h) catch unreachable;
+
+        self.generateRandomData();
 
         // if we shrunk handle anything that needs to be fixed
         if (shrunk) {
@@ -159,6 +168,20 @@ pub const AppState = struct {
                 if (anim.x >= w) anim.x = w - 1;
                 if (anim.y >= h) anim.y = h - 1;
             }
+        }
+    }
+
+    /// regenerates the stored random data per tile. Only needs to be called on seed change or map resize
+    pub fn generateRandomData(self: *AppState) void {
+        aya.math.rand.seed(self.map.seed);
+
+        // pre-generate random data per tile
+        var i: usize = 0;
+        while (i < self.map.w * self.map.h) : (i += 1) {
+            self.random_map_data[i] = .{
+                .float = aya.math.rand.float(f32),
+                .int = aya.math.rand.int(usize),
+            };
         }
     }
 
@@ -190,9 +213,11 @@ pub const AppState = struct {
 
         self.processed_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
         self.final_map_data = try aya.mem.allocator.alloc(u8, self.map.w * self.map.h);
-        self.random_map_data = aya.mem.allocator.alloc(f32, self.map.w * self.map.h) catch unreachable;
+        self.random_map_data = aya.mem.allocator.alloc(Randoms, self.map.w * self.map.h) catch unreachable;
         self.map_data_dirty = true;
         self.tiles_per_row = 0;
+
+        self.generateRandomData();
     }
 };
 

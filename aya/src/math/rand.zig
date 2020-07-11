@@ -2,8 +2,8 @@ const std = @import("std");
 
 var rng = std.rand.DefaultPrng.init(0x12345678);
 
-pub fn seed(init_s: u64) void {
-    rng = std.rand.DefaultPrng.init(init_s);
+pub fn seed(new_seed: u64) void {
+    rng.seed(new_seed);
 }
 
 pub fn boolean() bool {
