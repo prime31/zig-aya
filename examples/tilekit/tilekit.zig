@@ -174,8 +174,8 @@ pub fn uvsForTile(state: *AppState, tile: usize) aya.math.Rect {
     const inv_h = 1.0 / @intToFloat(f32, state.texture.height);
 
     return .{
-        .x = (x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_margin)) * inv_w,
-        .y = (y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_margin)) * inv_h,
+        .x = (x * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_spacing)) * inv_w,
+        .y = (y * @intToFloat(f32, state.map.tile_size + state.map.tile_spacing) + @intToFloat(f32, state.map.tile_spacing)) * inv_h,
         .w = @intToFloat(f32, state.map.tile_size) * inv_w,
         .h = @intToFloat(f32, state.map.tile_size) * inv_h,
     };

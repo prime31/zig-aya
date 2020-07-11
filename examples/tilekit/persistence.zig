@@ -19,9 +19,9 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, map.h);
     try out.writeIntLittle(usize, map.tile_size);
     try out.writeIntLittle(usize, map.tile_spacing);
-    try out.writeIntLittle(usize, map.tile_margin);
-    try out.writeIntLittle(usize, map.seed);
-    try out.writeIntLittle(usize, map.repeat);
+    try out.writeIntLittle(u64, map.seed);
+    try out.writeIntLittle(u8, map.repeat);
+
     try out.writeIntLittle(usize, map.image.len);
     try out.writeAll(map.image);
 
@@ -119,7 +119,6 @@ pub fn load(file: []const u8) !Map {
     map.h = try in.readIntLittle(usize);
     map.tile_size = try in.readIntLittle(usize);
     map.tile_spacing = try in.readIntLittle(usize);
-    map.tile_margin = try in.readIntLittle(usize);
     map.seed = try in.readIntLittle(u64);
     map.repeat = try in.readIntLittle(u8);
 
@@ -137,6 +136,7 @@ pub fn load(file: []const u8) !Map {
 
     // rulesets
     const rulesets_len = try in.readIntLittle(usize);
+
     _ = try map.rulesets.ensureCapacity(rulesets_len);
     var i: usize = 0;
     while (i < rulesets_len) : (i += 1) {
@@ -232,9 +232,10 @@ fn readRuleSet(in: Reader) !RuleSet {
 
     rule.chance = try in.readIntLittle(u8);
 
-    const selected_len = try in.readIntLittle(usize);
+    const result_tiles_len = try in.readIntLittle(usize);
+    if (result_tiles_len > 100) return error.WTF;
     var i: usize = 0;
-    while (i < selected_len) : (i += 1) {
+    while (i < result_tiles_len) : (i += 1) {
         rule.result_tiles.append(try in.readIntLittle(u8));
     }
 
@@ -246,7 +247,10 @@ fn writeFixedSliceZ(out: Writer, slice: []const u8) !void {
     const sentinel_index = std.mem.indexOfScalar(u8, slice, 0) orelse slice.len;
     const txt = slice[0..sentinel_index];
     try out.writeIntLittle(usize, txt.len);
-    try out.writeAll(txt);
+
+    if (txt.len > 0) {
+        try out.writeAll(txt);
+    }
 }
 
 fn writeUnion(out: Writer, value: var) !void {
@@ -357,9 +361,6 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
 
         try jw.objectField("tile_spacing");
         try jw.emitNumber(map.tile_spacing);
-
-        try jw.objectField("tile_margin");
-        try jw.emitNumber(map.tile_margin);
 
         try jw.objectField("image");
         try jw.emitString(map.image);
