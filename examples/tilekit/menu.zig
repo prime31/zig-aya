@@ -103,12 +103,16 @@ pub fn draw(state: *tk.AppState) void {
                 }
             }
 
-            // TODO: disable if we didnt first call Load or Save As
             if (igMenuItemBool("Save", null, false, state.opened_file != null)) {
                 state.saveMap(state.opened_file.?) catch unreachable;
             }
 
             if (igMenuItemBool("Save As...", null, false, true)) {
+                if (state.map.image.len == 0) {
+                    state.showToast("No tileset image has been selected.\nLoad a tileset image before saving.", 200);
+                    return;
+                }
+
                 const res = files.saveFileDialog("Save project", getDefaultPath(), "*.tk");
                 aya.time.resync();
                 if (res != null) {

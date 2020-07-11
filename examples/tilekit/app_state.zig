@@ -201,7 +201,6 @@ pub const AppState = struct {
         try curr_dir.setAsCwd();
 
         // unload old texture and load new texture
-        std.debug.print("self.map.image: {}\n", .{self.map.image});
         try std.fs.cwd().access(self.map.image, .{});
         self.texture.deinit();
         self.texture = try Texture.initFromFile(self.map.image);
