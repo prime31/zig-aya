@@ -36,6 +36,19 @@ pub fn ogGetContentRegionAvail() ImVec2 {
     return pos;
 }
 
+pub fn ogGetWindowContentRegionMax() ImVec2 {
+    var max = ImVec2{};
+    igGetWindowContentRegionMax(&max);
+    return max;
+}
+
+pub fn ogGetWindowCenter() ImVec2 {
+    var max = ogGetWindowContentRegionMax();
+    max.x /= 2;
+    max.y /= 2;
+    return max;
+}
+
 pub fn ogAddQuad(draw_list: [*c]ImDrawList, tl: ImVec2, size: f32, col: ImU32, thickness: f32) void {
     ImDrawList_AddQuad(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, col, thickness);
 }

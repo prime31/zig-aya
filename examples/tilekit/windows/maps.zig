@@ -197,6 +197,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
     }
 }
 
+/// syncs the scroll position between the input map, post processed map and output maps
 fn syncScrollPosition(state: *tk.AppState, input_map: bool) void {
     const new_scroll_x = igGetScrollX();
     const new_scroll_y = igGetScrollY();
