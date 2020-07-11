@@ -50,8 +50,7 @@ pub const ScratchAllocator = struct {
 };
 
 test "scratch allocator" {
-    var allocator_memory: [800000 * @sizeOf(u64)]u8 = undefined;
-    var allocator_instance = ScratchAllocator.init(allocator_memory[0..]);
+    var allocator_instance = ScratchAllocator.init(@import("mem.zig").allocator);
 
     var slice = try allocator_instance.allocator.alloc(*i32, 100);
     std.testing.expect(slice.len == 100);

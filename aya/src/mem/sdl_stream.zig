@@ -40,6 +40,7 @@ pub const SdlBufferStream = struct {
 };
 
 test "SdlBufferStream output" {
+    aya.mem.initTmpAllocator();
     var buf = SdlBufferStream.init("/Users/desaro/Desktop/poop.txt", .write);
     const stream = buf.writer();
 
