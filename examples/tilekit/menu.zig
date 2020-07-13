@@ -371,8 +371,7 @@ fn resizeMapPopup(state: *tk.AppState) void {
         igTextWrapped("Note: when resizing a map all undo/redo data will be purged");
         igSpacing();
 
-        var size: ImVec2 = undefined;
-        igGetContentRegionAvail(&size);
+        var size = ogGetContentRegionAvail();
         if (igButton("Cancel", ImVec2{ .x = (size.x - 4) / 2 })) {
             igCloseCurrentPopup();
         }

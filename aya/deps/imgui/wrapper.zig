@@ -3,7 +3,7 @@ usingnamespace @import("imgui.zig");
 pub const icons = @import("font_awesome.zig");
 
 pub fn ogButton(label: [*c]const u8) bool {
-    return igButton(label, ImVec2{});
+    return igButton(label, .{});
 }
 
 pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
