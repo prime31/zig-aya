@@ -7,7 +7,6 @@ const fna_build = @import("deps/fna/build.zig");
 const sdl_build = @import("deps/sdl/build.zig");
 const imgui_build = @import("deps/imgui/build.zig");
 const fontstash_build = @import("deps/fontstash/build.zig");
-const soloud_build = @import("deps/soloud/build.zig");
 
 pub const LibType = enum(i32) {
     static,
@@ -21,12 +20,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     sdl_build.linkArtifact(artifact);
     imgui_build.linkArtifact(b, artifact, target, @intToEnum(imgui_build.LibType, @enumToInt(lib_type)));
     fontstash_build.linkArtifact(b, artifact, target, @intToEnum(fontstash_build.LibType, @enumToInt(lib_type)));
-    // soloud_build.linkArtifact(b, artifact, target, @intToEnum(soloud_build.LibType, @enumToInt(lib_type)));
 
-    // const soloud = Pkg{
-    //     .name = "soloud",
-    //     .path = "aya/deps/soloud/soloud.zig",
-    // };
     const sdl = Pkg{
         .name = "sdl",
         .path = "aya/deps/sdl/sdl.zig",
@@ -54,7 +48,6 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     artifact.addPackage(aya);
     artifact.addPackage(sdl);
     artifact.addPackage(imgui);
-    // artifact.addPackage(soloud);
 }
 
 // add tests.zig file runnable via "zig build test"
