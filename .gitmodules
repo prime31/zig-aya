@@ -4,3 +4,6 @@
 [submodule "deps/imgui/cimgui"]
 	path = aya/deps/imgui/cimgui
 	url = https://github.com/cimgui/cimgui.git
+[submodule "aya/deps/soloud/soloud"]
+	path = aya/deps/soloud/soloud
+	url = https://github.com/jarikomppa/soloud.git
