@@ -10,7 +10,7 @@ pub const LibType = enum(i32) {
 
 pub fn build(b: *std.build.Builder) anyerror!void {
     const exe = b.addStaticLibrary("JunkLib", null);
-    linkArtifact(b, exe, b.standardTargetOptions(.{}), .exe_compiled);
+    linkArtifact(b, exe, b.standardTargetOptions(.{}), .exe_compiled, "");
     exe.install();
 }
 
