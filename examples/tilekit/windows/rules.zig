@@ -38,16 +38,16 @@ pub fn draw(state: *tk.AppState) void {
                 defer igEndTooltip();
 
                 igPushTextWrapPos(igGetFontSize() * 20);
-                igTextUnformatted("Adds a new pre-rule, which will transform the input map before regular rules are run", null);
+                igTextUnformatted("Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run", null);
                 igPopTextWrapPos();
             }
 
             if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
                 defer igEndTabItem();
-                renderRulesTab(state);
+                drawRulesTab(state);
             }
 
-            renderPreRulesTabs(state);
+            drawPreRulesTabs(state);
         }
 
         if (drag_dropping and igIsMouseReleased(ImGuiMouseButton_Left)) {
@@ -70,12 +70,33 @@ fn swapRules(ruleset: *std.ArrayList(RuleSet)) void {
     }
 }
 
-fn renderRulesTab(state: *tk.AppState) void {
+fn drawRulesTab(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
     while (i < state.map.rulesets.items.len) : (i += 1) {
+        if (i == 1) {
+            const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
+
+            if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
+                _ = ogInputText("##name", &rule_label_buf, rule_label_buf.len);
+
+                if (igButton("Rename Folder", .{.x = -1, .y = 0})) {
+                    igCloseCurrentPopup();
+                }
+
+                igEndPopup();
+            }
+
+            if (header_open) {
+                igIndent(5);
+                defer igIndent(-5);
+                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
+                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
+                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
+            }
+        }
         igPushIDInt(@intCast(c_int, i) + 1000);
-        if (renderRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
+        if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
             delete_index = i;
         }
         igPopID();
@@ -96,7 +117,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     }
     igSameLine(0, 10);
 
-    if (igButton("Add 9-Slice", ImVec2{})) {
+    if (ogButton("Add 9-Slice")) {
         igOpenPopup("nine-slice-wizard");
         // reset temp state
         std.mem.set(u8, &new_rule_label_buf, 0);
@@ -104,12 +125,15 @@ fn renderRulesTab(state: *tk.AppState) void {
     }
     igSameLine(0, 10);
 
-    if (igButton("Add Inner-4", ImVec2{})) {
+    if (ogButton("Add Inner-4")) {
         igOpenPopup("inner-four-wizard");
         // reset temp state
         std.mem.set(u8, &new_rule_label_buf, 0);
         nine_slice_selected = null;
     }
+
+    igSameLine(0, 30);
+    if (ogButton(icons.folder_plus)) {}
 
     var pos = igGetIO().MousePos;
     pos.x -= 150;
@@ -123,7 +147,7 @@ fn renderRulesTab(state: *tk.AppState) void {
     }
 }
 
-fn renderPreRulesTabs(state: *tk.AppState) void {
+fn drawPreRulesTabs(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
     for (state.map.pre_rulesets.items) |*pre_rule, i| {
         var is_tab_open = true;
@@ -134,12 +158,12 @@ fn renderPreRulesTabs(state: *tk.AppState) void {
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
                 igPushIDPtr(rule);
-                if (renderRuleSet(state, pre_rule, rule, j, true)) {
+                if (drawRuleSet(state, pre_rule, rule, j, true)) {
                     delete_rule_index = j;
                 }
             }
 
-            if (igButton("Add Rule", ImVec2{})) {
+            if (ogButton("Add Rule")) {
                 pre_rule.append(RuleSet.init()) catch unreachable;
             }
 
@@ -207,7 +231,7 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
     }
 }
 
-fn renderRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
+fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
     rulesDragDrop(index, rule, false);
 
     igPushItemWidth(115);
