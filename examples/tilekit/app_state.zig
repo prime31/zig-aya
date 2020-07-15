@@ -73,6 +73,14 @@ pub const AppState = struct {
             .prefs = prefs,
         };
         state.generateRandomData();
+
+        var i: usize = 10;
+        while (i < 20) : (i += 1) {
+            state.map.addRuleSet();
+            var ruleset = &state.map.rulesets.items[state.map.rulesets.items.len - 1];
+            std.mem.copy(u8, &ruleset.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
+        }
+
         return state;
     }
 
