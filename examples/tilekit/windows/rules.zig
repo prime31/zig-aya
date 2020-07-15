@@ -59,6 +59,10 @@ pub fn draw(state: *tk.AppState) void {
 }
 
 fn swapRules(ruleset: *std.ArrayList(RuleSet)) void {
+    // TODO: dont assign the folder unless we are swapping into a folder proper
+    const folder = ruleset.items[swap_to].folder;
+    ruleset.items[swap_from].folder = folder;
+
     // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
     var total_swaps = if (swap_from > swap_to) swap_from - swap_to else swap_to - swap_from - 1;
     while (total_swaps > 0) : (total_swaps -= 1) {
