@@ -16,6 +16,8 @@ var swap_from: usize = undefined;
 var swap_to: usize = undefined;
 var drag_dropping = false;
 
+var last_folder: u8 = 1;
+
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
     defer igPopStyleVar(1);
@@ -71,35 +73,47 @@ fn swapRules(ruleset: *std.ArrayList(RuleSet)) void {
 }
 
 fn drawRulesTab(state: *tk.AppState) void {
+    var folder: u8 = 0;
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
     while (i < state.map.rulesets.items.len) : (i += 1) {
-        if (i == 1) {
+        // if we have a RuleSet in a folder
+        if (state.map.rulesets.items[i].folder > 0 and state.map.rulesets.items[i].folder != folder) {
+            folder = state.map.rulesets.items[i].folder;
+
+            igPushIDInt(@intCast(c_int, i));
             const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
 
             if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
                 _ = ogInputText("##name", &rule_label_buf, rule_label_buf.len);
 
-                if (igButton("Rename Folder", .{.x = -1, .y = 0})) {
+                if (igButton("Rename Folder", .{ .x = -1, .y = 0 })) {
                     igCloseCurrentPopup();
                 }
 
                 igEndPopup();
             }
+            igPopID();
 
             if (header_open) {
-                igIndent(5);
-                defer igIndent(-5);
-                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
-                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
-                 if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {}
+                igIndent(10);
+            }
+            rulesDragDrop(i, &state.map.rulesets.items[i], true);
+
+            while (i < state.map.rulesets.items.len and state.map.rulesets.items[i].folder == folder) : (i += 1) {
+                if (header_open and drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
+                    delete_index = i;
+                }
+            }
+
+            if (header_open) {
+                igIndent(-10);
             }
         }
-        igPushIDInt(@intCast(c_int, i) + 1000);
+
         if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
             delete_index = i;
         }
-        igPopID();
     }
 
     if (delete_index < state.map.rulesets.items.len) {
@@ -113,7 +127,7 @@ fn drawRulesTab(state: *tk.AppState) void {
     }
 
     if (igButton("Add Rule", ImVec2{})) {
-        state.map.addRule();
+        state.map.addRuleSet();
     }
     igSameLine(0, 10);
 
@@ -157,7 +171,6 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
 
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
-                igPushIDPtr(rule);
                 if (drawRuleSet(state, pre_rule, rule, j, true)) {
                     delete_rule_index = j;
                 }
@@ -175,7 +188,6 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
                 swap_rules = false;
                 swapRules(pre_rule);
             }
-            igPopID();
         }
         igPopID();
 
@@ -232,7 +244,24 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
 }
 
 fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
+    igPushIDPtr(rule);
+    defer igPopID();
+
     rulesDragDrop(index, rule, false);
+
+    // right-click the move button to add the RuleSet to a folder
+    if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
+        _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
+
+        if (igButton("Add to New Folder", .{ .x = -1, .y = 0 })) {
+            igCloseCurrentPopup();
+            rule.folder = last_folder;
+            last_folder += 1;
+            std.mem.set(u8, &new_rule_label_buf, 0);
+        }
+
+        igEndPopup();
+    }
 
     igPushItemWidth(115);
     std.mem.copy(u8, &rule_label_buf, &rule.name);

@@ -49,7 +49,7 @@ pub const Map = struct {
         }
     }
 
-    pub fn addRule(self: *Map) void {
+    pub fn addRuleSet(self: *Map) void {
         self.rulesets.append(RuleSet.init()) catch unreachable;
     }
 
@@ -212,6 +212,7 @@ pub const RuleSet = struct {
     rules: [25]Rule = undefined,
     chance: u8 = 100,
     result_tiles: aya.utils.FixedList(u8, 25), // indices into the tileset image
+    folder: u8 = 0, // UI-relevant: used to group RuleSets into a tree leaf node visually
 
     pub fn init() RuleSet {
         return .{
