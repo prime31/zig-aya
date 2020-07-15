@@ -79,6 +79,8 @@ pub const AppState = struct {
             state.map.addRuleSet();
             var ruleset = &state.map.rulesets.items[state.map.rulesets.items.len - 1];
             std.mem.copy(u8, &ruleset.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
+
+            if (i == 12 or i == 13) ruleset.folder = 1;
         }
 
         return state;
