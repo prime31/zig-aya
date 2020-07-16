@@ -57,12 +57,7 @@ pub fn draw(state: *tk.AppState) void {
                 state.map.addPreRulesPage();
             }
             if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-                igBeginTooltip();
-                defer igEndTooltip();
-
-                igPushTextWrapPos(igGetFontSize() * 20);
-                igTextUnformatted("Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run", null);
-                igPopTextWrapPos();
+                ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
             }
 
             if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
@@ -171,8 +166,10 @@ fn drawRulesTab(state: *tk.AppState) void {
                 igIndent(-10);
             }
 
-            // if a folder is the last item dont try to render any more!
+            // if a folder is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
             if (i == state.map.rulesets.items.len) break;
+            i -= 1;
+            continue;
         }
 
         if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
@@ -208,9 +205,6 @@ fn drawRulesTab(state: *tk.AppState) void {
         std.mem.set(u8, &new_rule_label_buf, 0);
         nine_slice_selected = null;
     }
-
-    igSameLine(0, 30);
-    if (ogButton(icons.folder_plus)) {}
 
     var pos = igGetIO().MousePos;
     pos.x -= 150;
@@ -309,6 +303,10 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
 
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
+        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+            ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a folder");
+        }
+
         igSameLine(0, 4);
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
             drag_drop_state.active = true;
