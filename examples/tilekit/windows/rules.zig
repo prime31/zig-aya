@@ -11,12 +11,31 @@ var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 
-var swap_rules = false;
-var swap_from: usize = undefined;
-var swap_to: usize = undefined;
-var drag_dropping = false;
+var drag_drop_state = struct {
+    source: union(enum) {
+        rule: *RuleSet,
+        folder: u8,
+    } = undefined,
+    from: usize = 0,
+    to: usize = 0,
+    completed: bool = false,
+    active: bool = false,
 
-var last_folder: u8 = 1;
+    pub fn isFolder(self: @This()) bool {
+        return switch (self.source) {
+            .folder => true,
+            else => false,
+        };
+    }
+
+    pub fn handle(self: *@This(), ruleset: *std.ArrayList(RuleSet)) void {
+        self.completed = false;
+        switch (self.source) {
+            .folder => swapFolders(ruleset),
+            else => swapRuleSets(ruleset),
+        }
+    }
+}{};
 
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
@@ -52,26 +71,60 @@ pub fn draw(state: *tk.AppState) void {
             drawPreRulesTabs(state);
         }
 
-        if (drag_dropping and igIsMouseReleased(ImGuiMouseButton_Left)) {
-            drag_dropping = false;
+        if (drag_drop_state.active and igIsMouseReleased(ImGuiMouseButton_Left)) {
+            drag_drop_state.active = false;
         }
     }
 }
 
-fn swapRules(ruleset: *std.ArrayList(RuleSet)) void {
+fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
     // TODO: dont assign the folder unless we are swapping into a folder proper
-    const folder = ruleset.items[swap_to].folder;
-    ruleset.items[swap_from].folder = folder;
+    const folder = ruleset.items[drag_drop_state.to].folder;
+    ruleset.items[drag_drop_state.from].folder = folder;
 
     // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
-    var total_swaps = if (swap_from > swap_to) swap_from - swap_to else swap_to - swap_from - 1;
+    var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - 1;
     while (total_swaps > 0) : (total_swaps -= 1) {
-        if (swap_from > swap_to) {
-            std.mem.swap(RuleSet, &ruleset.items[swap_from], &ruleset.items[swap_from - 1]);
-            swap_from -= 1;
+        if (drag_drop_state.from > drag_drop_state.to) {
+            std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from], &ruleset.items[drag_drop_state.from - 1]);
+            drag_drop_state.from -= 1;
         } else {
-            std.mem.swap(RuleSet, &ruleset.items[swap_from], &ruleset.items[swap_from + 1]);
-            swap_from += 1;
+            std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from], &ruleset.items[drag_drop_state.from + 1]);
+            drag_drop_state.from += 1;
+        }
+    }
+}
+
+fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
+    var total_in_folder = blk: {
+        var total: usize = 0;
+        for (ruleset.items) |rule| {
+            if (rule.folder == drag_drop_state.source.folder) total += 1;
+        }
+        break :blk total;
+    };
+    var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - total_in_folder;
+    if (total_swaps == 0) return;
+
+    std.debug.print("swap folder from index: {} -> {}\n", .{ drag_drop_state.from, drag_drop_state.to });
+    std.debug.print("total swaps: {}\n", .{total_swaps});
+
+    while (total_swaps > 0) : (total_swaps -= 1) {
+        if (drag_drop_state.from > drag_drop_state.to) {
+            var j: usize = 0;
+            while (j < total_in_folder) : (j += 1) {
+                std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from + j], &ruleset.items[drag_drop_state.from - 1 + j]);
+            }
+            drag_drop_state.from -= 1;
+        } else {
+            std.debug.print("drag_drop_state.from: {}\n", .{drag_drop_state.from});
+            var j: usize = total_in_folder - 1;
+            while (j >= 0) : (j -= 1) {
+                std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from + j], &ruleset.items[drag_drop_state.from + 1 + j]);
+                std.debug.print(" --- {} --> {}\n", .{ drag_drop_state.from + j, drag_drop_state.from + 1 + j });
+                if (j == 0) break;
+            }
+            drag_drop_state.from += 1;
         }
     }
 }
@@ -81,12 +134,13 @@ fn drawRulesTab(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
     while (i < state.map.rulesets.items.len) : (i += 1) {
-        // if we have a RuleSet in a folder
+        // if we have a RuleSet in a folder render all the RuleSets in that folder at once
         if (state.map.rulesets.items[i].folder > 0 and state.map.rulesets.items[i].folder != folder) {
             folder = state.map.rulesets.items[i].folder;
 
-            igPushIDInt(@intCast(c_int, i));
+            igPushIDInt(@intCast(c_int, folder));
             const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
+            folderDragDrop(state.map.rulesets.items[i].folder, i);
 
             if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
                 _ = ogInputText("##name", &rule_label_buf, rule_label_buf.len);
@@ -113,6 +167,9 @@ fn drawRulesTab(state: *tk.AppState) void {
             if (header_open) {
                 igIndent(-10);
             }
+
+            // if a folder is the last item dont try to render any more!
+            if (i == state.map.rulesets.items.len) break;
         }
 
         if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
@@ -125,9 +182,8 @@ fn drawRulesTab(state: *tk.AppState) void {
     }
 
     // handle drag and drop swapping
-    if (swap_rules) {
-        swap_rules = false;
-        swapRules(&state.map.rulesets);
+    if (drag_drop_state.completed) {
+        drag_drop_state.handle(&state.map.rulesets);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
@@ -188,9 +244,8 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
                 _ = pre_rule.orderedRemove(delete_rule_index);
             }
 
-            if (swap_rules) {
-                swap_rules = false;
-                swapRules(pre_rule);
+            if (drag_drop_state.completed) {
+                drag_drop_state.handle(pre_rule);
             }
         }
         igPopID();
@@ -206,6 +261,17 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
+fn folderDragDrop(folder: u8, index: usize) void {
+    if (igBeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers)) {
+        drag_drop_state.active = true;
+        drag_drop_state.from = index;
+        drag_drop_state.source = .{ .folder = folder };
+        _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
+        _ = igText("folder dickhead");
+        igEndDragDropSource();
+    }
+}
+
 /// handles drag/drop sources and targets
 fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
     var cursor = ogGetCursorPos();
@@ -213,16 +279,18 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
         igSameLine(0, 4);
-        var drag_drop_index = index;
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
-            drag_dropping = true;
-            _ = igSetDragDropPayload("RULE_DRAG", &drag_drop_index, @sizeOf(usize), ImGuiCond_Once);
+            drag_drop_state.active = true;
+            _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
+            drag_drop_state.from = index;
+            drag_drop_state.source = .{ .rule = rule };
             _ = igText(&rule.name);
             igEndDragDropSource();
         }
     }
 
-    if (drag_dropping) {
+    // if we are dragging a folder dont allow dragging it into another folder
+    if (drag_drop_state.active and !(drag_drop_state.isFolder() and rule.folder > 0)) {
         const old_pos = ogGetCursorPos();
         cursor.y -= 5;
         igSetCursorPos(cursor);
@@ -230,17 +298,18 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
         igSetCursorPos(old_pos);
 
         if (igBeginDragDropTarget()) {
-            if (igAcceptDragDropPayload("RULE_DRAG", ImGuiDragDropFlags_None)) |payload| {
-                var index_ptr = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data));
-                swap_rules = true;
-                swap_from = index_ptr.*;
-                swap_to = index;
+            if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                drag_drop_state.completed = true;
+                drag_drop_state.to = index;
 
-                // dont allow swapping to the same location, which is the drop target above or below the dragged item
-                if (swap_from == swap_to or (swap_to > 0 and swap_from == swap_to - 1)) {
-                    swap_rules = false;
+                // if this is a folder being dragged, we can rule out the operation since we could have 1 to n items in our folder
+                if (!drag_drop_state.isFolder()) {
+                    // dont allow swapping to the same location, which is the drop target above or below the dragged item
+                    if (drag_drop_state.from == drag_drop_state.to or (drag_drop_state.to > 0 and drag_drop_state.from == drag_drop_state.to - 1)) {
+                        drag_drop_state.completed = false;
+                    }
                 }
-                drag_dropping = false;
+                drag_drop_state.active = false;
             }
             igEndDragDropTarget();
         }
@@ -259,8 +328,13 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
 
         if (igButton("Add to New Folder", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
-            rule.folder = last_folder;
-            last_folder += 1;
+
+            // get the highest folder number and increment it
+            var folder: u8 = 0;
+            for (parent.items) |item| {
+                folder = std.math.max(folder, item.folder);
+            }
+            rule.folder = folder + 1;
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
