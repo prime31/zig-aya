@@ -56,9 +56,7 @@ pub fn draw(state: *tk.AppState) void {
             if (igButton(" + ", ImVec2{})) {
                 state.map.addPreRulesPage();
             }
-            if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-                ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
-            }
+            ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
 
             if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
                 defer igEndTabItem();
@@ -307,9 +305,7 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
 
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-            ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a folder");
-        }
+        ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a folder");
 
         igSameLine(0, 4);
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -423,10 +419,11 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
         patternPopup(state, rule);
 
         var size = ogGetContentRegionAvail();
-        if (igButton("Clear", ImVec2{ .x = (size.x - 4) / 1.3 })) {
+        if (igButton("Clear", ImVec2{ .x = (size.x - 4) / 1.7 })) {
             rule.clearPatternData();
         }
         igSameLine(0, 4);
+
         if (igButton("...", ImVec2{ .x = -1, .y = 0 })) {
             igOpenPopup("rules_hamburger");
         }
@@ -437,7 +434,7 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
     }
 
     if (is_pre_rule) {
-        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.map.tile_size) * 5.0 / 2.0;
+        pos.x = igGetIO().MousePos.x - @intToFloat(f32, 32) * 5.0 / 2.0;
     } else {
         pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.texture.width) / 2;
     }
@@ -452,6 +449,9 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
 
 fn patternPopup(state: *tk.AppState, rule: *RuleSet) void {
     igText("Pattern");
+    igSameLine(0, igGetWindowContentRegionWidth() - 65);
+    igText(icons.question_circle);
+    ogUnformattedTooltip(100, "Left Click: select tile and require\nShift + Left Click: select tile and negate\nRight Click: set as empty required\nShift + Right Click: set as empty negated");
 
     const draw_list = igGetWindowDrawList();
 
@@ -504,16 +504,16 @@ fn patternPopup(state: *tk.AppState, rule: *RuleSet) void {
 
             if (hovered) {
                 if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
-                    if (igIsMouseClicked(0, false)) {
-                        if (aya.input.keyDown(.SDL_SCANCODE_LSHIFT)) {
+                    if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                        if (igGetIO().KeyShift) {
                             rule_tile.negate(state.selected_brush_index + 1);
                         } else {
                             rule_tile.require(state.selected_brush_index + 1);
                         }
                     }
 
-                    if (igIsMouseClicked(1, false)) {
-                        rule_tile.toggleState(if (aya.input.keyDown(.SDL_SCANCODE_LSHIFT)) .negated else .required);
+                    if (igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+                        rule_tile.toggleState(if (igGetIO().KeyShift) .negated else .required);
                     }
                 }
             }
@@ -567,9 +567,10 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
+    const tile_size = if (is_pre_rule) 32 else state.map.tile_size;
 
     if (is_pre_rule) {
-        brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
+        brushes_win.draw(state, @intToFloat(f32, tile_size), true);
     } else {
         ogImage(state.texture.tex, state.texture.width, state.texture.height);
     }
@@ -583,21 +584,21 @@ fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
         const x = @mod(index, per_row);
         const y = @divTrunc(index, per_row);
 
-        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size + tile_spacing) };
+        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
         tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
         tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), colors.rule_result_selected_fill);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, tile_size), colors.rule_result_selected_fill);
 
         // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
         tl.x += 1;
         tl.y += 1;
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), colors.rule_result_selected_outline, 2);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, tile_size - 2), colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size + tile_spacing), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
             ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
         }
