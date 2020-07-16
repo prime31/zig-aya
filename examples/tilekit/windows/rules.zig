@@ -75,7 +75,7 @@ pub fn draw(state: *tk.AppState) void {
 }
 
 fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
-    std.debug.print("drag_drop_state.above_folder: {}\n", .{drag_drop_state.above_folder});
+    std.debug.print("above_folder: {}\n", .{drag_drop_state.above_folder});
     // dont assign the folder unless we are swapping into a folder proper
     if (!drag_drop_state.above_folder) {
         const folder = ruleset.items[drag_drop_state.to].folder;
@@ -259,12 +259,16 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
 }
 
 fn folderDropTarget(folder: u8, index: usize) void {
-    var cursor = ogGetCursorPos();
-    const old_pos = cursor;
-    cursor.y -= 5;
-    igSetCursorPos(cursor);
-    _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
-    igSetCursorPos(old_pos);
+    if (drag_drop_state.active) {
+        var cursor = ogGetCursorPos();
+        const old_pos = cursor;
+        cursor.y -= 5;
+        igSetCursorPos(cursor);
+        igPushStyleColorU32(ImGuiCol_Button, colors.colorRgb(0, 255, 0));
+        _ = igButton("", .{ .x = -1, .y = 8 });
+        igPopStyleColor(1);
+        igSetCursorPos(old_pos);
+    }
 
     if (igBeginDragDropTarget()) {
         defer igEndDragDropTarget();
@@ -323,11 +327,14 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
         const old_pos = ogGetCursorPos();
         cursor.y -= 5;
         igSetCursorPos(cursor);
-        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
+        igPushStyleColorU32(ImGuiCol_Button, colors.colorRgb(255, 0, 0));
+        _ = igButton("", .{ .x = -1, .y = 8 });
+        igPopStyleColor(1);
         igSetCursorPos(old_pos);
 
         if (igBeginDragDropTarget()) {
             if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                std.debug.print("non-folder. source: {}, dest: {}\n", .{ drag_drop_state.source.rule.folder, rule.folder });
                 drag_drop_state.completed = true;
                 drag_drop_state.to = index;
 
