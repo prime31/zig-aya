@@ -80,12 +80,22 @@ pub const Map = struct {
         self.data[x + y * self.w] = value;
     }
 
+    pub fn getNextRuleSetFolder(self: Map) u8 {
+        var folder: u8 = 0;
+        for (self.rulesets.items) |item| {
+            folder = std.math.max(folder, item.folder);
+        }
+        return folder + 1;
+    }
+
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
     pub fn addNinceSliceRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
+        const folder = self.getNextRuleSetFolder();
 
         var rule = RuleSet.init();
+        rule.folder = folder;
         const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tl_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
@@ -95,6 +105,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tr" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tr_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
@@ -104,6 +115,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-bl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, bl_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
@@ -113,6 +125,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-br" }) catch unreachable;
         std.mem.copy(u8, &rule.name, br_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
@@ -122,6 +135,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const t_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-t" }) catch unreachable;
         std.mem.copy(u8, &rule.name, t_name);
         rule.get(2, 1).negate(selected_brush_index + 1);
@@ -130,6 +144,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const b_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-b" }) catch unreachable;
         std.mem.copy(u8, &rule.name, b_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
@@ -138,6 +153,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const l_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-l" }) catch unreachable;
         std.mem.copy(u8, &rule.name, l_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
@@ -146,6 +162,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const r_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-r" }) catch unreachable;
         std.mem.copy(u8, &rule.name, r_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
@@ -154,6 +171,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const c_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-c" }) catch unreachable;
         std.mem.copy(u8, &rule.name, c_name);
         rule.get(2, 2).require(selected_brush_index + 1);
@@ -164,8 +182,10 @@ pub const Map = struct {
     pub fn addInnerFourRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
+        const folder = self.getNextRuleSetFolder();
 
         var rule = RuleSet.init();
+        rule.folder = folder;
         const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tl_name);
         rule.get(1, 1).negate(selected_brush_index + 1);
@@ -176,6 +196,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tr" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tr_name);
         rule.get(3, 1).negate(selected_brush_index + 1);
@@ -186,6 +207,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-bl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, bl_name);
         rule.get(1, 2).require(selected_brush_index + 1);
@@ -196,6 +218,7 @@ pub const Map = struct {
         self.rulesets.append(rule) catch unreachable;
 
         rule = RuleSet.init();
+        rule.folder = folder;
         const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-br" }) catch unreachable;
         std.mem.copy(u8, &rule.name, br_name);
         rule.get(2, 3).require(selected_brush_index + 1);
@@ -228,6 +251,7 @@ pub const RuleSet = struct {
         std.mem.copy(u8, &new_rule.result_tiles.items, &self.result_tiles.items);
         new_rule.result_tiles.len = self.result_tiles.len;
         new_rule.chance = self.chance;
+        new_rule.folder = self.folder;
         return new_rule;
     }
 
