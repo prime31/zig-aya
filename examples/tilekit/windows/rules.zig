@@ -106,10 +106,8 @@ fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
     var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - total_in_folder;
     if (total_swaps == 0) return;
 
-    std.debug.print("swap folder from index: {} -> {}\n", .{ drag_drop_state.from, drag_drop_state.to });
-    std.debug.print("total swaps: {}\n", .{total_swaps});
-
     while (total_swaps > 0) : (total_swaps -= 1) {
+        // when moving up, we can just move each item in our folder up one slot
         if (drag_drop_state.from > drag_drop_state.to) {
             var j: usize = 0;
             while (j < total_in_folder) : (j += 1) {
@@ -117,11 +115,10 @@ fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
             }
             drag_drop_state.from -= 1;
         } else {
-            std.debug.print("drag_drop_state.from: {}\n", .{drag_drop_state.from});
+            // moving down, we have to move the last item in the folder first each step
             var j: usize = total_in_folder - 1;
             while (j >= 0) : (j -= 1) {
                 std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from + j], &ruleset.items[drag_drop_state.from + 1 + j]);
-                std.debug.print(" --- {} --> {}\n", .{ drag_drop_state.from + j, drag_drop_state.from + 1 + j });
                 if (j == 0) break;
             }
             drag_drop_state.from += 1;
