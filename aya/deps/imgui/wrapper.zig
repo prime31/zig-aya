@@ -7,9 +7,9 @@ pub fn ogButton(label: [*c]const u8) bool {
 }
 
 pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
-    const white = ImVec4{.x = 1, .y = 1, .z = 1, .w = 1};
-    const size = ImVec2{.x = @intToFloat(f32, width), .y = @intToFloat(f32, height)};
-    igImage(texture, size, ImVec2{}, ImVec2{.x = 1, .y = 1}, white, ImVec4{});
+    const white = ImVec4{ .x = 1, .y = 1, .z = 1, .w = 1 };
+    const size = ImVec2{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
+    igImage(texture, size, ImVec2{}, ImVec2{ .x = 1, .y = 1 }, white, ImVec4{});
 }
 
 pub fn ogGetCursorScreenPos() ImVec2 {
@@ -66,6 +66,16 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
     return igInputText(label, buf, buf_size, ImGuiInputTextFlags_None, null, null);
 }
 
+/// adds an unformatted (igTextUnformatted) tooltip with a specific wrap width
+pub fn ogUnformattedTooltip(text_wrap_pos: f32, text: [*c]const u8) void {
+    igBeginTooltip();
+    defer igEndTooltip();
+
+    igPushTextWrapPos(igGetFontSize() * text_wrap_pos);
+    igTextUnformatted(text, null);
+    igPopTextWrapPos();
+}
+
 pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
     return ogDragUnsignedFormat(T, label, p_data, v_speed, p_min, p_max, null);
 }
@@ -74,8 +84,7 @@ pub fn ogDragUnsignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v
     std.debug.assert(std.meta.trait.isUnsignedInt(T));
     var min = p_min;
     var max = p_max;
-    const data_type = switch(T)
-    {
+    const data_type = switch (T) {
         u8 => ImGuiDataType_U8,
         u16 => ImGuiDataType_U16,
         u32 => ImGuiDataType_U32,
@@ -88,8 +97,7 @@ pub fn ogDragUnsignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v
 pub fn ogDragSigned(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
     var min = p_min;
     var max = p_max;
-    const data_type = switch(T)
-    {
+    const data_type = switch (T) {
         i16 => ImGuiDataType_S16,
         i32 => ImGuiDataType_S32,
         f32 => ImGuiDataType_Float,
