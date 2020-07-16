@@ -42,6 +42,12 @@ pub fn ogGetWindowContentRegionMax() ImVec2 {
     return max;
 }
 
+pub fn ogGetItemRectSize() ImVec2 {
+    var size = ImVec2{};
+    igGetItemRectSize(&size);
+    return size;
+}
+
 pub fn ogGetWindowCenter() ImVec2 {
     var max = ogGetWindowContentRegionMax();
     max.x /= 2;
@@ -68,12 +74,14 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
 
 /// adds an unformatted (igTextUnformatted) tooltip with a specific wrap width
 pub fn ogUnformattedTooltip(text_wrap_pos: f32, text: [*c]const u8) void {
-    igBeginTooltip();
-    defer igEndTooltip();
+    if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+        igBeginTooltip();
+        defer igEndTooltip();
 
-    igPushTextWrapPos(igGetFontSize() * text_wrap_pos);
-    igTextUnformatted(text, null);
-    igPopTextWrapPos();
+        igPushTextWrapPos(igGetFontSize() * text_wrap_pos);
+        igTextUnformatted(text, null);
+        igPopTextWrapPos();
+    }
 }
 
 pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
