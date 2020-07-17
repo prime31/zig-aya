@@ -1,4 +1,5 @@
 const std = @import("std");
+const Color = @import("color.zig").Color;
 
 var rng = std.rand.DefaultPrng.init(0x12345678);
 
@@ -21,7 +22,7 @@ pub fn float(comptime T: type) T {
 }
 
 pub fn color() Color {
-    return Color{ .value = rng.random.int(u32) };
+    return Color.fromBytes(range(u8, 0, 255), range(u8, 0, 255), range(u8, 0, 255), 255);
 }
 
 /// Returns an evenly distributed random integer `at_least <= i < less_than`.
