@@ -73,7 +73,6 @@ pub fn draw(state: *tk.AppState) void {
 }
 
 fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
-    std.debug.print("above_folder: {}\n", .{drag_drop_state.above_folder});
     // dont assign the folder unless we are swapping into a folder proper
     if (!drag_drop_state.above_folder) {
         const folder = ruleset.items[drag_drop_state.to].folder;
@@ -263,21 +262,13 @@ fn folderDropTarget(folder: u8, index: usize) void {
         cursor.y -= 5;
         igSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, colors.colorRgb(0, 255, 0));
-        _ = igButton("", .{ .x = -1, .y = 8 });
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
     }
 
     if (igBeginDragDropTarget()) {
         defer igEndDragDropTarget();
-
-        if (!drag_drop_state.isFolder()) {
-            // dont allow swapping to the same location, which is the drop target above or below the dragged item
-            if (drag_drop_state.from == drag_drop_state.to or (drag_drop_state.to > 0 and drag_drop_state.from == drag_drop_state.to - 1)) {
-                drag_drop_state.completed = false;
-                return;
-            }
-        }
 
         if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
             drag_drop_state.completed = true;
@@ -295,6 +286,7 @@ fn folderDragDrop(folder: u8, index: usize) void {
         drag_drop_state.source = .{ .folder = folder };
         _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
         _ = igText("folder dickhead");
+        _ = ogButton("Im a fucking folder a-hole");
         igEndDragDropSource();
     }
 }
@@ -324,17 +316,16 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
         cursor.y -= 5;
         igSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, colors.colorRgb(255, 0, 0));
-        _ = igButton("", .{ .x = -1, .y = 8 });
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
 
         if (igBeginDragDropTarget()) {
             if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
-                std.debug.print("non-folder. source: {}, dest: {}\n", .{ drag_drop_state.source.rule.folder, rule.folder });
                 drag_drop_state.completed = true;
                 drag_drop_state.to = index;
 
-                // if this is a folder being dragged, we can rule out the operation since we could have 1 to n items in our folder
+                // if this is a folder being dragged, we cant rule out the operation since we could have 1 to n items in our folder
                 if (!drag_drop_state.isFolder()) {
                     // dont allow swapping to the same location, which is the drop target above or below the dragged item
                     if (drag_drop_state.from == drag_drop_state.to or (drag_drop_state.to > 0 and drag_drop_state.from == drag_drop_state.to - 1)) {
