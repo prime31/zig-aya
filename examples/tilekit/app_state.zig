@@ -55,12 +55,39 @@ pub const AppState = struct {
         },
     };
 
+    /// generates a texture with 4x4, 16px blocks of color
+    fn generateTexture() Texture {
+        const rc = aya.math.rand.color;
+        var colors = [_]u32{
+            tk.colors.brushes[12],tk.colors.brushes[11],tk.colors.brushes[10],tk.colors.brushes[9],
+            tk.colors.brushes[8],tk.colors.brushes[7],tk.colors.brushes[6],tk.colors.brushes[5],
+            tk.colors.brushes[4],tk.colors.brushes[3],tk.colors.brushes[2],tk.colors.brushes[1],
+            rc().value, rc().value, rc().value, rc().value,
+        };
+
+        var pixels: [16 * 4 * 16 * 4]u32 = undefined;
+        var y: usize = 0;
+        while (y < 16 * 4) : (y += 1) {
+            var x: usize = 0;
+            while (x < 16 * 4) : (x += 1) {
+                const xx = @divTrunc(x, 16);
+                const yy = @divTrunc(y, 16);
+                pixels[x + y * 16 * 4] = colors[xx + yy * 2];
+            }
+        }
+
+        const tex = Texture.init(16 * 4, 16 * 4);
+        tex.setColorData(pixels[0..]);
+        tex.setSamplerState(.{});
+        return tex;
+    }
+
     pub fn init() AppState {
         const prefs = aya.fs.readPrefsJson(AppState.Prefs, "aya_tile", "prefs.json") catch AppState.Prefs{ .windows = .{} };
 
         // load up a temp map
-        const tile_size = 12;
-        const map = Map.init(tile_size, 1);
+        const tile_size = 16;
+        const map = Map.init(tile_size, 0);
 
         var state = AppState{
             .map = map,
@@ -68,8 +95,7 @@ pub const AppState = struct {
             .processed_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .final_map_data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .random_map_data = aya.mem.allocator.alloc(Randoms, 64 * 64) catch unreachable,
-            .texture = Texture.initFromFile("assets/blacknwhite.png") catch unreachable,
-            // .texture = Texture.initCheckerboard(),
+            .texture = generateTexture(),
             .prefs = prefs,
         };
         state.generateRandomData();
