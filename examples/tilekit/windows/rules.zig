@@ -21,6 +21,8 @@ var drag_drop_state = struct {
     above_folder: bool = false,
     completed: bool = false,
     active: bool = false,
+    rendering_folder: bool = false,
+    dropped_in_folder: bool = false,
 
     pub fn isFolder(self: @This()) bool {
         return switch (self.source) {
@@ -72,11 +74,15 @@ pub fn draw(state: *tk.AppState) void {
     }
 }
 
+/// handles the actual logic to rearrange the RuleSet for drag/drop when a Rule is reordered
 fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
     // dont assign the folder unless we are swapping into a folder proper
-    if (!drag_drop_state.above_folder) {
-        const folder = ruleset.items[drag_drop_state.to].folder;
+    if (!drag_drop_state.above_folder and drag_drop_state.dropped_in_folder) {
+        const to = if (ruleset.items.len == drag_drop_state.to) drag_drop_state.to - 1 else drag_drop_state.to;
+        const folder = ruleset.items[to].folder;
         ruleset.items[drag_drop_state.from].folder = folder;
+    } else {
+        ruleset.items[drag_drop_state.from].folder = 0;
     }
 
     // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
@@ -92,6 +98,7 @@ fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
     }
 }
 
+/// handles the actual logic to rearrange the RuleSet for drag/drop when a folder is reordered
 fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
     var total_in_folder = blk: {
         var total: usize = 0;
@@ -138,7 +145,7 @@ fn drawRulesTab(state: *tk.AppState) void {
             folderDragDrop(state.map.rulesets.items[i].folder, i);
 
             if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
-                _ = ogInputText("##name", &rule_label_buf, rule_label_buf.len);
+                _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
                 if (igButton("Rename Folder", .{ .x = -1, .y = 0 })) {
                     igCloseCurrentPopup();
@@ -150,6 +157,7 @@ fn drawRulesTab(state: *tk.AppState) void {
 
             if (header_open) {
                 igIndent(10);
+                drag_drop_state.rendering_folder = true;
             }
             rulesDragDrop(i, &state.map.rulesets.items[i], true);
 
@@ -160,7 +168,8 @@ fn drawRulesTab(state: *tk.AppState) void {
             }
 
             if (header_open) {
-                igIndent(-10);
+                igUnindent(10);
+                drag_drop_state.rendering_folder = false;
             }
 
             // if a folder is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
@@ -286,7 +295,6 @@ fn folderDragDrop(folder: u8, index: usize) void {
         drag_drop_state.source = .{ .folder = folder };
         _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
         _ = igText("folder dickhead");
-        _ = ogButton("Im a fucking folder a-hole");
         igEndDragDropSource();
     }
 }
@@ -322,6 +330,7 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
 
         if (igBeginDragDropTarget()) {
             if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                drag_drop_state.dropped_in_folder = drag_drop_state.rendering_folder;
                 drag_drop_state.completed = true;
                 drag_drop_state.to = index;
 
@@ -347,7 +356,8 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
 
     // right-click the move button to add the RuleSet to a folder only if not already in a folder
     if (rule.folder == 0 and igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
-        _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
+        _ = ogInputText("##folder-name", &new_rule_label_buf, new_rule_label_buf.len);
+        igText("Note: name not supported yet");
 
         if (igButton("Add to New Folder", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
