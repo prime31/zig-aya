@@ -2707,19 +2707,19 @@ pub const SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP = "SDL_WINDOWS_ENABLE_MESSAGELOOP"
 pub const SDL_PREALLOC = 0x00000001;
 pub const SDL_HAPTIC_SAWTOOTHUP = @as(c_uint, 1) << 4;
 
-pub inline fn SDL_LoadWAV(file: var, spec: var, audio_buf: var, audio_len: var) @TypeOf(SDL_LoadWAV_RW(SDL_RWFromFile(file, "rb"), 1, spec, audio_buf, audio_len)) {
+pub inline fn SDL_LoadWAV(file: anytype, spec: anytype, audio_buf: anytype, audio_len: anytype) @TypeOf(SDL_LoadWAV_RW(SDL_RWFromFile(file, "rb"), 1, spec, audio_buf, audio_len)) {
     return SDL_LoadWAV_RW(SDL_RWFromFile(file, "rb"), 1, spec, audio_buf, audio_len);
 }
 
 pub const SDL_WINDOWPOS_UNDEFINED_MASK = @as(c_uint, 0x1FFF0000);
-pub inline fn SDL_WINDOWPOS_UNDEFINED_DISPLAY(X: var) @TypeOf(SDL_WINDOWPOS_UNDEFINED_MASK | X) {
+pub inline fn SDL_WINDOWPOS_UNDEFINED_DISPLAY(X: anytype) @TypeOf(SDL_WINDOWPOS_UNDEFINED_MASK | X) {
     return SDL_WINDOWPOS_UNDEFINED_MASK | X;
 }
 pub const SDL_WINDOWPOS_UNDEFINED = SDL_WINDOWPOS_UNDEFINED_DISPLAY(0);
 pub const SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED_DISPLAY(0);
 pub const SDL_WINDOWPOS_CENTERED_MASK = @as(c_uint, 0x2FFF0000);
 
-pub inline fn SDL_SCANCODE_TO_KEYCODE(X: var) @TypeOf(X | SDLK_SCANCODE_MASK) {
+pub inline fn SDL_SCANCODE_TO_KEYCODE(X: anytype) @TypeOf(X | SDLK_SCANCODE_MASK) {
     return X | SDLK_SCANCODE_MASK;
 }
 

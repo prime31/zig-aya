@@ -39,7 +39,7 @@ pub fn getSaveGamesFile(app: []const u8, filename: []const u8) ![]u8 {
 }
 
 /// saves a serializable struct to disk
-pub fn savePrefs(app: []const u8, filename: []const u8, data: var) !void {
+pub fn savePrefs(app: []const u8, filename: []const u8, data: anytype) !void {
     const file = try getSaveGamesFile(app, filename);
     var buf = aya.mem.SdlBufferStream.init(file, .write);
     defer buf.deinit();
@@ -57,7 +57,7 @@ pub fn readPrefs(comptime T: type, app: []const u8, filename: []const u8) !T {
     return deserializer.deserialize(T);
 }
 
-pub fn savePrefsJson(app: []const u8, filename: []const u8, data: var) !void {
+pub fn savePrefsJson(app: []const u8, filename: []const u8, data: anytype) !void {
     const file = try getSaveGamesFile(app, filename);
     var buf = aya.mem.SdlBufferStream.init(file, .write);
 
@@ -74,7 +74,7 @@ pub fn readPrefsJson(comptime T: type, app: []const u8, filename: []const u8) !T
 }
 
 /// for prefs loaded with `readPrefsJson` that have allocated fields, this must be called to free them
-pub fn freePrefsJson(data: var) void {
+pub fn freePrefsJson(data: anytype) void {
     const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
     std.json.parseFree(@TypeOf(data), data, options);
 }

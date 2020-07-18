@@ -17,16 +17,16 @@ pub const Axis = @import("axis.zig").Axis;
 pub const rand = @import("rand.zig");
 
 /// Converts degrees to radian
-pub fn toRadians(deg: var) @typeOf(deg) {
+pub fn toRadians(deg: anytype) @typeOf(deg) {
     return pi * deg / 180.0;
 }
 
 /// Converts radian to degree
-pub fn toDegrees(rad: var) @typeOf(deg) {
+pub fn toDegrees(rad: anytype) @typeOf(deg) {
     return 180.0 * rad / pi;
 }
 
-pub fn isEven(val: var) bool {
+pub fn isEven(val: anytype) bool {
     std.debug.assert(@typeInfo(@TypeOf(val)) == .Int or @typeInfo(@TypeOf(val)) == .ComptimeInt);
     return @mod(val, 2) == 0;
 }
@@ -40,7 +40,7 @@ pub fn iclamp(x: i32, a: i32, b: i32) i32 {
 }
 
 // returns true if val is between start and end
-pub fn between(val: var, start: var, end: var) bool {
+pub fn between(val: anytype, start: anytype, end: anytype) bool {
     return start <= val and val <= end;
 }
 

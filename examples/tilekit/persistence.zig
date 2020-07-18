@@ -255,7 +255,7 @@ fn writeFixedSliceZ(out: Writer, slice: []const u8) !void {
     }
 }
 
-fn writeUnion(out: Writer, value: var) !void {
+fn writeUnion(out: Writer, value: anytype) !void {
     const info = @typeInfo(@TypeOf(value)).Union;
     if (info.tag_type) |TagType| {
         const active_tag = std.meta.activeTag(value);
