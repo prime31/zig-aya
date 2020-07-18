@@ -27,6 +27,20 @@
             "target": "${fileBasenameNoExtension}",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
-        }
+        },
+        {
+            "name": "Debug Windows",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/zig-cache/bin/run.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/zig-cache/bin",
+            "symbolSearchPath": "${workspaceFolder}/zig-cache/bin",
+            "environment": [],
+            "externalConsole": false,
+            "logging": {
+                "moduleLoad": false
+            }
     ]
 }

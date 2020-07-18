@@ -233,6 +233,10 @@ char const tinyfd_needs[] = "\
 char * getCurDir(void)
 {
 	static char lCurDir [MAX_PATH_OR_CMD];
+        #ifdef _WIN32
+        printf("busted on windows. getCurDir will return null\n");
+        return NULL;
+        #endif
 	return getcwd(lCurDir, sizeof(lCurDir));
 }
 
