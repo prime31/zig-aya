@@ -55,10 +55,10 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
             const x_offset = @intCast(i32, @mod(i, 5)) - 2;
             const y_offset = @intCast(i32, @divTrunc(i, 5)) - 2;
 
-            // stay in bounds!
+            // stay in bounds! We could be looking for a tile 2 away from x,y in any direction
             const actual_x = @intCast(i32, x) + x_offset;
             const actual_y = @intCast(i32, y) + y_offset;
-            const processed_tile = if (actual_x < 0 or actual_y < 0 or actual_x > state.map.w or actual_y > state.map.h) 0 else blk: {
+            const processed_tile = if (actual_x < 0 or actual_y < 0 or actual_x >= state.map.w or actual_y >= state.map.h) 0 else blk: {
                 const index = @intCast(usize, actual_x) + @intCast(usize, actual_y) * state.map.w;
                 break :blk tile_source[index];
             };
@@ -71,7 +71,7 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
             rule_passed = true;
         }
 
-        // all Rules passed. we use the chance to decide if we will return a tile
+        // a RuleSet passed. we use the chance to decide if we will return a tile
         // const chance = aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100);
         const random = state.random_map_data[x + y * state.map.w];
         const chance = random.float < @intToFloat(f32, ruleset.chance) / 100;
