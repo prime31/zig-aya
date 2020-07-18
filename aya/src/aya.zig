@@ -46,7 +46,10 @@ pub const Config = struct {
 };
 
 pub fn run(config: Config) !void {
-    // _ = sdl.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+    // force GL for windows. DX seems to seg fault...
+    if (std.Target.current.os.tag == .windows) {
+        _ = sdl.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+    }
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         return error.SDLInitializationFailed;
