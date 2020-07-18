@@ -194,7 +194,7 @@ pub const Events = struct {
                 io.KeyShift = (mod_state & @enumToInt(sdl.SDL_Keymod.shift)) != 0;
                 io.KeyCtrl = (mod_state & @enumToInt(sdl.SDL_Keymod.ctrl)) != 0;
                 io.KeyAlt = (mod_state & @enumToInt(sdl.SDL_Keymod.alt)) != 0;
-                if (std.Target.current.os.tag == .windows) io.KeySuper = 0 else io.KeySuper = (mod_state & @enumToInt(sdl.SDL_Keymod.gui)) != 0;
+                if (std.Target.current.os.tag == .windows) io.KeySuper = false else io.KeySuper = (mod_state & @enumToInt(sdl.SDL_Keymod.gui)) != 0;
                 return io.WantCaptureKeyboard;
             },
             sdl.SDL_WINDOWEVENT => {

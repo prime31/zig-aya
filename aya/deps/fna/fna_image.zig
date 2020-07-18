@@ -41,7 +41,7 @@ pub fn loadTexture(device: ?*fna.Device, file: [*c]const u8, w: *i32, h: *i32) ?
 pub fn load(file: [*c]const u8, w: *i32, h: *i32) []u8 {
     // windows poops itself compiling SDL_RWFromFile so we just avoid it and use File
     if (std.Target.current.os.tag == .windows) {
-        return win_hack.load(std.mem.span(file));
+        return win_hack.load(std.mem.span(file), w, h);
     } else {
         var rw = sdl.SDL_RWFromFile(file, "rb");
         defer std.debug.assert(sdl.SDL_RWclose(rw) == 0);

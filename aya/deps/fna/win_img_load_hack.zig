@@ -3,7 +3,7 @@ const fna = @import("fna.zig");
 const fna_image = @import("fna_image.zig");
 const std = @import("std");
 
-pub fn load(device: ?*fna.Device, file: []const u8, w: *i32, h: *i32) []u8 {
+pub fn load(file: []const u8, w: *i32, h: *i32) []u8 {
     var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena_allocator.deinit();
 
