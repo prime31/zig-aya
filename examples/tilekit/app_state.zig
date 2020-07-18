@@ -56,7 +56,7 @@ pub const AppState = struct {
     };
 
     /// generates a texture with 4x4, 16px blocks of color
-    fn generateTexture() Texture {
+    pub fn generateTexture() Texture {
         const rc = aya.math.rand.color;
         var colors = [_]u32{
             tk.colors.brushes[12],tk.colors.brushes[11],tk.colors.brushes[10],tk.colors.brushes[9],

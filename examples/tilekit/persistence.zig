@@ -271,7 +271,7 @@ fn writeUnion(out: Writer, value: anytype) !void {
     }
 }
 
-fn writeValue(out: Writer, value: var) !void {
+fn writeValue(out: Writer, value: anytype) !void {
     const T = comptime @TypeOf(value);
 
     if (comptime std.meta.trait.isIndexable(T)) {
@@ -289,7 +289,7 @@ fn writeValue(out: Writer, value: var) !void {
 }
 
 // generic read helpers
-fn readUnionInto(in: Reader, ptr: var) !void {
+fn readUnionInto(in: Reader, ptr: anytype) !void {
     const T = @TypeOf(ptr);
     const C = comptime std.meta.Child(T);
     const info = @typeInfo(C).Union;
@@ -310,7 +310,7 @@ fn readUnionInto(in: Reader, ptr: var) !void {
     }
 }
 
-fn readValueInto(in: Reader, ptr: var) !void {
+fn readValueInto(in: Reader, ptr: anytype) !void {
     const T = @TypeOf(ptr);
     comptime std.debug.assert(std.meta.trait.is(.Pointer)(T));
 
