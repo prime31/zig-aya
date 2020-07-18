@@ -239,9 +239,10 @@ pub const AppState = struct {
         try curr_dir.setAsCwd();
 
         // unload old texture and load new texture
-        try std.fs.cwd().access(self.map.image, .{});
+        try curr_dir.access(self.map.image, .{});
         self.texture.deinit();
-        self.texture = try Texture.initFromFile(self.map.image);
+        const image_path = try std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ std.fs.path.dirname(file).?, self.map.image });
+        self.texture = try Texture.initFromFile(image_path);
 
         // resize and clear processed_map_data and final_map_data
         aya.mem.allocator.free(self.processed_map_data);

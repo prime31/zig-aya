@@ -570,13 +570,14 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 /// shows the tileset or brush palette allowing multiple tiles to be selected
 fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
-    const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing;
-    const tile_size = if (is_pre_rule) 32 else state.map.tile_size;
+    const zoom: usize = if (!is_pre_rule and (state.texture.width < 200 and state.texture.height < 200)) 1 else 1;
+    const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing * zoom;
+    const tile_size = if (is_pre_rule) 32 else state.map.tile_size * zoom;
 
     if (is_pre_rule) {
         brushes_win.draw(state, @intToFloat(f32, tile_size), true);
     } else {
-        ogImage(state.texture.tex, state.texture.width, state.texture.height);
+        ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
     }
 
     const draw_list = igGetWindowDrawList();

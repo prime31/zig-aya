@@ -45,11 +45,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     }
 
     // we can leave the zig file in this folder only for filebrowser because it is not used by aya and only by consuming exe's
-    if (target.isWindows()) {
-        artifact.addPackagePath("filebrowser", "deps/filebrowser/filebrowser_win.zig");
-    } else {
-        artifact.addPackagePath("filebrowser", "deps/filebrowser/filebrowser.zig");
-    }
+    artifact.addPackagePath("filebrowser", "deps/filebrowser/filebrowser.zig");
 }
 
 fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
@@ -58,6 +54,7 @@ fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
         exe.linkSystemLibrary("ole32");
         exe.linkSystemLibrary("user32");
         exe.linkSystemLibrary("shell32");
+        exe.linkSystemLibrary("c");
     }
 
     const lib_cflags = &[_][]const u8{};
