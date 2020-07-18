@@ -126,7 +126,9 @@ pub fn draw(state: *tk.AppState) void {
                         const my_cwd = std.fs.cwd();
                         const dst_dir = std.fs.cwd().openDir(std.fs.path.dirname(out_file).?, .{}) catch unreachable;
                         const image_name = std.fs.path.basename(state.map.image);
-                        std.fs.Dir.copyFile(my_cwd, state.map.image, dst_dir, image_name, .{}) catch unreachable;
+                        std.fs.Dir.copyFile(my_cwd, state.map.image, dst_dir, image_name, .{}) catch |err| {
+                            std.debug.print("error copying tileset file: {}\n", .{err});
+                        };
 
                         // dupe the image before we free it
                         const duped_image_name = aya.mem.allocator.dupe(u8, image_name) catch unreachable;
@@ -135,6 +137,12 @@ pub fn draw(state: *tk.AppState) void {
                     }
 
                     state.saveMap(out_file) catch unreachable;
+
+                    // store the filename so we can do direct saves later
+                    if (state.opened_file != null) {
+                        aya.mem.allocator.free(state.opened_file.?);
+                    }
+                    state.opened_file = aya.mem.allocator.dupe(u8, out_file) catch unreachable;
                 }
             }
 
@@ -307,7 +315,7 @@ fn loadTilesetPopup(state: *tk.AppState) void {
         }
 
         if (igButton("Load", ImVec2{ .x = -1, .y = 0 })) {
-            // load the image and validate that its width is divisible by the tile size (take spacing into account to)
+            // load the image and validate that its width is divisible by the tile size (take spacing into account too)
             if (validateImage()) {
                 state.map.image = aya.mem.allocator.dupe(u8, temp_state.image[0..std.mem.lenZ(temp_state.image)]) catch unreachable;
                 state.map.tile_size = temp_state.tile_size;
@@ -316,6 +324,7 @@ fn loadTilesetPopup(state: *tk.AppState) void {
 
                 state.texture.deinit();
                 state.texture = aya.gfx.Texture.initFromFile(state.map.image) catch unreachable;
+                ogImage(state.texture.tex, state.texture.width, state.texture.height);
                 igCloseCurrentPopup();
             }
         }
