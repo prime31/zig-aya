@@ -50,6 +50,6 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
 
 fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
     exe.addIncludeDir("deps/stb_image/src");
-    const lib_cflags = &[_][]const u8{"-fPIC", "-std=c99"};
+    const lib_cflags = &[_][]const u8{"-std=c99"};
     exe.addCSourceFile("deps/stb_image/src/stb_image_impl.c", lib_cflags);
 }

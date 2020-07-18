@@ -46,6 +46,6 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
 }
 
 fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {
-    const lib_cflags = &[_][]const u8{"-fPIC"};
+    const lib_cflags = &[_][]const u8{};
     exe.addCSourceFile("aya/deps/fontstash/src/fontstash.c", lib_cflags);
 }
