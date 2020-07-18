@@ -17,8 +17,10 @@ pub fn drawWindow(state: *tk.AppState) void {
         //state.map_data_dirty = false;
     }
 
-    if (state.prefs.windows.output_map and igBegin("Output Map", &state.prefs.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
-        draw(state);
+    if (state.prefs.windows.output_map) {
+        if (igBegin("Output Map", &state.prefs.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+            draw(state);
+        }
         igEnd();
     }
 }

@@ -59,7 +59,7 @@ pub const TileKit = struct {
         ImGuiViewport_GetWorkPos(&work_pos, vp);
         ImGuiViewport_GetWorkSize(&work_size, vp);
 
-        igSetNextWindowPos(work_pos, ImGuiCond_Always, ImVec2{});
+        igSetNextWindowPos(work_pos, ImGuiCond_Always, .{});
         igSetNextWindowSize(work_size, ImGuiCond_Always);
         igSetNextWindowViewport(vp.ID);
         igPushStyleVarFloat(ImGuiStyleVar_WindowRounding, 0);
@@ -67,9 +67,9 @@ pub const TileKit = struct {
         window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-        igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, ImVec2{});
+        igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
         _ = igBegin("Dockspace", null, window_flags);
-        igPopStyleVar(2);
+        igPopStyleVar(3);
 
         const io = igGetIO();
         const dockspace_id = igGetIDStr("default-dockspace");

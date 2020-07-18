@@ -65,6 +65,7 @@ pub fn draw(state: *tk.AppState) void {
 
         if (igBeginPopup("add-anim", ImGuiWindowFlags_None)) {
             addAnimationPopup(state);
+            igEndPopup();
         }
     }
 }

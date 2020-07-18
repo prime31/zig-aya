@@ -14,13 +14,17 @@ pub fn drawWindows(state: *tk.AppState) void {
     var window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
     if (igGetIO().KeyAlt) window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
 
-    if (state.prefs.windows.input_map and igBegin("Input Map", &state.prefs.windows.input_map, window_flags)) {
-        draw(state, true);
+    if (state.prefs.windows.input_map) {
+        if (igBegin("Input Map", &state.prefs.windows.input_map, window_flags)) {
+            draw(state, true);
+        }
         igEnd();
     }
 
-    if (state.prefs.windows.post_processed_map and igBegin("Post Processed Map", &state.prefs.windows.post_processed_map, window_flags)) {
-        draw(state, false);
+    if (state.prefs.windows.post_processed_map) {
+        if (igBegin("Post Processed Map", &state.prefs.windows.post_processed_map, window_flags)) {
+            draw(state, false);
+        }
         igEnd();
     }
 }
