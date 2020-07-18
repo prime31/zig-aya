@@ -45,7 +45,8 @@ pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
     defer igPopStyleVar(1);
 
-    if (state.prefs.windows.rules and igBegin("Rules", &state.prefs.windows.rules, ImGuiWindowFlags_None)) {
+    if (state.prefs.windows.rules) {
+        _ = igBegin("Rules", &state.prefs.windows.rules, ImGuiWindowFlags_None);
         defer igEnd();
 
         // save the cursor position so we can hack a button on the tab bar itself
@@ -217,10 +218,12 @@ fn drawRulesTab(state: *tk.AppState) void {
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 3);
+        igEndPopup();
     }
 
     if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 2);
+        igEndPopup();
     }
 }
 
@@ -528,6 +531,8 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
 
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
+        defer igEndPopup();
+
         igText("Shift:");
         igSameLine(0, 10);
         if (ogButton(icons.arrow_left)) {
@@ -559,8 +564,6 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
         if (ogButton(icons.arrows_alt_v)) {
             rule.flip(.vertical);
         }
-
-        igEndPopup();
     }
 }
 
