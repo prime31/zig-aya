@@ -61,5 +61,5 @@ fn compileFontStash(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
     }
 
     const lib_cflags = &[_][]const u8{};
-    //exe.addCSourceFile("deps/filebrowser/src/tinyfiledialogs.c", lib_cflags);
+    exe.addCSourceFile("deps/filebrowser/src/tinyfiledialogs.c", lib_cflags);
 }
