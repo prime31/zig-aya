@@ -60,17 +60,18 @@ pub fn draw(state: *tk.AppState) void {
                     object_editor.setSelectedObject(selected_index);
                 }
 
+                // cleanup any links to this object
+                var deleted_id = state.map.objects.items[delete_index].id;
+                for (state.map.objects.items) |*obj| {
+                    obj.removeLinkPropsWithId(deleted_id);
+                }
                 _ = state.map.objects.orderedRemove(delete_index);
             }
         }
 
-        if (igButton("Add Object", ImVec2{})) {
+        if (igButton("Add Object", .{})) {
             state.map.addObject();
-            selected_index = state.map.objects.items.len - 1;
-            var obj = &state.map.objects.items[selected_index];
-            _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{selected_index}) catch unreachable;
-            obj.name[8 + 1 + @divTrunc(selected_index, 10)] = 0;
-            object_editor.setSelectedObject(selected_index);
+            object_editor.setSelectedObject(state.map.objects.items.len - 1);
             state.prefs.windows.object_editor = true;
         }
     }

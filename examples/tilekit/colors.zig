@@ -12,6 +12,8 @@ pub var rule_result_selected_outline: ImU32 = 0;
 pub var rule_result_selected_fill: ImU32 = 0;
 pub var object: ImU32 = 0;
 pub var object_selected: ImU32 = 0;
+pub var object_drag_link: ImU32 = 0;
+pub var object_link: ImU32 = 0;
 
 pub var white: ImU32 = 0;
 
@@ -46,6 +48,8 @@ pub fn init() void {
 
     object = colorRgb(116, 252, 50);
     object_selected = colorRgb(282, 172, 247);
+    object_drag_link = colorRgb(255, 0, 0);
+    object_link = colorRgb(220, 200, 10);
 
     white = colorRgb(255, 255, 255);
 }
@@ -62,7 +66,7 @@ pub fn toggleObjectMode(enable: bool) void {
         igGetStyle().Colors[ImGuiCol_TitleBg] = ogColorConvertU32ToFloat4(colorRgba(134, 26, 179, 255));
         igGetStyle().Colors[ImGuiCol_TitleBgActive] = ogColorConvertU32ToFloat4(colorRgba(135, 26, 9, 255));
         igGetStyle().Colors[ImGuiCol_Tab] = ogColorConvertU32ToFloat4(colorRgba(128, 46, 148, 220));
-        igGetStyle().Colors[ImGuiCol_TabActive] = ogColorConvertU32ToFloat4(colorRgba(142, 51, 173, 255));
+        igGetStyle().Colors[ImGuiCol_TabActive] = ogColorConvertU32ToFloat4(colorRgba(128, 51, 173, 255));
         igGetStyle().Colors[ImGuiCol_TabUnfocusedActive] = ogColorConvertU32ToFloat4(colorRgba(0, 0, 0, 255));
     } else {
         igGetStyle().Colors[ImGuiCol_TitleBg] = ogColorConvertU32ToFloat4(colorRgba(10, 10, 10, 255));

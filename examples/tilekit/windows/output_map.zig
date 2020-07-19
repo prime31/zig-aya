@@ -7,6 +7,7 @@ const processor = @import("../rule_processor.zig");
 const object_editor = @import("object_editor.zig");
 
 var dragged_obj_index: ?usize = null;
+var drag_type: enum { move, link } = .move;
 
 pub fn drawWindow(state: *tk.AppState) void {
     // only process map data when it changes
@@ -52,6 +53,24 @@ fn draw(state: *tk.AppState) void {
             const tl = ImVec2{ .x = origin.x + @intToFloat(f32, obj.x) * state.map_rect_size, .y = origin.y + @intToFloat(f32, obj.y) * state.map_rect_size };
             const color = if (dragged_obj_index != null and dragged_obj_index.? == i) colors.object_selected else colors.object;
             ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, color, 1);
+
+            for (obj.props.items) |prop| {
+                switch (prop.value) {
+                    .link => |linked_id| {
+                        const half_rect = @divTrunc(state.map_rect_size, 2);
+                        const linked_obj = state.map.getObjectWithId(linked_id);
+
+                        // offset the line from the center of our tile
+                        var tl_offset = tl;
+                        tl_offset.x += half_rect;
+                        tl_offset.y += half_rect;
+
+                        const other = ImVec2{ .x = origin.x + half_rect + @intToFloat(f32, linked_obj.x) * state.map_rect_size, .y = origin.y + half_rect + @intToFloat(f32, linked_obj.y) * state.map_rect_size };
+                        ImDrawList_AddLine(igGetWindowDrawList(), tl_offset, other, colors.object_link, 1);
+                    },
+                    else => {},
+                }
+            }
         }
     }
 
@@ -60,6 +79,17 @@ fn draw(state: *tk.AppState) void {
     } else {
         dragged_obj_index = null;
     }
+}
+
+/// returns the index of the object under the mouse or null
+fn objectIndexUnderMouse(state: *tk.AppState, origin: ImVec2) ?usize {
+    var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+    for (state.map.objects.items) |obj, i| {
+        if (obj.x == tile.x and obj.y == tile.y) {
+            return i;
+        }
+    }
+    return null;
 }
 
 fn handleInput(state: *tk.AppState, origin: ImVec2) void {
@@ -78,7 +108,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
         return;
     }
 
-    if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+    if (igIsMouseClicked(ImGuiMouseButton_Left, false) or igIsMouseClicked(ImGuiMouseButton_Right, false)) {
         // figure out if we clicked on any of our objects
         var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         for (state.map.objects.items) |obj, i| {
@@ -86,21 +116,45 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
                 dragged_obj_index = i;
                 object_editor.setSelectedObject(i);
                 @import("objects.zig").setSelectedObject(i);
+                drag_type = if (igIsMouseClicked(ImGuiMouseButton_Left, false)) .move else .link;
                 break;
             }
         }
-    } else if (dragged_obj_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 0)) {
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
-        var obj = &state.map.objects.items[dragged_obj_index.?];
-        obj.x = tile.x;
-        obj.y = tile.y;
+    } else if (dragged_obj_index != null) {
+        if (drag_type == .move) {
+            if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) {
+                var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+                var obj = &state.map.objects.items[dragged_obj_index.?];
+                obj.x = tile.x;
+                obj.y = tile.y;
+            } else if (igIsMouseReleased(ImGuiMouseButton_Left)) {
+                dragged_obj_index = null;
+            }
+        } else if (drag_type == .link) {
+            if (igIsMouseDragging(ImGuiMouseButton_Right, 0)) {
+                // highlight the drop target if we have one
+                if (objectIndexUnderMouse(state, origin)) |index| {
+                    if (index != dragged_obj_index.?) {
+                        const obj = state.map.objects.items[index];
+                        const tl = ImVec2{ .x = origin.x - 2 + @intToFloat(f32, obj.x) * state.map_rect_size, .y = origin.y - 2 + @intToFloat(f32, obj.y) * state.map_rect_size };
+                        ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size + 4, igColorConvertFloat4ToU32(igGetStyle().Colors[ImGuiCol_DragDropTarget]), 2);
+                    }
+                }
 
-        // TODO: allow shift+drag from one object to another which will auto set some id property to make a connection
-        // if (igGetIO().KeyShift) {
-        //     ImDrawList_AddLine(igGetWindowDrawList(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, colors.colorRgb(255, 0, 0), 2);
-        // }
-    } else if (dragged_obj_index != null and igIsMouseReleased(ImGuiMouseButton_Left)) {
-        dragged_obj_index = null;
+                ImDrawList_AddLine(igGetWindowDrawList(), igGetIO().MouseClickedPos[1], igGetIO().MousePos, colors.object_drag_link, 2);
+            } else if (igIsMouseReleased(ImGuiMouseButton_Right)) {
+                if (objectIndexUnderMouse(state, origin)) |index| {
+                    if (index != dragged_obj_index.?) {
+                        var obj = &state.map.objects.items[dragged_obj_index.?];
+                        obj.addProp(.{ .link = state.map.objects.items[index].id });
+
+                        var prop = &obj.props.items[obj.props.items.len - 1];
+                        std.mem.copy(u8, &prop.name, "link");
+                    }
+                }
+                dragged_obj_index = null;
+            }
+        }
     }
 }
 
