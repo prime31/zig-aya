@@ -43,12 +43,12 @@ pub const Map = struct {
     }
 
     pub fn worldToTileX(self: Map, x: f32) i32 {
-        const tile_x = aya.math.ifloor(x / @intToFloat(f32, self.tile_size));
+        const tile_x = aya.math.ifloor(i32, x / @intToFloat(f32, self.tile_size));
         return aya.math.iclamp(tile_x, 0, self.width - 1);
     }
 
     pub fn worldToTileY(self: Map, y: f32) i32 {
-        const tile_y = aya.math.ifloor(y / @intToFloat(f32, self.tile_size));
+        const tile_y = aya.math.ifloor(i32, y / @intToFloat(f32, self.tile_size));
         return aya.math.iclamp(tile_y, 0, self.height - 1);
     }
 
