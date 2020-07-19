@@ -31,8 +31,8 @@ pub fn isEven(val: anytype) bool {
     return @mod(val, 2) == 0;
 }
 
-pub fn ifloor(val: f32) i32 {
-    return @floatToInt(i32, @floor(val));
+pub fn ifloor(comptime T: type, val: f32) T {
+    return @floatToInt(T, @floor(val));
 }
 
 pub fn iclamp(x: i32, a: i32, b: i32) i32 {
