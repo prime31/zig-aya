@@ -87,10 +87,8 @@ pub fn draw(state: *tk.AppState) void {
 
                 state.map.deinit();
                 state.map = tk.Map.init(tile_size, tile_spacing);
-                if (state.opened_file != null) {
-                    aya.mem.allocator.free(state.opened_file.?);
-                    state.opened_file = null;
-                }
+                state.clearQuickFile(.opened);
+                state.clearQuickFile(.exported);
             }
 
             if (igMenuItemBool("Open...", null, false, true)) {
@@ -139,9 +137,7 @@ pub fn draw(state: *tk.AppState) void {
                     state.saveMap(out_file) catch unreachable;
 
                     // store the filename so we can do direct saves later
-                    if (state.opened_file != null) {
-                        aya.mem.allocator.free(state.opened_file.?);
-                    }
+                    state.clearQuickFile(.opened);
                     state.opened_file = aya.mem.allocator.dupe(u8, out_file) catch unreachable;
                 }
             }
@@ -151,9 +147,26 @@ pub fn draw(state: *tk.AppState) void {
             if (igBeginMenu("Export", true)) {
                 defer igEndMenu();
 
+                if (igMenuItemBool("Quick Export", null, false, state.exported_file != null)) {
+                    state.exportJson(state.exported_file.?) catch unreachable;
+                }
+
                 if (igMenuItemBool("JSON", null, false, true)) {
-                    std.debug.print("dumping to desktop\n", .{});
-                    state.exportJson("/Users/desaro/Desktop/tilekit_export.json") catch unreachable;
+                    const res = files.saveFileDialog("Export to JSON", getDefaultPath(), "*.json");
+                    aya.time.resync();
+
+                    if (res != null) {
+                        var out_file = res[0..std.mem.lenZ(res)];
+                        if (!std.mem.endsWith(u8, out_file, ".json")) {
+                            out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ out_file, ".json" }) catch unreachable;
+                        }
+
+                        state.exportJson(out_file) catch unreachable;
+
+                        // store the filename so we can do quick exports later
+                        state.clearQuickFile(.exported);
+                        state.exported_file = aya.mem.allocator.dupe(u8, out_file) catch unreachable;
+                    }
                 }
 
                 if (igMenuItemBool("Binary", null, false, true)) {
@@ -320,11 +333,12 @@ fn loadTilesetPopup(state: *tk.AppState) void {
                 state.map.image = aya.mem.allocator.dupe(u8, temp_state.image[0..std.mem.lenZ(temp_state.image)]) catch unreachable;
                 state.map.tile_size = temp_state.tile_size;
                 state.map.tile_spacing = temp_state.tile_spacing;
+                state.tiles_per_row = 0;
                 state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
 
                 state.texture.deinit();
                 state.texture = aya.gfx.Texture.initFromFile(state.map.image) catch unreachable;
-                ogImage(state.texture.tex, state.texture.width, state.texture.height);
+                ogImage(state.texture.tex, state.texture.width, state.texture.height); // hack to fix a render bug on windows
                 igCloseCurrentPopup();
             }
         }

@@ -94,6 +94,11 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
         var obj = &state.map.objects.items[dragged_obj_index.?];
         obj.x = tile.x;
         obj.y = tile.y;
+
+        // TODO: allow shift+drag from one object to another which will auto set some id property to make a connection
+        // if (igGetIO().KeyShift) {
+        //     ImDrawList_AddLine(igGetWindowDrawList(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, colors.colorRgb(255, 0, 0), 2);
+        // }
     } else if (dragged_obj_index != null and igIsMouseReleased(ImGuiMouseButton_Left)) {
         dragged_obj_index = null;
     }
