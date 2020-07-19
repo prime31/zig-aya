@@ -299,8 +299,8 @@ fn loadTilesetPopup(state: *tk.AppState) void {
             }
         }
 
-        _ = ogDrag(usize, "Tile Size", &temp_state.tile_size, 0.5, 8, 32);
-        _ = ogDrag(usize, "Tile Spacing", &temp_state.tile_spacing, 0.5, 0, 8);
+        _ = ogDrag(usize, "Tile Size", &temp_state.tile_size, 0.1, 8, 32);
+        _ = ogDrag(usize, "Tile Spacing", &temp_state.tile_spacing, 0.1, 0, 8);
 
         // error messages
         if (temp_state.invalid_image_selected) {

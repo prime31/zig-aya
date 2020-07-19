@@ -75,6 +75,13 @@ pub const Map = struct {
         self.animations.append(Animation.init(tile)) catch unreachable;
     }
 
+    pub fn tryGetAnimation(self: *Map, tile: u8) ?Animation {
+        for (self.animations.items) |anim| {
+            if (anim.tile == tile) return anim;
+        }
+        return null;
+    }
+
     pub fn addPreRulesPage(self: *Map) void {
         self.pre_rulesets.append(std.ArrayList(RuleSet).init(aya.mem.allocator)) catch unreachable;
     }

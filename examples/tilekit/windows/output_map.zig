@@ -37,8 +37,20 @@ fn draw(state: *tk.AppState) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            const tile = state.final_map_data[x + y * state.map.w];
+            var tile = state.final_map_data[x + y * state.map.w];
             if (tile == 0) continue;
+
+            if (state.prefs.show_animations) {
+                if (state.map.tryGetAnimation(tile - 1)) |anim| {
+                    const sec_per_frame = @intToFloat(f32, anim.rate) / 1000;
+                    const iter_duration = sec_per_frame * @intToFloat(f32, anim.tiles.len + 1);
+                    const elapsed = @mod(aya.time.seconds(), iter_duration);
+                    const frame = aya.math.ifloor(usize, elapsed / sec_per_frame);
+                    if (frame > 0) {
+                        tile = anim.tiles.items[frame - 1] + 1;
+                    }
+                }
+            }
 
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
             const offset_y = @intToFloat(f32, y) * state.map_rect_size;

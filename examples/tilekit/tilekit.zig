@@ -180,3 +180,19 @@ pub fn uvsForTile(state: *AppState, tile: usize) aya.math.Rect {
         .h = @intToFloat(f32, state.map.tile_size) * inv_h,
     };
 }
+
+/// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
+pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u8, per_row: usize, tile_spacing: usize) void {
+    const x = @mod(tile, per_row);
+    const y = @divTrunc(tile, per_row);
+
+    var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
+    tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
+    tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
+    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), colors.rule_result_selected_fill);
+
+    // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
+    tl.x += 1;
+    tl.y += 1;
+    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), colors.rule_result_selected_outline, 2);
+}
