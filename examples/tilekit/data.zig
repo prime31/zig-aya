@@ -421,7 +421,7 @@ pub const Object = struct {
     };
 
     pub fn init() Object {
-        return .{ .props = std.ArrayList(Prop).init(aya.mem.allocator) };
+        return .{ .name = [_]u8{0} ** 25, .props = std.ArrayList(Prop).init(aya.mem.allocator) };
     }
 
     pub fn deinit(self: Object) void {

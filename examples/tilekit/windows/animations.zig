@@ -72,11 +72,12 @@ pub fn draw(state: *tk.AppState) void {
 
 fn addAnimationPopup(state: *tk.AppState) void {
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture.tex, state.texture.width, state.texture.height);
+    const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
+    ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
 
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size * zoom), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * state.tilesPerRow());
             state.map.addAnimation(tile_index);
             igCloseCurrentPopup();
@@ -88,7 +89,8 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
     const per_row = if (false) 6 else state.tilesPerRow();
 
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(state.texture.tex, state.texture.width, state.texture.height);
+    const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
+    ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
 
     const draw_list = igGetWindowDrawList();
 
@@ -96,16 +98,16 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
     if (selection_type == .multi) {
         var iter = anim.tiles.iter();
         while (iter.next()) |value| {
-            addTileToDrawList(state.map.tile_size, content_start_pos, value, per_row);
+            addTileToDrawList(state.map.tile_size * zoom, content_start_pos, value, per_row);
         }
     } else {
-        addTileToDrawList(state.map.tile_size, content_start_pos, anim.tile, per_row);
+        addTileToDrawList(state.map.tile_size * zoom, content_start_pos, anim.tile, per_row);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size * zoom), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * per_row);
             if (selection_type == .multi) {
                 anim.toggleSelected(tile_index);

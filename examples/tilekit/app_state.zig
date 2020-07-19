@@ -13,6 +13,7 @@ pub const AppState = struct {
     map: Map,
     // general state
     opened_file: ?[]const u8 = null,
+    exported_file: ?[]const u8 = null,
     object_edit_mode: bool = false,
     selected_brush_index: usize = 0,
     texture: Texture,
@@ -231,6 +232,14 @@ pub const AppState = struct {
         try persistence.exportJson(self.map, self.final_map_data, file);
     }
 
+    pub fn clearQuickFile(self: *AppState, which: enum {opened, exported}) void {
+        var file = if (which == .opened) &self.opened_file else &self.exported_file;
+        if (file.* != null) {
+            aya.mem.allocator.free(file.*.?);
+            file.* = null;
+        }
+    }
+
     pub fn loadMap(self: *AppState, file: []const u8) !void {
         self.map = try persistence.load(file);
         self.map_rect_size = @intToFloat(f32, self.map.tile_size * self.prefs.tile_size_multiplier);
@@ -257,10 +266,10 @@ pub const AppState = struct {
 
         self.generateRandomData();
 
-        // keep our file so we can save later
-        if (self.opened_file != null) {
-            aya.mem.allocator.free(self.opened_file.?);
-        }
+        // keep our file so we can save later and clear our exported file if we have one
+        self.clearQuickFile(.opened);
         self.opened_file = try aya.mem.allocator.dupe(u8, file);
+
+        self.clearQuickFile(.exported);
     }
 };
