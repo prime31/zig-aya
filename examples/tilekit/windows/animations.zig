@@ -33,7 +33,7 @@ pub fn draw(state: *tk.AppState) void {
                 igSameLine(0, 5);
 
                 igPushItemWidth(75);
-                _ = ogDragUnsignedFormat(u16, "", &anim.rate, 0.5, 0, std.math.maxInt(u16), "%dms");
+                _ = ogDragUnsignedFormat(u16, "", &anim.rate, 1, 0, std.math.maxInt(u16), "%dms");
                 igPopItemWidth();
                 igSameLine(igGetWindowContentRegionWidth() - 20, 0);
 
@@ -86,10 +86,13 @@ fn addAnimationPopup(state: *tk.AppState) void {
 }
 
 fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selection_type: enum { single, multi }) void {
-    const per_row = if (false) 6 else state.tilesPerRow();
+    const per_row = state.tilesPerRow();
 
     var content_start_pos = ogGetCursorScreenPos();
     const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
+    const tile_spacing = state.map.tile_spacing * zoom;
+    const tile_size = state.map.tile_size * zoom;
+
     ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
 
     const draw_list = igGetWindowDrawList();
@@ -98,19 +101,24 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
     if (selection_type == .multi) {
         var iter = anim.tiles.iter();
         while (iter.next()) |value| {
-            addTileToDrawList(state.map.tile_size * zoom, content_start_pos, value, per_row);
+            tk.addTileToDrawList(tile_size, content_start_pos, value, per_row, tile_spacing);
         }
+        tk.addTileToDrawList(tile_size, content_start_pos, anim.tile, per_row, tile_spacing);
     } else {
-        addTileToDrawList(state.map.tile_size * zoom, content_start_pos, anim.tile, per_row);
+        tk.addTileToDrawList(tile_size, content_start_pos, anim.tile, per_row, tile_spacing);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size * zoom), content_start_pos);
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * per_row);
             if (selection_type == .multi) {
-                anim.toggleSelected(tile_index);
+                // dont allow selecting the base tile
+                if (tile_index != anim.tile) {
+                    anim.toggleSelected(tile_index);
+                }
+
             } else {
                 anim.tile = tile_index;
                 igCloseCurrentPopup();
@@ -121,15 +129,4 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
     if (selection_type == .multi and igButton("Clear", ImVec2{ .x = -1 })) {
         anim.tiles.clear();
     }
-}
-
-fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u8, per_row: usize) void {
-    const x = @mod(tile, per_row);
-    const y = @divTrunc(tile, per_row);
-
-    var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size) };
-    tl.x += content_start_pos.x + 1;
-    tl.y += content_start_pos.y + 1;
-    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), tk.colors.rule_result_selected_fill);
-    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), tk.colors.rule_result_selected_outline, 2);
 }
