@@ -58,6 +58,7 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
         state.object_edit_mode = !state.object_edit_mode;
         tk.colors.toggleObjectMode(state.object_edit_mode);
+        state.showToast(if (state.object_edit_mode) "Entering object edit mode" else "Exiting object edit mode", 70);
     }
 }
 

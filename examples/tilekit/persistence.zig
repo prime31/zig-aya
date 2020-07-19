@@ -59,6 +59,7 @@ pub fn save(map: Map, file: []const u8) !void {
     // objects
     try out.writeIntLittle(usize, map.objects.items.len);
     for (map.objects.items) |obj| {
+        try out.writeIntLittle(u8, obj.id);
         try writeFixedSliceZ(out, &obj.name);
         try out.writeIntLittle(usize, obj.x);
         try out.writeIntLittle(usize, obj.y);
@@ -183,7 +184,7 @@ pub fn load(file: []const u8) !Map {
 
     i = 0;
     while (i < obj_cnt) : (i += 1) {
-        var obj = Object.init();
+        var obj = Object.init(try in.readIntLittle(u8));
 
         try readFixedSliceZ(in, &obj.name);
         obj.x = try in.readIntLittle(usize);
@@ -405,6 +406,9 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
                 try jw.arrayElem();
                 try jw.beginObject();
 
+                try jw.objectField("id");
+                try jw.emitNumber(obj.id);
+
                 const sentinel_index = std.mem.indexOfScalar(u8, &obj.name, 0) orelse obj.name.len;
                 try jw.objectField("name");
                 try jw.emitString(obj.name[0..sentinel_index]);
@@ -426,6 +430,7 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
                         },
                         .int => |int| try jw.emitNumber(int),
                         .float => |float| try jw.emitNumber(float),
+                        .link => |link| try jw.emitNumber(link),
                     }
                 }
 

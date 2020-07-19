@@ -58,7 +58,17 @@ pub const Map = struct {
     }
 
     pub fn addObject(self: *Map) void {
-        self.objects.append(Object.init()) catch unreachable;
+        var obj = Object.init(self.objects.items.len);
+        _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{self.objects.items.len}) catch unreachable;
+        obj.name[8 + 1 + @divTrunc(self.objects.items.len, 10)] = 0;
+        self.objects.append(obj) catch unreachable;
+    }
+
+    pub fn getObjectWithId(self: Map, id: usize) Object {
+        for (self.objects.items) |obj| {
+            if (obj.id == id) return obj;
+        }
+        unreachable;
     }
 
     pub fn addAnimation(self: *Map, tile: u8) void {
@@ -400,6 +410,7 @@ pub const Tag = struct {
 };
 
 pub const Object = struct {
+    id: u8 = 0,
     name: [25]u8 = undefined,
     x: usize = 0,
     y: usize = 0,
@@ -418,10 +429,14 @@ pub const Object = struct {
         string: [25]u8,
         int: i32,
         float: f32,
+        link: u8,
     };
 
-    pub fn init() Object {
-        return .{ .name = [_]u8{0} ** 25, .props = std.ArrayList(Prop).init(aya.mem.allocator) };
+    pub fn init(id: usize) Object {
+        var obj = Object{ .name = [_]u8{0} ** 25, .id = @intCast(u8, id), .props = std.ArrayList(Prop).init(aya.mem.allocator) };
+        _ = std.fmt.bufPrint(&obj.name, "Object ${}", .{id}) catch unreachable;
+        obj.name[8 + 1 + @divTrunc(id, 10)] = 0;
+        return obj;
     }
 
     pub fn deinit(self: Object) void {
@@ -430,6 +445,25 @@ pub const Object = struct {
 
     pub fn addProp(self: *Object, value: PropValue) void {
         self.props.append(.{ .name = undefined, .value = value }) catch unreachable;
+    }
+
+    pub fn removeLinkPropsWithId(self: *Object, id: u8) void {
+        var delete_index: usize = std.math.maxInt(usize);
+        for (self.props.items) |prop, i| {
+            switch (prop.value) {
+                .link => |linked_id| {
+                    if (linked_id == id) {
+                        delete_index = i;
+                        break;
+                    }
+                },
+                else => {}
+            }
+        }
+
+        if (delete_index < std.math.maxInt(usize)) {
+            _ = self.props.orderedRemove(delete_index);
+        }
     }
 };
 

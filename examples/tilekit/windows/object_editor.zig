@@ -3,7 +3,7 @@ const aya = @import("aya");
 const tk = @import("../tilekit.zig");
 usingnamespace @import("imgui");
 
-var buffer: [25]u8 = undefined;
+var buffer: [5]u8 = undefined;
 var inspected_object_index: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
@@ -47,6 +47,14 @@ pub fn draw(state: *tk.AppState) void {
                         .int => |*int| {
                             _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32));
                         },
+                        .link => |linked_id| {
+                            igPushItemFlag(ImGuiItemFlags_Disabled, true);
+                            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+                            _ = std.fmt.bufPrint(&buffer, "${}", .{linked_id}) catch unreachable;
+                            _ = ogInputText("##value", &buffer, buffer.len);
+                            igPopItemFlag();
+                            igPopStyleVar(1);
+                        },
                     }
 
                     igSameLine(0, 5);
@@ -89,15 +97,15 @@ pub fn draw(state: *tk.AppState) void {
 
 fn addPropertyPopup(state: *tk.AppState) void {
     igText("Property Type");
-    if (igButton("string", ImVec2{.x = 100})) {
+    if (igButton("string", ImVec2{ .x = 100 })) {
         state.map.objects.items[inspected_object_index.?].addProp(.{ .string = undefined });
         igCloseCurrentPopup();
     }
-    if (igButton("float", ImVec2{.x = 100})) {
+    if (igButton("float", ImVec2{ .x = 100 })) {
         state.map.objects.items[inspected_object_index.?].addProp(.{ .float = undefined });
         igCloseCurrentPopup();
     }
-    if (igButton("int", ImVec2{.x = 100})) {
+    if (igButton("int", ImVec2{ .x = 100 })) {
         state.map.objects.items[inspected_object_index.?].addProp(.{ .int = undefined });
         igCloseCurrentPopup();
     }
