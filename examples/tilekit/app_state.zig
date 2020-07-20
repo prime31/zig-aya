@@ -126,7 +126,7 @@ pub const AppState = struct {
             var accum: usize = self.map.tile_spacing * 2;
             while (true) {
                 self.tiles_per_row += 1;
-                accum += self.map.tile_size + 2 * self.map.tile_spacing;
+                accum += self.map.tile_size + self.map.tile_spacing;
                 if (accum >= self.texture.width) {
                     break;
                 }
