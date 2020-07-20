@@ -60,10 +60,10 @@ pub const AppState = struct {
     pub fn generateTexture() Texture {
         const rc = aya.math.rand.color;
         var colors = [_]u32{
-            tk.colors.brushes[12],tk.colors.brushes[11],tk.colors.brushes[10],tk.colors.brushes[9],
-            tk.colors.brushes[8],tk.colors.brushes[7],tk.colors.brushes[6],tk.colors.brushes[5],
-            tk.colors.brushes[4],tk.colors.brushes[3],tk.colors.brushes[2],tk.colors.brushes[1],
-            rc().value, rc().value, rc().value, rc().value,
+            tk.colors.brushes[12], tk.colors.brushes[11], tk.colors.brushes[10], tk.colors.brushes[9],
+            tk.colors.brushes[8],  tk.colors.brushes[7],  tk.colors.brushes[6],  tk.colors.brushes[5],
+            tk.colors.brushes[4],  tk.colors.brushes[3],  tk.colors.brushes[2],  tk.colors.brushes[1],
+            rc().value,            rc().value,            rc().value,            rc().value,
         };
 
         var pixels: [16 * 4 * 16 * 4]u32 = undefined;
@@ -232,7 +232,7 @@ pub const AppState = struct {
         try persistence.exportJson(self.map, self.final_map_data, file);
     }
 
-    pub fn clearQuickFile(self: *AppState, which: enum {opened, exported}) void {
+    pub fn clearQuickFile(self: *AppState, which: enum { opened, exported }) void {
         var file = if (which == .opened) &self.opened_file else &self.exported_file;
         if (file.* != null) {
             aya.mem.allocator.free(file.*.?);
@@ -241,7 +241,12 @@ pub const AppState = struct {
     }
 
     pub fn loadMap(self: *AppState, file: []const u8) !void {
-        self.map = try persistence.load(file);
+        if (std.mem.endsWith(u8, file, ".tk")) {
+            self.map = try persistence.load(file);
+        } else if (std.mem.endsWith(u8, file, ".tkp")) {
+            self.map = try @import("tilekit_importer.zig").import(file);
+        }
+
         self.map_rect_size = @intToFloat(f32, self.map.tile_size * self.prefs.tile_size_multiplier);
 
         const curr_dir = try std.fs.cwd().openDir(std.fs.path.dirname(file).?, .{});

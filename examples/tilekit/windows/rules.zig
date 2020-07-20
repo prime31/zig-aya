@@ -440,7 +440,8 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
     if (is_pre_rule) {
         pos.x = igGetIO().MousePos.x - @intToFloat(f32, 32) * 5.0 / 2.0;
     } else {
-        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.texture.width) / 2;
+        const zoom: i32 = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
+        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.texture.width * zoom) / 2;
     }
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
