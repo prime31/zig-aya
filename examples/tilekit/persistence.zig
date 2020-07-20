@@ -4,8 +4,8 @@ const aya = @import("aya");
 const Writer = aya.mem.SdlBufferStream.Writer;
 const Reader = aya.mem.SdlBufferStream.Reader;
 const Map = @import("data.zig").Map;
-const RuleSet = @import("data.zig").RuleSet;
 const Rule = @import("data.zig").Rule;
+const RuleTile = @import("data.zig").RuleTile;
 const Tag = @import("data.zig").Tag;
 const Object = @import("data.zig").Object;
 const Animation = @import("data.zig").Animation;
@@ -29,9 +29,9 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, data_bytes.len);
     try out.writeAll(data_bytes);
 
-    // rulesets
-    try out.writeIntLittle(usize, map.rulesets.items.len);
-    for (map.rulesets.items) |rule| {
+    // ruleset
+    try out.writeIntLittle(usize, map.ruleset.items.len);
+    for (map.ruleset.items) |rule| {
         try writeRuleSet(out, rule);
     }
 
@@ -85,11 +85,11 @@ pub fn save(map: Map, file: []const u8) !void {
     }
 }
 
-fn writeRuleSet(out: Writer, rule: RuleSet) !void {
+fn writeRuleSet(out: Writer, rule: Rule) !void {
     try writeFixedSliceZ(out, &rule.name);
     try out.writeIntLittle(u8, rule.folder);
 
-    for (rule.rules) |rule_tile| {
+    for (rule.rule_tiles) |rule_tile| {
         try out.writeIntLittle(usize, rule_tile.tile);
         try out.writeIntLittle(u8, @enumToInt(rule_tile.state));
     }
@@ -109,8 +109,8 @@ pub fn load(file: []const u8) !Map {
 
     var map = Map{
         .data = undefined,
-        .rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
-        .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
+        .ruleset = std.ArrayList(Rule).init(aya.mem.allocator),
+        .pre_rulesets = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
         .tags = std.ArrayList(Tag).init(aya.mem.allocator),
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
         .animations = std.ArrayList(Animation).init(aya.mem.allocator),
@@ -136,13 +136,13 @@ pub fn load(file: []const u8) !Map {
     map.data = try aya.mem.allocator.alloc(u8, data_len);
     _ = try in.readAll(map.data);
 
-    // rulesets
+    // Rules
     const rulesets_len = try in.readIntLittle(usize);
 
-    _ = try map.rulesets.ensureCapacity(rulesets_len);
+    _ = try map.ruleset.ensureCapacity(rulesets_len);
     var i: usize = 0;
     while (i < rulesets_len) : (i += 1) {
-        try map.rulesets.append(try readRuleSet(in));
+        try map.ruleset.append(try readRule(in));
     }
 
     // pre rules
@@ -150,13 +150,13 @@ pub fn load(file: []const u8) !Map {
     _ = try map.pre_rulesets.ensureCapacity(pre_rules_pages);
     i = 0;
     while (i < pre_rules_pages) : (i += 1) {
-        _ = try map.pre_rulesets.append(std.ArrayList(RuleSet).init(aya.mem.allocator));
+        _ = try map.pre_rulesets.append(std.ArrayList(Rule).init(aya.mem.allocator));
 
         const rules_cnt = try in.readIntLittle(usize);
         _ = try map.pre_rulesets.items[i].ensureCapacity(rules_cnt);
         var j: usize = 0;
         while (j < rules_cnt) : (j += 1) {
-            try map.pre_rulesets.items[i].append(try readRuleSet(in));
+            try map.pre_rulesets.items[i].append(try readRule(in));
         }
     }
 
@@ -222,15 +222,15 @@ pub fn load(file: []const u8) !Map {
     return map;
 }
 
-fn readRuleSet(in: Reader) !RuleSet {
-    var rule = RuleSet.init();
+fn readRule(in: Reader) !Rule {
+    var rule = Rule.init();
 
     try readFixedSliceZ(in, &rule.name);
     rule.folder = try in.readIntLittle(u8);
 
-    for (rule.rules) |*rule_tile| {
+    for (rule.rule_tiles) |*rule_tile| {
         rule_tile.tile = try in.readIntLittle(usize);
-        rule_tile.state = @intToEnum(Rule.RuleState, @intCast(u4, try in.readIntLittle(u8)));
+        rule_tile.state = @intToEnum(RuleTile.RuleState, @intCast(u4, try in.readIntLittle(u8)));
     }
 
     rule.chance = try in.readIntLittle(u8);

@@ -5,7 +5,7 @@ const colors = @import("../colors.zig");
 const brushes_win = @import("brushes.zig");
 usingnamespace @import("imgui");
 
-const RuleSet = @import("../data.zig").RuleSet;
+const Rule = @import("../data.zig").Rule;
 
 var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
@@ -13,7 +13,7 @@ var nine_slice_selected: ?usize = null;
 
 var drag_drop_state = struct {
     source: union(enum) {
-        rule: *RuleSet,
+        rule: *Rule,
         folder: u8,
     } = undefined,
     from: usize = 0,
@@ -31,11 +31,11 @@ var drag_drop_state = struct {
         };
     }
 
-    pub fn handle(self: *@This(), ruleset: *std.ArrayList(RuleSet)) void {
+    pub fn handle(self: *@This(), rules: *std.ArrayList(Rule)) void {
         self.completed = false;
         switch (self.source) {
-            .folder => swapFolders(ruleset),
-            else => swapRuleSets(ruleset),
+            .folder => swapFolders(rules),
+            else => swapRules(rules),
         }
         self.above_folder = false;
     }
@@ -75,35 +75,35 @@ pub fn draw(state: *tk.AppState) void {
     }
 }
 
-/// handles the actual logic to rearrange the RuleSet for drag/drop when a Rule is reordered
-fn swapRuleSets(ruleset: *std.ArrayList(RuleSet)) void {
+/// handles the actual logic to rearrange the Rule for drag/drop when a Rule is reordered
+fn swapRules(rules: *std.ArrayList(Rule)) void {
     // dont assign the folder unless we are swapping into a folder proper
     if (!drag_drop_state.above_folder and drag_drop_state.dropped_in_folder) {
-        const to = if (ruleset.items.len == drag_drop_state.to) drag_drop_state.to - 1 else drag_drop_state.to;
-        const folder = ruleset.items[to].folder;
-        ruleset.items[drag_drop_state.from].folder = folder;
+        const to = if (rules.items.len == drag_drop_state.to) drag_drop_state.to - 1 else drag_drop_state.to;
+        const folder = rules.items[to].folder;
+        rules.items[drag_drop_state.from].folder = folder;
     } else {
-        ruleset.items[drag_drop_state.from].folder = 0;
+        rules.items[drag_drop_state.from].folder = 0;
     }
 
     // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
     var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - 1;
     while (total_swaps > 0) : (total_swaps -= 1) {
         if (drag_drop_state.from > drag_drop_state.to) {
-            std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from], &ruleset.items[drag_drop_state.from - 1]);
+            std.mem.swap(Rule, &rules.items[drag_drop_state.from], &rules.items[drag_drop_state.from - 1]);
             drag_drop_state.from -= 1;
         } else {
-            std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from], &ruleset.items[drag_drop_state.from + 1]);
+            std.mem.swap(Rule, &rules.items[drag_drop_state.from], &rules.items[drag_drop_state.from + 1]);
             drag_drop_state.from += 1;
         }
     }
 }
 
-/// handles the actual logic to rearrange the RuleSet for drag/drop when a folder is reordered
-fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
+/// handles the actual logic to rearrange the Rule for drag/drop when a folder is reordered
+fn swapFolders(rules: *std.ArrayList(Rule)) void {
     var total_in_folder = blk: {
         var total: usize = 0;
-        for (ruleset.items) |rule| {
+        for (rules.items) |rule| {
             if (rule.folder == drag_drop_state.source.folder) total += 1;
         }
         break :blk total;
@@ -116,14 +116,14 @@ fn swapFolders(ruleset: *std.ArrayList(RuleSet)) void {
         if (drag_drop_state.from > drag_drop_state.to) {
             var j: usize = 0;
             while (j < total_in_folder) : (j += 1) {
-                std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from + j], &ruleset.items[drag_drop_state.from - 1 + j]);
+                std.mem.swap(Rule, &rules.items[drag_drop_state.from + j], &rules.items[drag_drop_state.from - 1 + j]);
             }
             drag_drop_state.from -= 1;
         } else {
             // moving down, we have to move the last item in the folder first each step
             var j: usize = total_in_folder - 1;
             while (j >= 0) : (j -= 1) {
-                std.mem.swap(RuleSet, &ruleset.items[drag_drop_state.from + j], &ruleset.items[drag_drop_state.from + 1 + j]);
+                std.mem.swap(Rule, &rules.items[drag_drop_state.from + j], &rules.items[drag_drop_state.from + 1 + j]);
                 if (j == 0) break;
             }
             drag_drop_state.from += 1;
@@ -135,15 +135,15 @@ fn drawRulesTab(state: *tk.AppState) void {
     var folder: u8 = 0;
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
-    while (i < state.map.rulesets.items.len) : (i += 1) {
-        // if we have a RuleSet in a folder render all the RuleSets in that folder at once
-        if (state.map.rulesets.items[i].folder > 0 and state.map.rulesets.items[i].folder != folder) {
-            folder = state.map.rulesets.items[i].folder;
+    while (i < state.map.ruleset.items.len) : (i += 1) {
+        // if we have a Rule in a folder render all the Rules in that folder at once
+        if (state.map.ruleset.items[i].folder > 0 and state.map.ruleset.items[i].folder != folder) {
+            folder = state.map.ruleset.items[i].folder;
 
             igPushIDInt(@intCast(c_int, folder));
-            folderDropTarget(state.map.rulesets.items[i].folder, i);
+            folderDropTarget(state.map.ruleset.items[i].folder, i);
             const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
-            folderDragDrop(state.map.rulesets.items[i].folder, i);
+            folderDragDrop(state.map.ruleset.items[i].folder, i);
 
             if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
@@ -160,10 +160,10 @@ fn drawRulesTab(state: *tk.AppState) void {
                 igIndent(10);
                 drag_drop_state.rendering_folder = true;
             }
-            rulesDragDrop(i, &state.map.rulesets.items[i], true);
+            rulesDragDrop(i, &state.map.ruleset.items[i], true);
 
-            while (i < state.map.rulesets.items.len and state.map.rulesets.items[i].folder == folder) : (i += 1) {
-                if (header_open and drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
+            while (i < state.map.ruleset.items.len and state.map.ruleset.items[i].folder == folder) : (i += 1) {
+                if (header_open and drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.items[i], i, false)) {
                     delete_index = i;
                 }
             }
@@ -174,27 +174,27 @@ fn drawRulesTab(state: *tk.AppState) void {
             }
 
             // if a folder is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
-            if (i == state.map.rulesets.items.len) break;
+            if (i == state.map.ruleset.items.len) break;
             i -= 1;
             continue;
         }
 
-        if (drawRuleSet(state, &state.map.rulesets, &state.map.rulesets.items[i], i, false)) {
+        if (drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.items[i], i, false)) {
             delete_index = i;
         }
     }
 
-    if (delete_index < state.map.rulesets.items.len) {
-        _ = state.map.rulesets.orderedRemove(delete_index);
+    if (delete_index < state.map.ruleset.items.len) {
+        _ = state.map.ruleset.orderedRemove(delete_index);
     }
 
     // handle drag and drop swapping
     if (drag_drop_state.completed) {
-        drag_drop_state.handle(&state.map.rulesets);
+        drag_drop_state.handle(&state.map.ruleset);
     }
 
     if (igButton("Add Rule", ImVec2{})) {
-        state.map.addRuleSet();
+        state.map.addRule();
     }
     igSameLine(0, 10);
 
@@ -243,7 +243,7 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
             }
 
             if (ogButton("Add Rule")) {
-                pre_rule.append(RuleSet.init()) catch unreachable;
+                pre_rule.append(Rule.init()) catch unreachable;
             }
 
             if (delete_rule_index < pre_rule.items.len) {
@@ -303,7 +303,7 @@ fn folderDragDrop(folder: u8, index: usize) void {
 }
 
 /// handles drag/drop sources and targets
-fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
+fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     var cursor = ogGetCursorPos();
 
     if (!drop_only) {
@@ -351,13 +351,13 @@ fn rulesDragDrop(index: usize, rule: *RuleSet, drop_only: bool) void {
     }
 }
 
-fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *RuleSet, index: usize, is_pre_rule: bool) bool {
+fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, index: usize, is_pre_rule: bool) bool {
     igPushIDPtr(rule);
     defer igPopID();
 
     rulesDragDrop(index, rule, false);
 
-    // right-click the move button to add the RuleSet to a folder only if not already in a folder
+    // right-click the move button to add the Rule to a folder only if not already in a folder
     if (rule.folder == 0 and igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
         _ = ogInputText("##folder-name", &new_rule_label_buf, new_rule_label_buf.len);
         igText("Note: name not supported yet");
@@ -452,7 +452,7 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(RuleSet), rule: *Rule
     return false;
 }
 
-fn patternPopup(state: *tk.AppState, rule: *RuleSet) void {
+fn patternPopup(state: *tk.AppState, rule: *Rule) void {
     igText("Pattern");
     igSameLine(0, igGetWindowContentRegionWidth() - 65);
     igText(icons.question_circle);
@@ -526,7 +526,7 @@ fn patternPopup(state: *tk.AppState, rule: *RuleSet) void {
     }
 }
 
-fn rulesHamburgerPopup(rule: *RuleSet) void {
+fn rulesHamburgerPopup(rule: *Rule) void {
     var pos = igGetIO().MousePos;
     pos.x -= 100;
     igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
@@ -569,7 +569,7 @@ fn rulesHamburgerPopup(rule: *RuleSet) void {
 }
 
 /// shows the tileset or brush palette allowing multiple tiles to be selected
-fn resultPopup(state: *tk.AppState, ruleset: *RuleSet, is_pre_rule: bool) void {
+fn resultPopup(state: *tk.AppState, ruleset: *Rule, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     const zoom: usize = if (!is_pre_rule and (state.texture.width < 200 and state.texture.height < 200)) 2 else 1;
     const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing * zoom;

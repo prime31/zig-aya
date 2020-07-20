@@ -3,7 +3,6 @@ const aya = @import("aya");
 const data = @import("data.zig");
 const Map = data.Map;
 const Rule = data.Rule;
-const RuleSet = data.RuleSet;
 const RuleTile = data.RuleTile;
 const AppState = @import("tilekit.zig").AppState;
 
@@ -39,19 +38,19 @@ pub fn generateOutputMap(state: *AppState) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            state.final_map_data[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, state.map.rulesets.items, false, x, y);
+            state.final_map_data[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, state.map.ruleset.items, false, x, y);
         }
     }
 }
 
-pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: []RuleSet, is_pre_ruleset: bool, x: usize, y: usize) u8 {
-    for (rulesets) |*ruleset| brk: {
-        if (ruleset.result_tiles.len == 0) continue;
+pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rules: []Rule, is_pre_ruleset: bool, x: usize, y: usize) u8 {
+    for (rules) |*rule| brk: {
+        if (rule.result_tiles.len == 0) continue;
 
         // at least one rule must pass to have a result
         var rule_passed = false;
-        for (ruleset.rules) |rule, i| {
-            if (rule.state == .none) continue;
+        for (rule.rule_tiles) |rule_tile, i| {
+            if (rule_tile.state == .none) continue;
             const x_offset = @intCast(i32, @mod(i, 5)) - 2;
             const y_offset = @intCast(i32, @divTrunc(i, 5)) - 2;
 
@@ -63,8 +62,8 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
                 break :blk tile_source[index];
             };
 
-            // if any rule fails, we are done with this ruleset
-            if (!rule.passes(processed_tile)) {
+            // if any rule fails, we are done with this RuleSet
+            if (!rule_tile.passes(processed_tile)) {
                 break :brk;
             }
 
@@ -74,9 +73,9 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
         // a Rule passed. we use the chance to decide if we will return a tile
         // const chance = aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100);
         const random = state.random_map_data[x + y * state.map.w];
-        const chance = random.float < @intToFloat(f32, ruleset.chance) / 100;
+        const chance = random.float < @intToFloat(f32, rule.chance) / 100;
         if (rule_passed and chance) {
-            return @intCast(u8, ruleset.resultTile(random.int) + 1);
+            return @intCast(u8, rule.resultTile(random.int) + 1);
         }
     }
 
