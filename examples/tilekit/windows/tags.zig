@@ -55,7 +55,7 @@ pub fn draw(state: *tk.AppState) void {
 
 fn tagTileSelectorPopup(state: *tk.AppState, tag: *tk.data.Tag) void {
     var content_start_pos = ogGetCursorScreenPos();
-    // should tags be allowed on tilesets? if so, we need to remove the hardcoded 6's
+    // should tags be allowed on tilesets? if so, we need to remove the hardcoded 6's and use tilesPerRow
     // ogImage(state.texture);
     brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
 
@@ -70,8 +70,8 @@ fn tagTileSelectorPopup(state: *tk.AppState, tag: *tk.data.Tag) void {
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
         tl.x += content_start_pos.x + 1;
         tl.y += content_start_pos.y + 1;
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size), tk.colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size), tk.colors.rule_result_selected_outline, 2);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), tk.colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), tk.colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state

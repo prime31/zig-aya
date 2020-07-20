@@ -40,13 +40,12 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     }
 
     // show the quick brush selector
-    if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
-        if (igIsPopupOpenID(igGetIDStr("brushes"))) {
-            igClosePopupToLevel(0, true);
-        } else {
-            igOpenPopup("brushes");
-        }
-    }
+    // TODO: this igIsPopupOpenStr doesnt work
+    // if (!igIsPopupOpenStr("##pattern_popup")) {
+    //     if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
+    //         igOpenPopup("##brushes-root");
+    //     }
+    // }
 
     // undo/redo
     if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper and igGetIO().KeyShift) {
