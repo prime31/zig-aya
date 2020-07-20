@@ -25,11 +25,9 @@ pub fn draw(state: *tk.AppState) void {
                 }
                 igSameLine(0, 5);
 
-                // igPushItemWidth(100);
                 if (ogButton("Tiles")) {
                     igOpenPopup("animation-tiles");
                 }
-                // igPopItemWidth();
                 igSameLine(0, 5);
 
                 igPushItemWidth(75);

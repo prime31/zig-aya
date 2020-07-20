@@ -90,6 +90,7 @@ pub fn draw(state: *tk.AppState) void {
                 state.map = tk.Map.init(tile_size, tile_spacing);
                 state.clearQuickFile(.opened);
                 state.clearQuickFile(.exported);
+                state.resizeMap(state.map.w, state.map.h);
             }
 
             if (igMenuItemBool("Open...", null, false, true)) {

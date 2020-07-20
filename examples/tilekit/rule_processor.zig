@@ -27,10 +27,10 @@ pub fn generateProcessedMap(state: *AppState) void {
             while (x < state.map.w) : (x += 1) {
                 for (state.map.pre_rulesets.items) |ruleset| {
                     buffer[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, ruleset.items, true, x, y);
+                    @memcpy(state.processed_map_data.ptr, buffer.ptr, buffer.len);
                 }
             }
         }
-        @memcpy(state.processed_map_data.ptr, buffer.ptr, buffer.len);
     }
 }
 
@@ -71,7 +71,7 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rulesets: [
             rule_passed = true;
         }
 
-        // a RuleSet passed. we use the chance to decide if we will return a tile
+        // a Rule passed. we use the chance to decide if we will return a tile
         // const chance = aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100);
         const random = state.random_map_data[x + y * state.map.w];
         const chance = random.float < @intToFloat(f32, ruleset.chance) / 100;

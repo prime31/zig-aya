@@ -44,10 +44,12 @@ pub const TileKit = struct {
     }
 
     pub fn handleDroppedFile(self: *TileKit, file: []const u8) void {
-        if (std.mem.endsWith(u8, file, ".tk")) {
+        if (std.mem.endsWith(u8, file, ".tk") or std.mem.endsWith(u8, file, ".tkp")) {
             self.state.loadMap(file) catch unreachable;
         } else if (std.mem.endsWith(u8, file, ".png")) {
             menu.loadTileset(file);
+        } else {
+            self.state.showToast("Invalid file.", 100);
         }
     }
 
