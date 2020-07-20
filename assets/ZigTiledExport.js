@@ -22,7 +22,7 @@ var zigMapFormat = {
 		var accum_w = tileset.margin * 2;
 		while (true) {
 			columns++
-			accum_w += tileset.tileWidth + 2 * tileset.tileSpacing
+			accum_w += tileset.tileWidth + tileset.tileSpacing
 			if (accum_w >= width) {
 				return columns;
 			}
