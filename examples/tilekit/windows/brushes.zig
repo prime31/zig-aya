@@ -6,18 +6,20 @@ const tk = @import("../tilekit.zig");
 const thickness: f32 = 2;
 
 pub fn drawWindow(state: *tk.AppState) void {
-    if (state.prefs.windows.brushes and igBegin("Brushes", &state.prefs.windows.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-        draw(state, 32, false);
+    if (state.prefs.windows.brushes) {
+        if (igBegin("Brushes", &state.prefs.windows.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+            draw(state, 32, false);
+        }
         igEnd();
     }
 }
 
-pub fn drawPopup(state: *tk.AppState) void {
+pub fn drawPopup(state: *tk.AppState, popup_id: [*c]const u8) void {
     var pos = igGetIO().MousePos;
     pos.x -= state.map_rect_size * 6 / 2;
     pos.y -= state.map_rect_size * 6 / 2;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
-    if (igBeginPopup("brushes", ImGuiWindowFlags_NoTitleBar)) {
+    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
+    if (igBeginPopup(popup_id, ImGuiWindowFlags_NoTitleBar)) {
         draw(state, state.map_rect_size, false);
         igEndPopup();
     }

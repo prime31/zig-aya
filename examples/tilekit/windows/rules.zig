@@ -434,6 +434,15 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
 
         rulesHamburgerPopup(rule);
 
+        // quick brush selector
+        if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
+            if (igIsPopupOpenID(igGetIDStr("##brushes"))) {
+                igClosePopupToLevel(1, true);
+            } else {
+                igOpenPopup("##brushes");
+            }
+        }
+        brushes_win.drawPopup(state, "##brushes");
         igEndPopup();
     }
 

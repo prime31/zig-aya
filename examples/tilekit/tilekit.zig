@@ -31,6 +31,7 @@ pub const TileKit = struct {
     pub fn init() TileKit {
         colors.init();
         history.init();
+        setupDefaults();
         return .{ .state = AppState.init() };
     }
 
@@ -53,6 +54,12 @@ pub const TileKit = struct {
         }
     }
 
+    fn setupDefaults() void {
+        igGetStyle().WindowRounding = 0;
+        igGetStyle().WindowBorderSize = 0;
+        igGetStyle().WindowMenuButtonPosition = ImGuiDir_None;
+    }
+
     pub fn draw(self: *TileKit) void {
         var window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_MenuBar;
         const vp = igGetMainViewport();
@@ -64,14 +71,12 @@ pub const TileKit = struct {
         igSetNextWindowPos(work_pos, ImGuiCond_Always, .{});
         igSetNextWindowSize(work_size, ImGuiCond_Always);
         igSetNextWindowViewport(vp.ID);
-        igPushStyleVarFloat(ImGuiStyleVar_WindowRounding, 0);
-        igPushStyleVarFloat(ImGuiStyleVar_WindowBorderSize, 0);
         window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
         igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
         _ = igBegin("Dockspace", null, window_flags);
-        igPopStyleVar(3);
+        igPopStyleVar(1);
 
         const io = igGetIO();
         const dockspace_id = igGetIDStr("default-dockspace");
@@ -88,7 +93,7 @@ pub const TileKit = struct {
         brushes_win.drawWindow(&self.state);
         input_map_wins.drawWindows(&self.state);
         output_map_win.drawWindow(&self.state);
-        brushes_win.drawPopup(&self.state);
+        brushes_win.drawPopup(&self.state, "##brushes-root");
         tags_win.draw(&self.state);
         objects_win.draw(&self.state);
         object_editor_win.draw(&self.state);
@@ -99,16 +104,15 @@ pub const TileKit = struct {
             self.state.toast_timer -= 1;
 
             igPushStyleColorU32(ImGuiCol_WindowBg, colors.colorRgba(90, 90, 130, 255));
-            igSetNextWindowPos(ogGetWindowCenter(), ImGuiCond_Always, .{});
+            igSetNextWindowPos(ogGetWindowCenter(), ImGuiCond_Always, .{ .x = 0.5, .y = 0.5 });
             if (igBegin("Toast Notification", null, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
-                defer igEnd();
-
                 igText(&self.state.toast_text[0]);
 
                 if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Left, false)) {
                     self.state.toast_timer = -1;
                 }
             }
+            igEnd();
             igPopStyleColor(1);
         }
 
