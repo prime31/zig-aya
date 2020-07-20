@@ -10,8 +10,8 @@ pub const Map = struct {
     repeat: u8 = 20,
     image: []const u8 = "",
     data: []u8,
-    rulesets: std.ArrayList(RuleSet),
-    pre_rulesets: std.ArrayList(std.ArrayList(RuleSet)),
+    ruleset: std.ArrayList(Rule),
+    pre_rulesets: std.ArrayList(std.ArrayList(Rule)),
     tags: std.ArrayList(Tag),
     objects: std.ArrayList(Object),
     animations: std.ArrayList(Animation),
@@ -23,8 +23,8 @@ pub const Map = struct {
             .tile_size = tile_size,
             .tile_spacing = tile_spacing,
             .data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
-            .rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
-            .pre_rulesets = std.ArrayList(std.ArrayList(RuleSet)).init(aya.mem.allocator),
+            .ruleset = std.ArrayList(Rule).init(aya.mem.allocator),
+            .pre_rulesets = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
             .tags = std.ArrayList(Tag).init(aya.mem.allocator),
             .objects = std.ArrayList(Object).init(aya.mem.allocator),
             .animations = std.ArrayList(Animation).init(aya.mem.allocator),
@@ -39,7 +39,7 @@ pub const Map = struct {
         for (self.pre_rulesets.items) |pr| {
             pr.deinit();
         }
-        self.rulesets.deinit();
+        self.ruleset.deinit();
         self.tags.deinit();
         self.objects.deinit();
         self.animations.deinit();
@@ -49,8 +49,8 @@ pub const Map = struct {
         }
     }
 
-    pub fn addRuleSet(self: *Map) void {
-        self.rulesets.append(RuleSet.init()) catch unreachable;
+    pub fn addRule(self: *Map) void {
+        self.ruleset.append(Rule.init()) catch unreachable;
     }
 
     pub fn addTag(self: *Map) void {
@@ -83,7 +83,7 @@ pub const Map = struct {
     }
 
     pub fn addPreRulesPage(self: *Map) void {
-        self.pre_rulesets.append(std.ArrayList(RuleSet).init(aya.mem.allocator)) catch unreachable;
+        self.pre_rulesets.append(std.ArrayList(Rule).init(aya.mem.allocator)) catch unreachable;
     }
 
     pub fn getTile(self: Map, x: usize, y: usize) u8 {
@@ -99,7 +99,7 @@ pub const Map = struct {
 
     pub fn getNextRuleSetFolder(self: Map) u8 {
         var folder: u8 = 0;
-        for (self.rulesets.items) |item| {
+        for (self.ruleset.items) |item| {
             folder = std.math.max(folder, item.folder);
         }
         return folder + 1;
@@ -111,7 +111,7 @@ pub const Map = struct {
         const y = @divTrunc(index, tiles_per_row);
         const folder = self.getNextRuleSetFolder();
 
-        var rule = RuleSet.init();
+        var rule = Rule.init();
         rule.folder = folder;
         const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tl_name);
@@ -119,9 +119,9 @@ pub const Map = struct {
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + y * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tr" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tr_name);
@@ -129,9 +129,9 @@ pub const Map = struct {
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 2 + y * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-bl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, bl_name);
@@ -139,9 +139,9 @@ pub const Map = struct {
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + (y + 2) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-br" }) catch unreachable;
         std.mem.copy(u8, &rule.name, br_name);
@@ -149,51 +149,51 @@ pub const Map = struct {
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 2 + (y + 2) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const t_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-t" }) catch unreachable;
         std.mem.copy(u8, &rule.name, t_name);
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + y * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const b_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-b" }) catch unreachable;
         std.mem.copy(u8, &rule.name, b_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + (y + 2) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const l_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-l" }) catch unreachable;
         std.mem.copy(u8, &rule.name, l_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + (y + 1) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const r_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-r" }) catch unreachable;
         std.mem.copy(u8, &rule.name, r_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, (x + 2) + (y + 1) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const c_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-c" }) catch unreachable;
         std.mem.copy(u8, &rule.name, c_name);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
     }
 
     pub fn addInnerFourRules(self: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
@@ -201,7 +201,7 @@ pub const Map = struct {
         const y = @divTrunc(index, tiles_per_row);
         const folder = self.getNextRuleSetFolder();
 
-        var rule = RuleSet.init();
+        var rule = Rule.init();
         rule.folder = folder;
         const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tl_name);
@@ -210,9 +210,9 @@ pub const Map = struct {
         rule.get(2, 1).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + y * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const tr_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-tr" }) catch unreachable;
         std.mem.copy(u8, &rule.name, tr_name);
@@ -221,9 +221,9 @@ pub const Map = struct {
         rule.get(2, 1).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + y * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const bl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-bl" }) catch unreachable;
         std.mem.copy(u8, &rule.name, bl_name);
@@ -232,9 +232,9 @@ pub const Map = struct {
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(1, 3).negate(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + (y + 1) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
 
-        rule = RuleSet.init();
+        rule = Rule.init();
         rule.folder = folder;
         const br_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-br" }) catch unreachable;
         std.mem.copy(u8, &rule.name, br_name);
@@ -243,28 +243,48 @@ pub const Map = struct {
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(3, 3).negate(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
-        self.rulesets.append(rule) catch unreachable;
+        self.ruleset.append(rule) catch unreachable;
     }
 };
 
 pub const RuleSet = struct {
-    name: [25:0]u8 = [_:0]u8{0} ** 25,
-    rules: [25]Rule = undefined,
-    chance: u8 = 100,
-    result_tiles: aya.utils.FixedList(u8, 25), // indices into the tileset image
-    folder: u8 = 0, // UI-relevant: used to group RuleSets into a tree leaf node visually
+    seed: u64 = 0,
+    repeat: u8 = 20,
+    rules: std.ArrayList(Rule),
 
     pub fn init() RuleSet {
         return .{
-            .rules = [_]Rule{Rule{ .tile = 0, .state = .none }} ** 25,
+            .rules = std.ArrayList(Rule).init(aya.mem.allocator)
+        };
+    }
+
+    pub fn deinit(self: RuleSet) void {
+        self.rules.deinit();
+    }
+
+    pub fn addRule(self: *RuleSet) void {
+        self.rules.append(Rule.init()) catch unreachable;
+    }
+};
+
+pub const Rule = struct {
+    name: [25:0]u8 = [_:0]u8{0} ** 25,
+    rule_tiles: [25]RuleTile = undefined,
+    chance: u8 = 100,
+    result_tiles: aya.utils.FixedList(u8, 25), // indices into the tileset image
+    folder: u8 = 0, // UI-relevant: used to group Rules into a tree leaf node visually
+
+    pub fn init() Rule {
+        return .{
+            .rule_tiles = [_]RuleTile{RuleTile{ .tile = 0, .state = .none }} ** 25,
             .result_tiles = aya.utils.FixedList(u8, 25).init(),
         };
     }
 
-    pub fn clone(self: RuleSet) RuleSet {
-        var new_rule = RuleSet.init();
+    pub fn clone(self: Rule) Rule {
+        var new_rule = Rule.init();
         std.mem.copy(u8, &new_rule.name, &self.name);
-        std.mem.copy(Rule, &new_rule.rules, &self.rules);
+        std.mem.copy(RuleTile, &new_rule.rule_tiles, &self.rule_tiles);
         std.mem.copy(u8, &new_rule.result_tiles.items, &self.result_tiles.items);
         new_rule.result_tiles.len = self.result_tiles.len;
         new_rule.chance = self.chance;
@@ -272,20 +292,20 @@ pub const RuleSet = struct {
         return new_rule;
     }
 
-    pub fn clearPatternData(self: *RuleSet) void {
-        self.rules = [_]Rule{Rule{ .tile = 0, .state = .none }} ** 25;
+    pub fn clearPatternData(self: *Rule) void {
+        self.rule_tiles = [_]RuleTile{RuleTile{ .tile = 0, .state = .none }} ** 25;
     }
 
-    pub fn get(self: *RuleSet, x: usize, y: usize) *Rule {
-        return &self.rules[x + y * 5];
+    pub fn get(self: *Rule, x: usize, y: usize) *RuleTile {
+        return &self.rule_tiles[x + y * 5];
     }
 
-    pub fn resultTile(self: *RuleSet, random: usize) usize {
+    pub fn resultTile(self: *Rule, random: usize) usize {
         const index = std.rand.limitRangeBiased(usize, random, self.result_tiles.len);
         return self.result_tiles.items[index];
     }
 
-    pub fn toggleSelected(self: *RuleSet, index: u8) void {
+    pub fn toggleSelected(self: *Rule, index: u8) void {
         if (self.result_tiles.indexOf(index)) |slice_index| {
             _ = self.result_tiles.swapRemove(slice_index);
         } else {
@@ -293,23 +313,23 @@ pub const RuleSet = struct {
         }
     }
 
-    pub fn flip(self: *RuleSet, dir: enum { horizontal, vertical }) void {
+    pub fn flip(self: *Rule, dir: enum { horizontal, vertical }) void {
         if (dir == .vertical) {
             for ([_]usize{ 0, 1 }) |y| {
                 for ([_]usize{ 0, 1, 2, 3, 4 }) |x| {
-                    std.mem.swap(Rule, &self.rules[x + y * 5], &self.rules[x + (4 - y) * 5]);
+                    std.mem.swap(RuleTile, &self.rule_tiles[x + y * 5], &self.rule_tiles[x + (4 - y) * 5]);
                 }
             }
         } else {
             for ([_]usize{ 0, 1 }) |x| {
                 for ([_]usize{ 0, 1, 2, 3, 4 }) |y| {
-                    std.mem.swap(Rule, &self.rules[x + y * 5], &self.rules[(4 - x) + y * 5]);
+                    std.mem.swap(RuleTile, &self.rule_tiles[x + y * 5], &self.rule_tiles[(4 - x) + y * 5]);
                 }
             }
         }
     }
 
-    pub fn shift(self: *RuleSet, dir: enum { left, right, up, down }) void {
+    pub fn shift(self: *Rule, dir: enum { left, right, up, down }) void {
         var x_incr: i32 = if (dir == .left) -1 else 1;
         var x_vals = [_]usize{ 0, 1, 2, 3, 4 };
         if (dir == .right) std.mem.reverse(usize, &x_vals);
@@ -333,16 +353,16 @@ pub const RuleSet = struct {
         }
     }
 
-    fn swap(self: *RuleSet, x: usize, y: usize, new_x: i32, new_y: i32) void {
+    fn swap(self: *Rule, x: usize, y: usize, new_x: i32, new_y: i32) void {
         // destinations can be invalid and when they are we just reset the source values
         if (new_x >= 0 and new_x < 5 and new_y >= 0 and new_y < 5) {
-            self.rules[@intCast(usize, new_x + new_y * 5)] = self.rules[x + y * 5].clone();
+            self.rule_tiles[@intCast(usize, new_x + new_y * 5)] = self.rule_tiles[x + y * 5].clone();
         }
-        self.rules[x + y * 5].reset();
+        self.rule_tiles[x + y * 5].reset();
     }
 };
 
-pub const Rule = struct {
+pub const RuleTile = struct {
     tile: usize = 0,
     state: RuleState = .none,
 
@@ -352,16 +372,16 @@ pub const Rule = struct {
         required,
     };
 
-    pub fn clone(self: Rule) Rule {
+    pub fn clone(self: RuleTile) RuleTile {
         return .{ .tile = self.tile, .state = self.state };
     }
 
-    pub fn reset(self: *Rule) void {
+    pub fn reset(self: *RuleTile) void {
         self.tile = 0;
         self.state = .none;
     }
 
-    pub fn passes(self: Rule, tile: usize) bool {
+    pub fn passes(self: RuleTile, tile: usize) bool {
         if (self.state == .none) return false;
         if (tile == self.tile) {
             return self.state == .required;
@@ -369,7 +389,7 @@ pub const Rule = struct {
         return self.state == .negated;
     }
 
-    pub fn toggleState(self: *Rule, new_state: RuleState) void {
+    pub fn toggleState(self: *RuleTile, new_state: RuleState) void {
         if (self.tile == 0) {
             self.state = new_state;
         } else {
@@ -378,7 +398,7 @@ pub const Rule = struct {
         }
     }
 
-    pub fn negate(self: *Rule, index: usize) void {
+    pub fn negate(self: *RuleTile, index: usize) void {
         if (self.tile == 0) {
             self.tile = index;
             self.state = .negated;
@@ -388,7 +408,7 @@ pub const Rule = struct {
         }
     }
 
-    pub fn require(self: *Rule, index: usize) void {
+    pub fn require(self: *RuleTile, index: usize) void {
         if (self.tile == 0) {
             self.tile = index;
             self.state = .required;
@@ -464,7 +484,7 @@ pub const Object = struct {
                         break;
                     }
                 },
-                else => {}
+                else => {},
             }
         }
 

@@ -20,7 +20,7 @@ pub fn import(file: []const u8) !ayatile.Map {
     std.mem.copy(u8, map.data, res.input_map.data);
 
     for (res.final_ruleset.rules) |rule| {
-        try map.rulesets.append(rule.toAyaRuleSet());
+        try map.ruleset.append(rule.toAyaRuleSet());
     }
 
     for (res.rulesets) |ruleset| {
@@ -73,8 +73,8 @@ pub const TileKitMap = struct {
         offsets: []RuleOffsets,
         results: []u8,
 
-       pub fn toAyaRuleSet(self: @This()) ayatile.data.RuleSet {
-            var ruleset = ayatile.data.RuleSet.init();
+       pub fn toAyaRuleSet(self: @This()) ayatile.data.Rule {
+            var ruleset = ayatile.data.Rule.init();
             std.mem.copy(u8, &ruleset.name, self.label);
             ruleset.chance = self.chance;
 
