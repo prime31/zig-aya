@@ -9,7 +9,9 @@ const Rule = @import("../data.zig").Rule;
 
 var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
+var pre_ruleset_tab_buf: [5]u8 = undefined;
 var nine_slice_selected: ?usize = null;
+var current_ruleset: usize = std.math.maxInt(usize);
 
 var drag_drop_state = struct {
     source: union(enum) {
@@ -46,6 +48,7 @@ pub fn draw(state: *tk.AppState) void {
     defer igPopStyleVar(1);
 
     if (state.prefs.windows.rules) {
+        current_ruleset = std.math.maxInt(usize);
         _ = igBegin("Rules", &state.prefs.windows.rules, ImGuiWindowFlags_None);
         defer igEnd();
 
@@ -54,9 +57,13 @@ pub fn draw(state: *tk.AppState) void {
         if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_AutoSelectNewTabs)) {
             defer igEndTabBar();
 
-            cursor.x += igGetWindowContentRegionWidth() - 25;
+            cursor.x += igGetWindowContentRegionWidth() - 50;
             igSetCursorPos(cursor);
-            if (igButton(" + ", ImVec2{})) {
+            if (igButton(icons.sliders_h, .{})) {
+                igOpenPopup("##seed-repeat");
+            }
+            igSameLine(0, 5);
+            if (igButton(icons.plus, .{})) {
                 state.map.addPreRulesPage();
             }
             ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
@@ -67,6 +74,8 @@ pub fn draw(state: *tk.AppState) void {
             }
 
             drawPreRulesTabs(state);
+
+            rulesetSettingsPopup(state);
         }
 
         if (drag_drop_state.active and igIsMouseReleased(ImGuiMouseButton_Left)) {
@@ -232,8 +241,10 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
     for (state.map.pre_rulesets.items) |*pre_rule, i| {
         var is_tab_open = true;
         igPushIDInt(@intCast(c_int, i) + 3000);
-        if (igBeginTabItem("#1", &is_tab_open, ImGuiTabItemFlags_None)) {
+        _ = std.fmt.bufPrint(&pre_ruleset_tab_buf, "#{}", .{i + 1}) catch unreachable;
+        if (igBeginTabItem(&pre_ruleset_tab_buf, &is_tab_open, ImGuiTabItemFlags_None)) {
             defer igEndTabItem();
+            current_ruleset = i;
 
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (pre_rule.items) |*rule, j| {
@@ -267,6 +278,22 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
+fn rulesetSettingsPopup(state: *tk.AppState) void {
+    if (igBeginPopup("##seed-repeat", ImGuiWindowFlags_None)) {
+        // TODO: switch to proper RuleSets then enable this
+        // var ruleset = if (current_ruleset == std.math.maxInt(usize)) state.map.ruleset else state.map.pre_rulesets[current_ruleset];
+        if (ogDrag(usize, "Seed", &state.map.seed, 1, 0, 1000)) {
+            state.generateRandomData();
+        }
+
+        // only pre_rulesets (valid current_ruleset index into their slice) get the repeat control
+        if (current_ruleset < std.math.maxInt(usize) and ogDrag(u8, "Repeat", &state.map.repeat, 0.2, 0, 100)) {
+            state.map_data_dirty = true;
+        }
+        igEndPopup();
+    }
+}
+
 fn folderDropTarget(folder: u8, index: usize) void {
     if (drag_drop_state.active) {
         var cursor = ogGetCursorPos();
@@ -297,7 +324,7 @@ fn folderDragDrop(folder: u8, index: usize) void {
         drag_drop_state.from = index;
         drag_drop_state.source = .{ .folder = folder };
         _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
-        _ = igText("folder dickhead");
+        _ = igButton("folder move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
         igEndDragDropSource();
     }
 }
@@ -316,7 +343,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
             _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
             drag_drop_state.from = index;
             drag_drop_state.source = .{ .rule = rule };
-            _ = igText(&rule.name);
+            _ = igButton(&rule.name, .{ .x = ogGetContentRegionAvail().x, .y = 20 });
             igEndDragDropSource();
         }
     }
