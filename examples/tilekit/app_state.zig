@@ -240,6 +240,12 @@ pub const AppState = struct {
         }
     }
 
+    pub fn toggleEditMode(self: *AppState) void {
+        self.object_edit_mode = !self.object_edit_mode;
+        tk.colors.toggleObjectMode(self.object_edit_mode);
+        self.showToast(if (self.object_edit_mode) "Entering object edit mode" else "Exiting object edit mode", 70);
+    }
+
     pub fn loadMap(self: *AppState, file: []const u8) !void {
         if (std.mem.endsWith(u8, file, ".tk")) {
             self.map = try persistence.load(file);

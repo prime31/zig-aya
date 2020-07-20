@@ -55,9 +55,7 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     }
 
     if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
-        state.object_edit_mode = !state.object_edit_mode;
-        tk.colors.toggleObjectMode(state.object_edit_mode);
-        state.showToast(if (state.object_edit_mode) "Entering object edit mode" else "Exiting object edit mode", 70);
+        state.toggleEditMode();
     }
 }
 
@@ -222,23 +220,10 @@ pub fn draw(state: *tk.AppState) void {
             _ = igMenuItemBoolPtr("Show Objects", null, &state.prefs.show_objects, true);
         }
 
-        igSetCursorPosX(igGetWindowWidth() - 120);
-        if (igBeginMenu("Pre Processing", true)) {
-            defer igEndMenu();
-
-            if (igBeginMenu("Seed", true)) {
-                defer igEndMenu();
-                if (ogDrag(usize, "##seed", &state.map.seed, 1, 0, 1000)) {
-                    state.generateRandomData();
-                }
-            }
-
-            if (igBeginMenu("Repeat", true)) {
-                defer igEndMenu();
-                if (ogDrag(u8, "##repeat", &state.map.repeat, 0.2, 0, 100)) {
-                    state.map_data_dirty = true;
-                }
-            }
+        const buttom_margin: f32 = if (state.object_edit_mode) 88 else 75;
+        igSetCursorPosX(igGetWindowWidth() - buttom_margin);
+        if (ogButton(if (state.object_edit_mode) "Object Mode" else "Tile Mode")) {
+            state.toggleEditMode();
         }
     }
 
