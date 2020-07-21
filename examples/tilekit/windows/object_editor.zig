@@ -7,10 +7,11 @@ var buffer: [5]u8 = undefined;
 var inspected_object_index: ?usize = null;
 
 pub fn draw(state: *tk.AppState) void {
-    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
-    defer igPopStyleVar(1);
+    if (state.prefs.windows.object_editor) {
+        igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
+        defer igPopStyleVar(1);
 
-    if (state.prefs.windows.object_editor and igBegin("Object Editor", &state.prefs.windows.object_editor, ImGuiWindowFlags_None)) {
+        _ = igBegin("Object Editor", &state.prefs.windows.object_editor, ImGuiWindowFlags_None);
         defer igEnd();
 
         if (igBeginChildEx("##obj-editor-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
