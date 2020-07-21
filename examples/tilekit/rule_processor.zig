@@ -44,6 +44,8 @@ pub fn generateProcessedMap(state: *AppState) void {
 }
 
 pub fn generateOutputMap(state: *AppState) void {
+    state.generateRandomData(state.map.ruleset.seed);
+
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;

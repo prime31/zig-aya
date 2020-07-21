@@ -29,18 +29,12 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeAll(data_bytes);
 
     // ruleset
-    try out.writeIntLittle(usize, map.ruleset.rules.items.len);
-    for (map.ruleset.rules.items) |rule| {
-        try writeRuleSet(out, rule);
-    }
+    try writeRuleSet(out, map.ruleset);
 
-    // pre-rulesets
+    // pre RuleSets
     try out.writeIntLittle(usize, map.pre_rulesets.items.len);
     for (map.pre_rulesets.items) |ruleset| {
-        try out.writeIntLittle(usize, ruleset.rules.items.len);
-        for (ruleset.rules.items) |rule| {
-            try writeRuleSet(out, rule);
-        }
+        try writeRuleSet(out, ruleset);
     }
 
     // tags
@@ -84,21 +78,27 @@ pub fn save(map: Map, file: []const u8) !void {
     }
 }
 
-fn writeRuleSet(out: Writer, rule: Rule) !void {
-    try writeFixedSliceZ(out, &rule.name);
-    try out.writeIntLittle(u8, rule.group);
+fn writeRuleSet(out: Writer, ruleset: RuleSet) !void {
+    try out.writeIntLittle(u64, ruleset.seed);
+    try out.writeIntLittle(u8, ruleset.repeat);
 
-    for (rule.rule_tiles) |rule_tile| {
-        try out.writeIntLittle(usize, rule_tile.tile);
-        try out.writeIntLittle(u8, @enumToInt(rule_tile.state));
-    }
+    try out.writeIntLittle(usize, ruleset.rules.items.len);
+    for (ruleset.rules.items) |rule| {
+        try writeFixedSliceZ(out, &rule.name);
+        try out.writeIntLittle(u8, rule.group);
 
-    try out.writeIntLittle(u8, rule.chance);
+        for (rule.rule_tiles) |rule_tile| {
+            try out.writeIntLittle(usize, rule_tile.tile);
+            try out.writeIntLittle(u8, @enumToInt(rule_tile.state));
+        }
 
-    try out.writeIntLittle(usize, rule.result_tiles.len);
-    for (rule.result_tiles.items) |result_tiles, i| {
-        if (i == rule.result_tiles.len) break;
-        try out.writeIntLittle(u8, result_tiles);
+        try out.writeIntLittle(u8, rule.chance);
+
+        try out.writeIntLittle(usize, rule.result_tiles.len);
+        for (rule.result_tiles.items) |result_tiles, i| {
+            if (i == rule.result_tiles.len) break;
+            try out.writeIntLittle(u8, result_tiles);
+        }
     }
 }
 
@@ -136,11 +136,11 @@ pub fn load(file: []const u8) !Map {
     // RuleSet
     try readIntoRuleSet(in, &map.ruleset);
 
-    // pre rules
-    const pre_rules_pages = try in.readIntLittle(usize);
-    _ = try map.pre_rulesets.ensureCapacity(pre_rules_pages);
+    // pre RuleSets
+    const pre_ruleset_count = try in.readIntLittle(usize);
+    _ = try map.pre_rulesets.ensureCapacity(pre_ruleset_count);
     var i: usize = 0;
-    while (i < pre_rules_pages) : (i += 1) {
+    while (i < pre_ruleset_count) : (i += 1) {
         var ruleset = RuleSet.init();
         try readIntoRuleSet(in, &ruleset);
         _ = try map.pre_rulesets.append(ruleset);
@@ -211,16 +211,13 @@ pub fn load(file: []const u8) !Map {
 fn readIntoRuleSet(in: Reader, ruleset: *RuleSet) !void {
     ruleset.seed = try in.readIntLittle(u64);
     ruleset.repeat = try in.readIntLittle(u8);
-    const rulesets_len = try in.readIntLittle(usize);
+    const rule_count = try in.readIntLittle(usize);
 
-    _ = try ruleset.rules.ensureCapacity(rulesets_len);
+    _ = try ruleset.rules.ensureCapacity(rule_count);
     var i: usize = 0;
-    while (i < rulesets_len) : (i += 1) {
+    while (i < rule_count) : (i += 1) {
         try ruleset.rules.append(try readRule(in));
     }
-
-    ruleset.seed = try in.readIntLittle(u64);
-    ruleset.repeat = try in.readIntLittle(u8);
 }
 
 fn readRule(in: Reader) !Rule {
