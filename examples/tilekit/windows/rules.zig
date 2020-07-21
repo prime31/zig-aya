@@ -283,7 +283,7 @@ fn rulesetSettingsPopup(state: *tk.AppState) void {
     if (igBeginPopup("##seed-repeat", ImGuiWindowFlags_None)) {
         var ruleset = if (current_ruleset == std.math.maxInt(usize)) &state.map.ruleset else &state.map.pre_rulesets.items[current_ruleset];
         if (ogDrag(usize, "Seed", &ruleset.seed, 1, 0, 1000)) {
-            std.debug.print("random data dirty\n", .{});
+            state.map_data_dirty = true;
         }
 
         // only pre_rulesets (valid current_ruleset index into their slice) get the repeat control
