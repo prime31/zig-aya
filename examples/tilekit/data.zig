@@ -496,7 +496,9 @@ pub const Animation = struct {
     tiles: aya.utils.FixedList(u8, 10),
 
     pub fn init(tile: u8) Animation {
-        return .{ .tile = tile, .tiles = aya.utils.FixedList(u8, 10).init() };
+        var anim = Animation{ .tile = tile, .tiles = aya.utils.FixedList(u8, 10).init() };
+        anim.toggleSelected(tile);
+        return anim;
     }
 
     pub fn toggleSelected(self: *Animation, index: u8) void {

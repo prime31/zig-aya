@@ -6,7 +6,8 @@ pub fn import(file: []const u8) !ayatile.Map {
     var bytes = try std.fs.cwd().readFileAlloc(aya.mem.allocator, file, std.math.maxInt(usize));
     var tokens = std.json.TokenStream.init(bytes);
 
-    const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+    // TODO: why does this poop itself when using the real allocator?
+    const options = std.json.ParseOptions{ .allocator = aya.mem.tmp_allocator };
     var res = try std.json.parse(TileKitMap, &tokens, options);
     defer std.json.parseFree(TileKitMap, res, options);
 
@@ -22,7 +23,7 @@ pub fn import(file: []const u8) !ayatile.Map {
     map.ruleset.seed = res.final_ruleset.seed;
     map.ruleset.repeat = res.final_ruleset.repeat;
     for (res.final_ruleset.rules) |rule| {
-        try map.ruleset.rules.append(rule.toAyaRule());
+        map.ruleset.rules.append(rule.toAyaRule()) catch {};
     }
 
     for (res.rulesets) |ruleset| {
@@ -34,6 +35,28 @@ pub fn import(file: []const u8) !ayatile.Map {
         for (ruleset.rules) |rule| {
             try pre_ruleset.rules.append(rule.toAyaRule());
         }
+    }
+
+    for (res.output_map.animations) |anim| {
+        map.addAnimation(@intCast(u8, anim.idx - 1));
+        var aya_anim = &map.animations.items[map.animations.items.len - 1];
+        aya_anim.rate = @intCast(u16, anim.rate);
+
+        for (anim.frames) |frame| {
+            // dont double-add the root frame
+            if (frame != anim.idx) {
+                aya_anim.toggleSelected(frame - 1);
+            }
+        }
+    }
+
+    for (res.objects) |obj, i| {
+        map.addObject();
+        var aya_obj = &map.objects.items[map.objects.items.len - 1];
+        aya_obj.id = @intCast(u8, i);
+        std.mem.copy(u8, &aya_obj.name, obj.name);
+        aya_obj.x = @divTrunc(std.fmt.parseInt(usize, obj.x, 10) catch unreachable, res.output_map.tile_w);
+        aya_obj.y = @divTrunc(std.fmt.parseInt(usize, obj.y, 10) catch unreachable, res.output_map.tile_w);
     }
 
     return map;
@@ -60,7 +83,7 @@ pub const TileKitMap = struct {
         tile_w: usize,
         tile_h: usize,
         tile_spacing: usize,
-        image_filename: []const u8,
+        image_filename: []const u8 = "",
         animations: []Animation,
         tags: []Tag,
     };
@@ -72,22 +95,22 @@ pub const TileKitMap = struct {
     };
 
     pub const Rule = struct {
-        label: []const u8,
+        label: []const u8 = "",
         chance: u8,
         offsets: []RuleOffsets,
         results: []u8,
 
         pub fn toAyaRule(self: @This()) ayatile.data.Rule {
-            var ruleset = ayatile.data.Rule.init();
-            std.mem.copy(u8, &ruleset.name, self.label);
-            ruleset.chance = self.chance;
+            var rule = ayatile.data.Rule.init();
+            std.mem.copy(u8, &rule.name, self.label);
+            rule.chance = self.chance;
 
             for (self.results) |tile| {
-                ruleset.result_tiles.append(tile - 1);
+                rule.result_tiles.append(tile - 1);
             }
 
             for (self.offsets) |offset| {
-                var rule_tile = ruleset.get(@intCast(usize, offset.x + 2), @intCast(usize, offset.y + 2));
+                var rule_tile = rule.get(@intCast(usize, offset.x + 2), @intCast(usize, offset.y + 2));
                 if (offset.type == 1) {
                     rule_tile.require(offset.val);
                 } else if (offset.type == 2) {
@@ -97,30 +120,32 @@ pub const TileKitMap = struct {
                 }
             }
 
-            return ruleset;
+            return rule;
         }
     };
 
     pub const RuleOffsets = struct {
-        x: i32,
-        y: i32,
-        val: usize,
-        type: u8,
+        x: i32 = 0,
+        y: i32 = 0,
+        val: usize = 0,
+        type: u8 = 0,
     };
 
     pub const Animation = struct {
-        idx: usize,
-        rate: usize,
+        idx: usize = 0,
+        rate: usize = 0,
         frames: []u8,
     };
 
     pub const Object = struct {
-        name: []const u8,
-        id: usize,
-        x: u8,
-        y: u8,
-        w: u8,
-        h: u8,
+        name: []const u8 = "",
+        id: []const u8 = "",
+        x: []const u8 = "",
+        y: []const u8 = "",
+        w: []const u8 = "",
+        h: []const u8 = "",
+        color: []const u8 = "",
+        destination: []const u8 = "",
     };
 
     pub const Tag = struct {
