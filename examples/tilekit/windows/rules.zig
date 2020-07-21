@@ -6,6 +6,7 @@ const brushes_win = @import("brushes.zig");
 usingnamespace @import("imgui");
 
 const Rule = @import("../data.zig").Rule;
+const RuleSet = @import("../data.zig").RuleSet;
 
 var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
@@ -36,7 +37,7 @@ var drag_drop_state = struct {
     pub fn handle(self: *@This(), rules: *std.ArrayList(Rule)) void {
         self.completed = false;
         switch (self.source) {
-            .group => swapFolders(rules),
+            .group => swapGroups(rules),
             else => swapRules(rules),
         }
         self.above_group = false;
@@ -64,7 +65,7 @@ pub fn draw(state: *tk.AppState) void {
             }
             igSameLine(0, 5);
             if (igButton(icons.plus, .{})) {
-                state.map.addPreRulesPage();
+                state.map.addPreRuleSet();
             }
             ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
 
@@ -109,7 +110,7 @@ fn swapRules(rules: *std.ArrayList(Rule)) void {
 }
 
 /// handles the actual logic to rearrange the Rule for drag/drop when a group is reordered
-fn swapFolders(rules: *std.ArrayList(Rule)) void {
+fn swapGroups(rules: *std.ArrayList(Rule)) void {
     var total_in_group = blk: {
         var total: usize = 0;
         for (rules.items) |rule| {
@@ -144,20 +145,20 @@ fn drawRulesTab(state: *tk.AppState) void {
     var group: u8 = 0;
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
-    while (i < state.map.ruleset.items.len) : (i += 1) {
+    while (i < state.map.ruleset.rules.items.len) : (i += 1) {
         // if we have a Rule in a group render all the Rules in that group at once
-        if (state.map.ruleset.items[i].group > 0 and state.map.ruleset.items[i].group != group) {
-            group = state.map.ruleset.items[i].group;
+        if (state.map.ruleset.rules.items[i].group > 0 and state.map.ruleset.rules.items[i].group != group) {
+            group = state.map.ruleset.rules.items[i].group;
 
             igPushIDInt(@intCast(c_int, group));
-            groupDropTarget(state.map.ruleset.items[i].group, i);
-            const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
-            groupDragDrop(state.map.ruleset.items[i].group, i);
+            groupDropTarget(state.map.ruleset.rules.items[i].group, i);
+            const header_open = igCollapsingHeaderBoolPtr("Group", null, ImGuiTreeNodeFlags_DefaultOpen);
+            groupDragDrop(state.map.ruleset.rules.items[i].group, i);
 
             if (igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
-                if (igButton("Rename Folder", .{ .x = -1, .y = 0 })) {
+                if (igButton("Rename Group", .{ .x = -1, .y = 0 })) {
                     igCloseCurrentPopup();
                 }
 
@@ -169,10 +170,10 @@ fn drawRulesTab(state: *tk.AppState) void {
                 igIndent(10);
                 drag_drop_state.rendering_group = true;
             }
-            rulesDragDrop(i, &state.map.ruleset.items[i], true);
+            rulesDragDrop(i, &state.map.ruleset.rules.items[i], true);
 
-            while (i < state.map.ruleset.items.len and state.map.ruleset.items[i].group == group) : (i += 1) {
-                if (header_open and drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.items[i], i, false)) {
+            while (i < state.map.ruleset.rules.items.len and state.map.ruleset.rules.items[i].group == group) : (i += 1) {
+                if (header_open and drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
                     delete_index = i;
                 }
             }
@@ -183,27 +184,27 @@ fn drawRulesTab(state: *tk.AppState) void {
             }
 
             // if a group is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
-            if (i == state.map.ruleset.items.len) break;
+            if (i == state.map.ruleset.rules.items.len) break;
             i -= 1;
             continue;
         }
 
-        if (drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.items[i], i, false)) {
+        if (drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
             delete_index = i;
         }
     }
 
-    if (delete_index < state.map.ruleset.items.len) {
-        _ = state.map.ruleset.orderedRemove(delete_index);
+    if (delete_index < state.map.ruleset.rules.items.len) {
+        _ = state.map.ruleset.rules.orderedRemove(delete_index);
     }
 
     // handle drag and drop swapping
     if (drag_drop_state.completed) {
-        drag_drop_state.handle(&state.map.ruleset);
+        drag_drop_state.handle(&state.map.ruleset.rules);
     }
 
-    if (igButton("Add Rule", ImVec2{})) {
-        state.map.addRule();
+    if (ogButton("Add Rule")) {
+        state.map.ruleset.addRule();
     }
     igSameLine(0, 10);
 
@@ -238,7 +239,7 @@ fn drawRulesTab(state: *tk.AppState) void {
 
 fn drawPreRulesTabs(state: *tk.AppState) void {
     var delete_index: usize = std.math.maxInt(usize);
-    for (state.map.pre_rulesets.items) |*pre_rule, i| {
+    for (state.map.pre_rulesets.items) |*ruleset, i| {
         var is_tab_open = true;
         igPushIDInt(@intCast(c_int, i) + 3000);
         _ = std.fmt.bufPrint(&pre_ruleset_tab_buf, "#{}", .{i + 1}) catch unreachable;
@@ -247,22 +248,22 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
             current_ruleset = i;
 
             var delete_rule_index: usize = std.math.maxInt(usize);
-            for (pre_rule.items) |*rule, j| {
-                if (drawRuleSet(state, pre_rule, rule, j, true)) {
+            for (ruleset.rules.items) |*rule, j| {
+                if (drawRuleSet(state, ruleset, rule, j, true)) {
                     delete_rule_index = j;
                 }
             }
 
             if (ogButton("Add Rule")) {
-                pre_rule.append(Rule.init()) catch unreachable;
+                ruleset.rules.append(Rule.init()) catch unreachable;
             }
 
-            if (delete_rule_index < pre_rule.items.len) {
-                _ = pre_rule.orderedRemove(delete_rule_index);
+            if (delete_rule_index < ruleset.rules.items.len) {
+                _ = ruleset.rules.orderedRemove(delete_rule_index);
             }
 
             if (drag_drop_state.completed) {
-                drag_drop_state.handle(pre_rule);
+                drag_drop_state.handle(&ruleset.rules);
             }
         }
         igPopID();
@@ -280,14 +281,13 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
 
 fn rulesetSettingsPopup(state: *tk.AppState) void {
     if (igBeginPopup("##seed-repeat", ImGuiWindowFlags_None)) {
-        // TODO: switch to proper RuleSets then enable this
-        // var ruleset = if (current_ruleset == std.math.maxInt(usize)) state.map.ruleset else state.map.pre_rulesets[current_ruleset];
-        if (ogDrag(usize, "Seed", &state.map.seed, 1, 0, 1000)) {
+        var ruleset = if (current_ruleset == std.math.maxInt(usize)) &state.map.ruleset else &state.map.pre_rulesets.items[current_ruleset];
+        if (ogDrag(usize, "Seed", &ruleset.seed, 1, 0, 1000)) {
             state.generateRandomData();
         }
 
         // only pre_rulesets (valid current_ruleset index into their slice) get the repeat control
-        if (current_ruleset < std.math.maxInt(usize) and ogDrag(u8, "Repeat", &state.map.repeat, 0.2, 0, 100)) {
+        if (current_ruleset < std.math.maxInt(usize) and ogDrag(u8, "Repeat", &ruleset.repeat, 0.2, 0, 100)) {
             state.map_data_dirty = true;
         }
         igEndPopup();
@@ -378,7 +378,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     }
 }
 
-fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, index: usize, is_pre_rule: bool) bool {
+fn drawRuleSet(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, is_pre_rule: bool) bool {
     igPushIDPtr(rule);
     defer igPopID();
 
@@ -389,13 +389,13 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
         _ = ogInputText("##group-name", &new_rule_label_buf, new_rule_label_buf.len);
         igText("Note: name not supported yet");
 
-        if (igButton("Add to New Folder", .{ .x = -1, .y = 0 })) {
+        if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
 
-            // TODO: switch to RuleSet.getNextAvailableFolder
+            // TODO: switch to RuleSet.getNextAvailableGroup
             // get the highest group number and increment it
             var group: u8 = 0;
-            for (parent.items) |item| {
+            for (ruleset.rules.items) |item| {
                 group = std.math.max(group, item.group);
             }
             rule.group = group + 1;
@@ -413,12 +413,12 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
     igPopItemWidth();
     igSameLine(0, 4);
 
-    if (igButton("Pattern", ImVec2{})) {
+    if (ogButton("Pattern")) {
         igOpenPopup("##pattern_popup");
     }
     igSameLine(0, 4);
 
-    if (igButton("Result", ImVec2{})) {
+    if (ogButton("Result")) {
         igOpenPopup("result_popup");
     }
     igSameLine(0, 4);
@@ -429,8 +429,8 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
     _ = igDragScalar("", ImGuiDataType_U8, &rule.chance, 1, &min, &max, null, 1);
     igSameLine(0, 4);
 
-    if (igButton(icons.copy, ImVec2{})) {
-        parent.append(rule.clone()) catch unreachable;
+    if (ogButton(icons.copy)) {
+        ruleset.rules.append(rule.clone()) catch unreachable;
     }
     igSameLine(0, 4);
 
@@ -439,14 +439,14 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
     }
 
     // if this is the last item, add an extra drop zone for reordering
-    if (index == parent.items.len - 1) {
+    if (index == ruleset.rules.items.len - 1) {
         rulesDragDrop(index + 1, rule, true);
     }
 
     // display the popup a bit to the left to center it under the mouse
     var pos = igGetIO().MousePos;
     pos.x -= 32 * 5 / 2;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
+    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
     if (igBeginPopup("##pattern_popup", ImGuiWindowFlags_None)) {
         patternPopup(state, rule);
 
@@ -687,9 +687,9 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
 
     if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
         if (selection_size == 3) {
-            state.map.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+            state.map.ruleset.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         } else {
-            state.map.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+            state.map.ruleset.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         }
         igCloseCurrentPopup();
     }

@@ -4,6 +4,7 @@ const aya = @import("aya");
 const Writer = aya.mem.SdlBufferStream.Writer;
 const Reader = aya.mem.SdlBufferStream.Reader;
 const Map = @import("data.zig").Map;
+const RuleSet = @import("data.zig").RuleSet;
 const Rule = @import("data.zig").Rule;
 const RuleTile = @import("data.zig").RuleTile;
 const Tag = @import("data.zig").Tag;
@@ -19,8 +20,6 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, map.h);
     try out.writeIntLittle(usize, map.tile_size);
     try out.writeIntLittle(usize, map.tile_spacing);
-    try out.writeIntLittle(u64, map.seed);
-    try out.writeIntLittle(u8, map.repeat);
 
     try out.writeIntLittle(usize, map.image.len);
     try out.writeAll(map.image);
@@ -30,16 +29,16 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeAll(data_bytes);
 
     // ruleset
-    try out.writeIntLittle(usize, map.ruleset.items.len);
-    for (map.ruleset.items) |rule| {
+    try out.writeIntLittle(usize, map.ruleset.rules.items.len);
+    for (map.ruleset.rules.items) |rule| {
         try writeRuleSet(out, rule);
     }
 
     // pre-rulesets
     try out.writeIntLittle(usize, map.pre_rulesets.items.len);
-    for (map.pre_rulesets.items) |rule_page| {
-        try out.writeIntLittle(usize, rule_page.items.len);
-        for (rule_page.items) |rule| {
+    for (map.pre_rulesets.items) |ruleset| {
+        try out.writeIntLittle(usize, ruleset.rules.items.len);
+        for (ruleset.rules.items) |rule| {
             try writeRuleSet(out, rule);
         }
     }
@@ -109,8 +108,8 @@ pub fn load(file: []const u8) !Map {
 
     var map = Map{
         .data = undefined,
-        .ruleset = std.ArrayList(Rule).init(aya.mem.allocator),
-        .pre_rulesets = std.ArrayList(std.ArrayList(Rule)).init(aya.mem.allocator),
+        .ruleset = RuleSet.init(),
+        .pre_rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
         .tags = std.ArrayList(Tag).init(aya.mem.allocator),
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
         .animations = std.ArrayList(Animation).init(aya.mem.allocator),
@@ -121,8 +120,6 @@ pub fn load(file: []const u8) !Map {
     map.h = try in.readIntLittle(usize);
     map.tile_size = try in.readIntLittle(usize);
     map.tile_spacing = try in.readIntLittle(usize);
-    map.seed = try in.readIntLittle(u64);
-    map.repeat = try in.readIntLittle(u8);
 
     var image_len = try in.readIntLittle(usize);
     if (image_len > 0) {
@@ -136,28 +133,17 @@ pub fn load(file: []const u8) !Map {
     map.data = try aya.mem.allocator.alloc(u8, data_len);
     _ = try in.readAll(map.data);
 
-    // Rules
-    const rulesets_len = try in.readIntLittle(usize);
-
-    _ = try map.ruleset.ensureCapacity(rulesets_len);
-    var i: usize = 0;
-    while (i < rulesets_len) : (i += 1) {
-        try map.ruleset.append(try readRule(in));
-    }
+    // RuleSet
+    try readIntoRuleSet(in, &map.ruleset);
 
     // pre rules
     const pre_rules_pages = try in.readIntLittle(usize);
     _ = try map.pre_rulesets.ensureCapacity(pre_rules_pages);
-    i = 0;
+    var i: usize = 0;
     while (i < pre_rules_pages) : (i += 1) {
-        _ = try map.pre_rulesets.append(std.ArrayList(Rule).init(aya.mem.allocator));
-
-        const rules_cnt = try in.readIntLittle(usize);
-        _ = try map.pre_rulesets.items[i].ensureCapacity(rules_cnt);
-        var j: usize = 0;
-        while (j < rules_cnt) : (j += 1) {
-            try map.pre_rulesets.items[i].append(try readRule(in));
-        }
+        var ruleset = RuleSet.init();
+        try readIntoRuleSet(in, &ruleset);
+        _ = try map.pre_rulesets.append(ruleset);
     }
 
     // tags
@@ -220,6 +206,21 @@ pub fn load(file: []const u8) !Map {
     }
 
     return map;
+}
+
+fn readIntoRuleSet(in: Reader, ruleset: *RuleSet) !void {
+    ruleset.seed = try in.readIntLittle(u64);
+    ruleset.repeat = try in.readIntLittle(u8);
+    const rulesets_len = try in.readIntLittle(usize);
+
+    _ = try ruleset.rules.ensureCapacity(rulesets_len);
+    var i: usize = 0;
+    while (i < rulesets_len) : (i += 1) {
+        try ruleset.rules.append(try readRule(in));
+    }
+
+    ruleset.seed = try in.readIntLittle(u64);
+    ruleset.repeat = try in.readIntLittle(u8);
 }
 
 fn readRule(in: Reader) !Rule {

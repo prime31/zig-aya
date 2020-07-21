@@ -19,16 +19,20 @@ pub fn import(file: []const u8) !ayatile.Map {
     map.data = try aya.mem.allocator.alloc(u8, map.w * map.h);
     std.mem.copy(u8, map.data, res.input_map.data);
 
+    map.ruleset.seed = res.final_ruleset.seed;
+    map.ruleset.repeat = res.final_ruleset.repeat;
     for (res.final_ruleset.rules) |rule| {
-        try map.ruleset.append(rule.toAyaRuleSet());
+        try map.ruleset.rules.append(rule.toAyaRule());
     }
 
     for (res.rulesets) |ruleset| {
-        map.addPreRulesPage();
+        map.addPreRuleSet();
         var pre_ruleset = &map.pre_rulesets.items[map.pre_rulesets.items.len - 1];
+        pre_ruleset.seed = ruleset.seed;
+        pre_ruleset.repeat = ruleset.repeat;
 
         for (ruleset.rules) |rule| {
-            try pre_ruleset.append(rule.toAyaRuleSet());
+            try pre_ruleset.rules.append(rule.toAyaRule());
         }
     }
 
@@ -73,7 +77,7 @@ pub const TileKitMap = struct {
         offsets: []RuleOffsets,
         results: []u8,
 
-       pub fn toAyaRuleSet(self: @This()) ayatile.data.Rule {
+        pub fn toAyaRule(self: @This()) ayatile.data.Rule {
             var ruleset = ayatile.data.Rule.init();
             std.mem.copy(u8, &ruleset.name, self.label);
             ruleset.chance = self.chance;
