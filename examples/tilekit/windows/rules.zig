@@ -16,19 +16,19 @@ var current_ruleset: usize = std.math.maxInt(usize);
 var drag_drop_state = struct {
     source: union(enum) {
         rule: *Rule,
-        folder: u8,
+        group: u8,
     } = undefined,
     from: usize = 0,
     to: usize = 0,
-    above_folder: bool = false,
+    above_group: bool = false,
     completed: bool = false,
     active: bool = false,
-    rendering_folder: bool = false,
-    dropped_in_folder: bool = false,
+    rendering_group: bool = false,
+    dropped_in_group: bool = false,
 
-    pub fn isFolder(self: @This()) bool {
+    pub fn isGroup(self: @This()) bool {
         return switch (self.source) {
-            .folder => true,
+            .group => true,
             else => false,
         };
     }
@@ -36,10 +36,10 @@ var drag_drop_state = struct {
     pub fn handle(self: *@This(), rules: *std.ArrayList(Rule)) void {
         self.completed = false;
         switch (self.source) {
-            .folder => swapFolders(rules),
+            .group => swapFolders(rules),
             else => swapRules(rules),
         }
-        self.above_folder = false;
+        self.above_group = false;
     }
 }{};
 
@@ -86,13 +86,13 @@ pub fn draw(state: *tk.AppState) void {
 
 /// handles the actual logic to rearrange the Rule for drag/drop when a Rule is reordered
 fn swapRules(rules: *std.ArrayList(Rule)) void {
-    // dont assign the folder unless we are swapping into a folder proper
-    if (!drag_drop_state.above_folder and drag_drop_state.dropped_in_folder) {
+    // dont assign the group unless we are swapping into a group proper
+    if (!drag_drop_state.above_group and drag_drop_state.dropped_in_group) {
         const to = if (rules.items.len == drag_drop_state.to) drag_drop_state.to - 1 else drag_drop_state.to;
-        const folder = rules.items[to].folder;
-        rules.items[drag_drop_state.from].folder = folder;
+        const group = rules.items[to].group;
+        rules.items[drag_drop_state.from].group = group;
     } else {
-        rules.items[drag_drop_state.from].folder = 0;
+        rules.items[drag_drop_state.from].group = 0;
     }
 
     // get the total number of steps we need to do the swap. We move to index+1 so account for that when moving to a higher index
@@ -108,29 +108,29 @@ fn swapRules(rules: *std.ArrayList(Rule)) void {
     }
 }
 
-/// handles the actual logic to rearrange the Rule for drag/drop when a folder is reordered
+/// handles the actual logic to rearrange the Rule for drag/drop when a group is reordered
 fn swapFolders(rules: *std.ArrayList(Rule)) void {
-    var total_in_folder = blk: {
+    var total_in_group = blk: {
         var total: usize = 0;
         for (rules.items) |rule| {
-            if (rule.folder == drag_drop_state.source.folder) total += 1;
+            if (rule.group == drag_drop_state.source.group) total += 1;
         }
         break :blk total;
     };
-    var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - total_in_folder;
+    var total_swaps = if (drag_drop_state.from > drag_drop_state.to) drag_drop_state.from - drag_drop_state.to else drag_drop_state.to - drag_drop_state.from - total_in_group;
     if (total_swaps == 0) return;
 
     while (total_swaps > 0) : (total_swaps -= 1) {
-        // when moving up, we can just move each item in our folder up one slot
+        // when moving up, we can just move each item in our group up one slot
         if (drag_drop_state.from > drag_drop_state.to) {
             var j: usize = 0;
-            while (j < total_in_folder) : (j += 1) {
+            while (j < total_in_group) : (j += 1) {
                 std.mem.swap(Rule, &rules.items[drag_drop_state.from + j], &rules.items[drag_drop_state.from - 1 + j]);
             }
             drag_drop_state.from -= 1;
         } else {
-            // moving down, we have to move the last item in the folder first each step
-            var j: usize = total_in_folder - 1;
+            // moving down, we have to move the last item in the group first each step
+            var j: usize = total_in_group - 1;
             while (j >= 0) : (j -= 1) {
                 std.mem.swap(Rule, &rules.items[drag_drop_state.from + j], &rules.items[drag_drop_state.from + 1 + j]);
                 if (j == 0) break;
@@ -141,20 +141,20 @@ fn swapFolders(rules: *std.ArrayList(Rule)) void {
 }
 
 fn drawRulesTab(state: *tk.AppState) void {
-    var folder: u8 = 0;
+    var group: u8 = 0;
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
     while (i < state.map.ruleset.items.len) : (i += 1) {
-        // if we have a Rule in a folder render all the Rules in that folder at once
-        if (state.map.ruleset.items[i].folder > 0 and state.map.ruleset.items[i].folder != folder) {
-            folder = state.map.ruleset.items[i].folder;
+        // if we have a Rule in a group render all the Rules in that group at once
+        if (state.map.ruleset.items[i].group > 0 and state.map.ruleset.items[i].group != group) {
+            group = state.map.ruleset.items[i].group;
 
-            igPushIDInt(@intCast(c_int, folder));
-            folderDropTarget(state.map.ruleset.items[i].folder, i);
+            igPushIDInt(@intCast(c_int, group));
+            groupDropTarget(state.map.ruleset.items[i].group, i);
             const header_open = igCollapsingHeaderBoolPtr("Folder", null, ImGuiTreeNodeFlags_DefaultOpen);
-            folderDragDrop(state.map.ruleset.items[i].folder, i);
+            groupDragDrop(state.map.ruleset.items[i].group, i);
 
-            if (igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
+            if (igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
                 if (igButton("Rename Folder", .{ .x = -1, .y = 0 })) {
@@ -167,11 +167,11 @@ fn drawRulesTab(state: *tk.AppState) void {
 
             if (header_open) {
                 igIndent(10);
-                drag_drop_state.rendering_folder = true;
+                drag_drop_state.rendering_group = true;
             }
             rulesDragDrop(i, &state.map.ruleset.items[i], true);
 
-            while (i < state.map.ruleset.items.len and state.map.ruleset.items[i].folder == folder) : (i += 1) {
+            while (i < state.map.ruleset.items.len and state.map.ruleset.items[i].group == group) : (i += 1) {
                 if (header_open and drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.items[i], i, false)) {
                     delete_index = i;
                 }
@@ -179,10 +179,10 @@ fn drawRulesTab(state: *tk.AppState) void {
 
             if (header_open) {
                 igUnindent(10);
-                drag_drop_state.rendering_folder = false;
+                drag_drop_state.rendering_group = false;
             }
 
-            // if a folder is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
+            // if a group is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
             if (i == state.map.ruleset.items.len) break;
             i -= 1;
             continue;
@@ -294,7 +294,7 @@ fn rulesetSettingsPopup(state: *tk.AppState) void {
     }
 }
 
-fn folderDropTarget(folder: u8, index: usize) void {
+fn groupDropTarget(group: u8, index: usize) void {
     if (drag_drop_state.active) {
         var cursor = ogGetCursorPos();
         const old_pos = cursor;
@@ -312,19 +312,19 @@ fn folderDropTarget(folder: u8, index: usize) void {
         if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
             drag_drop_state.completed = true;
             drag_drop_state.to = index;
-            drag_drop_state.above_folder = true;
+            drag_drop_state.above_group = true;
             drag_drop_state.active = false;
         }
     }
 }
 
-fn folderDragDrop(folder: u8, index: usize) void {
+fn groupDragDrop(group: u8, index: usize) void {
     if (igBeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers)) {
         drag_drop_state.active = true;
         drag_drop_state.from = index;
-        drag_drop_state.source = .{ .folder = folder };
+        drag_drop_state.source = .{ .group = group };
         _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
-        _ = igButton("folder move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+        _ = igButton("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
         igEndDragDropSource();
     }
 }
@@ -335,7 +335,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
 
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
-        ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a folder");
+        ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a group");
 
         igSameLine(0, 4);
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -348,8 +348,8 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
         }
     }
 
-    // if we are dragging a folder dont allow dragging it into another folder
-    if (drag_drop_state.active and !(drag_drop_state.isFolder() and rule.folder > 0)) {
+    // if we are dragging a group dont allow dragging it into another group
+    if (drag_drop_state.active and !(drag_drop_state.isGroup() and rule.group > 0)) {
         const old_pos = ogGetCursorPos();
         cursor.y -= 5;
         igSetCursorPos(cursor);
@@ -360,12 +360,12 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
 
         if (igBeginDragDropTarget()) {
             if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
-                drag_drop_state.dropped_in_folder = drag_drop_state.rendering_folder;
+                drag_drop_state.dropped_in_group = drag_drop_state.rendering_group;
                 drag_drop_state.completed = true;
                 drag_drop_state.to = index;
 
-                // if this is a folder being dragged, we cant rule out the operation since we could have 1 to n items in our folder
-                if (!drag_drop_state.isFolder()) {
+                // if this is a group being dragged, we cant rule out the operation since we could have 1 to n items in our group
+                if (!drag_drop_state.isGroup()) {
                     // dont allow swapping to the same location, which is the drop target above or below the dragged item
                     if (drag_drop_state.from == drag_drop_state.to or (drag_drop_state.to > 0 and drag_drop_state.from == drag_drop_state.to - 1)) {
                         drag_drop_state.completed = false;
@@ -384,20 +384,21 @@ fn drawRuleSet(state: *tk.AppState, parent: *std.ArrayList(Rule), rule: *Rule, i
 
     rulesDragDrop(index, rule, false);
 
-    // right-click the move button to add the Rule to a folder only if not already in a folder
-    if (rule.folder == 0 and igBeginPopupContextItem("##folder", ImGuiMouseButton_Right)) {
-        _ = ogInputText("##folder-name", &new_rule_label_buf, new_rule_label_buf.len);
+    // right-click the move button to add the Rule to a group only if not already in a group
+    if (rule.group == 0 and igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
+        _ = ogInputText("##group-name", &new_rule_label_buf, new_rule_label_buf.len);
         igText("Note: name not supported yet");
 
         if (igButton("Add to New Folder", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
 
-            // get the highest folder number and increment it
-            var folder: u8 = 0;
+            // TODO: switch to RuleSet.getNextAvailableFolder
+            // get the highest group number and increment it
+            var group: u8 = 0;
             for (parent.items) |item| {
-                folder = std.math.max(folder, item.folder);
+                group = std.math.max(group, item.group);
             }
-            rule.folder = folder + 1;
+            rule.group = group + 1;
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
