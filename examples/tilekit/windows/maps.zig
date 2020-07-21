@@ -91,7 +91,7 @@ fn drawPostProcessedMap(state: *tk.AppState, origin: ImVec2) void {
 }
 
 fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
-    // scrolling via drag with alt key down
+    // scrolling via drag with alt or super key down
     if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
         var scroll_delta = ImVec2{};
         igGetMouseDragDelta(&scroll_delta, 0, 0);
@@ -140,7 +140,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         const max_x = @intToFloat(f32, std.math.max(tile1.x, tile2.x)) * state.map_rect_size + state.map_rect_size + origin.x;
         const max_y = @intToFloat(f32, std.math.min(tile1.y, tile2.y)) * state.map_rect_size + origin.y;
 
-        ImDrawList_AddQuad(igGetWindowDrawList(), ImVec2{ .x = min_x, .y = max_y }, ImVec2{ .x = max_x, .y = max_y }, ImVec2{ .x = max_x, .y = min_y }, ImVec2{ .x = min_x, .y = min_y }, colors.colorRgb(255, 255, 255), 2);
+        ImDrawList_AddQuad(igGetWindowDrawList(), .{ .x = min_x, .y = max_y }, .{ .x = max_x, .y = max_y }, .{ .x = max_x, .y = min_y }, .{ .x = min_x, .y = min_y }, colors.colorRgb(255, 255, 255), 2);
 
         shift_dragged = true;
     } else if (igIsMouseReleased(ImGuiMouseButton_Left) and shift_dragged) {

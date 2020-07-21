@@ -99,7 +99,7 @@ pub const AppState = struct {
             .texture = generateTexture(),
             .prefs = prefs,
         };
-        state.generateRandomData();
+        state.generateRandomData(state.map.ruleset.seed);
 
         // test data for messing with folders
         // var i: usize = 10;
@@ -187,8 +187,6 @@ pub const AppState = struct {
         self.final_map_data = aya.mem.allocator.alloc(u8, w * h) catch unreachable;
         self.random_map_data = aya.mem.allocator.alloc(Randoms, w * h) catch unreachable;
 
-        self.generateRandomData();
-
         // if we shrunk handle anything that needs to be fixed
         if (shrunk) {
             for (self.map.objects.items) |*anim| {
@@ -199,9 +197,8 @@ pub const AppState = struct {
     }
 
     /// regenerates the stored random data per tile. Only needs to be called on seed change or map resize
-    pub fn generateRandomData(self: *AppState) void {
-        // TODO: fix random seed
-        aya.math.rand.seed(666);
+    pub fn generateRandomData(self: *AppState, seed: u64) void {
+        aya.math.rand.seed(seed);
 
         // pre-generate random data per tile
         var i: usize = 0;
@@ -275,8 +272,6 @@ pub const AppState = struct {
         self.random_map_data = aya.mem.allocator.alloc(Randoms, self.map.w * self.map.h) catch unreachable;
         self.map_data_dirty = true;
         self.tiles_per_row = 0;
-
-        self.generateRandomData();
 
         // keep our file so we can save later and clear our exported file if we have one
         self.clearQuickFile(.opened);

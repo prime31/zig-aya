@@ -16,21 +16,31 @@ pub fn generateProcessedMap(state: *AppState) void {
 
     // we need an extra buffer so that we can write into it for each iteration so our rules dont go hog-crazy as we iterate
     var buffer = aya.mem.tmp_allocator.alloc(u8, state.map.data.len) catch unreachable;
-    @memcpy(buffer.ptr, state.map.data.ptr, buffer.len);
+    std.mem.set(u8, buffer, 0);
 
-    var i: usize = 0;
-    // while (i < state.map.repeat) : (i += 1) {
-        var y: usize = 0;
-        while (y < state.map.h) : (y += 1) {
-            var x: usize = 0;
-            while (x < state.map.w) : (x += 1) {
-                for (state.map.pre_rulesets.items) |ruleset| {
+    for (state.map.pre_rulesets.items) |ruleset| {
+        state.generateRandomData(ruleset.seed);
+
+        // we need at least 1 iteration, then however many repeats were requested
+        var max_iters: usize = 1 + ruleset.repeat;
+        var iter: usize = 0;
+        while (iter < max_iters) : (iter += 1) {
+            var y: usize = 0;
+            while (y < state.map.h) : (y += 1) {
+                var x: usize = 0;
+                while (x < state.map.w) : (x += 1) {
                     buffer[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, ruleset.rules.items, true, x, y);
-                    @memcpy(state.processed_map_data.ptr, buffer.ptr, buffer.len);
                 }
             }
+
+            // if something changed copy the buffer and go for another round else we bail out
+            if (!std.mem.eql(u8, buffer, state.processed_map_data)) {
+                @memcpy(state.processed_map_data.ptr, buffer.ptr, buffer.len);
+            } else {
+                iter = max_iters;
+            }
         }
-    // }
+    }
 }
 
 pub fn generateOutputMap(state: *AppState) void {
@@ -43,12 +53,13 @@ pub fn generateOutputMap(state: *AppState) void {
     }
 }
 
+
 pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rules: []Rule, is_pre_ruleset: bool, x: usize, y: usize) u8 {
+    var rule_passed = false;
     for (rules) |*rule| brk: {
         if (rule.result_tiles.len == 0) continue;
 
         // at least one rule must pass to have a result
-        var rule_passed = false;
         for (rule.rule_tiles) |rule_tile, i| {
             if (rule_tile.state == .none) continue;
             const x_offset = @intCast(i32, @mod(i, 5)) - 2;
@@ -71,7 +82,6 @@ pub fn transformTileWithRuleSet(state: *AppState, tile_source: []u8, rules: []Ru
         }
 
         // a Rule passed. we use the chance to decide if we will return a tile
-        // const chance = aya.math.rand.chance(@intToFloat(f32, ruleset.chance) / 100);
         const random = state.random_map_data[x + y * state.map.w];
         const chance = random.float < @intToFloat(f32, rule.chance) / 100;
         if (rule_passed and chance) {
