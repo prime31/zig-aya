@@ -87,7 +87,7 @@ pub fn save(map: Map, file: []const u8) !void {
 
 fn writeRuleSet(out: Writer, rule: Rule) !void {
     try writeFixedSliceZ(out, &rule.name);
-    try out.writeIntLittle(u8, rule.folder);
+    try out.writeIntLittle(u8, rule.group);
 
     for (rule.rule_tiles) |rule_tile| {
         try out.writeIntLittle(usize, rule_tile.tile);
@@ -226,7 +226,7 @@ fn readRule(in: Reader) !Rule {
     var rule = Rule.init();
 
     try readFixedSliceZ(in, &rule.name);
-    rule.folder = try in.readIntLittle(u8);
+    rule.group = try in.readIntLittle(u8);
 
     for (rule.rule_tiles) |*rule_tile| {
         rule_tile.tile = try in.readIntLittle(usize);
