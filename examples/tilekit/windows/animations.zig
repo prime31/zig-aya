@@ -101,7 +101,6 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
         while (iter.next()) |value| {
             tk.addTileToDrawList(tile_size, content_start_pos, value, per_row, tile_spacing);
         }
-        tk.addTileToDrawList(tile_size, content_start_pos, anim.tile, per_row, tile_spacing);
     } else {
         tk.addTileToDrawList(tile_size, content_start_pos, anim.tile, per_row, tile_spacing);
     }
@@ -112,11 +111,7 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
             var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * per_row);
             if (selection_type == .multi) {
-                // dont allow selecting the base tile
-                if (tile_index != anim.tile) {
-                    anim.toggleSelected(tile_index);
-                }
-
+                anim.toggleSelected(tile_index);
             } else {
                 anim.tile = tile_index;
                 igCloseCurrentPopup();
