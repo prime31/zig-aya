@@ -19,18 +19,18 @@ pub fn generateProcessedMap(state: *AppState) void {
     @memcpy(buffer.ptr, state.map.data.ptr, buffer.len);
 
     var i: usize = 0;
-    while (i < state.map.repeat) : (i += 1) {
+    // while (i < state.map.repeat) : (i += 1) {
         var y: usize = 0;
         while (y < state.map.h) : (y += 1) {
             var x: usize = 0;
             while (x < state.map.w) : (x += 1) {
                 for (state.map.pre_rulesets.items) |ruleset| {
-                    buffer[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, ruleset.items, true, x, y);
+                    buffer[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, ruleset.rules.items, true, x, y);
                     @memcpy(state.processed_map_data.ptr, buffer.ptr, buffer.len);
                 }
             }
         }
-    }
+    // }
 }
 
 pub fn generateOutputMap(state: *AppState) void {
@@ -38,7 +38,7 @@ pub fn generateOutputMap(state: *AppState) void {
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
         while (x < state.map.w) : (x += 1) {
-            state.final_map_data[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, state.map.ruleset.items, false, x, y);
+            state.final_map_data[x + y * state.map.w] = transformTileWithRuleSet(state, state.processed_map_data, state.map.ruleset.rules.items, false, x, y);
         }
     }
 }

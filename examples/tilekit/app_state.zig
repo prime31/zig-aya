@@ -200,7 +200,8 @@ pub const AppState = struct {
 
     /// regenerates the stored random data per tile. Only needs to be called on seed change or map resize
     pub fn generateRandomData(self: *AppState) void {
-        aya.math.rand.seed(self.map.seed);
+        // TODO: fix random seed
+        aya.math.rand.seed(666);
 
         // pre-generate random data per tile
         var i: usize = 0;
