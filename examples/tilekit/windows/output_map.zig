@@ -42,12 +42,14 @@ fn draw(state: *tk.AppState) void {
 
             if (state.prefs.show_animations) {
                 if (state.map.tryGetAnimation(tile - 1)) |anim| {
-                    const sec_per_frame = @intToFloat(f32, anim.rate) / 1000;
-                    const iter_duration = sec_per_frame * @intToFloat(f32, anim.tiles.len + 1);
-                    const elapsed = @mod(aya.time.seconds(), iter_duration);
-                    const frame = aya.math.ifloor(usize, elapsed / sec_per_frame);
-                    if (frame > 0) {
-                        tile = anim.tiles.items[frame - 1] + 1;
+                    if (anim.tiles.len > 0) {
+                        const sec_per_frame = @intToFloat(f32, anim.rate) / 1000;
+                        const iter_duration = sec_per_frame * @intToFloat(f32, anim.tiles.len);
+                        const elapsed = @mod(aya.time.seconds(), iter_duration);
+                        const frame = aya.math.ifloor(usize, elapsed / sec_per_frame);
+                        tile = anim.tiles.items[frame] + 1;
+                    } else {
+                        continue;
                     }
                 }
             }
