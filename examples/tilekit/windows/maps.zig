@@ -108,11 +108,11 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
     // zoom
     if (igGetIO().KeyAlt and igGetIO().MouseWheel != 0) {
         if (igGetIO().MouseWheel > 0) {
-            if (state.prefs.tile_size_multiplier < 4) {
-                state.prefs.tile_size_multiplier += 1;
+            if (state.prefs.tile_size_multiplier > 1) {
+                state.prefs.tile_size_multiplier -= 1;
             }
-        } else if (state.prefs.tile_size_multiplier >= 2) {
-            state.prefs.tile_size_multiplier -= 1;
+        } else if (state.prefs.tile_size_multiplier < 4) {
+            state.prefs.tile_size_multiplier += 1;
         }
 
         igGetIO().MouseWheel = 0;

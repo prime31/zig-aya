@@ -404,16 +404,17 @@ fn resizeMapPopup(state: *tk.AppState) void {
     }
 }
 
-var help_section: enum { overview, input_map, rulesets, pre_rulsets, shortcuts } = .overview;
+var help_section: enum { overview, input_map, rules, rulesets, shortcuts } = .overview;
 
 fn helpPopup() void {
     igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
     if (igBeginPopupModal("Help", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
-        igColumns(2, "id", false);
-        igSetColumnWidth(0, 140);
+        igColumns(2, "id", true);
+        igSetColumnWidth(0, 110);
 
+        igPushItemWidth(-1);
         if (igListBoxHeaderVec2("", .{})) {
             defer igListBoxFooter();
 
@@ -423,23 +424,24 @@ fn helpPopup() void {
             if (igSelectableBool("Input Map", help_section == .input_map, ImGuiSelectableFlags_DontClosePopups, .{})) {
                 help_section = .input_map;
             }
+            if (igSelectableBool("Rules", help_section == .rules, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .rules;
+            }
             if (igSelectableBool("RuleSets", help_section == .rulesets, ImGuiSelectableFlags_DontClosePopups, .{})) {
                 help_section = .rulesets;
-            }
-            if (igSelectableBool("Pre RuleSets", help_section == .pre_rulsets, ImGuiSelectableFlags_DontClosePopups, .{})) {
-                help_section = .pre_rulsets;
             }
             if (igSelectableBool("Shortcuts", help_section == .shortcuts, ImGuiSelectableFlags_DontClosePopups, .{})) {
                 help_section = .shortcuts;
             }
         }
+        igPopItemWidth();
 
         igNextColumn();
         switch (help_section) {
             .overview => helpOverview(),
             .input_map => helpInputMap(),
+            .rules => helpRules(),
             .rulesets => helpRuleSets(),
-            .pre_rulsets => helpPreRulesets(),
             .shortcuts => helpShortCuts(),
         }
 
@@ -451,21 +453,23 @@ fn helpPopup() void {
 }
 
 fn helpOverview() void {
-    igTextWrapped("overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit");
+    igTextWrapped("Aya Tile lets you setup Rules that are used to generate a tilemap. This allows you to paint a simple map with premade brushes which is then transformed into something more complex. This is done by using the Rules to dictate how they will map to your actual tileset. Additional RuleSets can be added that contain Rules that run only on the basic brushes before being transformed to your tileset.");
 }
 
 fn helpInputMap() void {
-    igText("input map shit");
+    igTextWrapped("The input map consists of the raw tile data that is passed through your Rules to generate the final tilemap. Left-click and drag to paint with the current brush. Right-click and drag to erase.");
+}
+
+fn helpRules() void {
+    igTextWrapped("Rules are required for data to be transformed from the input map to the output map. Every Rule is run for each tile in the input map. A Rule consists of a pattern and one or more result tiles. If the Rule pattern passes, one of the result tiles will be passed along to the output map. A Rule can be made to randomly fail by setting the Chance value to less than 100%.");
 }
 
 fn helpRuleSets() void {
-    igText("rulesets");
-}
-
-fn helpPreRulesets() void {
-    igText("pre rulsets shit");
+    igTextWrapped("Additional RuleSets can be added that operate only on the raw map data. The Rules in a RuleSet are run on the input map and create an intermediate map (visible by opening the Post Processed Map window) that is then processed with the main Ruels to generate the tilemap. RuleSets can be set to repeat one or more times allowing you to do flood fills, grow plants and use many other recursive techniques.");
 }
 
 fn helpShortCuts() void {
-    igTextUnformatted("Cmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo", null);
+    igTextUnformatted("1 - 9: quick brush selector\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\ntab: toggle tile/object mode", null);
+    igSeparator();
+    igTextUnformatted("Input Map Shortcuts\nAlt/Cmd + left mouse drag: reposition map\nAlt + mouse wheel: zoom in/out\nShift + left mouse drag: paint rectangle", null);
 }
