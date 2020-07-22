@@ -48,10 +48,15 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     // }
 
     // undo/redo
-    if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper and igGetIO().KeyShift) {
+    if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl) and igGetIO().KeyShift) {
         tk.history.redo();
-    } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and igGetIO().KeySuper) {
+    } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl)) {
         tk.history.undo();
+    }
+
+    // help
+    if (aya.input.keyPressed(.SDL_SCANCODE_SLASH) and igGetIO().KeyShift) {
+        igOpenPopup("Help");
     }
 
     if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
@@ -250,6 +255,7 @@ pub fn draw(state: *tk.AppState) void {
 
     loadTilesetPopup(state);
     resizeMapPopup(state);
+    helpPopup();
 }
 
 /// sets the file in our state and triggers the load-tileset popup to be shown
@@ -392,4 +398,70 @@ fn resizeMapPopup(state: *tk.AppState) void {
             igCloseCurrentPopup();
         }
     }
+}
+
+var help_section: enum { overview, input_map, rulesets, pre_rulsets, shortcuts } = .overview;
+
+fn helpPopup() void {
+    igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
+    if (igBeginPopupModal("Help", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer igEndPopup();
+
+        igColumns(2, "id", false);
+        igSetColumnWidth(0, 140);
+
+        if (igListBoxHeaderVec2("", .{})) {
+            defer igListBoxFooter();
+
+            if (igSelectableBool("Overview", help_section == .overview, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .overview;
+            }
+            if (igSelectableBool("Input Map", help_section == .input_map, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .input_map;
+            }
+            if (igSelectableBool("RuleSets", help_section == .rulesets, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .rulesets;
+            }
+            if (igSelectableBool("Pre RuleSets", help_section == .pre_rulsets, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .pre_rulsets;
+            }
+            if (igSelectableBool("Shortcuts", help_section == .shortcuts, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .shortcuts;
+            }
+        }
+
+        igNextColumn();
+        switch (help_section) {
+            .overview => helpOverview(),
+            .input_map => helpInputMap(),
+            .rulesets => helpRuleSets(),
+            .pre_rulsets => helpPreRulesets(),
+            .shortcuts => helpShortCuts(),
+        }
+
+        igColumns(1, "id", false);
+        if (ogButton("Close")) {
+            igCloseCurrentPopup();
+        }
+    }
+}
+
+fn helpOverview() void {
+    igTextWrapped("overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit overview shit");
+}
+
+fn helpInputMap() void {
+    igText("input map shit");
+}
+
+fn helpRuleSets() void {
+    igText("rulesets");
+}
+
+fn helpPreRulesets() void {
+    igText("pre rulsets shit");
+}
+
+fn helpShortCuts() void {
+    igTextUnformatted("Cmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo", null);
 }
