@@ -45,6 +45,25 @@ var drag_drop_state = struct {
     }
 }{};
 
+/// used by the fllod fill popup
+var fill_dirs = struct {
+    left: bool = true,
+    right: bool = true,
+    up: bool = false,
+    down: bool = true,
+
+    pub fn reset(self: *@This()) void {
+        self.left = true;
+        self.right = true;
+        self.down = true;
+        self.up = false;
+    }
+
+    pub fn valid(self: @This()) bool {
+        return self.left or self.right or self.down or self.up;
+    }
+}{};
+
 pub fn draw(state: *tk.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
     defer igPopStyleVar(1);
@@ -257,6 +276,14 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
             if (ogButton("Add Rule")) {
                 ruleset.rules.append(Rule.init()) catch unreachable;
             }
+            igSameLine(0, 10);
+
+            if (ogButton("Add Flood Fill")) {
+                igOpenPopup("flood-fill");
+                // reset temp state
+                std.mem.set(u8, &new_rule_label_buf, 0);
+                fill_dirs.reset();
+            }
 
             if (delete_rule_index < ruleset.rules.items.len) {
                 _ = ruleset.rules.orderedRemove(delete_rule_index);
@@ -265,6 +292,8 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
             if (drag_drop_state.completed) {
                 drag_drop_state.handle(&ruleset.rules);
             }
+
+            floodFillPopup(state, ruleset);
         }
         igPopID();
 
@@ -278,8 +307,6 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
         deletePreRuleSetPopup(state);
         igEndPopup();
     }
-
-
 }
 
 fn deletePreRuleSetPopup(state: *tk.AppState) void {
@@ -415,13 +442,8 @@ fn drawRuleSet(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize
         if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
 
-            // TODO: switch to RuleSet.getNextAvailableGroup
-            // get the highest group number and increment it
-            var group: u8 = 0;
-            for (ruleset.rules.items) |item| {
-                group = std.math.max(group, item.group);
-            }
-            rule.group = group + 1;
+            // get the next available group
+            rule.group = ruleset.getNextAvailableGroup();
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
@@ -624,6 +646,53 @@ fn rulesHamburgerPopup(rule: *Rule) void {
         igSameLine(0, 4);
         if (ogButton(icons.arrows_alt_v)) {
             rule.flip(.vertical);
+        }
+    }
+}
+
+fn floodFillPopup(state: *tk.AppState, ruleset: *RuleSet) void {
+    var pos = igGetIO().MousePos;
+    pos.x -= 100;
+    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
+
+    if (igBeginPopup("flood-fill", ImGuiWindowFlags_None)) {
+        defer igEndPopup();
+
+        igText("Directions:");
+        igSameLine(0, 10);
+        _ = igSelectableBoolPtr(icons.arrow_left, &fill_dirs.left, ImGuiSelectableFlags_DontClosePopups, .{ .x = 12, .y = 12 });
+
+        igSameLine(0, 7);
+        _ = igSelectableBoolPtr(icons.arrow_down, &fill_dirs.down, ImGuiSelectableFlags_DontClosePopups, .{ .x = 12, .y = 12 });
+
+        igSameLine(0, 7);
+        _ = igSelectableBoolPtr(icons.arrow_right, &fill_dirs.right, ImGuiSelectableFlags_DontClosePopups, .{ .x = 12, .y = 12 });
+
+        igSameLine(0, 7);
+        _ = igSelectableBoolPtr(icons.arrow_up, &fill_dirs.up, ImGuiSelectableFlags_DontClosePopups, .{ .x = 12, .y = 12 });
+
+        igSpacing();
+        var size = ogGetContentRegionAvail();
+        igSetNextItemWidth(size.x * 0.6);
+        _ = ogInputText("##nine-slice-name", &new_rule_label_buf, new_rule_label_buf.len);
+        igSameLine(0, 5);
+
+        const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+        const disabled = label_sentinel_index == 0 or !fill_dirs.valid();
+
+        if (disabled) {
+            igPushItemFlag(ImGuiItemFlags_Disabled, true);
+            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+        }
+
+        if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
+            igCloseCurrentPopup();
+            ruleset.addFloodFill(state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], fill_dirs.left, fill_dirs.right, fill_dirs.up, fill_dirs.down);
+        }
+
+        if (disabled) {
+            igPopItemFlag();
+            igPopStyleVar(1);
         }
     }
 }

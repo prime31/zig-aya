@@ -149,7 +149,7 @@ pub const RuleTile = struct {
 
         pub fn jsonStringify(value: RuleState, options: std.json.StringifyOptions, out_stream: anytype) !void {
             // try out_stream.writeAll("[\"something special\",");
-            try std.json.stringify(42, options, out_stream);
+            try std.json.stringify(@enumToInt(value), options, out_stream);
             // try out_stream.writeByte(']');
         }
     };

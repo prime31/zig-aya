@@ -92,7 +92,7 @@ pub const Map = struct {
     }
 
     pub fn getNextRuleSetFolder(self: Map) u8 {
-        return self.ruleset.getNextAvailableFolder();
+        return self.ruleset.getNextAvailableGroup();
     }
 };
 
@@ -113,7 +113,7 @@ pub const RuleSet = struct {
         self.rules.append(Rule.init()) catch unreachable;
     }
 
-    pub fn getNextAvailableFolder(self: RuleSet) u8 {
+    pub fn getNextAvailableGroup(self: RuleSet) u8 {
         var group: u8 = 0;
         for (self.rules.items) |rule| {
             group = std.math.max(group, rule.group);
@@ -125,7 +125,7 @@ pub const RuleSet = struct {
     pub fn addNinceSliceRules(self: *RuleSet, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
-        const group = self.getNextAvailableFolder();
+        const group = self.getNextAvailableGroup();
 
         var rule = Rule.init();
         rule.group = group;
@@ -215,7 +215,7 @@ pub const RuleSet = struct {
     pub fn addInnerFourRules(self: *RuleSet, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
-        const group = self.getNextAvailableFolder();
+        const group = self.getNextAvailableGroup();
 
         var rule = Rule.init();
         rule.group = group;
@@ -260,6 +260,52 @@ pub const RuleSet = struct {
         rule.get(3, 3).negate(selected_brush_index + 1);
         rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
         self.rules.append(rule) catch unreachable;
+    }
+
+    pub fn addFloodFill(self: *RuleSet, selected_brush_index: usize, name_prefix: []const u8, left: bool, right: bool, up: bool, down: bool) void {
+        if (left) {
+            var rule = Rule.init();
+            const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-l" }) catch unreachable;
+            std.mem.copy(u8, &rule.name, tl_name);
+
+            rule.get(2, 2).require(0);
+            rule.get(3, 2).require(selected_brush_index + 1);
+            rule.toggleSelected(@intCast(u8, selected_brush_index));
+            self.rules.append(rule) catch unreachable;
+        }
+
+        if (right) {
+            var rule = Rule.init();
+            const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-r" }) catch unreachable;
+            std.mem.copy(u8, &rule.name, tl_name);
+
+            rule.get(2, 2).require(0);
+            rule.get(1, 2).require(selected_brush_index + 1);
+            rule.toggleSelected(@intCast(u8, selected_brush_index));
+            self.rules.append(rule) catch unreachable;
+        }
+
+        if (up) {
+            var rule = Rule.init();
+            const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-u" }) catch unreachable;
+            std.mem.copy(u8, &rule.name, tl_name);
+
+            rule.get(2, 2).require(0);
+            rule.get(2, 3).require(selected_brush_index + 1);
+            rule.toggleSelected(@intCast(u8, selected_brush_index));
+            self.rules.append(rule) catch unreachable;
+        }
+
+        if (down) {
+            var rule = Rule.init();
+            const tl_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-d" }) catch unreachable;
+            std.mem.copy(u8, &rule.name, tl_name);
+
+            rule.get(2, 2).require(0);
+            rule.get(2, 1).require(selected_brush_index + 1);
+            rule.toggleSelected(@intCast(u8, selected_brush_index));
+            self.rules.append(rule) catch unreachable;
+        }
     }
 };
 
