@@ -30,8 +30,15 @@ pub fn save(map: Map, file: []const u8) !void {
     try out.writeIntLittle(usize, data_bytes.len);
     try out.writeAll(data_bytes);
 
-    // ruleset
+    // RuleSet
     try writeRuleSet(out, map.ruleset);
+
+    // groups
+    try out.writeIntLittle(usize, map.ruleset_groups.count());
+    for (map.ruleset_groups.items()) |entry| {
+        try out.writeIntLittle(u8, entry.key);
+        try writeFixedSliceZ(out, entry.value);
+    }
 
     // pre RuleSets
     try out.writeIntLittle(usize, map.pre_rulesets.items.len);
@@ -111,6 +118,7 @@ pub fn load(file: []const u8) !Map {
     var map = Map{
         .data = undefined,
         .ruleset = RuleSet.init(),
+        .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator),
         .pre_rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
         .tags = std.ArrayList(Tag).init(aya.mem.allocator),
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
@@ -138,10 +146,23 @@ pub fn load(file: []const u8) !Map {
     // RuleSet
     try readIntoRuleSet(in, &map.ruleset);
 
+    // grouops
+    const group_len = try in.readIntLittle(usize);
+    var i: usize = 0;
+    while (i < group_len) : (i += 1) {
+        const key = try in.readIntLittle(u8);
+        const len = try in.readIntLittle(usize);
+        std.debug.assert(len != 0);
+
+        const value = try aya.mem.allocator.alloc(u8, len);
+        _ = try in.readAll(value);
+        map.ruleset_groups.put(key, value) catch unreachable;
+    }
+
     // pre RuleSets
     const pre_ruleset_count = try in.readIntLittle(usize);
     _ = try map.pre_rulesets.ensureCapacity(pre_ruleset_count);
-    var i: usize = 0;
+    i = 0;
     while (i < pre_ruleset_count) : (i += 1) {
         var ruleset = RuleSet.init();
         try readIntoRuleSet(in, &ruleset);
