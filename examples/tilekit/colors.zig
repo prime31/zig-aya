@@ -80,9 +80,9 @@ pub fn setTintColor(color: ImVec4) void {
     const tab = hsvShiftColor(color, 0, 0.1, 0);
     colors[ImGuiCol_Tab] = tab;
     colors[ImGuiCol_TabHovered] = hsvShiftColor(tab, 0, 0, 0.1);
-    colors[ImGuiCol_TabActive] = hsvShiftColor(tab, 0, 0, -0.1);
+    colors[ImGuiCol_TabActive] = hsvShiftColor(tab, 0.05, 0.2, 0.2);
     colors[ImGuiCol_TabUnfocused] = hsvShiftColor(tab, 0, -0.1, 0);
-    colors[ImGuiCol_TabUnfocusedActive] = hsvShiftColor(tab, 0, 0.1, 0);
+    colors[ImGuiCol_TabUnfocusedActive] = colors[ImGuiCol_TabActive];
 
     const button = hsvShiftColor(color, -0.05, 0, 0);
     colors[ImGuiCol_Button] = button;
