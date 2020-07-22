@@ -225,6 +225,10 @@ pub fn draw(state: *tk.AppState) void {
 
             _ = igMenuItemBoolPtr("Show Animations", null, &state.prefs.show_animations, true);
             _ = igMenuItemBoolPtr("Show Objects", null, &state.prefs.show_objects, true);
+
+            if (igColorEdit3("UI Tint Color", &tk.colors.ui_tint.x, ImGuiColorEditFlags_NoInputs)) {
+                tk.colors.setTintColor(tk.colors.ui_tint);
+            }
         }
 
         const buttom_margin: f32 = if (state.object_edit_mode) 88 else 75;

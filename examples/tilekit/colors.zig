@@ -3,6 +3,8 @@ const print = std.debug.print;
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
+pub var ui_tint: ImVec4 = colorRgbaVec4(135, 45, 176, 255);
+
 pub var brushes: [14]ImU32 = undefined;
 pub var brush_required: ImU32 = 0;
 pub var brush_negated: ImU32 = 0;
@@ -56,24 +58,58 @@ pub fn init() void {
 
 fn setDefaultImGuiStyle() void {
     igGetStyle().TabRounding = 0;
-    igGetStyle().Colors[ImGuiCol_WindowBg] = ogColorConvertU32ToFloat4(colorRgba(15, 15, 15, 255));
+    igGetStyle().Colors[ImGuiCol_WindowBg] = ogColorConvertU32ToFloat4(colorRgba(25, 25, 25, 255));
     igGetStyle().Colors[ImGuiCol_TextSelectedBg] = ogColorConvertU32ToFloat4(colorRgba(66, 150, 250, 187));
-    igGetStyle().Colors[ImGuiCol_Header] = ogColorConvertU32ToFloat4(colorRgba(66, 150, 250, 150));
+
+    setTintColor(ui_tint);
+}
+
+pub fn setTintColor(color: ImVec4) void {
+    var colors = &igGetStyle().Colors;
+    colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2);
+
+    const header = hsvShiftColor(color, 0, -0.2, 0);
+    colors[ImGuiCol_Header] = header;
+    colors[ImGuiCol_HeaderHovered] = hsvShiftColor(header, 0, 0, 0.1);
+    colors[ImGuiCol_HeaderActive] = hsvShiftColor(header, 0, 0, -0.1);
+
+    const title = hsvShiftColor(color, -0.05, 0.1, 0);
+    colors[ImGuiCol_TitleBg] = title;
+    colors[ImGuiCol_TitleBgActive] = title;
+
+    const tab = hsvShiftColor(color, 0, 0.1, 0);
+    colors[ImGuiCol_Tab] = tab;
+    colors[ImGuiCol_TabHovered] = hsvShiftColor(tab, 0, 0, 0.1);
+    colors[ImGuiCol_TabActive] = hsvShiftColor(tab, 0, 0, -0.1);
+    colors[ImGuiCol_TabUnfocused] = hsvShiftColor(tab, 0, -0.1, 0);
+    colors[ImGuiCol_TabUnfocusedActive] = hsvShiftColor(tab, 0, 0.1, 0);
+
+    const button = hsvShiftColor(color, -0.05, 0, 0);
+    colors[ImGuiCol_Button] = button;
+    colors[ImGuiCol_ButtonHovered] = hsvShiftColor(button, 0, 0, 0.1);
+    colors[ImGuiCol_ButtonActive] = hsvShiftColor(button, 0, 0, -0.1);
+}
+
+fn hsvShiftColor(color: ImVec4, h_shift: f32, s_shift: f32, v_shift: f32) ImVec4 {
+    var h: f32 = undefined;
+    var s: f32 = undefined;
+    var v: f32 = undefined;
+    igColorConvertRGBtoHSV(color.x, color.y, color.z, &h, &s, &v);
+
+    h += h_shift;
+    s += s_shift;
+    v += v_shift;
+
+    var out_color = color;
+    igColorConvertHSVtoRGB(h, s, v, &out_color.x, &out_color.y, &out_color.z);
+    return out_color;
 }
 
 pub fn toggleObjectMode(enable: bool) void {
     if (enable) {
-        igGetStyle().Colors[ImGuiCol_TitleBg] = ogColorConvertU32ToFloat4(colorRgba(134, 26, 179, 255));
-        igGetStyle().Colors[ImGuiCol_TitleBgActive] = ogColorConvertU32ToFloat4(colorRgba(135, 26, 9, 255));
-        igGetStyle().Colors[ImGuiCol_Tab] = ogColorConvertU32ToFloat4(colorRgba(128, 46, 148, 220));
-        igGetStyle().Colors[ImGuiCol_TabActive] = ogColorConvertU32ToFloat4(colorRgba(128, 51, 173, 255));
-        igGetStyle().Colors[ImGuiCol_TabUnfocusedActive] = ogColorConvertU32ToFloat4(colorRgba(0, 0, 0, 255));
+        setTintColor(colorRgbaVec4(5, 145, 12, 255));
     } else {
-        igGetStyle().Colors[ImGuiCol_TitleBg] = ogColorConvertU32ToFloat4(colorRgba(10, 10, 10, 255));
-        igGetStyle().Colors[ImGuiCol_TitleBgActive] = ogColorConvertU32ToFloat4(colorRgba(41, 74, 122, 255));
-        igGetStyle().Colors[ImGuiCol_Tab] = ogColorConvertU32ToFloat4(colorRgba(46, 89, 148, 220));
-        igGetStyle().Colors[ImGuiCol_TabActive] = ogColorConvertU32ToFloat4(colorRgba(51, 105, 173, 255));
-        igGetStyle().Colors[ImGuiCol_TabUnfocusedActive] = ogColorConvertU32ToFloat4(colorRgba(35, 67, 108, 255));
+        setTintColor(ui_tint);
     }
 }
 
