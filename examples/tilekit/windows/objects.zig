@@ -37,7 +37,7 @@ pub fn draw(state: *tk.AppState) void {
                 }
                 igPushIDInt(@intCast(c_int, i));
 
-                if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, ImVec2{.x = igGetWindowContentRegionWidth() - 24})) {
+                if (igSelectableBool(&obj.name, selected_index == i, ImGuiSelectableFlags_None, .{.x = igGetWindowContentRegionWidth() - 24})) {
                     selected_index = i;
                     object_editor.setSelectedObject(selected_index);
                     state.prefs.windows.object_editor = true;
