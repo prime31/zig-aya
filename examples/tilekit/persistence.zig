@@ -3,13 +3,15 @@ const aya = @import("aya");
 
 const Writer = aya.mem.SdlBufferStream.Writer;
 const Reader = aya.mem.SdlBufferStream.Reader;
-const Map = @import("data.zig").Map;
-const RuleSet = @import("data.zig").RuleSet;
-const Rule = @import("data.zig").Rule;
-const RuleTile = @import("data.zig").RuleTile;
-const Tag = @import("data.zig").Tag;
-const Object = @import("data.zig").Object;
-const Animation = @import("data.zig").Animation;
+
+const data = @import("map.zig");
+const Map = data.Map;
+const RuleSet = data.RuleSet;
+const Rule = data.Rule;
+const RuleTile = data.RuleTile;
+const Tag = data.Tag;
+const Object = data.Object;
+const Animation = data.Animation;
 
 pub fn save(map: Map, file: []const u8) !void {
     var buf = aya.mem.SdlBufferStream.init(file, .write);

@@ -104,12 +104,12 @@ pub const AppState = struct {
         // test data for messing with folders
         // var i: usize = 10;
         // while (i < 20) : (i += 1) {
-        //     state.map.addRule();
-        //     var ruleset = &state.map.rulesets.items[state.map.rulesets.items.len - 1];
-        //     std.mem.copy(u8, &ruleset.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
+        //     state.map.ruleset.addRule();
+        //     var rule = &state.map.ruleset.rules.items[state.map.ruleset.rules.items.len - 1];
+        //     std.mem.copy(u8, &rule.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
 
-        //     if (i == 12 or i == 13) ruleset.folder = 1;
-        //     if (i == 14 or i == 15 or i == 16) ruleset.folder = 2;
+        //     if (i == 12 or i == 13) rule.group = 1;
+        //     if (i == 14 or i == 15 or i == 16) rule.group = 2;
         // }
 
         return state;

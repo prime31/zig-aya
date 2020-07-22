@@ -192,8 +192,10 @@ pub fn draw(state: *tk.AppState) void {
             _ = igMenuItemBoolPtr("Input Map", null, &state.prefs.windows.input_map, true);
             _ = igMenuItemBoolPtr("Post Processed Map", null, &state.prefs.windows.post_processed_map, true);
             _ = igMenuItemBoolPtr("Output Map", null, &state.prefs.windows.output_map, true);
+        }
 
-            igSeparator();
+        if (igBeginMenu("Settings", true)) {
+            defer igEndMenu();
 
             if (igBeginMenu("Map Display Size", true)) {
                 defer igEndMenu();
