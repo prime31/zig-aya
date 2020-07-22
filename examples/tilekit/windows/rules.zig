@@ -172,14 +172,21 @@ fn drawRulesTab(state: *tk.AppState) void {
 
             igPushIDInt(@intCast(c_int, group));
             groupDropTarget(state.map.ruleset.rules.items[i].group, i);
-            const header_open = igCollapsingHeaderBoolPtr("Group", null, ImGuiTreeNodeFlags_DefaultOpen);
+            const header_open = igCollapsingHeaderBoolPtr(state.map.getGroupName(group).ptr, null, ImGuiTreeNodeFlags_DefaultOpen);
             groupDragDrop(state.map.ruleset.rules.items[i].group, i);
 
-            if (igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
+            if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+                igOpenPopup("##rename-group");
+                std.mem.copy(u8, &new_rule_label_buf, state.map.getGroupName(group));
+            }
+
+            if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
                 if (igButton("Rename Group", .{ .x = -1, .y = 0 })) {
                     igCloseCurrentPopup();
+                    const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+                    state.map.renameGroup(group, new_rule_label_buf[0..label_sentinel_index]);
                 }
 
                 igEndPopup();
@@ -190,10 +197,10 @@ fn drawRulesTab(state: *tk.AppState) void {
                 igIndent(10);
                 drag_drop_state.rendering_group = true;
             }
-            rulesDragDrop(i, &state.map.ruleset.rules.items[i], true);
+            rulesDragDrop(i, &state.map.ruleset.rules.items[i], true, false);
 
             while (i < state.map.ruleset.rules.items.len and state.map.ruleset.rules.items[i].group == group) : (i += 1) {
-                if (header_open and drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
+                if (header_open and drawRule(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
                     delete_index = i;
                 }
             }
@@ -209,13 +216,16 @@ fn drawRulesTab(state: *tk.AppState) void {
             continue;
         }
 
-        if (drawRuleSet(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
+        if (drawRule(state, &state.map.ruleset, &state.map.ruleset.rules.items[i], i, false)) {
             delete_index = i;
         }
     }
 
     if (delete_index < state.map.ruleset.rules.items.len) {
-        _ = state.map.ruleset.rules.orderedRemove(delete_index);
+        const removed = state.map.ruleset.rules.orderedRemove(delete_index);
+        if (removed.group > 0) {
+            state.map.removeGroupIfEmpty(removed.group);
+        }
     }
 
     // handle drag and drop swapping
@@ -268,7 +278,7 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
 
             var delete_rule_index: usize = std.math.maxInt(usize);
             for (ruleset.rules.items) |*rule, j| {
-                if (drawRuleSet(state, ruleset, rule, j, true)) {
+                if (drawRule(state, ruleset, rule, j, true)) {
                     delete_rule_index = j;
                 }
             }
@@ -380,12 +390,12 @@ fn groupDragDrop(group: u8, index: usize) void {
 }
 
 /// handles drag/drop sources and targets
-fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
+fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool, is_pre_rule: bool) void {
     var cursor = ogGetCursorPos();
 
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
-        ogUnformattedTooltip(20, "Click and drag to reorder\nRight-click to add a group");
+        ogUnformattedTooltip(20, if (is_pre_rule) "Click and drag to reorder" else "Click and drag to reorder\nRight-click to add a group");
 
         igSameLine(0, 4);
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -428,23 +438,34 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     }
 }
 
-fn drawRuleSet(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, is_pre_rule: bool) bool {
+fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, is_pre_rule: bool) bool {
     igPushIDPtr(rule);
     defer igPopID();
 
-    rulesDragDrop(index, rule, false);
+    rulesDragDrop(index, rule, false, is_pre_rule);
 
-    // right-click the move button to add the Rule to a group only if not already in a group
-    if (rule.group == 0 and igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
+    // right-click the move button to add the Rule to a group only if not already in a group and not a pre rule
+    if (!is_pre_rule and rule.group == 0 and igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
         _ = ogInputText("##group-name", &new_rule_label_buf, new_rule_label_buf.len);
-        igText("Note: name not supported yet");
+
+        const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+        const disabled = label_sentinel_index == 0;
+        if (disabled) {
+            igPushItemFlag(ImGuiItemFlags_Disabled, true);
+            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+        }
 
         if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
 
             // get the next available group
-            rule.group = ruleset.getNextAvailableGroup();
+            rule.group = ruleset.getNextAvailableGroup(&state.map, new_rule_label_buf[0..label_sentinel_index]);
             std.mem.set(u8, &new_rule_label_buf, 0);
+        }
+
+        if (disabled) {
+            igPopItemFlag();
+            igPopStyleVar(1);
         }
 
         igEndPopup();
@@ -485,7 +506,7 @@ fn drawRuleSet(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize
 
     // if this is the last item, add an extra drop zone for reordering
     if (index == ruleset.rules.items.len - 1) {
-        rulesDragDrop(index + 1, rule, true);
+        rulesDragDrop(index + 1, rule, true, is_pre_rule);
     }
 
     // display the popup a bit to the left to center it under the mouse
@@ -779,9 +800,9 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
 
     if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
         if (selection_size == 3) {
-            state.map.ruleset.addNinceSliceRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+            state.map.ruleset.addNinceSliceRules(&state.map, state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         } else {
-            state.map.ruleset.addInnerFourRules(state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+            state.map.ruleset.addInnerFourRules(&state.map, state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         }
         igCloseCurrentPopup();
     }

@@ -9,6 +9,7 @@ pub const Map = struct {
     image: []const u8 = "",
     data: []u8,
     ruleset: RuleSet,
+    ruleset_groups: std.AutoHashMap(u8, []const u8),
     pre_rulesets: std.ArrayList(RuleSet),
     tags: std.ArrayList(Tag),
     objects: std.ArrayList(Object),
@@ -22,6 +23,7 @@ pub const Map = struct {
             .tile_spacing = tile_spacing,
             .data = aya.mem.allocator.alloc(u8, 64 * 64) catch unreachable,
             .ruleset = RuleSet.init(),
+            .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator),
             .pre_rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
             .tags = std.ArrayList(Tag).init(aya.mem.allocator),
             .objects = std.ArrayList(Object).init(aya.mem.allocator),
@@ -32,12 +34,13 @@ pub const Map = struct {
         return map;
     }
 
-    pub fn deinit(self: Map) void {
+    pub fn deinit(self: *Map) void {
         aya.mem.allocator.free(self.data);
         for (self.pre_rulesets.items) |pr| {
             pr.deinit();
         }
         self.ruleset.deinit();
+        self.ruleset_groups.deinit();
         self.tags.deinit();
         self.objects.deinit();
         self.animations.deinit();
@@ -65,6 +68,26 @@ pub const Map = struct {
         unreachable;
     }
 
+    pub fn getGroupName(self: Map, group: u8) []const u8 {
+        return self.ruleset_groups.get(group) orelse "Unnamed Group";
+    }
+
+    pub fn renameGroup(self: *Map, group: u8, name: []const u8) void {
+        if (self.ruleset_groups.remove(group)) |entry| {
+            aya.mem.allocator.free(entry.value);
+        }
+        self.ruleset_groups.put(group, aya.mem.allocator.dupe(u8, name) catch unreachable) catch unreachable;
+    }
+
+    pub fn removeGroupIfEmpty(self: *Map, group: u8) void {
+        for (self.ruleset.rules.items) |rule| {
+            if (rule.group == group) return;
+        }
+        if (self.ruleset_groups.remove(group)) |entry| {
+            aya.mem.allocator.free(entry.value);
+        }
+    }
+
     pub fn addAnimation(self: *Map, tile: u8) void {
         self.animations.append(Animation.init(tile)) catch unreachable;
     }
@@ -90,10 +113,6 @@ pub const Map = struct {
     pub fn setTile(self: Map, x: usize, y: usize, value: u8) void {
         self.data[x + y * self.w] = value;
     }
-
-    pub fn getNextRuleSetFolder(self: Map) u8 {
-        return self.ruleset.getNextAvailableGroup();
-    }
 };
 
 pub const RuleSet = struct {
@@ -113,19 +132,20 @@ pub const RuleSet = struct {
         self.rules.append(Rule.init()) catch unreachable;
     }
 
-    pub fn getNextAvailableGroup(self: RuleSet) u8 {
+    pub fn getNextAvailableGroup(self: RuleSet, map: *Map, name: []const u8) u8 {
         var group: u8 = 0;
         for (self.rules.items) |rule| {
             group = std.math.max(group, rule.group);
         }
+        map.ruleset_groups.put(group + 1, aya.mem.allocator.dupe(u8, name) catch unreachable) catch unreachable;
         return group + 1;
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
-    pub fn addNinceSliceRules(self: *RuleSet, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
+    pub fn addNinceSliceRules(self: *RuleSet, map: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
-        const group = self.getNextAvailableGroup();
+        const group = self.getNextAvailableGroup(map, name_prefix);
 
         var rule = Rule.init();
         rule.group = group;
@@ -212,10 +232,10 @@ pub const RuleSet = struct {
         self.rules.append(rule) catch unreachable;
     }
 
-    pub fn addInnerFourRules(self: *RuleSet, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
+    pub fn addInnerFourRules(self: *RuleSet, map: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
-        const group = self.getNextAvailableGroup();
+        const group = self.getNextAvailableGroup(map, name_prefix);
 
         var rule = Rule.init();
         rule.group = group;
