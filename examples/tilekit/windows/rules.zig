@@ -13,6 +13,7 @@ var new_rule_label_buf: [25]u8 = undefined;
 var pre_ruleset_tab_buf: [5]u8 = undefined;
 var nine_slice_selected: ?usize = null;
 var current_ruleset: usize = std.math.maxInt(usize);
+var ruleset_delete_index: usize = undefined;
 
 var drag_drop_state = struct {
     source: union(enum) {
@@ -238,7 +239,6 @@ fn drawRulesTab(state: *tk.AppState) void {
 }
 
 fn drawPreRulesTabs(state: *tk.AppState) void {
-    var delete_index: usize = std.math.maxInt(usize);
     for (state.map.pre_rulesets.items) |*ruleset, i| {
         var is_tab_open = true;
         igPushIDInt(@intCast(c_int, i) + 3000);
@@ -269,14 +269,37 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
         igPopID();
 
         if (!is_tab_open) {
-            delete_index = i;
+            ruleset_delete_index = i;
+            igOpenPopup("Delete RuleSet");
         }
     } // end pre_rules loop
 
-    if (delete_index < state.map.pre_rulesets.items.len) {
-        const removed_rules_page = state.map.pre_rulesets.orderedRemove(delete_index);
-        removed_rules_page.deinit();
+    if (igBeginPopupModal("Delete RuleSet", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+        deletePreRuleSetPopup(state);
+        igEndPopup();
     }
+
+
+}
+
+fn deletePreRuleSetPopup(state: *tk.AppState) void {
+    igText("Are you sure you want to delete\nthis RuleSet?");
+    igSeparator();
+
+    var size = ogGetContentRegionAvail();
+    if (igButton("Cancel", ImVec2{ .x = (size.x - 4) / 2 })) {
+        igCloseCurrentPopup();
+    }
+    igSameLine(0, 4);
+
+    igPushStyleColorU32(ImGuiCol_Button, tk.colors.colorRgb(180, 25, 35));
+    igPushStyleColorU32(ImGuiCol_ButtonHovered, tk.colors.colorRgb(240, 20, 30));
+    if (igButton("Delete", ImVec2{ .x = -1, .y = 0 })) {
+        const removed_rules_page = state.map.pre_rulesets.orderedRemove(ruleset_delete_index);
+        removed_rules_page.deinit();
+        igCloseCurrentPopup();
+    }
+    igPopStyleColor(2);
 }
 
 fn rulesetSettingsPopup(state: *tk.AppState) void {
