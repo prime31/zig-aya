@@ -5,8 +5,8 @@ const colors = @import("../colors.zig");
 const brushes_win = @import("brushes.zig");
 usingnamespace @import("imgui");
 
-const Rule = @import("../data.zig").Rule;
-const RuleSet = @import("../data.zig").RuleSet;
+const Rule = @import("../map.zig").Rule;
+const RuleSet = @import("../map.zig").RuleSet;
 
 var rule_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;

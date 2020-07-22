@@ -15,7 +15,7 @@ const output_map_win = @import("windows/output_map.zig");
 
 const menu = @import("menu.zig");
 
-pub const data = @import("data.zig");
+pub const data = @import("map.zig");
 pub const history = @import("history.zig");
 pub const colors = @import("colors.zig");
 

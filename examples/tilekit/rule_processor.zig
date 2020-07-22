@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
-const data = @import("data.zig");
+
+const data = @import("map.zig");
 const Map = data.Map;
 const Rule = data.Rule;
 const RuleTile = data.RuleTile;
