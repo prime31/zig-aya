@@ -45,7 +45,7 @@ fn render() void {
 
     // stall whenever we dont have events so that we render as little as possible
     var evt: sdl.SDL_Event = undefined;
-    if (sdl.SDL_WaitEventTimeout(&evt, 5000) == 1) {
+    if (sdl.SDL_WaitEventTimeout(&evt, if (aya.window.focused) 50 else 5000) == 1) {
         _ = sdl.SDL_PushEvent(&evt);
     }
     aya.time.resync();
