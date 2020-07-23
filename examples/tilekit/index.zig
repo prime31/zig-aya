@@ -43,12 +43,12 @@ fn render() void {
     aya.gfx.beginNullPass();
     aya.gfx.endPass();
 
-    // slow down rendering when we arent active and when a file is not being dragged into the window
-    if (!aya.window.focused) {
-        aya.time.sleep(200);
-    } else if (!imgui.igGetIO().WantCaptureKeyboard and !imgui.igGetIO().WantCaptureMouse) {
-        aya.time.sleep(100);
+    // stall whenever we dont have events so that we render as little as possible
+    var evt: sdl.SDL_Event = undefined;
+    if (sdl.SDL_WaitEventTimeout(&evt, 5000) == 1) {
+        _ = sdl.SDL_PushEvent(&evt);
     }
+    aya.time.resync();
 }
 
 fn onSdlEvent(context: ?*c_void, event: *sdl.SDL_Event) callconv(.C) c_int {
