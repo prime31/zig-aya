@@ -169,6 +169,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
             }
         }
         history.commit();
+        state.map_data_dirty = true;
     } else if (igIsMouseDown(ImGuiMouseButton_Left) and !igGetIO().KeyShift) {
         var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
 
@@ -182,6 +183,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         const index = tile.x + tile.y * state.map.w;
         history.push(state.map.data[index .. index + 1]);
         state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
+        state.map_data_dirty = true;
     } else if (igIsMouseDown(ImGuiMouseButton_Right)) {
         var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
 
@@ -195,6 +197,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         const index = tile.x + tile.y * state.map.w;
         history.push(state.map.data[index .. index + 1]);
         state.map.setTile(tile.x, tile.y, 0);
+        state.map_data_dirty = true;
     } else if (igIsMouseReleased(ImGuiMouseButton_Left) or igIsMouseReleased(ImGuiMouseButton_Right)) {
         dragged = false;
         history.commit();

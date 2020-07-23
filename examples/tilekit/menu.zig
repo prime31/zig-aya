@@ -6,8 +6,6 @@ const aya = @import("aya");
 const files = @import("filebrowser");
 const stb_image = @import("stb_image");
 
-var buffer: [100]u8 = undefined;
-
 // used to fill the ui while we are getting input for loading/resizing
 var temp_state = struct {
     tile_size: usize = 16,
@@ -50,8 +48,10 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
     // undo/redo
     if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl) and igGetIO().KeyShift) {
         tk.history.redo();
+        state.map_data_dirty = true;
     } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl)) {
         tk.history.undo();
+        state.map_data_dirty = true;
     }
 
     // help

@@ -9,6 +9,7 @@ const Rule = @import("../map.zig").Rule;
 const RuleSet = @import("../map.zig").RuleSet;
 
 var rule_label_buf: [25]u8 = undefined;
+var group_label_buf: [25]u8 = undefined;
 var new_rule_label_buf: [25]u8 = undefined;
 var pre_ruleset_tab_buf: [5]u8 = undefined;
 var nine_slice_selected: ?usize = null;
@@ -172,7 +173,9 @@ fn drawRulesTab(state: *tk.AppState) void {
 
             igPushIDInt(@intCast(c_int, group));
             groupDropTarget(state.map.ruleset.rules.items[i].group, i);
-            const header_open = igCollapsingHeaderBoolPtr(state.map.getGroupName(group).ptr, null, ImGuiTreeNodeFlags_DefaultOpen);
+            std.mem.set(u8, &group_label_buf, 0);
+            std.mem.copy(u8, &group_label_buf, state.map.getGroupName(group));
+            const header_open = igCollapsingHeaderBoolPtr(&group_label_buf, null, ImGuiTreeNodeFlags_DefaultOpen);
             groupDragDrop(state.map.ruleset.rules.items[i].group, i);
 
             if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
@@ -226,6 +229,7 @@ fn drawRulesTab(state: *tk.AppState) void {
         if (removed.group > 0) {
             state.map.removeGroupIfEmpty(removed.group);
         }
+        state.map_data_dirty = true;
     }
 
     // handle drag and drop swapping
@@ -301,6 +305,7 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
 
             if (drag_drop_state.completed) {
                 drag_drop_state.handle(&ruleset.rules);
+                state.map_data_dirty = true;
             }
 
             floodFillPopup(state, ruleset);
@@ -334,6 +339,7 @@ fn deletePreRuleSetPopup(state: *tk.AppState) void {
     if (igButton("Delete", ImVec2{ .x = -1, .y = 0 })) {
         const removed_rules_page = state.map.pre_rulesets.orderedRemove(ruleset_delete_index);
         removed_rules_page.deinit();
+        state.map_data_dirty = true;
         igCloseCurrentPopup();
     }
     igPopStyleColor(2);
@@ -395,7 +401,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool, is_pre_rule: bool) 
 
     if (!drop_only) {
         _ = ogButton(icons.grip_horizontal);
-        ogUnformattedTooltip(20, if (is_pre_rule) "Click and drag to reorder" else "Click and drag to reorder\nRight-click to add a group");
+        ogUnformattedTooltip(20, if (is_pre_rule or rule.group > 0) "Click and drag to reorder" else "Click and drag to reorder\nRight-click to add a group");
 
         igSameLine(0, 4);
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -445,30 +451,37 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
     rulesDragDrop(index, rule, false, is_pre_rule);
 
     // right-click the move button to add the Rule to a group only if not already in a group and not a pre rule
-    if (!is_pre_rule and rule.group == 0 and igBeginPopupContextItem("##group", ImGuiMouseButton_Right)) {
-        _ = ogInputText("##group-name", &new_rule_label_buf, new_rule_label_buf.len);
-
-        const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
-        const disabled = label_sentinel_index == 0;
-        if (disabled) {
-            igPushItemFlag(ImGuiItemFlags_Disabled, true);
-            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
-        }
-
-        if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
-            igCloseCurrentPopup();
-
-            // get the next available group
-            rule.group = ruleset.getNextAvailableGroup(&state.map, new_rule_label_buf[0..label_sentinel_index]);
+    if (!is_pre_rule and rule.group == 0) {
+        if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+            igOpenPopup("##group-name");
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
-        if (disabled) {
-            igPopItemFlag();
-            igPopStyleVar(1);
-        }
+        if (igBeginPopup("##group-name", ImGuiWindowFlags_None)) {
+            defer igEndPopup();
 
-        igEndPopup();
+            _ = ogInputText("##group-name", &new_rule_label_buf, new_rule_label_buf.len);
+
+            const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+            const disabled = label_sentinel_index == 0;
+            if (disabled) {
+                igPushItemFlag(ImGuiItemFlags_Disabled, true);
+                igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+            }
+
+            if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
+                igCloseCurrentPopup();
+
+                // get the next available group
+                rule.group = ruleset.getNextAvailableGroup(&state.map, new_rule_label_buf[0..label_sentinel_index]);
+                std.mem.set(u8, &new_rule_label_buf, 0);
+            }
+
+            if (disabled) {
+                igPopItemFlag();
+                igPopStyleVar(1);
+            }
+        }
     }
 
     igPushItemWidth(115);
@@ -526,7 +539,7 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
             igOpenPopup("rules_hamburger");
         }
 
-        rulesHamburgerPopup(rule);
+        rulesHamburgerPopup(state, rule);
 
         // quick brush selector
         if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
@@ -613,6 +626,7 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
             if (hovered) {
                 if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
                     if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                        state.map_data_dirty = true;
                         if (igGetIO().KeyShift) {
                             rule_tile.negate(state.selected_brush_index + 1);
                         } else {
@@ -621,6 +635,7 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
                     }
 
                     if (igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+                        state.map_data_dirty = true;
                         rule_tile.toggleState(if (igGetIO().KeyShift) .negated else .required);
                     }
                 }
@@ -629,13 +644,14 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
     }
 }
 
-fn rulesHamburgerPopup(rule: *Rule) void {
+fn rulesHamburgerPopup(state: *tk.AppState, rule: *Rule) void {
     var pos = igGetIO().MousePos;
     pos.x -= 100;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
+    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
 
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         defer igEndPopup();
+        state.map_data_dirty = true;
 
         igText("Shift:");
         igSameLine(0, 10);
@@ -708,6 +724,7 @@ fn floodFillPopup(state: *tk.AppState, ruleset: *RuleSet) void {
 
         if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
+            state.map_data_dirty = true;
             ruleset.addFloodFill(state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], fill_dirs.left, fill_dirs.right, fill_dirs.up, fill_dirs.down);
         }
 
@@ -746,11 +763,13 @@ fn resultPopup(state: *tk.AppState, ruleset: *Rule, is_pre_rule: bool) void {
             var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
             ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
+            state.map_data_dirty = true;
         }
     }
 
     if (igButton("Clear", ImVec2{ .x = -1 })) {
         ruleset.result_tiles.clear();
+        state.map_data_dirty = true;
     }
 }
 
@@ -804,6 +823,7 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
         } else {
             state.map.ruleset.addInnerFourRules(&state.map, state.tilesPerRow(), state.selected_brush_index, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         }
+        state.map_data_dirty = true;
         igCloseCurrentPopup();
     }
 
