@@ -15,10 +15,7 @@ pub fn drawWindow(state: *tk.AppState) void {
 }
 
 pub fn drawPopup(state: *tk.AppState, popup_id: [*c]const u8) void {
-    var pos = igGetIO().MousePos;
-    pos.x -= state.map_rect_size * 6 / 2;
-    pos.y -= state.map_rect_size * 6 / 2;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup(popup_id, ImGuiWindowFlags_NoTitleBar)) {
         draw(state, state.map_rect_size, false);
         igEndPopup();

@@ -183,6 +183,7 @@ fn drawRulesTab(state: *tk.AppState) void {
                 std.mem.copy(u8, &new_rule_label_buf, state.map.getGroupName(group));
             }
 
+            igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
             if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
@@ -257,14 +258,13 @@ fn drawRulesTab(state: *tk.AppState) void {
         nine_slice_selected = null;
     }
 
-    var pos = igGetIO().MousePos;
-    pos.x -= 150;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 3);
         igEndPopup();
     }
 
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 2);
         igEndPopup();
@@ -318,6 +318,7 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
         }
     } // end pre_rules loop
 
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopupModal("Delete RuleSet", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         deletePreRuleSetPopup(state);
         igEndPopup();
@@ -457,6 +458,7 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
         if (igBeginPopup("##group-name", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
@@ -523,9 +525,7 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
     }
 
     // display the popup a bit to the left to center it under the mouse
-    var pos = igGetIO().MousePos;
-    pos.x -= 32 * 5 / 2;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("##pattern_popup", ImGuiWindowFlags_None)) {
         patternPopup(state, rule);
 
@@ -553,13 +553,7 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
         igEndPopup();
     }
 
-    if (is_pre_rule) {
-        pos.x = igGetIO().MousePos.x - @intToFloat(f32, 32) * 5.0 / 2.0;
-    } else {
-        const zoom: i32 = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
-        pos.x = igGetIO().MousePos.x - @intToFloat(f32, state.texture.width * zoom) / 2;
-    }
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, ImVec2{});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
         resultPopup(state, rule, is_pre_rule);
         igEndPopup();
@@ -645,10 +639,7 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
 }
 
 fn rulesHamburgerPopup(state: *tk.AppState, rule: *Rule) void {
-    var pos = igGetIO().MousePos;
-    pos.x -= 100;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
-
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         defer igEndPopup();
         state.map_data_dirty = true;
@@ -688,10 +679,7 @@ fn rulesHamburgerPopup(state: *tk.AppState, rule: *Rule) void {
 }
 
 fn floodFillPopup(state: *tk.AppState, ruleset: *RuleSet) void {
-    var pos = igGetIO().MousePos;
-    pos.x -= 100;
-    igSetNextWindowPos(pos, ImGuiCond_Appearing, .{});
-
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("flood-fill", ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
