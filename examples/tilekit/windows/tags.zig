@@ -34,6 +34,7 @@ pub fn draw(state: *tk.AppState) void {
                     delete_index = i;
                 }
 
+                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
                 if (igBeginPopup("tag-tiles", ImGuiWindowFlags_None)) {
                     defer igEndPopup();
                     tagTileSelectorPopup(state, tag);
@@ -55,30 +56,25 @@ pub fn draw(state: *tk.AppState) void {
 
 fn tagTileSelectorPopup(state: *tk.AppState, tag: *tk.data.Tag) void {
     var content_start_pos = ogGetCursorScreenPos();
-    // should tags be allowed on tilesets? if so, we need to remove the hardcoded 6's and use tilesPerRow
-    // ogImage(state.texture);
-    brushes_win.draw(state, @intToFloat(f32, state.map.tile_size), true);
+    const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
+    const tile_spacing = state.map.tile_spacing * zoom;
+    const tile_size = state.map.tile_size * zoom;
+
+    ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
 
     const draw_list = igGetWindowDrawList();
 
     // draw selected tiles
     var iter = tag.tiles.iter();
     while (iter.next()) |value| {
-        const x = @mod(value, 6);
-        const y = @divTrunc(value, 6);
-
-        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, state.map.tile_size), .y = @intToFloat(f32, y) * @intToFloat(f32, state.map.tile_size) };
-        tl.x += content_start_pos.x + 1;
-        tl.y += content_start_pos.y + 1;
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), tk.colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, state.map.tile_size - 2), tk.colors.rule_result_selected_outline, 2);
+        tk.addTileToDrawList(tile_size, content_start_pos, value, state.tilesPerRow(), tile_spacing);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size), content_start_pos);
-            tag.toggleSelected(@intCast(u8, tile.x + tile.y * 6));
+            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
+            tag.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
         }
     }
 

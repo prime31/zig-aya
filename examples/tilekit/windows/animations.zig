@@ -39,11 +39,13 @@ pub fn draw(state: *tk.AppState) void {
                     delete_index = i;
                 }
 
+                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
                 if (igBeginPopup("tile-chooser", ImGuiWindowFlags_None)) {
                     animTileSelectorPopup(state, anim, .single);
                     igEndPopup();
                 }
 
+                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
                 if (igBeginPopup("animation-tiles", ImGuiWindowFlags_None)) {
                     animTileSelectorPopup(state, anim, .multi);
                     igEndPopup();
@@ -61,6 +63,7 @@ pub fn draw(state: *tk.AppState) void {
             igOpenPopup("add-anim");
         }
 
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
         if (igBeginPopup("add-anim", ImGuiWindowFlags_None)) {
             addAnimationPopup(state);
             igEndPopup();
@@ -74,7 +77,7 @@ fn addAnimationPopup(state: *tk.AppState) void {
     ogImage(state.texture.tex, state.texture.width * @intCast(i32, zoom), state.texture.height * @intCast(i32, zoom));
 
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-        if (igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+        if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
             var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size * zoom), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * state.tilesPerRow());
             state.map.addAnimation(tile_index);
@@ -107,7 +110,7 @@ fn animTileSelectorPopup(state: *tk.AppState, anim: *tk.data.Animation, selectio
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-        if (igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+        if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
             var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             var tile_index = @intCast(u8, tile.x + tile.y * per_row);
             if (selection_type == .multi) {
