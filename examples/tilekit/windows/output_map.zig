@@ -14,8 +14,7 @@ pub fn drawWindow(state: *tk.AppState) void {
     if (state.map_data_dirty) {
         processor.generateProcessedMap(state);
         processor.generateOutputMap(state);
-        // TODO: fix this to only process when necessary
-        //state.map_data_dirty = false;
+        state.map_data_dirty = false;
     }
 
     if (state.prefs.windows.output_map) {
