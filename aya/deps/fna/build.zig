@@ -62,6 +62,8 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
         exe.addIncludeDir("c:\\SDL2");
     } else if (target.isLinux()) {
         exe.addIncludeDir("/usr/local/include/SDL2");
+        exe.addIncludeDir("/usr/include/");
+        exe.addIncludeDir("/usr/include/SDL2");
     }
 
     const lib_cflags = &[_][]const u8{
