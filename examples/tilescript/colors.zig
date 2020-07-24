@@ -57,9 +57,14 @@ pub fn init() void {
 }
 
 fn setDefaultImGuiStyle() void {
-    igGetStyle().TabRounding = 0;
-    igGetStyle().Colors[ImGuiCol_WindowBg] = ogColorConvertU32ToFloat4(colorRgba(25, 25, 25, 255));
-    igGetStyle().Colors[ImGuiCol_TextSelectedBg] = ogColorConvertU32ToFloat4(colorRgba(66, 150, 250, 187));
+    var style = igGetStyle();
+    style.TabRounding = 2;
+    style.FrameRounding = 4;
+    style.WindowBorderSize = 1;
+    style.WindowRounding = 0;
+    style.WindowMenuButtonPosition = ImGuiDir_None;
+    style.Colors[ImGuiCol_WindowBg] = ogColorConvertU32ToFloat4(colorRgba(25, 25, 25, 255));
+    style.Colors[ImGuiCol_TextSelectedBg] = ogColorConvertU32ToFloat4(colorRgba(66, 150, 250, 187));
 
     setTintColor(ui_tint);
 }
@@ -67,6 +72,7 @@ fn setDefaultImGuiStyle() void {
 pub fn setTintColor(color: ImVec4) void {
     var colors = &igGetStyle().Colors;
     colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2);
+    colors[ImGuiCol_Border] = hsvShiftColor(color, 0, 0, -0.2);
 
     const header = hsvShiftColor(color, 0, -0.2, 0);
     colors[ImGuiCol_Header] = header;

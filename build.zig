@@ -53,7 +53,7 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
     // in aya.zig: pub const build_options = @import("root").build_options;
     exe.addBuildOption(bool, "debug", true);
 
-    // dependencies only required for tilekit
+    // dependencies only required for TileScript
     if (std.mem.eql(u8, name, "tilescript") or std.mem.endsWith(u8, source, "main.zig")) {
         const filebrowser_build = @import("deps/filebrowser/build.zig");
         filebrowser_build.linkArtifact(b, exe, target, @intToEnum(filebrowser_build.LibType, lib_type), "deps/filebrowser");

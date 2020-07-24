@@ -1,9 +1,9 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 usingnamespace @import("imgui");
 
-pub fn draw(state: *tk.AppState) void {
+pub fn draw(state: *ts.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 220, .y = 100 });
     defer igPopStyleVar(1);
 
@@ -53,7 +53,7 @@ pub fn draw(state: *tk.AppState) void {
     }
 }
 
-fn tagTileSelectorPopup(state: *tk.AppState, tag: *tk.data.Tag) void {
+fn tagTileSelectorPopup(state: *ts.AppState, tag: *ts.data.Tag) void {
     var content_start_pos = ogGetCursorScreenPos();
     const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
     const tile_spacing = state.map.tile_spacing * zoom;
@@ -66,13 +66,13 @@ fn tagTileSelectorPopup(state: *tk.AppState, tag: *tk.data.Tag) void {
     // draw selected tiles
     var iter = tag.tiles.iter();
     while (iter.next()) |value| {
-        tk.addTileToDrawList(tile_size, content_start_pos, value, state.tilesPerRow(), tile_spacing);
+        ts.addTileToDrawList(tile_size, content_start_pos, value, state.tilesPerRow(), tile_spacing);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
+            var tile = ts.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             tag.toggleSelected(@intCast(u8, tile.x + tile.y * state.tilesPerRow()));
         }
     }

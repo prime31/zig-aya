@@ -1,7 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 const colors = @import("../colors.zig");
 const processor = @import("../rule_processor.zig");
 const object_editor = @import("object_editor.zig");
@@ -9,7 +9,7 @@ const object_editor = @import("object_editor.zig");
 var dragged_obj_index: ?usize = null;
 var drag_type: enum { move, link } = .move;
 
-pub fn drawWindow(state: *tk.AppState) void {
+pub fn drawWindow(state: *ts.AppState) void {
     // only process map data when it changes
     if (state.map_data_dirty) {
         processor.generateProcessedMap(state);
@@ -25,7 +25,7 @@ pub fn drawWindow(state: *tk.AppState) void {
     }
 }
 
-fn draw(state: *tk.AppState) void {
+fn draw(state: *ts.AppState) void {
     const origin = ogGetCursorScreenPos();
     const map_size = state.mapSize();
 
@@ -95,8 +95,8 @@ fn draw(state: *tk.AppState) void {
 }
 
 /// returns the index of the object under the mouse or null
-fn objectIndexUnderMouse(state: *tk.AppState, origin: ImVec2) ?usize {
-    var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+fn objectIndexUnderMouse(state: *ts.AppState, origin: ImVec2) ?usize {
+    var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
     for (state.map.objects.items) |obj, i| {
         if (obj.x == tile.x and obj.y == tile.y) {
             return i;
@@ -105,7 +105,7 @@ fn objectIndexUnderMouse(state: *tk.AppState, origin: ImVec2) ?usize {
     return null;
 }
 
-fn handleInput(state: *tk.AppState, origin: ImVec2) void {
+fn handleInput(state: *ts.AppState, origin: ImVec2) void {
     // scrolling via drag with alt key down
     if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
         var scroll_delta = ImVec2{};
@@ -123,7 +123,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
 
     if (igIsMouseClicked(ImGuiMouseButton_Left, false) or igIsMouseClicked(ImGuiMouseButton_Right, false)) {
         // figure out if we clicked on any of our objects
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         for (state.map.objects.items) |obj, i| {
             if (obj.x == tile.x and obj.y == tile.y) {
                 dragged_obj_index = i;
@@ -136,7 +136,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
     } else if (dragged_obj_index != null) {
         if (drag_type == .move) {
             if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) {
-                var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+                var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
                 var obj = &state.map.objects.items[dragged_obj_index.?];
                 obj.x = tile.x;
                 obj.y = tile.y;
@@ -171,12 +171,12 @@ fn handleInput(state: *tk.AppState, origin: ImVec2) void {
     }
 }
 
-fn drawTile(state: *tk.AppState, tl: ImVec2, tile: usize) void {
+fn drawTile(state: *ts.AppState, tl: ImVec2, tile: usize) void {
     var br = tl;
     br.x += @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
     br.y += @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
 
-    const rect = tk.uvsForTile(state, tile);
+    const rect = ts.uvsForTile(state, tile);
     const uv0 = ImVec2{ .x = rect.x, .y = rect.y };
     const uv1 = ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
 

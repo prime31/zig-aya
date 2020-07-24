@@ -1,10 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 usingnamespace @import("imgui");
-const TileDefinitions = tk.data.TileDefinitions;
+const TileDefinitions = ts.data.TileDefinitions;
 
-pub fn draw(state: *tk.AppState) void {
+pub fn draw(state: *ts.AppState) void {
     if (state.prefs.windows.tile_definitions) {
         igSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
         if (igBegin("Tile Definitions", &state.prefs.windows.tile_definitions, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -54,7 +54,7 @@ fn drawTileIcon(comptime name: []const u8) void {
     var br = bl;
     br.x += igGetFrameHeight();
 
-    var color = tk.colors.colorRgb(252, 186, 3);
+    var color = ts.colors.colorRgb(252, 186, 3);
 
     if (std.mem.eql(u8, name, "solid")) {
         ImDrawList_AddQuadFilled(igGetWindowDrawList(), tl, tr, br, bl, color);
@@ -71,7 +71,7 @@ fn drawTileIcon(comptime name: []const u8) void {
     }
 }
 
-fn tileSelectorPopup(state: *tk.AppState, list: *aya.utils.FixedList(u8, 10)) void {
+fn tileSelectorPopup(state: *ts.AppState, list: anytype) void {
     var content_start_pos = ogGetCursorScreenPos();
     const zoom: usize = if (state.texture.width < 200 and state.texture.height < 200) 2 else 1;
     const tile_spacing = state.map.tile_spacing * zoom;
@@ -84,13 +84,13 @@ fn tileSelectorPopup(state: *tk.AppState, list: *aya.utils.FixedList(u8, 10)) vo
     // draw selected tiles
     var iter = list.iter();
     while (iter.next()) |value| {
-        tk.addTileToDrawList(tile_size, content_start_pos, value, state.tilesPerRow(), tile_spacing);
+        ts.addTileToDrawList(tile_size, content_start_pos, value, state.tilesPerRow(), tile_spacing);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
+            var tile = ts.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             TileDefinitions.toggleSelected(list, @intCast(u8, tile.x + tile.y * state.tilesPerRow()));
         }
     }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 usingnamespace @import("imgui");
 
 const object_editor = @import("object_editor.zig");
@@ -9,7 +9,7 @@ var filter_buffer: [25]u8 = undefined;
 var filter = false;
 var selected_index: usize = std.math.maxInt(usize);
 
-pub fn draw(state: *tk.AppState) void {
+pub fn draw(state: *ts.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
     defer igPopStyleVar(1);
 

@@ -32,7 +32,6 @@ pub const TileScript = struct {
     pub fn init() TileScript {
         colors.init();
         history.init();
-        setupDefaults();
         return .{ .state = AppState.init() };
     }
 
@@ -53,12 +52,6 @@ pub const TileScript = struct {
         } else {
             self.state.showToast("Invalid file.", 100);
         }
-    }
-
-    fn setupDefaults() void {
-        igGetStyle().WindowRounding = 0;
-        igGetStyle().WindowBorderSize = 0;
-        igGetStyle().WindowMenuButtonPosition = ImGuiDir_None;
     }
 
     pub fn draw(self: *TileScript) void {

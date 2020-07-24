@@ -1,11 +1,11 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const colors = @import("../colors.zig");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 
 const thickness: f32 = 2;
 
-pub fn drawWindow(state: *tk.AppState) void {
+pub fn drawWindow(state: *ts.AppState) void {
     if (state.prefs.windows.brushes) {
         if (igBegin("Brushes", &state.prefs.windows.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
             draw(state, 32, false);
@@ -14,7 +14,7 @@ pub fn drawWindow(state: *tk.AppState) void {
     }
 }
 
-pub fn drawPopup(state: *tk.AppState, popup_id: [*c]const u8) void {
+pub fn drawPopup(state: *ts.AppState, popup_id: [*c]const u8) void {
     igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup(popup_id, ImGuiWindowFlags_NoTitleBar)) {
         draw(state, state.map_rect_size, false);
@@ -23,7 +23,7 @@ pub fn drawPopup(state: *tk.AppState, popup_id: [*c]const u8) void {
 }
 
 /// draws the palette. If skip_input_processing is true, no input processing will occur and the selected brush will not be highlighted.
-pub fn draw(state: *tk.AppState, rect_size: f32, skip_input_processing: bool) void {
+pub fn draw(state: *ts.AppState, rect_size: f32, skip_input_processing: bool) void {
     const canvas_size = 6 * rect_size;
     const draw_list = igGetWindowDrawList();
 

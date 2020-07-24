@@ -501,13 +501,13 @@ pub const Tag = struct {
 };
 
 pub const TileDefinitions = struct {
-    solid: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+    solid: aya.utils.FixedList(u8, 50) = aya.utils.FixedList(u8, 50).init(),
     slope_down: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
     slope_down_steep: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
     slope_up: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
     slope_up_steep: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
 
-    pub fn toggleSelected(tiles: *aya.utils.FixedList(u8, 10), index: u8) void {
+    pub fn toggleSelected(tiles: anytype, index: u8) void {
         if (tiles.indexOf(index)) |slice_index| {
             _ = tiles.swapRemove(slice_index);
         } else {

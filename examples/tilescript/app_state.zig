@@ -3,11 +3,11 @@ const aya = @import("aya");
 usingnamespace @import("imgui");
 
 const persistence = @import("persistence.zig");
-const tk = @import("tilescript.zig");
+const ts = @import("tilescript.zig");
 
-const TileScript = tk.TileScript;
+const TileScript = ts.TileScript;
 const Texture = aya.gfx.Texture;
-const Map = tk.Map;
+const Map = ts.Map;
 
 pub const AppState = struct {
     map: Map,
@@ -61,9 +61,9 @@ pub const AppState = struct {
     pub fn generateTexture() Texture {
         const rc = aya.math.rand.color;
         var colors = [_]u32{
-            tk.colors.brushes[12], tk.colors.brushes[11], tk.colors.brushes[10], tk.colors.brushes[9],
-            tk.colors.brushes[8],  tk.colors.brushes[7],  tk.colors.brushes[6],  tk.colors.brushes[5],
-            tk.colors.brushes[4],  tk.colors.brushes[3],  tk.colors.brushes[2],  tk.colors.brushes[1],
+            ts.colors.brushes[12], ts.colors.brushes[11], ts.colors.brushes[10], ts.colors.brushes[9],
+            ts.colors.brushes[8],  ts.colors.brushes[7],  ts.colors.brushes[6],  ts.colors.brushes[5],
+            ts.colors.brushes[4],  ts.colors.brushes[3],  ts.colors.brushes[2],  ts.colors.brushes[1],
             rc().value,            rc().value,            rc().value,            rc().value,
         };
 
@@ -103,12 +103,12 @@ pub const AppState = struct {
         state.generateRandomData(state.map.ruleset.seed);
 
         // test data for messing with folders
-        // var i: usize = 10;
-        // while (i < 20) : (i += 1) {
-        //     state.map.ruleset.addRule();
-        //     var rule = &state.map.ruleset.rules.items[state.map.ruleset.rules.items.len - 1];
-        //     std.mem.copy(u8, &rule.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
-        // }
+        var i: usize = 10;
+        while (i < 20) : (i += 1) {
+            state.map.ruleset.addRule();
+            var rule = &state.map.ruleset.rules.items[state.map.ruleset.rules.items.len - 1];
+            std.mem.copy(u8, &rule.name, std.fmt.allocPrint(aya.mem.tmp_allocator, "Rule {}", .{i}) catch unreachable);
+        }
 
         return state;
     }
@@ -152,7 +152,7 @@ pub const AppState = struct {
 
     /// resizes the map and all of the sub-maps
     pub fn resizeMap(self: *AppState, w: usize, h: usize) void {
-        tk.history.reset();
+        ts.history.reset();
         self.map_data_dirty = true;
         const shrunk = self.map.w > w or self.map.h > h;
 
@@ -238,7 +238,7 @@ pub const AppState = struct {
 
     pub fn toggleEditMode(self: *AppState) void {
         self.object_edit_mode = !self.object_edit_mode;
-        tk.colors.toggleObjectMode(self.object_edit_mode);
+        ts.colors.toggleObjectMode(self.object_edit_mode);
         self.showToast(if (self.object_edit_mode) "Entering object edit mode" else "Exiting object edit mode", 70);
     }
 

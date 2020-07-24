@@ -1,7 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 
-const tk = @import("tilescript.zig");
+const ts = @import("tilescript.zig");
 const aya = @import("aya");
 const files = @import("filebrowser");
 const stb_image = @import("stb_image");
@@ -30,7 +30,7 @@ var temp_state = struct {
     }
 }{};
 
-fn checkKeyboardShortcuts(state: *tk.AppState) void {
+fn checkKeyboardShortcuts(state: *ts.AppState) void {
     // shortcuts for pressing 1-9 to set the brush
     var key: c_int = 30;
     while (key < 39) : (key += 1) {
@@ -47,10 +47,10 @@ fn checkKeyboardShortcuts(state: *tk.AppState) void {
 
     // undo/redo
     if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl) and igGetIO().KeyShift) {
-        tk.history.redo();
+        ts.history.redo();
         state.map_data_dirty = true;
     } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl)) {
-        tk.history.undo();
+        ts.history.undo();
         state.map_data_dirty = true;
     }
 
@@ -70,11 +70,12 @@ fn getDefaultPath() [:0]const u8 {
     return std.mem.dupeZ(aya.mem.tmp_allocator, u8, tmp_path) catch unreachable;
 }
 
-pub fn draw(state: *tk.AppState) void {
+pub fn draw(state: *ts.AppState) void {
     checkKeyboardShortcuts(state);
 
     var show_load_tileset_popup = false;
     var show_resize_popup = false;
+    var show_help_popup = false;
 
     if (igBeginMenuBar()) {
         defer igEndMenuBar();
@@ -89,7 +90,7 @@ pub fn draw(state: *tk.AppState) void {
                 const tile_spacing = state.map.tile_spacing;
 
                 state.map.deinit();
-                state.map = tk.Map.init(tile_size, tile_spacing);
+                state.map = ts.Map.init(tile_size, tile_spacing);
                 state.clearQuickFile(.opened);
                 state.clearQuickFile(.exported);
                 state.resizeMap(state.map.w, state.map.h);
@@ -227,9 +228,14 @@ pub fn draw(state: *tk.AppState) void {
             _ = igMenuItemBoolPtr("Show Animations", null, &state.prefs.show_animations, true);
             _ = igMenuItemBoolPtr("Show Objects", null, &state.prefs.show_objects, true);
 
-            if (igColorEdit3("UI Tint Color", &tk.colors.ui_tint.x, ImGuiColorEditFlags_NoInputs)) {
-                tk.colors.setTintColor(tk.colors.ui_tint);
+            if (igColorEdit3("UI Tint Color", &ts.colors.ui_tint.x, ImGuiColorEditFlags_NoInputs)) {
+                ts.colors.setTintColor(ts.colors.ui_tint);
             }
+        }
+
+        if (igBeginMenu("Help", true)) {
+            show_help_popup = true;
+            igEndMenu();
         }
 
         const buttom_margin: f32 = if (state.object_edit_mode) 88 else 75;
@@ -243,6 +249,10 @@ pub fn draw(state: *tk.AppState) void {
     if (show_load_tileset_popup) {
         temp_state.reset();
         igOpenPopup("Load Tileset");
+    }
+
+    if (show_help_popup) {
+        igOpenPopup("Help");
     }
 
     // handle a dragged-in file
@@ -271,7 +281,7 @@ pub fn loadTileset(file: []const u8) void {
     std.mem.copy(u8, &temp_state.image, file);
 }
 
-fn loadTilesetPopup(state: *tk.AppState) void {
+fn loadTilesetPopup(state: *ts.AppState) void {
     if (igBeginPopupModal("Load Tileset", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
@@ -373,7 +383,7 @@ fn validateImage() bool {
     return false;
 }
 
-fn resizeMapPopup(state: *tk.AppState) void {
+fn resizeMapPopup(state: *ts.AppState) void {
     if (igBeginPopupModal("Resize Map", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
 
@@ -383,7 +393,7 @@ fn resizeMapPopup(state: *tk.AppState) void {
 
         if (temp_state.map_width < state.map.w or temp_state.map_height < state.map.h) {
             igSpacing();
-            igPushStyleColorU32(ImGuiCol_Text, tk.colors.colorRgb(200, 200, 30));
+            igPushStyleColorU32(ImGuiCol_Text, ts.colors.colorRgb(200, 200, 30));
             igTextWrapped("Warning: resizing to a smaller size will result in map data loss and objects outside of the map boundary will be moved.");
             igPopStyleColor(1);
             igSpacing();
@@ -470,7 +480,7 @@ fn helpRuleSets() void {
 }
 
 fn helpShortCuts() void {
-    igTextUnformatted("1 - 9: quick brush selector\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\ntab: toggle tile/object mode", null);
+    igTextUnformatted("1 - 9: quick brush selector\nShift + drag tab: enable window docking\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\ntab: toggle tile/object mode", null);
     igSeparator();
     igTextUnformatted("Input Map Shortcuts\nAlt/Cmd + left mouse drag: reposition map\nAlt + mouse wheel: zoom in/out\nShift + left mouse drag: paint rectangle", null);
 }
