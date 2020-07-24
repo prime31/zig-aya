@@ -85,7 +85,7 @@ test "fixed list" {
     list.append(4456);
     std.testing.expectEqual(list.len, 4);
 
-    _ = try list.pop();
+    _ = list.pop();
     std.testing.expectEqual(list.len, 3);
 
     list.clear();

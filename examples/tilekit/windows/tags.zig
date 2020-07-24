@@ -2,54 +2,53 @@ const std = @import("std");
 const aya = @import("aya");
 const tk = @import("../tilekit.zig");
 usingnamespace @import("imgui");
-const brushes_win = @import("brushes.zig");
-
-var buffer: [25]u8 = undefined;
 
 pub fn draw(state: *tk.AppState) void {
-    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
+    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 220, .y = 100 });
     defer igPopStyleVar(1);
 
-    if (state.prefs.windows.tags and igBegin("Tags", &state.prefs.windows.tags, ImGuiWindowFlags_None)) {
-        defer igEnd();
+    if (state.prefs.windows.tags) {
+        if (igBegin("Tags", &state.prefs.windows.tags, ImGuiWindowFlags_None)) {
+            defer igEnd();
 
-        if (igBeginChildEx("##tag-child", igGetItemID(), ImVec2{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
-            defer igEndChild();
+            if (igBeginChildEx("##tag-child", igGetItemID(), .{ .y = -igGetFrameHeightWithSpacing() }, false, ImGuiWindowFlags_None)) {
+                defer igEndChild();
 
-            var delete_index: usize = std.math.maxInt(usize);
-            for (state.map.tags.items) |*tag, i| {
-                igPushIDInt(@intCast(c_int, i));
+                var delete_index: usize = std.math.maxInt(usize);
+                for (state.map.tags.items) |*tag, i| {
+                    igPushIDInt(@intCast(c_int, i));
 
-                if (ogInputText("##key", &tag.name, tag.name.len)) {}
-                igSameLine(0, 5);
+                    if (ogInputText("##key", &tag.name, tag.name.len)) {}
+                    igSameLine(0, 5);
 
-                igPushItemWidth(100);
-                if (ogButton("Tiles")) {
-                    igOpenPopup("tag-tiles");
+                    igPushItemWidth(100);
+                    if (ogButton("Tiles")) {
+                        igOpenPopup("tag-tiles");
+                    }
+                    igPopItemWidth();
+
+                    igSameLine(igGetWindowContentRegionWidth() - 20, 0);
+                    if (ogButton(icons.trash)) {
+                        delete_index = i;
+                    }
+
+                    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+                    if (igBeginPopup("tag-tiles", ImGuiWindowFlags_None)) {
+                        defer igEndPopup();
+                        tagTileSelectorPopup(state, tag);
+                    }
+
+                    igPopID();
                 }
-                igPopItemWidth();
 
-                igSameLine(igGetWindowContentRegionWidth() - 20, 0);
-                if (ogButton(icons.trash)) {
-                    delete_index = i;
+                if (delete_index < std.math.maxInt(usize)) {
+                    _ = state.map.tags.orderedRemove(delete_index);
                 }
-
-                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
-                if (igBeginPopup("tag-tiles", ImGuiWindowFlags_None)) {
-                    defer igEndPopup();
-                    tagTileSelectorPopup(state, tag);
-                }
-
-                igPopID();
             }
 
-            if (delete_index < std.math.maxInt(usize)) {
-                _ = state.map.tags.orderedRemove(delete_index);
+            if (igButton("Add Tag", .{})) {
+                state.map.addTag();
             }
-        }
-
-        if (igButton("Add Tag", ImVec2{})) {
-            state.map.addTag();
         }
     }
 }

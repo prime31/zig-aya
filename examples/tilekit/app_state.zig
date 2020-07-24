@@ -49,6 +49,7 @@ pub const AppState = struct {
             objects: bool = true,
             object_editor: bool = false,
             tags: bool = false,
+            tile_definitions: bool = false,
             animations: bool = false,
             input_map: bool = true,
             post_processed_map: bool = true,

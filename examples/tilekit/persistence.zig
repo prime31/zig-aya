@@ -10,6 +10,7 @@ const RuleSet = data.RuleSet;
 const Rule = data.Rule;
 const RuleTile = data.RuleTile;
 const Tag = data.Tag;
+const TileDefinitions = data.TileDefinitions;
 const Object = data.Object;
 const Animation = data.Animation;
 
@@ -54,6 +55,16 @@ pub fn save(map: Map, file: []const u8) !void {
         try out.writeIntLittle(usize, tag.tiles.len);
         for (tag.tiles.items) |tile, i| {
             if (i == tag.tiles.len) break;
+            try out.writeIntLittle(u8, tile);
+        }
+    }
+
+    // tile definitions
+    inline for (@typeInfo(TileDefinitions).Struct.fields) |field| {
+        var list = @field(map.tile_definitions, field.name);
+        try out.writeIntLittle(usize, list.len);
+        for (list.items) |tile, i| {
+            if (i == list.len) break;
             try out.writeIntLittle(u8, tile);
         }
     }
@@ -121,6 +132,7 @@ pub fn load(file: []const u8) !Map {
         .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator),
         .pre_rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
         .tags = std.ArrayList(Tag).init(aya.mem.allocator),
+        .tile_definitions = .{},
         .objects = std.ArrayList(Object).init(aya.mem.allocator),
         .animations = std.ArrayList(Animation).init(aya.mem.allocator),
     };
@@ -185,6 +197,16 @@ pub fn load(file: []const u8) !Map {
         }
 
         try map.tags.append(tag);
+    }
+
+    // tile definitions
+    inline for (@typeInfo(TileDefinitions).Struct.fields) |field| {
+        var list = &@field(map.tile_definitions, field.name);
+
+        var tile_len = try in.readIntLittle(usize);
+        while (tile_len > 0) : (tile_len -= 1) {
+            list.append(try in.readIntLittle(u8));
+        }
     }
 
     // objects
@@ -286,7 +308,6 @@ fn writeUnion(out: Writer, value: anytype) !void {
         inline for (info.fields) |field_info| {
             if (field_info.enum_field.?.value == @enumToInt(active_tag)) {
                 const name = field_info.name;
-                const FieldType = field_info.field_type;
                 try writeValue(out, @field(value, name));
             }
         }
@@ -408,6 +429,31 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
                 try jw.beginArray();
                 for (tag.tiles.items) |tile, i| {
                     if (i == tag.tiles.len) break;
+                    try jw.arrayElem();
+                    try jw.emitNumber(tile);
+                }
+                try jw.endArray();
+
+                try jw.endObject();
+            }
+        }
+
+        // tile definitions
+        try jw.objectField("tile_definitions");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            inline for (@typeInfo(TileDefinitions).Struct.fields) |field| {
+                try jw.arrayElem();
+                try jw.beginObject();
+
+                try jw.objectField(field.name);
+
+                var list = @field(map.tile_definitions, field.name);
+                try jw.beginArray();
+                for (list.items) |tile, i| {
+                    if (i == list.len) break;
                     try jw.arrayElem();
                     try jw.emitNumber(tile);
                 }

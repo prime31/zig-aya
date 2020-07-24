@@ -7,6 +7,7 @@ const Texture = aya.gfx.Texture;
 const rules_win = @import("windows/rules.zig");
 const brushes_win = @import("windows/brushes.zig");
 const tags_win = @import("windows/tags.zig");
+const tile_definitions_win = @import("windows/tile_definitions.zig");
 const objects_win = @import("windows/objects.zig");
 const object_editor_win = @import("windows/object_editor.zig");
 const animations_win = @import("windows/animations.zig");
@@ -95,6 +96,7 @@ pub const TileKit = struct {
         output_map_win.drawWindow(&self.state);
         brushes_win.drawPopup(&self.state, "##brushes-root");
         tags_win.draw(&self.state);
+        tile_definitions_win.draw(&self.state);
         objects_win.draw(&self.state);
         object_editor_win.draw(&self.state);
         animations_win.draw(&self.state);
