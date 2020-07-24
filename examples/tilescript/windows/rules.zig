@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 const colors = @import("../colors.zig");
 const brushes_win = @import("brushes.zig");
 usingnamespace @import("imgui");
@@ -65,8 +65,8 @@ var fill_dirs = struct {
     }
 }{};
 
-pub fn draw(state: *tk.AppState) void {
-    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 365 });
+pub fn draw(state: *ts.AppState) void {
+    igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
     defer igPopStyleVar(1);
 
     if (state.prefs.windows.rules) {
@@ -80,6 +80,7 @@ pub fn draw(state: *tk.AppState) void {
             defer igEndTabBar();
 
             cursor.x += igGetWindowContentRegionWidth() - 50;
+            cursor.y -= 1;
             igSetCursorPos(cursor);
             if (igButton(icons.sliders_h, .{})) {
                 igOpenPopup("##seed-repeat");
@@ -162,7 +163,7 @@ fn swapGroups(rules: *std.ArrayList(Rule)) void {
     }
 }
 
-fn drawRulesTab(state: *tk.AppState) void {
+fn drawRulesTab(state: *ts.AppState) void {
     var group: u8 = 0;
     var delete_index: usize = std.math.maxInt(usize);
     var i: usize = 0;
@@ -271,7 +272,7 @@ fn drawRulesTab(state: *tk.AppState) void {
     }
 }
 
-fn drawPreRulesTabs(state: *tk.AppState) void {
+fn drawPreRulesTabs(state: *ts.AppState) void {
     for (state.map.pre_rulesets.items) |*ruleset, i| {
         var is_tab_open = true;
         igPushIDInt(@intCast(c_int, i) + 3000);
@@ -325,7 +326,7 @@ fn drawPreRulesTabs(state: *tk.AppState) void {
     }
 }
 
-fn deletePreRuleSetPopup(state: *tk.AppState) void {
+fn deletePreRuleSetPopup(state: *ts.AppState) void {
     igText("Are you sure you want to delete\nthis RuleSet?");
     igSeparator();
 
@@ -335,8 +336,8 @@ fn deletePreRuleSetPopup(state: *tk.AppState) void {
     }
     igSameLine(0, 4);
 
-    igPushStyleColorU32(ImGuiCol_Button, tk.colors.colorRgb(180, 25, 35));
-    igPushStyleColorU32(ImGuiCol_ButtonHovered, tk.colors.colorRgb(240, 20, 30));
+    igPushStyleColorU32(ImGuiCol_Button, ts.colors.colorRgb(180, 25, 35));
+    igPushStyleColorU32(ImGuiCol_ButtonHovered, ts.colors.colorRgb(240, 20, 30));
     if (igButton("Delete", ImVec2{ .x = -1, .y = 0 })) {
         const removed_rules_page = state.map.pre_rulesets.orderedRemove(ruleset_delete_index);
         removed_rules_page.deinit();
@@ -346,7 +347,7 @@ fn deletePreRuleSetPopup(state: *tk.AppState) void {
     igPopStyleColor(2);
 }
 
-fn rulesetSettingsPopup(state: *tk.AppState) void {
+fn rulesetSettingsPopup(state: *ts.AppState) void {
     if (igBeginPopup("##seed-repeat", ImGuiWindowFlags_None)) {
         var ruleset = if (current_ruleset == std.math.maxInt(usize)) &state.map.ruleset else &state.map.pre_rulesets.items[current_ruleset];
         if (ogDrag(usize, "Seed", &ruleset.seed, 1, 0, 1000)) {
@@ -445,7 +446,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool, is_pre_rule: bool) 
     }
 }
 
-fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, is_pre_rule: bool) bool {
+fn drawRule(state: *ts.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, is_pre_rule: bool) bool {
     igPushIDPtr(rule);
     defer igPopID();
 
@@ -562,7 +563,7 @@ fn drawRule(state: *tk.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
     return false;
 }
 
-fn patternPopup(state: *tk.AppState, rule: *Rule) void {
+fn patternPopup(state: *ts.AppState, rule: *Rule) void {
     igText("Pattern");
     igSameLine(0, igGetWindowContentRegionWidth() - 65);
     igText(icons.question_circle);
@@ -638,7 +639,7 @@ fn patternPopup(state: *tk.AppState, rule: *Rule) void {
     }
 }
 
-fn rulesHamburgerPopup(state: *tk.AppState, rule: *Rule) void {
+fn rulesHamburgerPopup(state: *ts.AppState, rule: *Rule) void {
     igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         defer igEndPopup();
@@ -678,7 +679,7 @@ fn rulesHamburgerPopup(state: *tk.AppState, rule: *Rule) void {
     }
 }
 
-fn floodFillPopup(state: *tk.AppState, ruleset: *RuleSet) void {
+fn floodFillPopup(state: *ts.AppState, ruleset: *RuleSet) void {
     igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
     if (igBeginPopup("flood-fill", ImGuiWindowFlags_None)) {
         defer igEndPopup();
@@ -724,7 +725,7 @@ fn floodFillPopup(state: *tk.AppState, ruleset: *RuleSet) void {
 }
 
 /// shows the tileset or brush palette allowing multiple tiles to be selected
-fn resultPopup(state: *tk.AppState, ruleset: *Rule, is_pre_rule: bool) void {
+fn resultPopup(state: *ts.AppState, ruleset: *Rule, is_pre_rule: bool) void {
     var content_start_pos = ogGetCursorScreenPos();
     const zoom: usize = if (!is_pre_rule and (state.texture.width < 200 and state.texture.height < 200)) 2 else 1;
     const tile_spacing = if (is_pre_rule) 0 else state.map.tile_spacing * zoom;
@@ -742,13 +743,13 @@ fn resultPopup(state: *tk.AppState, ruleset: *Rule, is_pre_rule: bool) void {
     var iter = ruleset.result_tiles.iter();
     while (iter.next()) |index| {
         const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
-        tk.addTileToDrawList(tile_size, content_start_pos, index, per_row, tile_spacing);
+        ts.addTileToDrawList(tile_size, content_start_pos, index, per_row, tile_spacing);
     }
 
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
+            var tile = ts.tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
             const per_row = if (is_pre_rule) 6 else state.tilesPerRow();
             ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
             state.map_data_dirty = true;
@@ -761,7 +762,7 @@ fn resultPopup(state: *tk.AppState, ruleset: *Rule, is_pre_rule: bool) void {
     }
 }
 
-fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
+fn nineSlicePopup(state: *ts.AppState, selection_size: usize) void {
     brushes_win.draw(state, 16, false);
     igSameLine(0, 5);
 
@@ -784,7 +785,7 @@ fn nineSlicePopup(state: *tk.AppState, selection_size: usize) void {
     // check input for toggling state
     if (igIsItemHovered(ImGuiHoveredFlags_None)) {
         if (igIsMouseClicked(0, false)) {
-            var tile = tk.tileIndexUnderMouse(@intCast(usize, state.map.tile_size + state.map.tile_spacing), content_start_pos);
+            var tile = ts.tileIndexUnderMouse(@intCast(usize, state.map.tile_size + state.map.tile_spacing), content_start_pos);
 
             // does the nine-slice fit?
             if (tile.x + selection_size <= state.tilesPerRow() and tile.y + selection_size <= state.tilesPerCol()) {

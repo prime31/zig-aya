@@ -1,12 +1,12 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 usingnamespace @import("imgui");
 
 var buffer: [5]u8 = undefined;
 var inspected_object_index: ?usize = null;
 
-pub fn draw(state: *tk.AppState) void {
+pub fn draw(state: *ts.AppState) void {
     if (state.prefs.windows.object_editor) {
         igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, ImVec2{ .x = 200, .y = 100 });
         defer igPopStyleVar(1);
@@ -97,7 +97,7 @@ pub fn draw(state: *tk.AppState) void {
     }
 }
 
-fn addPropertyPopup(state: *tk.AppState) void {
+fn addPropertyPopup(state: *ts.AppState) void {
     igText("Property Type");
     if (igButton("string", ImVec2{ .x = 100 })) {
         state.map.objects.items[inspected_object_index.?].addProp(.{ .string = undefined });

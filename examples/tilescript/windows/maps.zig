@@ -2,14 +2,14 @@ const std = @import("std");
 usingnamespace @import("imgui");
 const colors = @import("../colors.zig");
 const history = @import("../history.zig");
-const tk = @import("../tilescript.zig");
+const ts = @import("../tilescript.zig");
 
 // helper to maintain state during a drag selection
 var shift_dragged = false;
 var dragged = false;
 var prev_mouse_pos: ImVec2 = undefined;
 
-pub fn drawWindows(state: *tk.AppState) void {
+pub fn drawWindows(state: *ts.AppState) void {
     // if the alt key is dont dont allow scrolling with the mouse since we will be zooming
     var window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
     if (igGetIO().KeyAlt) window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
@@ -29,7 +29,7 @@ pub fn drawWindows(state: *tk.AppState) void {
     }
 }
 
-fn draw(state: *tk.AppState, input_map: bool) void {
+fn draw(state: *ts.AppState, input_map: bool) void {
     var pos = ogGetCursorScreenPos();
 
     const map_size = state.mapSize();
@@ -52,13 +52,13 @@ fn draw(state: *tk.AppState, input_map: bool) void {
 
     // draw a rect over the current tile
     if (is_hovered and !shift_dragged) {
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), pos);
+        var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), pos);
         const tl = ImVec2{ .x = pos.x + @intToFloat(f32, tile.x) * state.map_rect_size, .y = pos.y + @intToFloat(f32, tile.y) * state.map_rect_size };
         ogAddQuad(igGetWindowDrawList(), tl, state.map_rect_size, colors.rule_result_selected_outline, 1);
     }
 }
 
-fn drawInputMap(state: *tk.AppState, origin: ImVec2) void {
+fn drawInputMap(state: *ts.AppState, origin: ImVec2) void {
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
@@ -69,12 +69,12 @@ fn drawInputMap(state: *tk.AppState, origin: ImVec2) void {
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
             const offset_y = @intToFloat(f32, y) * state.map_rect_size;
             var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
-            tk.drawBrush(state.map_rect_size, tile - 1, tl);
+            ts.drawBrush(state.map_rect_size, tile - 1, tl);
         }
     }
 }
 
-fn drawPostProcessedMap(state: *tk.AppState, origin: ImVec2) void {
+fn drawPostProcessedMap(state: *ts.AppState, origin: ImVec2) void {
     var y: usize = 0;
     while (y < state.map.h) : (y += 1) {
         var x: usize = 0;
@@ -85,12 +85,12 @@ fn drawPostProcessedMap(state: *tk.AppState, origin: ImVec2) void {
             const offset_x = @intToFloat(f32, x) * state.map_rect_size;
             const offset_y = @intToFloat(f32, y) * state.map_rect_size;
             var tl = ImVec2{ .x = origin.x + offset_x, .y = origin.y + offset_y };
-            tk.drawBrush(state.map_rect_size, tile - 1, tl);
+            ts.drawBrush(state.map_rect_size, tile - 1, tl);
         }
     }
 }
 
-fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
+fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
     // scrolling via drag with alt or super key down
     if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
         var scroll_delta = ImVec2{};
@@ -130,10 +130,10 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
 
     if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and igGetIO().KeyShift) {
         var drag_delta = ogGetMouseDragDelta(0, 0);
-        var tile1 = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile1 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         drag_delta.x += origin.x;
         drag_delta.y += origin.y;
-        var tile2 = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), drag_delta);
+        var tile2 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), drag_delta);
 
         const min_x = @intToFloat(f32, std.math.min(tile1.x, tile2.x)) * state.map_rect_size + origin.x;
         const min_y = @intToFloat(f32, std.math.max(tile1.y, tile2.y)) * state.map_rect_size + state.map_rect_size + origin.y;
@@ -147,10 +147,10 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         shift_dragged = false;
 
         var drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);
-        var tile1 = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile1 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         drag_delta.x += origin.x;
         drag_delta.y += origin.y;
-        var tile2 = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), drag_delta);
+        var tile2 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), drag_delta);
 
         const min_x = std.math.min(tile1.x, tile2.x);
         var min_y = std.math.min(tile1.y, tile2.y);
@@ -171,7 +171,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         history.commit();
         state.map_data_dirty = true;
     } else if (igIsMouseDown(ImGuiMouseButton_Left) and !igGetIO().KeyShift) {
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
 
         // if the mouse down last frame, get last mouse pos and ensure we dont skip tiles when drawing
         if (dragged) {
@@ -185,7 +185,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
         state.map.setTile(tile.x, tile.y, @intCast(u8, state.selected_brush_index + 1));
         state.map_data_dirty = true;
     } else if (igIsMouseDown(ImGuiMouseButton_Right)) {
-        var tile = tk.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
+        var tile = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
 
         // if the mouse down last frame, get last mouse pos and ensure we dont skip tiles when drawing
         if (dragged) {
@@ -205,7 +205,7 @@ fn handleInput(state: *tk.AppState, origin: ImVec2, input_map: bool) void {
 }
 
 /// syncs the scroll position between the input map, post processed map and output maps
-fn syncScrollPosition(state: *tk.AppState, input_map: bool) void {
+fn syncScrollPosition(state: *ts.AppState, input_map: bool) void {
     const new_scroll_x = igGetScrollX();
     const new_scroll_y = igGetScrollY();
 
@@ -226,8 +226,8 @@ fn syncScrollPosition(state: *tk.AppState, input_map: bool) void {
     }
 }
 
-fn commitInBetweenTiles(state: *tk.AppState, tile_x: usize, tile_y: usize, origin: ImVec2, color: u8) void {
-    var prev_tile = tk.tileIndexUnderPos(prev_mouse_pos, @floatToInt(usize, state.map_rect_size), origin);
+fn commitInBetweenTiles(state: *ts.AppState, tile_x: usize, tile_y: usize, origin: ImVec2, color: u8) void {
+    var prev_tile = ts.tileIndexUnderPos(prev_mouse_pos, @floatToInt(usize, state.map_rect_size), origin);
     const abs_x = std.math.absInt(@intCast(i32, tile_x) - @intCast(i32, prev_tile.x)) catch unreachable;
     const abs_y = std.math.absInt(@intCast(i32, tile_y) - @intCast(i32, prev_tile.y)) catch unreachable;
     if (abs_x <= 1 and abs_y <= 1) {
@@ -238,7 +238,7 @@ fn commitInBetweenTiles(state: *tk.AppState, tile_x: usize, tile_y: usize, origi
 }
 
 /// fill in all the tiles between the two mouse positions using bresenham's line algo
-fn bresenham(state: *tk.AppState, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f32, color: u8) void {
+fn bresenham(state: *ts.AppState, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f32, color: u8) void {
     var x1 = in_x1;
     var y1 = in_y1;
     var x2 = in_x2;
