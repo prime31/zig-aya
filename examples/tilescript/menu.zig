@@ -415,7 +415,7 @@ fn resizeMapPopup(state: *ts.AppState) void {
     }
 }
 
-var help_section: enum { overview, input_map, rules, rulesets, shortcuts } = .overview;
+var help_section: enum { overview, input_map, rules, rulesets, tags_objects, tile_definitions, shortcuts } = .overview;
 
 fn helpPopup() void {
     igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
@@ -441,6 +441,12 @@ fn helpPopup() void {
             if (igSelectableBool("RuleSets", help_section == .rulesets, ImGuiSelectableFlags_DontClosePopups, .{})) {
                 help_section = .rulesets;
             }
+            if (igSelectableBool("Tags/Objects", help_section == .tags_objects, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .tags_objects;
+            }
+            if (igSelectableBool("Tile Defs", help_section == .tile_definitions, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                help_section = .tile_definitions;
+            }
             if (igSelectableBool("Shortcuts", help_section == .shortcuts, ImGuiSelectableFlags_DontClosePopups, .{})) {
                 help_section = .shortcuts;
             }
@@ -453,6 +459,8 @@ fn helpPopup() void {
             .input_map => helpInputMap(),
             .rules => helpRules(),
             .rulesets => helpRuleSets(),
+            .tags_objects => helpTagsObjects(),
+            .tile_definitions => helpTileDefinitions(),
             .shortcuts => helpShortCuts(),
         }
 
@@ -464,7 +472,7 @@ fn helpPopup() void {
 }
 
 fn helpOverview() void {
-    igTextWrapped("Aya Tile lets you setup Rules that are used to generate a tilemap. This allows you to paint a simple map with premade brushes which is then transformed into something more complex. This is done by using the Rules to dictate how they will map to your actual tileset. Additional RuleSets can be added that contain Rules that run only on the basic brushes before being transformed to your tileset.");
+    igTextWrapped("TileScript lets you setup Rules that are used to generate a tilemap. This allows you to paint a simple map with premade brushes which is then transformed into something more complex. This is done by using the Rules to dictate how they will map to your actual tileset. Additional RuleSets can be added that contain Rules that run only on the basic brushes before being transformed to your tileset.");
 }
 
 fn helpInputMap() void {
@@ -479,8 +487,18 @@ fn helpRuleSets() void {
     igTextWrapped("Additional RuleSets can be added that operate only on the raw map data. The Rules in a RuleSet are run on the input map and create an intermediate map (visible by opening the Post Processed Map window) that is then processed with the main Ruels to generate the tilemap. RuleSets can be set to repeat one or more times allowing you to do flood fills, grow plants and use many other recursive techniques.");
 }
 
+fn helpTagsObjects() void {
+    igTextWrapped("Tags let you associate a string with one or more tiles. This data is exported for you to use however you want.");
+    igSeparator();
+    igTextWrapped("Objects can be created and placed on any tile in the Output Map. You can define custom data (float/int/string/link) for each object. When in object edit mode, you can drag objects to place them. You can link two objects by Cmd/Alt dragging from one to another.");
+}
+
+fn helpTileDefinitions() void {
+    igTextWrapped("Tile Definitions provide a way to select one or more tiles from your tileset per type. This data is exported and can be used to handle collision detection.");
+}
+
 fn helpShortCuts() void {
-    igTextUnformatted("1 - 9: quick brush selector\nShift + drag tab: enable window docking\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\ntab: toggle tile/object mode", null);
+    igTextUnformatted("1 - 9: quick brush selector\nShift + drag tab: enable window docking\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\nTab: toggle tile/object mode", null);
     igSeparator();
     igTextUnformatted("Input Map Shortcuts\nAlt/Cmd + left mouse drag: reposition map\nAlt + mouse wheel: zoom in/out\nShift + left mouse drag: paint rectangle", null);
 }
