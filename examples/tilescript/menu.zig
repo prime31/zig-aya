@@ -59,6 +59,19 @@ fn checkKeyboardShortcuts(state: *ts.AppState) void {
         igOpenPopup("Help");
     }
 
+    // zoom in/out
+    if (aya.input.keyPressed(.SDL_SCANCODE_UP)) {
+        if (state.prefs.tile_size_multiplier < 4) {
+            state.prefs.tile_size_multiplier += 1;
+        }
+    }
+    if (aya.input.keyPressed(.SDL_SCANCODE_DOWN)) {
+        if (state.prefs.tile_size_multiplier > 1) {
+            state.prefs.tile_size_multiplier -= 1;
+        }
+    }
+    state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
+
     if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
         state.toggleEditMode();
     }
@@ -500,5 +513,5 @@ fn helpTileDefinitions() void {
 fn helpShortCuts() void {
     igTextUnformatted("1 - 9: quick brush selector\nShift + drag tab: enable window docking\nCmd/Ctrl + z: undo\nShift + Cmd/Ctrl + z: redo\nTab: toggle tile/object mode", null);
     igSeparator();
-    igTextUnformatted("Input Map Shortcuts\nAlt/Cmd + left mouse drag: reposition map\nAlt + mouse wheel: zoom in/out\nShift + left mouse drag: paint rectangle", null);
+    igTextUnformatted("Input Map Shortcuts\nAlt/Cmd + left mouse drag: reposition map\nAlt + mouse wheel: zoom in/out\nShift + left mouse drag: paint rectangle\nShift + right mouse drag: clear rectangle", null);
 }

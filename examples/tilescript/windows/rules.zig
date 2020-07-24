@@ -571,7 +571,7 @@ fn patternPopup(state: *ts.AppState, rule: *Rule) void {
 
     const draw_list = igGetWindowDrawList();
 
-    const rect_size: f32 = 32;
+    const rect_size: f32 = 16;
     const pad: f32 = 4;
     const canvas_size = 5 * rect_size + 4 * pad;
     const thickness: f32 = 2;
@@ -594,7 +594,7 @@ fn patternPopup(state: *ts.AppState, rule: *Rule) void {
 
             var rule_tile = rule.get(x, y);
             if (rule_tile.tile > 0) {
-                brushes_win.drawBrush(32, rule_tile.tile - 1, tl);
+                brushes_win.drawBrush(rect_size, rule_tile.tile - 1, tl);
             } else {
                 // if empty rule or just with a modifier
                 ogAddQuadFilled(draw_list, tl, rect_size, colors.colorRgb(0, 0, 0));

@@ -37,17 +37,18 @@ fn draw(state: *ts.AppState, input_map: bool) void {
 
     _ = igInvisibleButton("##input_map_button", map_size);
     const is_hovered = igIsItemHovered(ImGuiHoveredFlags_None);
-    if (is_hovered) {
-        handleInput(state, pos, input_map);
-    } else if (input_map) {
-        // only set dragged to false if we are drawing the input_map since it is the one that accepts input
-        dragged = false;
-    }
 
     if (input_map) {
         drawInputMap(state, pos);
     } else {
         drawPostProcessedMap(state, pos);
+    }
+
+    if (is_hovered) {
+        handleInput(state, pos, input_map);
+    } else if (input_map) {
+        // only set dragged to false if we are drawing the input_map since it is the one that accepts input
+        dragged = false;
     }
 
     // draw a rect over the current tile
@@ -105,7 +106,7 @@ fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
         return;
     }
 
-    // zoom
+    // zoom with alt + mouse wheel
     if (igGetIO().KeyAlt and igGetIO().MouseWheel != 0) {
         if (igGetIO().MouseWheel > 0) {
             if (state.prefs.tile_size_multiplier > 1) {
@@ -115,8 +116,8 @@ fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
             state.prefs.tile_size_multiplier += 1;
         }
 
-        igGetIO().MouseWheel = 0;
         state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
+        igGetIO().MouseWheel = 0;
         return;
     }
 
@@ -128,8 +129,10 @@ fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
         return;
     }
 
-    if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and igGetIO().KeyShift) {
-        var drag_delta = ogGetMouseDragDelta(0, 0);
+    // box selection with left/right mouse + shift
+    if (ogIsAnyMouseDragging() and igGetIO().KeyShift) {
+        var drag_delta = ogGetAnyMouseDragDelta();
+
         var tile1 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         drag_delta.x += origin.x;
         drag_delta.y += origin.y;
@@ -140,13 +143,14 @@ fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
         const max_x = @intToFloat(f32, std.math.max(tile1.x, tile2.x)) * state.map_rect_size + state.map_rect_size + origin.x;
         const max_y = @intToFloat(f32, std.math.min(tile1.y, tile2.y)) * state.map_rect_size + origin.y;
 
-        ImDrawList_AddQuad(igGetWindowDrawList(), .{ .x = min_x, .y = max_y }, .{ .x = max_x, .y = max_y }, .{ .x = max_x, .y = min_y }, .{ .x = min_x, .y = min_y }, colors.colorRgb(255, 255, 255), 2);
+        const color = if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) colors.colorRgb(255, 255, 255) else colors.colorRgb(220, 0, 0);
+        ImDrawList_AddQuad(igGetWindowDrawList(), .{ .x = min_x, .y = max_y }, .{ .x = max_x, .y = max_y }, .{ .x = max_x, .y = min_y }, .{ .x = min_x, .y = min_y }, color, 2);
 
         shift_dragged = true;
-    } else if (igIsMouseReleased(ImGuiMouseButton_Left) and shift_dragged) {
+    } else if ((igIsMouseReleased(ImGuiMouseButton_Left) or igIsMouseReleased(ImGuiMouseButton_Right)) and shift_dragged) {
         shift_dragged = false;
 
-        var drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);
+        var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
         var tile1 = ts.tileIndexUnderMouse(@floatToInt(usize, state.map_rect_size), origin);
         drag_delta.x += origin.x;
         drag_delta.y += origin.y;
@@ -162,10 +166,12 @@ fn handleInput(state: *ts.AppState, origin: ImVec2, input_map: bool) void {
         const end_index = max_x + max_y * state.map.w;
         history.push(state.map.data[start_index .. end_index + 1]);
 
+        // either set the tile to a brush or 0 depending on mouse button
+        const tile_value = if (igIsMouseReleased(ImGuiMouseButton_Left)) state.selected_brush_index + 1 else 0;
         while (min_y <= max_y) : (min_y += 1) {
             var x = min_x;
             while (x <= max_x) : (x += 1) {
-                state.map.setTile(x, min_y, @intCast(u8, state.selected_brush_index + 1));
+                state.map.setTile(x, min_y, @intCast(u8, tile_value));
             }
         }
         history.commit();
