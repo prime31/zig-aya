@@ -30,6 +30,22 @@ pub fn ogGetMouseDragDelta(button: ImGuiMouseButton, lock_threshold: f32) ImVec2
     return pos;
 }
 
+/// returns the drag delta of the mouse buttons that is dragging
+pub fn ogGetAnyMouseDragDelta() ImVec2 {
+    var drag_delta = ImVec2{};
+    if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) {
+        igGetMouseDragDelta(&drag_delta, ImGuiMouseButton_Left, 0);
+    } else {
+        igGetMouseDragDelta(&drag_delta, ImGuiMouseButton_Right, 0);
+    }
+    return drag_delta;
+}
+
+/// returns true if any mouse is dragging
+pub fn ogIsAnyMouseDragging() bool {
+    return igIsMouseDragging(ImGuiMouseButton_Left, 0) or igIsMouseDragging(ImGuiMouseButton_Right, 0);
+}
+
 pub fn ogGetContentRegionAvail() ImVec2 {
     var pos = ImVec2{};
     igGetContentRegionAvail(&pos);
