@@ -2,9 +2,9 @@ const std = @import("std");
 const aya = @import("aya");
 const sdl = @import("sdl");
 const imgui = @import("imgui");
-const TileKit = @import("tilekit.zig").TileKit;
+const TileScript = @import("tilescript.zig").TileScript;
 
-var tk: TileKit = undefined;
+var tk: TileScript = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -20,14 +20,14 @@ pub fn main() !void {
         .window = .{
             .width = 1024,
             .height = 768,
-            .title = "Aya Tile",
+            .title = "TileScript",
         },
     });
     sdl.SDL_DelEventWatch(onSdlEvent, null);
 }
 
 fn init() void {
-    tk = TileKit.init();
+    tk = TileScript.init();
     sdl.SDL_AddEventWatch(onSdlEvent, null);
 }
 

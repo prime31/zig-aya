@@ -1,7 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 const colors = @import("../colors.zig");
-const tk = @import("../tilekit.zig");
+const tk = @import("../tilescript.zig");
 
 const thickness: f32 = 2;
 

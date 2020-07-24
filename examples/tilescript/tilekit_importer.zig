@@ -1,8 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
-const ayatile = @import("tilekit.zig");
+const tilescript = @import("tilescript.zig");
 
-pub fn import(file: []const u8) !ayatile.Map {
+pub fn import(file: []const u8) !tilescript.Map {
     var bytes = try std.fs.cwd().readFileAlloc(aya.mem.allocator, file, std.math.maxInt(usize));
     var tokens = std.json.TokenStream.init(bytes);
 
@@ -11,7 +11,7 @@ pub fn import(file: []const u8) !ayatile.Map {
     var res = try std.json.parse(TileKitMap, &tokens, options);
     defer std.json.parseFree(TileKitMap, res, options);
 
-    var map = ayatile.Map.init(res.output_map.tile_w, res.output_map.tile_spacing);
+    var map = tilescript.Map.init(res.output_map.tile_w, res.output_map.tile_spacing);
     map.w = res.input_map.w;
     map.h = res.input_map.h;
     map.image = try std.mem.dupe(aya.mem.allocator, u8, res.output_map.image_filename);
@@ -100,8 +100,8 @@ pub const TileKitMap = struct {
         offsets: []RuleOffsets,
         results: []u8,
 
-        pub fn toAyaRule(self: @This()) ayatile.data.Rule {
-            var rule = ayatile.data.Rule.init();
+        pub fn toAyaRule(self: @This()) tilescript.data.Rule {
+            var rule = tilescript.data.Rule.init();
             std.mem.copy(u8, &rule.name, self.label);
             rule.chance = self.chance;
 
