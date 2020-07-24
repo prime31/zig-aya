@@ -193,6 +193,7 @@ pub fn draw(state: *tk.AppState) void {
             _ = igMenuItemBoolPtr("Rules", null, &state.prefs.windows.rules, true);
             _ = igMenuItemBoolPtr("Objects", null, &state.prefs.windows.objects, true);
             _ = igMenuItemBoolPtr("Tags", null, &state.prefs.windows.tags, true);
+            _ = igMenuItemBoolPtr("Tile Definitions", null, &state.prefs.windows.tile_definitions, true);
             _ = igMenuItemBoolPtr("Animations", null, &state.prefs.windows.animations, true);
             _ = igMenuItemBoolPtr("Input Map", null, &state.prefs.windows.input_map, true);
             _ = igMenuItemBoolPtr("Post Processed Map", null, &state.prefs.windows.post_processed_map, true);

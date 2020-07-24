@@ -12,6 +12,7 @@ pub const Map = struct {
     ruleset_groups: std.AutoHashMap(u8, []const u8),
     pre_rulesets: std.ArrayList(RuleSet),
     tags: std.ArrayList(Tag),
+    tile_definitions: TileDefinitions,
     objects: std.ArrayList(Object),
     animations: std.ArrayList(Animation),
 
@@ -26,6 +27,7 @@ pub const Map = struct {
             .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator),
             .pre_rulesets = std.ArrayList(RuleSet).init(aya.mem.allocator),
             .tags = std.ArrayList(Tag).init(aya.mem.allocator),
+            .tile_definitions = .{},
             .objects = std.ArrayList(Object).init(aya.mem.allocator),
             .animations = std.ArrayList(Animation).init(aya.mem.allocator),
         };
@@ -494,6 +496,22 @@ pub const Tag = struct {
             _ = self.tiles.swapRemove(slice_index);
         } else {
             self.tiles.append(index);
+        }
+    }
+};
+
+pub const TileDefinitions = struct {
+    solid: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+    slope_down: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+    slope_down_steep: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+    slope_up: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+    slope_up_steep: aya.utils.FixedList(u8, 10) = aya.utils.FixedList(u8, 10).init(),
+
+    pub fn toggleSelected(tiles: *aya.utils.FixedList(u8, 10), index: u8) void {
+        if (tiles.indexOf(index)) |slice_index| {
+            _ = tiles.swapRemove(slice_index);
+        } else {
+            tiles.append(index);
         }
     }
 };
