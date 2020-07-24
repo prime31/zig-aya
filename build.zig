@@ -13,7 +13,7 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
-        [_][]const u8{ "tilekit", "examples/tilekit/index.zig" },
+        [_][]const u8{ "tilescript", "examples/tilescript/main.zig" },
         [_][]const u8{ "tilemap", "examples/tilemap.zig" },
         [_][]const u8{ "shaders", "examples/shaders.zig" },
         [_][]const u8{ "imgui", "examples/imgui.zig" },
@@ -54,7 +54,7 @@ fn createExe(b: *Builder, target: std.build.Target, lib_type: i32, name: []const
     exe.addBuildOption(bool, "debug", true);
 
     // dependencies only required for tilekit
-    if (std.mem.eql(u8, name, "tilekit") or std.mem.endsWith(u8, source, "index.zig")) {
+    if (std.mem.eql(u8, name, "tilescript") or std.mem.endsWith(u8, source, "main.zig")) {
         const filebrowser_build = @import("deps/filebrowser/build.zig");
         filebrowser_build.linkArtifact(b, exe, target, @intToEnum(filebrowser_build.LibType, lib_type), "deps/filebrowser");
 

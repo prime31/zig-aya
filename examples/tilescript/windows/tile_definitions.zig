@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-const tk = @import("../tilekit.zig");
+const tk = @import("../tilescript.zig");
 usingnamespace @import("imgui");
 const TileDefinitions = tk.data.TileDefinitions;
 

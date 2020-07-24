@@ -26,17 +26,17 @@ pub const drawBrush = brushes_win.drawBrush;
 
 const files = @import("filebrowser");
 
-pub const TileKit = struct {
+pub const TileScript = struct {
     state: AppState,
 
-    pub fn init() TileKit {
+    pub fn init() TileScript {
         colors.init();
         history.init();
         setupDefaults();
         return .{ .state = AppState.init() };
     }
 
-    pub fn deinit(self: TileKit) void {
+    pub fn deinit(self: TileScript) void {
         history.deinit();
         self.state.texture.deinit();
         self.state.map.deinit();
@@ -45,7 +45,7 @@ pub const TileKit = struct {
         aya.mem.allocator.free(self.state.random_map_data);
     }
 
-    pub fn handleDroppedFile(self: *TileKit, file: []const u8) void {
+    pub fn handleDroppedFile(self: *TileScript, file: []const u8) void {
         if (std.mem.endsWith(u8, file, ".tk") or std.mem.endsWith(u8, file, ".tkp")) {
             self.state.loadMap(file) catch unreachable;
         } else if (std.mem.endsWith(u8, file, ".png")) {
@@ -61,7 +61,7 @@ pub const TileKit = struct {
         igGetStyle().WindowMenuButtonPosition = ImGuiDir_None;
     }
 
-    pub fn draw(self: *TileKit) void {
+    pub fn draw(self: *TileScript) void {
         var window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_MenuBar;
         const vp = igGetMainViewport();
         var work_pos = ImVec2{};
@@ -122,7 +122,7 @@ pub const TileKit = struct {
         igEnd();
     }
 
-    fn initialLayout(self: TileKit, id: ImGuiID, size: ImVec2) void {
+    fn initialLayout(self: TileScript, id: ImGuiID, size: ImVec2) void {
         print("----------- initial layout\n", .{});
 
         _ = igDockBuilderAddNode(id, ImGuiDockNodeFlags_DockSpace);

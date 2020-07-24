@@ -1,7 +1,7 @@
 const std = @import("std");
 usingnamespace @import("imgui");
 
-const tk = @import("tilekit.zig");
+const tk = @import("tilescript.zig");
 const aya = @import("aya");
 const files = @import("filebrowser");
 const stb_image = @import("stb_image");

@@ -3,9 +3,9 @@ const aya = @import("aya");
 usingnamespace @import("imgui");
 
 const persistence = @import("persistence.zig");
-const tk = @import("tilekit.zig");
+const tk = @import("tilescript.zig");
 
-const TileKit = tk.TileKit;
+const TileScript = tk.TileScript;
 const Texture = aya.gfx.Texture;
 const Map = tk.Map;
 

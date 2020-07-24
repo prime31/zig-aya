@@ -5,7 +5,7 @@ const data = @import("map.zig");
 const Map = data.Map;
 const Rule = data.Rule;
 const RuleTile = data.RuleTile;
-const AppState = @import("tilekit.zig").AppState;
+const AppState = @import("tilescript.zig").AppState;
 
 /// runs the input map directly from Map through all the pre-processing rules and copies the data into state
 pub fn generateProcessedMap(state: *AppState) void {

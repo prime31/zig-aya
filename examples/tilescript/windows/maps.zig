@@ -2,7 +2,7 @@ const std = @import("std");
 usingnamespace @import("imgui");
 const colors = @import("../colors.zig");
 const history = @import("../history.zig");
-const tk = @import("../tilekit.zig");
+const tk = @import("../tilescript.zig");
 
 // helper to maintain state during a drag selection
 var shift_dragged = false;
