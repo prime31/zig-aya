@@ -55,7 +55,8 @@ fn compileImGui(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Ta
         exe.linkSystemLibrary("c++");
         exe.enableSystemLinkerHack();
     } else {
-        @panic("OS not supported. Try removing panic in build.zig if you want to test this");
+        exe.linkLibC();
+        exe.linkSystemLibrary("c++");
     }
 
     exe.addIncludeDir("deps/imgui/cimgui/imgui");

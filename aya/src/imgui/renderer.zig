@@ -128,13 +128,13 @@ pub const Renderer = struct {
             self.vert_buffer.deinit();
             const vert_decl = gfx.VertexBuffer.vertexDeclarationForType(gfx.Vertex) catch unreachable;
             self.vert_buffer_size = @floatToInt(i32, @intToFloat(f32, draw_data.TotalVtxCount) * 1.5);
-            self.vert_buffer = gfx.VertexBuffer.init(gfx.Vertex, self.vert_buffer_size, false);
+            self.vert_buffer = gfx.VertexBuffer.init(gfx.Vertex, self.vert_buffer_size, true);
         }
 
         if (draw_data.TotalIdxCount > self.index_buffer_size) {
             self.index_buffer.deinit();
             self.index_buffer_size = @floatToInt(i32, @intToFloat(f32, draw_data.TotalIdxCount) * 1.5);
-            self.index_buffer = gfx.IndexBuffer.init(self.index_buffer_size, false);
+            self.index_buffer = gfx.IndexBuffer.init(self.index_buffer_size, true);
         }
     }
 };
