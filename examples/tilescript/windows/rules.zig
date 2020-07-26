@@ -65,45 +65,63 @@ var fill_dirs = struct {
     }
 }{};
 
+fn drawRuleSetTabButtons(state: *ts.AppState, cursor: ImVec2, open_repeat_popup: *bool) void {
+    var cur = cursor;
+    cur.x += igGetWindowContentRegionWidth() - 50;
+    cur.y -= 1;
+    igSetCursorPos(cur);
+
+    if (igButton(icons.sliders_h, .{})) {
+        open_repeat_popup.* = true;
+    }
+    igSameLine(0, 5);
+    if (igButton(icons.plus, .{})) {
+        state.map.addPreRuleSet();
+    }
+    ogUnformattedTooltip(20, "Adds a new RuleSet, which is a group of rules that transform the input map before regular rules are run");
+}
+
 pub fn draw(state: *ts.AppState) void {
     igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
     defer igPopStyleVar(1);
 
-    if (state.prefs.windows.rules) {
-        current_ruleset = std.math.maxInt(usize);
-        _ = igBegin("Rules", &state.prefs.windows.rules, ImGuiWindowFlags_None);
-        defer igEnd();
+    current_ruleset = std.math.maxInt(usize);
+    _ = igBegin("Rules", null, ImGuiWindowFlags_None);
+    defer igEnd();
 
-        // save the cursor position so we can hack a button on the tab bar itself
-        var cursor = ogGetCursorPos();
-        if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_AutoSelectNewTabs)) {
-            defer igEndTabBar();
+    // save the cursor position so we can hack a button on the tab bar itself or just aligned right
+    var cursor = ogGetCursorPos();
+    var open_repeat_popup = false;
 
-            cursor.x += igGetWindowContentRegionWidth() - 50;
-            cursor.y -= 1;
-            igSetCursorPos(cursor);
-            if (igButton(icons.sliders_h, .{})) {
-                igOpenPopup("##seed-repeat");
-            }
-            igSameLine(0, 5);
-            if (igButton(icons.plus, .{})) {
-                state.map.addPreRuleSet();
-            }
-            ogUnformattedTooltip(20, "Adds a new pre-ruleset, which is a group of rules that transform the input map before regular rules are run");
+    if (state.map.pre_rulesets.items.len > 5) {
+        drawRuleSetTabButtons(state, cursor, &open_repeat_popup);
+        igGetCursorStartPos(&cursor);
+        cursor.y += igGetFrameHeightWithSpacing();
+        igSetCursorPos(cursor);
+    }
 
-            if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
-                defer igEndTabItem();
-                drawRulesTab(state);
-            }
+    if (igBeginTabBar("Rules##tabbar", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+        defer igEndTabBar();
 
-            drawPreRulesTabs(state);
-
-            rulesetSettingsPopup(state);
+        if (state.map.pre_rulesets.items.len <= 5) {
+            drawRuleSetTabButtons(state, cursor, &open_repeat_popup);
         }
 
-        if (drag_drop_state.active and igIsMouseReleased(ImGuiMouseButton_Left)) {
-            drag_drop_state.active = false;
+        if (igBeginTabItem("Final", null, ImGuiTabItemFlags_NoCloseButton)) {
+            defer igEndTabItem();
+            drawRulesTab(state);
         }
+
+        drawPreRulesTabs(state);
+
+        if (open_repeat_popup) {
+            igOpenPopup("##seed-repeat");
+        }
+        rulesetSettingsPopup(state);
+    }
+
+    if (drag_drop_state.active and igIsMouseReleased(ImGuiMouseButton_Left)) {
+        drag_drop_state.active = false;
     }
 }
 
@@ -184,7 +202,7 @@ fn drawRulesTab(state: *ts.AppState) void {
                 std.mem.copy(u8, &new_rule_label_buf, state.map.getGroupName(group));
             }
 
-            igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+            igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
             if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
                 _ = ogInputText("##name", &new_rule_label_buf, new_rule_label_buf.len);
 
@@ -259,13 +277,13 @@ fn drawRulesTab(state: *ts.AppState) void {
         nine_slice_selected = null;
     }
 
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 3);
         igEndPopup();
     }
 
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
         nineSlicePopup(state, 2);
         igEndPopup();
@@ -275,8 +293,10 @@ fn drawRulesTab(state: *ts.AppState) void {
 fn drawPreRulesTabs(state: *ts.AppState) void {
     for (state.map.pre_rulesets.items) |*ruleset, i| {
         var is_tab_open = true;
-        igPushIDInt(@intCast(c_int, i) + 3000);
-        _ = std.fmt.bufPrint(&pre_ruleset_tab_buf, "#{}", .{i + 1}) catch unreachable;
+        igPushIDPtr(ruleset);
+
+        std.mem.set(u8, &pre_ruleset_tab_buf, 0);
+        _ = std.fmt.bufPrint(&pre_ruleset_tab_buf, icons.code_branch ++ "{}", .{i}) catch unreachable;
         if (igBeginTabItem(&pre_ruleset_tab_buf, &is_tab_open, ImGuiTabItemFlags_None)) {
             defer igEndTabItem();
             current_ruleset = i;
@@ -319,7 +339,7 @@ fn drawPreRulesTabs(state: *ts.AppState) void {
         }
     } // end pre_rules loop
 
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopupModal("Delete RuleSet", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         deletePreRuleSetPopup(state);
         igEndPopup();
@@ -459,7 +479,7 @@ fn drawRule(state: *ts.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
             std.mem.set(u8, &new_rule_label_buf, 0);
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##group-name", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
@@ -526,7 +546,7 @@ fn drawRule(state: *ts.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
     }
 
     // display the popup a bit to the left to center it under the mouse
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##pattern_popup", ImGuiWindowFlags_None)) {
         patternPopup(state, rule);
 
@@ -554,7 +574,7 @@ fn drawRule(state: *ts.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
         igEndPopup();
     }
 
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
         resultPopup(state, rule, is_pre_rule);
         igEndPopup();
@@ -640,7 +660,7 @@ fn patternPopup(state: *ts.AppState, rule: *Rule) void {
 }
 
 fn rulesHamburgerPopup(state: *ts.AppState, rule: *Rule) void {
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
         defer igEndPopup();
         state.map_data_dirty = true;
@@ -680,7 +700,7 @@ fn rulesHamburgerPopup(state: *ts.AppState, rule: *Rule) void {
 }
 
 fn floodFillPopup(state: *ts.AppState, ruleset: *RuleSet) void {
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{.x = 0.5});
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("flood-fill", ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
