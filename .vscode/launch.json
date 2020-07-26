@@ -24,7 +24,7 @@
             "name": "Debug",
             "type": "gdb",
             "request": "launch",
-            "target": "${fileBasenameNoExtension}",
+            "target": "${workspaceFolder}/zig-cache/bin/run",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
         },
