@@ -74,7 +74,7 @@ pub const TileScript = struct {
 
         const io = igGetIO();
         const dockspace_id = igGetIDStr("default-dockspace");
-        // igDockBuilderRemoveNode(dockspace_id); // uncomment for setting up initial layout
+        // igDockBuilderRemoveNode(dockspace_id); // uncomment for testing initial layout setup code
         if (igDockBuilderGetNode(dockspace_id) == null) {
             self.initialLayout(dockspace_id, work_size);
         }
@@ -116,23 +116,19 @@ pub const TileScript = struct {
     }
 
     fn initialLayout(self: TileScript, id: ImGuiID, size: ImVec2) void {
-        print("----------- initial layout\n", .{});
-
-        _ = igDockBuilderAddNode(id, ImGuiDockNodeFlags_DockSpace);
+        var dock_main_id =  igDockBuilderAddNode(id, ImGuiDockNodeFlags_DockSpace);
         igDockBuilderSetNodeSize(id, size);
 
-        var dock_main_id = id;
-        const right_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.3, null, &dock_main_id);
+        // dock_main_id is the left node after this
+        const right_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.37, null, &dock_main_id);
         igDockBuilderDockWindow("Rules", right_id);
 
-        // dock_main_id = id;
-        const left_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 1, null, &dock_main_id);
-
-        const tl_id = igDockBuilderSplitNode(left_id, ImGuiDir_Up, 0.5, null, &dock_main_id);
+        // dock_main_id is the bottom node after this
+        const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.48, null, &dock_main_id);
         igDockBuilderDockWindow("Input Map", tl_id);
 
-        const br_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 1, null, &dock_main_id);
-        igDockBuilderDockWindow("Output Map", br_id);
+        igDockBuilderDockWindow("Post Processed Map", dock_main_id);
+        igDockBuilderDockWindow("Output Map", dock_main_id);
 
         igDockBuilderFinish(id);
     }
