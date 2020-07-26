@@ -48,7 +48,6 @@ pub const AppState = struct {
         win_h: i32 = 768,
         // menu state
         windows: struct {
-            rules: bool = true,
             objects: bool = false,
             object_editor: bool = false,
             tags: bool = false,

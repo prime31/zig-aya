@@ -203,7 +203,6 @@ pub fn draw(state: *ts.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            _ = igMenuItemBoolPtr("Rules", null, &state.prefs.windows.rules, true);
             _ = igMenuItemBoolPtr("Objects", null, &state.prefs.windows.objects, true);
             _ = igMenuItemBoolPtr("Tags", null, &state.prefs.windows.tags, true);
             _ = igMenuItemBoolPtr("Tile Definitions", null, &state.prefs.windows.tile_definitions, true);
