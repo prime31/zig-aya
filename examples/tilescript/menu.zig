@@ -165,11 +165,11 @@ pub fn draw(state: *ts.AppState) void {
             if (igBeginMenu("Export", true)) {
                 defer igEndMenu();
 
-                if (igMenuItemBool("Quick Export", null, false, state.exported_file != null)) {
+                if (igMenuItemBool("Quick JSON Export", null, false, state.exported_file != null)) {
                     state.exportJson(state.exported_file.?) catch unreachable;
                 }
 
-                if (igMenuItemBool("JSON", null, false, true)) {
+                if (igMenuItemBool("JSON...", null, false, true)) {
                     const res = files.saveFileDialog("Export to JSON", getDefaultPath(), "*.json");
                     aya.time.resync();
 
@@ -187,8 +187,22 @@ pub fn draw(state: *ts.AppState) void {
                     }
                 }
 
-                if (igMenuItemBool("Binary", null, false, true)) {
+                if (igMenuItemBool("Binary...", null, false, true)) {
                     state.showToast("Doesn't work yet...", 100);
+                }
+
+                if (igMenuItemBool("Tiled...", null, false, true)) {
+                    const res = files.saveFileDialog("Export to Tiled", getDefaultPath(), "*.json");
+                    aya.time.resync();
+
+                    if (res != null) {
+                        var out_file = res[0..std.mem.lenZ(res)];
+                        if (!std.mem.endsWith(u8, out_file, ".json")) {
+                            out_file = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ out_file, ".json" }) catch unreachable;
+                        }
+
+                        @import("persistence.zig").exportTiled(state, out_file) catch unreachable;
+                    }
                 }
             }
         }

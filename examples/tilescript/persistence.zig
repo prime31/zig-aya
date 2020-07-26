@@ -3,6 +3,7 @@ const aya = @import("aya");
 
 const Writer = aya.mem.SdlBufferStream.Writer;
 const Reader = aya.mem.SdlBufferStream.Reader;
+const AppState = @import("app_state.zig").AppState;
 
 const data = @import("map.zig");
 const Map = data.Map;
@@ -542,5 +543,144 @@ pub fn exportJson(map: Map, map_data: []u8, file: []const u8) !void {
             try jw.emitNumber(d);
         }
         try jw.endArray();
+    }
+}
+
+pub fn exportTiled(state: *AppState, file: []const u8) !void {
+    var buf = aya.mem.SdlBufferStream.init(file, .write);
+    defer buf.deinit();
+    const out_stream = buf.writer();
+
+    var jw = std.json.writeStream(out_stream, 10);
+    {
+        try jw.beginObject();
+        defer jw.endObject() catch unreachable;
+
+        try jw.objectField("width");
+        try jw.emitNumber(state.map.w);
+
+        try jw.objectField("height");
+        try jw.emitNumber(state.map.h);
+
+        try jw.objectField("tilewidth");
+        try jw.emitNumber(state.map.tile_size);
+
+        try jw.objectField("tileheight");
+        try jw.emitNumber(state.map.tile_size);
+
+        try jw.objectField("infinite");
+        try jw.emitBool(false);
+
+        try jw.objectField("version");
+        try jw.emitNumber(1.2);
+
+        try jw.objectField("tiledversion");
+        try jw.emitString("1.3.2");
+
+        try jw.objectField("orientation");
+        try jw.emitString("orthogonal");
+
+        try jw.objectField("renderorder");
+        try jw.emitString("right-down");
+
+        try jw.objectField("type");
+        try jw.emitString("map");
+
+        try jw.objectField("nextlayerid");
+        try jw.emitNumber(2);
+
+        try jw.objectField("nextobjectid");
+        try jw.emitNumber(1);
+
+        // tileset
+        try jw.objectField("tilesets");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            try jw.arrayElem();
+            try jw.beginObject();
+
+            try jw.objectField("image");
+            try jw.emitString(state.map.image);
+
+            try jw.objectField("margin");
+            try jw.emitNumber(state.map.tile_spacing);
+
+            try jw.objectField("spacing");
+            try jw.emitNumber(state.map.tile_spacing);
+
+            try jw.objectField("imagewidth");
+            try jw.emitNumber(state.texture.width);
+
+            try jw.objectField("imageheight");
+            try jw.emitNumber(state.texture.width);
+
+            try jw.objectField("tilewidth");
+            try jw.emitNumber(state.map.tile_size);
+
+            try jw.objectField("tileheight");
+            try jw.emitNumber(state.map.tile_size);
+
+            try jw.objectField("columns");
+            try jw.emitNumber(state.tilesPerCol());
+
+            try jw.objectField("firstgid");
+            try jw.emitNumber(1);
+
+            try jw.objectField("tiles");
+            try jw.beginArray();
+            try jw.endArray();
+
+            try jw.endObject();
+        }
+
+        // layer
+        try jw.objectField("layers");
+        try jw.beginArray();
+        {
+            defer jw.endArray() catch unreachable;
+
+            try jw.arrayElem();
+            try jw.beginObject();
+
+            // map data
+            try jw.objectField("data");
+            try jw.beginArray();
+            for (state.final_map_data) |d| {
+                try jw.arrayElem();
+                try jw.emitNumber(d);
+            }
+            try jw.endArray();
+
+            try jw.objectField("width");
+            try jw.emitNumber(state.map.w);
+
+            try jw.objectField("height");
+            try jw.emitNumber(state.map.h);
+
+            try jw.objectField("id");
+            try jw.emitNumber(1);
+
+            try jw.objectField("name");
+            try jw.emitString("main");
+
+            try jw.objectField("type");
+            try jw.emitString("tilelayer");
+
+            try jw.objectField("visible");
+            try jw.emitBool(true);
+
+            try jw.objectField("opacity");
+            try jw.emitNumber(1);
+
+            try jw.objectField("x");
+            try jw.emitNumber(0);
+
+            try jw.objectField("y");
+            try jw.emitNumber(0);
+
+            try jw.endObject();
+        }
     }
 }
