@@ -63,9 +63,12 @@ pub fn import(file: []const u8) !tilescript.Map {
 }
 
 pub const TileKitMap = struct {
+    // TODO: why cant zig compile with these?!?!
+    // version: []const u8 = "",
+    // tile_w: i32,
+    // tile_h: i32,
     brush_idx: usize,
     ruleset_idx: i32,
-    show_animations: bool,
     input_map: InputMap,
     output_map: OutputMap,
     final_ruleset: RuleSet,
