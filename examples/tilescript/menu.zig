@@ -203,15 +203,12 @@ pub fn draw(state: *ts.AppState) void {
         if (igBeginMenu("View", true)) {
             defer igEndMenu();
 
-            _ = igMenuItemBoolPtr("Brushes", null, &state.prefs.windows.brushes, true);
             _ = igMenuItemBoolPtr("Rules", null, &state.prefs.windows.rules, true);
             _ = igMenuItemBoolPtr("Objects", null, &state.prefs.windows.objects, true);
             _ = igMenuItemBoolPtr("Tags", null, &state.prefs.windows.tags, true);
             _ = igMenuItemBoolPtr("Tile Definitions", null, &state.prefs.windows.tile_definitions, true);
             _ = igMenuItemBoolPtr("Animations", null, &state.prefs.windows.animations, true);
-            _ = igMenuItemBoolPtr("Input Map", null, &state.prefs.windows.input_map, true);
             _ = igMenuItemBoolPtr("Post Processed Map", null, &state.prefs.windows.post_processed_map, true);
-            _ = igMenuItemBoolPtr("Output Map", null, &state.prefs.windows.output_map, true);
         }
 
         if (igBeginMenu("Settings", true)) {

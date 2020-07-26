@@ -96,6 +96,14 @@ pub const Window = struct {
         sdl.SDL_SetWindowSize(self.sdl_window, w, h);
     }
 
+    pub fn position(self: Window, x: *i32, y: *i32) void {
+        sdl.SDL_GetWindowPosition(self.sdl_window, x, y);
+    }
+
+    pub fn setPosition(self: Window, x: i32, y: i32) void {
+        sdl.SDL_SetWindowPosition(self.sdl_window, x, y);
+    }
+
     pub fn setMode(self: Window, mode: WindowMode) void {
         sdl.SDL_SetWindowFullscreen(self.sdl_window, mode);
     }

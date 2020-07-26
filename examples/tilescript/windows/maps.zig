@@ -14,12 +14,10 @@ pub fn drawWindows(state: *ts.AppState) void {
     var window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
     if (igGetIO().KeyAlt) window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
 
-    if (state.prefs.windows.input_map) {
-        if (igBegin("Input Map", &state.prefs.windows.input_map, window_flags)) {
-            draw(state, true);
-        }
-        igEnd();
+    if (igBegin("Input Map", null, window_flags)) {
+        draw(state, true);
     }
+    igEnd();
 
     if (state.prefs.windows.post_processed_map) {
         if (igBegin("Post Processed Map", &state.prefs.windows.post_processed_map, window_flags)) {
@@ -216,7 +214,7 @@ fn syncScrollPosition(state: *ts.AppState, input_map: bool) void {
     const new_scroll_y = igGetScrollY();
 
     // sync scroll position with the opposite map window if it is visible
-    var needs_sync = (input_map and state.prefs.windows.post_processed_map) or (!input_map and state.prefs.windows.input_map);
+    var needs_sync = (input_map and state.prefs.windows.post_processed_map) or !input_map;
     if (needs_sync) {
         _ = igBegin(if (input_map) "Post Processed Map" else "Input Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
         igSetScrollXFloat(new_scroll_x);
@@ -224,12 +222,11 @@ fn syncScrollPosition(state: *ts.AppState, input_map: bool) void {
         igEnd();
     }
 
-    if (state.prefs.windows.output_map) {
-        _ = igBegin("Output Map", &needs_sync, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar);
+    if (igBegin("Output Map", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
         igSetScrollXFloat(new_scroll_x);
         igSetScrollYFloat(new_scroll_y);
-        igEnd();
     }
+    igEnd();
 }
 
 fn commitInBetweenTiles(state: *ts.AppState, tile_x: usize, tile_y: usize, origin: ImVec2, color: u8) void {
