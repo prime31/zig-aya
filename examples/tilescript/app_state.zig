@@ -42,18 +42,19 @@ pub const AppState = struct {
         show_animations: bool = false,
         show_objects: bool = true,
         tile_size_multiplier: usize = 1,
+        win_x: i32 = 0,
+        win_y: i32 = 0,
+        win_w: i32 = 1024,
+        win_h: i32 = 768,
         // menu state
         windows: struct {
-            brushes: bool = true,
             rules: bool = true,
-            objects: bool = true,
+            objects: bool = false,
             object_editor: bool = false,
             tags: bool = false,
             tile_definitions: bool = false,
             animations: bool = false,
-            input_map: bool = true,
             post_processed_map: bool = true,
-            output_map: bool = true,
         },
     };
 
@@ -86,6 +87,10 @@ pub const AppState = struct {
 
     pub fn init() AppState {
         const prefs = aya.fs.readPrefsJson(AppState.Prefs, "aya_tile", "prefs.json") catch AppState.Prefs{ .windows = .{} };
+        aya.window.setSize(prefs.win_w, prefs.win_h);
+        if (prefs.win_x != 0 and prefs.win_y != 0) {
+            aya.window.setPosition(prefs.win_x, prefs.win_y);
+        }
 
         // load up a temp map
         const tile_size = 16;
@@ -113,7 +118,9 @@ pub const AppState = struct {
         return state;
     }
 
-    pub fn savePrefs(self: AppState) void {
+    pub fn savePrefs(self: *AppState) void {
+        aya.window.size(&self.prefs.win_w, &self.prefs.win_h);
+        aya.window.position(&self.prefs.win_x, &self.prefs.win_y);
         aya.fs.savePrefsJson("aya_tile", "prefs.json", self.prefs) catch unreachable;
     }
 

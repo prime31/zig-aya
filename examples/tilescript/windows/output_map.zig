@@ -17,12 +17,10 @@ pub fn drawWindow(state: *ts.AppState) void {
         state.map_data_dirty = false;
     }
 
-    if (state.prefs.windows.output_map) {
-        if (igBegin("Output Map", &state.prefs.windows.output_map, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
-            draw(state);
-        }
-        igEnd();
+    if (igBegin("Output Map", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysHorizontalScrollbar)) {
+        draw(state);
     }
+    igEnd();
 }
 
 fn draw(state: *ts.AppState) void {

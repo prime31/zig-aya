@@ -6,10 +6,8 @@ const ts = @import("../tilescript.zig");
 const thickness: f32 = 2;
 
 pub fn drawWindow(state: *ts.AppState) void {
-    if (state.prefs.windows.brushes) {
-        if (igBegin("Brushes", &state.prefs.windows.brushes, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
             draw(state, 32, false);
-        }
         igEnd();
     }
 }
