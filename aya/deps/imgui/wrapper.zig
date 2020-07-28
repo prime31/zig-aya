@@ -2,6 +2,21 @@ const std = @import("std");
 usingnamespace @import("imgui.zig");
 pub const icons = @import("font_awesome.zig");
 
+/// only true if down this frame and not down the previous frame
+pub fn ogKeyPressed(key: usize) bool {
+    return igGetIO().KeysDown[key] and igGetIO().KeysDownDuration[key] == 0;
+}
+
+/// true the entire time the key is down
+pub fn ogKeyDown(key: usize) bool {
+    return igGetIO().KeysDown[key];
+}
+
+/// true only the frame the key is released
+pub fn ogKeyUp(key: usize) bool {
+    return !igGetIO().KeysDown[key] and igGetIO().KeysDownDuration[key] == -1 and igGetIO().KeysDownDurationPrev[key] >= 0;
+}
+
 pub fn ogButton(label: [*c]const u8) bool {
     return igButton(label, .{});
 }
@@ -9,7 +24,7 @@ pub fn ogButton(label: [*c]const u8) bool {
 pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
     const white = ImVec4{ .x = 1, .y = 1, .z = 1, .w = 1 };
     const size = ImVec2{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
-    igImage(texture, size, ImVec2{}, ImVec2{ .x = 1, .y = 1 }, white, ImVec4{});
+    igImage(texture, size, .{}, .{ .x = 1, .y = 1 }, white, .{});
 }
 
 pub fn ogGetCursorScreenPos() ImVec2 {
