@@ -32,47 +32,47 @@ var temp_state = struct {
 
 fn checkKeyboardShortcuts(state: *ts.AppState) void {
     // shortcuts for pressing 1-9 to set the brush
-    var key: c_int = 30;
+    var key: usize = 30;
     while (key < 39) : (key += 1) {
-        if (aya.input.keyPressed(@intToEnum(aya.sdl.SDL_Scancode, key))) state.selected_brush_index = @intCast(usize, key - 30);
+        if (ogKeyPressed(key)) state.selected_brush_index = @intCast(usize, key - 30);
     }
 
     // show the quick brush selector
     // TODO: this igIsPopupOpenStr doesnt work
     // if (!igIsPopupOpenStr("##pattern_popup")) {
-    //     if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
+    //     if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_B))) {
     //         igOpenPopup("##brushes-root");
     //     }
     // }
 
     // undo/redo
-    if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl) and igGetIO().KeyShift) {
+    if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_Z)) and (igGetIO().KeySuper or igGetIO().KeyCtrl) and igGetIO().KeyShift) {
         ts.history.redo();
         state.map_data_dirty = true;
-    } else if (aya.input.keyPressed(.SDL_SCANCODE_Z) and (igGetIO().KeySuper or igGetIO().KeyCtrl)) {
+    } else if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_Z)) and (igGetIO().KeySuper or igGetIO().KeyCtrl)) {
         ts.history.undo();
         state.map_data_dirty = true;
     }
 
     // help
-    if (aya.input.keyPressed(.SDL_SCANCODE_SLASH) and igGetIO().KeyShift) {
+    if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_SLASH)) and igGetIO().KeyShift) {
         igOpenPopup("Help");
     }
 
     // zoom in/out
-    if (aya.input.keyPressed(.SDL_SCANCODE_UP)) {
+    if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_UP))) {
         if (state.prefs.tile_size_multiplier < 4) {
             state.prefs.tile_size_multiplier += 1;
         }
     }
-    if (aya.input.keyPressed(.SDL_SCANCODE_DOWN)) {
+    if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_DOWN))) {
         if (state.prefs.tile_size_multiplier > 1) {
             state.prefs.tile_size_multiplier -= 1;
         }
     }
     state.map_rect_size = @intToFloat(f32, state.map.tile_size * state.prefs.tile_size_multiplier);
 
-    if (aya.input.keyPressed(.SDL_SCANCODE_TAB)) {
+    if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_TAB))) {
         state.toggleEditMode();
     }
 }

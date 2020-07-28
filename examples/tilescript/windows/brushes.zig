@@ -25,9 +25,8 @@ pub fn draw(state: *ts.AppState, rect_size: f32, skip_input_processing: bool) vo
     const canvas_size = 6 * rect_size;
     const draw_list = igGetWindowDrawList();
 
-    var pos = ImVec2{};
-    igGetCursorScreenPos(&pos);
-    _ = igInvisibleButton("##but", ImVec2{ .x = canvas_size, .y = canvas_size });
+    var pos = ogGetCursorScreenPos();
+    _ = igInvisibleButton("##but", .{ .x = canvas_size, .y = canvas_size });
     const mouse_pos = igGetIO().MousePos;
     const hovered = igIsItemHovered(ImGuiHoveredFlags_None);
 
@@ -46,13 +45,14 @@ pub fn draw(state: *ts.AppState, rect_size: f32, skip_input_processing: bool) vo
                 const size = rect_size - thickness;
                 tl.x += thickness / 2;
                 tl.y += thickness / 2;
-                ImDrawList_AddQuad(draw_list, ImVec2{ .x = tl.x, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y }, ImVec2{ .x = tl.x + size, .y = tl.y + size }, ImVec2{ .x = tl.x, .y = tl.y + size }, colors.brush_selected, 2);
+                ImDrawList_AddQuad(draw_list, .{ .x = tl.x, .y = tl.y }, .{ .x = tl.x + size, .y = tl.y }, .{ .x = tl.x + size, .y = tl.y + size }, .{ .x = tl.x, .y = tl.y + size }, colors.brush_selected, 2);
             }
 
             if (hovered and !skip_input_processing) {
                 if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
-                    if (igIsMouseClicked(0, false)) {
+                    if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
                         state.selected_brush_index = index;
+                        igCloseCurrentPopup();
                     }
                 }
             }

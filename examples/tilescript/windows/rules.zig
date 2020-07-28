@@ -563,7 +563,7 @@ fn drawRule(state: *ts.AppState, ruleset: *RuleSet, rule: *Rule, index: usize, i
         rulesHamburgerPopup(state, rule);
 
         // quick brush selector
-        if (aya.input.keyPressed(.SDL_SCANCODE_B)) {
+        if (ogKeyPressed(@enumToInt(aya.sdl.SDL_Scancode.SDL_SCANCODE_B))) {
             if (igIsPopupOpenID(igGetIDStr("##brushes"))) {
                 igClosePopupToLevel(1, true);
             } else {

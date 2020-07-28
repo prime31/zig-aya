@@ -1,8 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 
-const Writer = aya.mem.SdlBufferStream.Writer;
-const Reader = aya.mem.SdlBufferStream.Reader;
+const Writer = std.fs.File.Writer;
+const Reader = std.fs.File.Reader;
 const AppState = @import("app_state.zig").AppState;
 
 const data = @import("map.zig");
@@ -16,10 +16,10 @@ const Object = data.Object;
 const Animation = data.Animation;
 
 pub fn save(map: Map, file: []const u8) !void {
-    var buf = aya.mem.SdlBufferStream.init(file, .write);
-    defer buf.deinit();
+    var handle = try std.fs.cwd().createFile(file, .{});
+    defer handle.close();
 
-    const out = buf.writer();
+    const out = handle.writer();
     try out.writeIntLittle(usize, map.w);
     try out.writeIntLittle(usize, map.h);
     try out.writeIntLittle(usize, map.tile_size);
@@ -124,8 +124,8 @@ fn writeRuleSet(out: Writer, ruleset: RuleSet) !void {
 }
 
 pub fn load(file: []const u8) !Map {
-    var buf = aya.mem.SdlBufferStream.init(file, .read);
-    defer buf.deinit();
+    var handle = try std.fs.cwd().openFile(file, .{});
+    defer handle.close();
 
     var map = Map{
         .data = undefined,
@@ -138,7 +138,7 @@ pub fn load(file: []const u8) !Map {
         .animations = std.ArrayList(Animation).init(aya.mem.allocator),
     };
 
-    const in = buf.reader();
+    const in = handle.reader();
     map.w = try in.readIntLittle(usize);
     map.h = try in.readIntLittle(usize);
     map.tile_size = try in.readIntLittle(usize);
