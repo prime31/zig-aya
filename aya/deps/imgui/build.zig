@@ -67,6 +67,7 @@ fn compileImGui(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Ta
     exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui_draw.cpp", &cpp_args);
     exe.addCSourceFile("aya/deps/imgui/cimgui/imgui/imgui_widgets.cpp", &cpp_args);
     exe.addCSourceFile("aya/deps/imgui/cimgui/cimgui.cpp", &cpp_args);
+    exe.addCSourceFile("aya/deps/imgui/temporary_hacks.cpp", &cpp_args);
 }
 
 
