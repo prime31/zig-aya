@@ -5,10 +5,12 @@ const Pkg = std.build.Pkg;
 
 const sokol_build = @import("deps/sokol/build.zig");
 const imgui_build = @import("deps/imgui/build.zig");
+const stb_image_build = @import("deps/stb_image/build.zig");
 const fontstash_build = @import("deps/fontstash/build.zig");
 
 pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, include_imgui: bool) void {
     sokol_build.linkArtifact(b, artifact, target, include_imgui);
+    stb_image_build.linkArtifact(b, artifact, target);
     fontstash_build.linkArtifact(b, artifact, target);
 
     if (include_imgui) {
@@ -23,6 +25,10 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         .name = "imgui",
         .path = "aya/deps/imgui/imgui.zig",
     };
+    const stb_image = Pkg{
+        .name = "stb_image",
+        .path = "aya/deps/stb_image/stb_image.zig",
+    };
     const fontstash = Pkg{
         .name = "fontstash",
         .path = "aya/deps/fontstash/fontstash.zig",
@@ -30,7 +36,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     const aya = Pkg{
         .name = "aya",
         .path = "aya/src/aya.zig",
-        .dependencies = &[_]Pkg{sokol, imgui, fontstash},
+        .dependencies = &[_]Pkg{sokol, imgui, stb_image, fontstash},
     };
 
     // packages exported to userland

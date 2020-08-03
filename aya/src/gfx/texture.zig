@@ -70,7 +70,7 @@ pub const Texture = extern struct {
     }
 
     pub fn initFromFile(file: []const u8, filter: Filter) !Texture {
-        const image_contents = try upaya.fs.read(upaya.mem.tmp_allocator, file);
+        const image_contents = try upaya.fs.read(aya.mem.tmp_allocator, file);
 
         var w: c_int = undefined;
         var h: c_int = undefined;
