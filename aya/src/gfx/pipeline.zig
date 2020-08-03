@@ -93,7 +93,7 @@ const vs_gl =
 \\}
 \\
 \\vec4 position(mat3x2 transMat, vec2 localPosition) {
-\\	return vec4(transMat * vec3(localPosition, 0), 0, 1);
+\\	return vec4(transMat * vec3(localPosition, 1), 0, 1);
 \\}
 ;
 
@@ -145,7 +145,7 @@ const vs_metal =
 \\ static inline __attribute__((always_inline))
 \\ float4 position(thread const float3x2& transMat, thread const float2& localPosition)
 \\ {
-\\     return float4(transMat * float3(localPosition, 0.0), 0.0, 1.0);
+\\     return float4(transMat * float3(localPosition, 1.0), 0.0, 1.0);
 \\ }
 \\
 \\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float2, 3>& TransformMatrix [[buffer(0)]])
@@ -186,9 +186,7 @@ const fs_metal =
 \\ fragment main0_out _main(main0_in in [[stage_in]], texture2d<float> MainTex [[texture(0)]], sampler MainTexSmplr [[sampler(0)]])
 \\ {
 \\     main0_out out = {};
-\\     float4 param = in.VaryingColor;
-\\     float2 param_1 = in.VaryingTexCoord;
-\\     out.frag_color = effect(param, MainTex, MainTexSmplr, param_1);
+\\     out.frag_color = effect(in.VaryingColor, MainTex, MainTexSmplr, in.VaryingTexCoord);
 \\     return out;
 \\ }
 \\

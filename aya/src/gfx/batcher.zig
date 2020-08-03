@@ -62,7 +62,7 @@ pub const Batcher = struct {
         // run through all our accumulated draw calls
         for (self.draw_calls.items) |*draw_call| {
             // aya.gfx.Texture.bindTexture(draw_call.texture.?, 0);
-            self.mesh.drawQuads(self.buffer_offset, draw_call.vert_count);
+            self.mesh.drawPartialBuffer(self.buffer_offset, draw_call.vert_count);
 
             self.buffer_offset += draw_call.vert_count;
             draw_call.texture = null;
