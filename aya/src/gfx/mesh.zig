@@ -35,6 +35,7 @@ pub fn DynamicMesh(comptime T: type) type {
 
         bindings: sg_bindings,
         verts: []T,
+        element_count: c_int,
         allocator: *std.mem.Allocator,
 
         pub fn init(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []u16) !Self {
@@ -42,18 +43,18 @@ pub fn DynamicMesh(comptime T: type) type {
             const vertex_buffer = buffers.VertexBuffer.makeMutable(T, vertex_count, .SG_USAGE_DYNAMIC);
             const index_buffer = buffers.IndexBuffer.make(u16, indices, .SG_USAGE_IMMUTABLE);
 
-            return Self {
+            return Self{
                 .bindings = buffers.Bindings.make(vertex_buffer, index_buffer),
                 .verts = try alloc.alloc(T, @intCast(usize, vertex_count)),
+                .element_count = @intCast(c_int, indices.len),
                 .allocator = alloc,
             };
         }
 
         pub fn deinit(self: Self) void {
-            self.index_buffer.deinit();
-            self.vert_buffer.deinit();
+            sg_destroy_buffer(self.bindings.vertex_buffers[0]);
+            sg_destroy_buffer(self.bindings.index_buffer);
             self.allocator.free(self.verts);
-            if (self.indices.len > 0) self.allocator.free(self.indices);
         }
 
         /// deinits the current VertexBuffer and creates a new one with the new_vertex_count
@@ -72,8 +73,8 @@ pub fn DynamicMesh(comptime T: type) type {
         }
 
         /// try not to use .none when using dynamic vert buffers
-        pub fn updateAllVerts(self: Self, options: fna.SetDataOptions) void {
-            self.vert_buffer.setData(T, self.verts, 0, options);
+        pub fn updateAllVerts(self: Self) void {
+            // self.vert_buffer.setData(T, self.verts, 0, options);
         }
 
         /// uploads to the GPU the slice from start to end
@@ -91,19 +92,18 @@ pub fn DynamicMesh(comptime T: type) type {
             self.index_buffer.setData(i16, self.indices, 0, options);
         }
 
-        pub fn drawQuads(self: *Self, base_vertex: i32, num_vertices: i32) void {
-            const primitive_count = @divExact(num_vertices, 2); // assuming .triangle_list
-            self.draw(base_vertex, num_vertices, primitive_count);
-        }
-
-        pub fn drawTriangles(self: *Self, base_vertex: i32, num_vertices: i32) void {
-            const primitive_count = @divExact(num_vertices, 3); // assuming .triangle_list
-            self.draw(base_vertex, num_vertices, primitive_count);
-        }
-
-        pub fn draw(self: *Self, base_vertex: i32, num_vertices: i32, primitive_count: i32) void {
+        pub fn draw(self: *Self) void {
             // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
             // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+            sg_apply_bindings(&self.bindings);
+            sg_draw(0, self.element_count, 1);
+        }
+
+        pub fn drawPartialBuffer(self: *Self, base_element: i32, num_elements: i32) void {
+            // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
+            // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+            sg_apply_bindings(&self.bindings);
+            sg_draw(base_element, num_elements, 1);
         }
     };
 }

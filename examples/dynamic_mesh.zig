@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 
 var mesh: aya.gfx.DynamicMesh(aya.gfx.Vertex) = undefined;
+var tex: aya.gfx.Texture = undefined;
 var rng = std.rand.DefaultPrng.init(0);
 
 pub fn main() !void {
@@ -9,31 +10,32 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
+        .shutdown = shutdown,
+        .gfx = .{
+            .resolution_policy = .none,
+        },
     });
-
-    mesh.deinit();
 }
 
 fn init() void {
     var indices = [_]u16{
         0, 1, 2, 2, 3, 0,
-    };
-    mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex).init(null, 4, 6, false) catch unreachable;
-    mesh.index_buffer.setData(u16, indices[0..], 0, .none);
+    }; //0, 1, 2, 0, 2, 3,
+    mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex).init(null, 4, indices[0..]) catch unreachable;
 
     mesh.verts[0] = .{ .pos = .{ .x = 220, .y = 20 }, .uv = .{ .x = 1, .y = 0 }, .col = 0x00FF0FFF };
     mesh.verts[1] = .{ .pos = .{ .x = 20, .y = 20 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF00FFFF };
     mesh.verts[2] = .{ .pos = .{ .x = 20, .y = 220 }, .uv = .{ .x = 0, .y = 1 }, .col = 0x00FFFFFF };
     mesh.verts[3] = .{ .pos = .{ .x = 220, .y = 220 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF };
-    mesh.updateAllVerts(.none);
+    mesh.updateAllVerts();
 
-    var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
-    var mat = aya.math.Mat32.initOrtho(640, 480);
-    shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
-    shader.apply();
+    tex = aya.gfx.Texture.initCheckerboard();
+    mesh.bindings.fs_images[0] = tex.img;
+}
 
-    const texture = aya.gfx.Texture.initCheckerboard();
-    texture.bind(0);
+fn shutdown() void {
+    mesh.deinit();
+    tex.deinit();
 }
 
 fn update() void {
@@ -45,9 +47,12 @@ fn update() void {
         mesh.verts[i].pos.x += rx;
         mesh.verts[i].pos.y += ry;
     }
-    mesh.updateAllVerts(.none);
+    mesh.updateAllVerts();
 }
 
 fn render() void {
-    mesh.draw(0, 4);
+    aya.gfx.beginNullPass();
+    aya.gfx.beginPass(.{ .color = aya.math.Color.gold });
+    mesh.draw();
+    aya.gfx.endPass();
 }
