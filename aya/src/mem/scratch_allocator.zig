@@ -2,8 +2,6 @@ const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
-// TODO: take in a backup_allocator and any allocation larger than our buffer gets done there. track the leaked_allocations
-// and free them periodically.
 pub const ScratchAllocator = struct {
     allocator: Allocator,
     backup_allocator: *Allocator,

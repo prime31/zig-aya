@@ -10,7 +10,7 @@ pub const ResolutionScaler = struct {
 };
 
 pub const ResolutionPolicy = enum {
-    none, /// here be dragons: if you use this no faux backbuffer will be created. You must NOT
+    none, /// here be dragons: if you use this no faux backbuffer will be created.
     default,
     no_border,
     no_border_pixel_perfect,
@@ -25,9 +25,8 @@ pub const ResolutionPolicy = enum {
         std.debug.assert((self != .default and design_w > 0 and design_h > 0) or self == .default);
 
         // common config
-        var w: i32 = undefined;
-        var h: i32 = undefined;
-        aya.window.drawableSize(&w, &h);
+        var w = aya.window.width();
+        var h = aya.window.height();
 
         // our render target size will be full screen for .default
         var rt_w = if (self == .default) w else design_w;

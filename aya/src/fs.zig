@@ -1,34 +1,24 @@
 const std = @import("std");
 const aya = @import("aya.zig");
-const sdl = aya.sdl;
 
 /// reads the contents of a file. Returned value is owned by the caller and must be freed!
-pub fn read(allocator: *std.mem.Allocator, file: []const u8) ![]u8 {
-    const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
-    var rw = sdl.SDL_RWFromFile(c_file, "rb");
-    if (rw == null) return error.FileNotFound;
+pub fn read(allocator: *std.mem.Allocator, filename: []const u8) ![]u8 {
+    const file = try std.fs.cwd().openFile(filename, .{});
+    defer file.close();
 
-    const file_size = sdl.SDL_RWsize(rw);
-    if (file_size == 0) {
-        return error.ZeroSizeFile;
-    }
+    const file_size = try file.getEndPos();
+    var buffer = try aya.mem.allocator.alloc(u8, file_size);
+    const bytes_read = try file.read(buffer[0..buffer.len]);
 
-    const bytes = try allocator.alloc(u8, @intCast(usize, file_size));
-    const read_len = sdl.SDL_RWread(rw, @ptrCast(*c_void, bytes), 1, @intCast(usize, file_size));
-    _ = sdl.SDL_RWclose(rw);
-
-    return bytes;
+    return buffer;
 }
 
-pub fn write(file: []const u8, data: []u8) !void {
-    const c_file = try std.cstr.addNullByte(aya.mem.tmp_allocator, file);
-    var rw = sdl.SDL_RWFromFile(c_file, "w");
-    _ = sdl.SDL_RWwrite(rw, data.ptr, data.len, 1);
-    _ = sdl.SDL_RWclose(rw);
-}
+pub fn write(filename: []const u8, data: []u8) !void {
+    const file = try std.fs.cwd().openFile(filename, .{ .write = true });
+    defer file.close();
 
-pub fn getSaveGamesDir(org: []const u8, app: []const u8) [*c]u8 {
-    return sdl.SDL_GetPrefPath(&org[0], &app[0]);
+    const file_size = try file.getEndPos();
+    try file.writeAll(data);
 }
 
 /// gets a path to `filename` in the save games directory
@@ -41,27 +31,28 @@ pub fn getSaveGamesFile(app: []const u8, filename: []const u8) ![]u8 {
 /// saves a serializable struct to disk
 pub fn savePrefs(app: []const u8, filename: []const u8, data: anytype) !void {
     const file = try getSaveGamesFile(app, filename);
-    var buf = aya.mem.SdlBufferStream.init(file, .write);
-    defer buf.deinit();
+    var handle = try std.fs.cwd().createFile(file, .{});
+    defer handle.close();
 
-    var serializer = std.io.serializer(.Little, .Byte, buf.writer());
+    var serializer = std.io.serializer(.Little, .Byte, handle.writer());
     try serializer.serialize(data);
 }
 
 pub fn readPrefs(comptime T: type, app: []const u8, filename: []const u8) !T {
     const file = try getSaveGamesFile(app, filename);
-    var buf = aya.mem.SdlBufferStream.init(file, .read);
-    defer buf.deinit();
+    var handle = try std.fs.cwd().openFile(file, .{});
+    defer handle.close();
 
-    var deserializer = std.io.deserializer(.Little, .Byte, buf.reader());
+    var deserializer = std.io.deserializer(.Little, .Byte, handle.reader());
     return deserializer.deserialize(T);
 }
 
 pub fn savePrefsJson(app: []const u8, filename: []const u8, data: anytype) !void {
     const file = try getSaveGamesFile(app, filename);
-    var buf = aya.mem.SdlBufferStream.init(file, .write);
+    var handle = try std.fs.cwd().createFile(file, .{});
+    defer handle.close();
 
-    try std.json.stringify(data, .{.whitespace = .{}}, buf.writer());
+    try std.json.stringify(data, .{ .whitespace = .{} }, handle.writer());
 }
 
 pub fn readPrefsJson(comptime T: type, app: []const u8, filename: []const u8) !T {
@@ -82,6 +73,6 @@ pub fn freePrefsJson(data: anytype) void {
 test "test fs read" {
     aya.mem.initTmpAllocator();
     std.testing.expectError(error.FileNotFound, read(std.testing.allocator, "junk.png"));
-    var bytes = try read(std.testing.allocator, "assets/font.png");
-    std.testing.allocator.free(bytes);
+    // var bytes = try read(std.testing.allocator, "src/assets/fa-solid-900.ttf");
+    // std.testing.allocator.free(bytes);
 }

@@ -3,7 +3,7 @@ const gfx = @import("gfx.zig");
 const aya = @import("../aya.zig");
 
 pub const DefaultOffscreenPass = struct {
-    render_tex: gfx.RenderTexture = undefined,
+    render_tex: gfx.Texture = undefined,
     policy: gfx.ResolutionPolicy,
     scaler: gfx.ResolutionScaler,
     design_w: i32,
@@ -14,7 +14,7 @@ pub const DefaultOffscreenPass = struct {
         var scaler = policy.getScaler(w, h);
 
         const pass = DefaultOffscreenPass{
-            .render_tex = if (policy != .none) gfx.RenderTexture.init(w, h) else undefined,
+            .render_tex = if (policy != .none) gfx.Texture.initOffscreen(w, h, .nearest) else undefined,
             .policy = policy,
             .scaler = scaler,
             .design_w = w,
@@ -36,9 +36,8 @@ pub const DefaultOffscreenPass = struct {
     }
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {
-        var w: i32 = 0;
-        var h: i32 = 0;
-        aya.window.drawableSize(&w, &h);
+        var w = aya.window.width();
+        var h = aya.window.height();
         if (self.policy == .default and (w != self.design_w or h != self.design_h)) {
             self.render_tex.resize(w, h);
             self.design_w = w;

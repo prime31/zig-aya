@@ -1,19 +1,19 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const fna = @import("fna");
 const fons = @import("fontstash");
+usingnamespace aya.sokol;
 
 pub const FontBook = struct {
     stash: *fons.Context,
     texture: ?aya.gfx.Texture,
-    tex_filter: fna.TextureFilter,
+    tex_filter: aya.gfx.Texture.Filter,
     width: i32 = 0,
     height: i32 = 0,
     allocator: *std.mem.Allocator,
 
     pub const Align = fons.Align;
 
-    pub fn init(allocator: ?*std.mem.Allocator, width: i32, height: i32, filter: fna.TextureFilter) !*FontBook {
+    pub fn init(allocator: ?*std.mem.Allocator, width: i32, height: i32, filter: aya.gfx.Texture.Filter) !*FontBook {
         const alloc = allocator orelse aya.mem.allocator;
         var book = try alloc.create(FontBook);
         errdefer alloc.destroy(book);
@@ -88,8 +88,7 @@ pub const FontBook = struct {
         }
 
         if (self.texture == null) {
-            self.texture = aya.gfx.Texture.init(width, height);
-            self.texture.?.setSamplerState(fna.SamplerState{ .filter = self.tex_filter });
+            self.texture = aya.gfx.Texture.init(width, height, self.tex_filter);
         }
 
         self.width = width;

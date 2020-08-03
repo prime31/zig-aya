@@ -10,12 +10,11 @@ pub const draw = struct {
 
     pub fn init(config: gfx.Config) !void {
         var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-        white_tex = gfx.Texture.init(2, 2);
-        white_tex.setColorData(pixels[0..]);
+        white_tex = gfx.Texture.initWithColorData(pixels[0..], 2, 2, .nearest);
 
         batcher = try gfx.Batcher.init(null, config.batcher_max_sprites);
 
-        fontbook = try gfx.FontBook.init(null, 128, 128, .point);
+        fontbook = try gfx.FontBook.init(null, 128, 128, .nearest);
         _ = fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
         fontbook.setSize(10);
     }
@@ -32,7 +31,7 @@ pub const draw = struct {
         quad.setFill(texture.width, texture.height);
 
         var mat = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale });
-        batcher.draw(texture.tex, quad, mat, math.Color.white);
+        batcher.draw(texture, quad, mat, math.Color.white);
     }
 
     pub fn texViewport(texture: gfx.Texture, viewport: math.RectI, transform: math.Mat32) void {
@@ -60,7 +59,7 @@ pub const draw = struct {
             quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
             quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            batcher.draw(book.texture.?.tex, quad, matrix, math.Color.white);
+            batcher.draw(book.texture.?, quad, matrix, math.Color.white);
         }
     }
 
@@ -91,7 +90,7 @@ pub const draw = struct {
 
         const offset = if (size == 1) 0 else size * 0.5;
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
-        batcher.draw(white_tex.tex, quad, mat, color);
+        batcher.draw(white_tex, quad, mat, color);
     }
 
     pub fn line(start: math.Vec2, end: math.Vec2, thickness: f32, color: math.Color) void {
@@ -101,13 +100,13 @@ pub const draw = struct {
         const length = start.distance(end);
 
         var mat = math.Mat32.initTransform(.{ .x = start.x, .y = start.y, .angle = angle, .sx = length, .sy = thickness });
-        batcher.draw(white_tex.tex, quad, mat, color);
+        batcher.draw(white_tex, quad, mat, color);
     }
 
     pub fn rect(position: math.Vec2, width: f32, height: f32, color: math.Color) void {
         quad.setFill(@floatToInt(i32, width), @floatToInt(i32, height));
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y });
-        batcher.draw(white_tex.tex, quad, mat, color);
+        batcher.draw(white_tex, quad, mat, color);
     }
 
     pub fn hollowRect(position: math.Vec2, width: f32, height: f32, thickness: f32, color: math.Color) void {

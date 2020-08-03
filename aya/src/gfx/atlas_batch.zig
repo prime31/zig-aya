@@ -104,11 +104,3 @@ pub const AtlasBatch = struct {
         self.mesh.drawQuads(0, @intCast(i32, self.sprite_count * 4));
     }
 };
-
-test "test atlas batch" {
-    // var tex = aya.gfx.Texture.init(4, 4);
-    // var quad = aya.math.Quad.init(0, 0, 4, 4, 4, 4);
-    // var batch = try AtlasBatch.init(null, tex, 10);
-    // batch.set(0, &quad, null, aya.math.Color.white);
-    // batch.deinit();
-}
