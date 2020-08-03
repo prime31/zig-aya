@@ -36,6 +36,7 @@ pub fn DynamicMesh(comptime T: type) type {
         bindings: sg_bindings,
         verts: []T,
         element_count: c_int,
+        verts_updated: bool = false,
         allocator: *std.mem.Allocator,
 
         pub fn init(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []u16) !Self {
@@ -59,6 +60,7 @@ pub fn DynamicMesh(comptime T: type) type {
 
         /// deinits the current VertexBuffer and creates a new one with the new_vertex_count
         pub fn expandBuffers(self: *Self, new_vertex_count: i32, new_index_count: i32) !void {
+            @panic("wtf, just make a new mesh or something");
             self.vert_buffer.deinit();
             self.vert_buffer = buffers.VertexBuffer.init(T, new_vertex_count, true);
             self.vert_buffer_binding.vertexBuffer = self.vert_buffer.buffer;
@@ -73,8 +75,15 @@ pub fn DynamicMesh(comptime T: type) type {
         }
 
         /// try not to use .none when using dynamic vert buffers
-        pub fn updateAllVerts(self: Self) void {
+        pub fn updateAllVerts(self: *Self) void {
+            if (self.verts_updated) {
+                return;
+            }
+            self.verts_updated = true;
             // self.vert_buffer.setData(T, self.verts, 0, options);
+            sg_update_buffer(self.bindings.vertex_buffers[0], self.verts.ptr, @intCast(c_int, self.verts.len * @sizeOf(T)));
+            // sg_update_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) void;
+            // sg_append_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) c_int;
         }
 
         /// uploads to the GPU the slice from start to end
@@ -87,16 +96,12 @@ pub fn DynamicMesh(comptime T: type) type {
             // self.vert_buffer.setData(T, vert_slice, offset_in_bytes);
         }
 
-        pub fn updateIndices(self: Self, options: fna.SetDataOptions) void {
-            std.debug.assert(self.indices.len > 0);
-            self.index_buffer.setData(i16, self.indices, 0, options);
-        }
-
         pub fn draw(self: *Self) void {
             // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
             // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
             sg_apply_bindings(&self.bindings);
             sg_draw(0, self.element_count, 1);
+            self.verts_updated = false;
         }
 
         pub fn drawPartialBuffer(self: *Self, base_element: i32, num_elements: i32) void {
@@ -104,6 +109,7 @@ pub fn DynamicMesh(comptime T: type) type {
             // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
             sg_apply_bindings(&self.bindings);
             sg_draw(base_element, num_elements, 1);
+            self.verts_updated = false;
         }
     };
 }
