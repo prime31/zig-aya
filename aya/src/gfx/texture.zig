@@ -97,12 +97,20 @@ pub const Texture = extern struct {
     }
 
     pub fn setData(self: Texture, data: []u8) void {
-        std.debug.panic("not implemented\n", .{});
+        std.debug.assert(data.len == @intCast(usize, self.width * self.height));
+        var content = std.mem.zeroes(sg_image_content);
+        content.subimage[0][0].ptr = data.ptr;
+        content.subimage[0][0].size = self.width * self.height * 4 * @sizeOf(u8);
+        sg_update_image(self.img, &content);
         // aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }
 
     pub fn setColorData(self: Texture, data: []u32) void {
-        std.debug.panic("not implemented\n", .{});
+        std.debug.assert(data.len == @intCast(usize, self.width * self.height));
+        var content = std.mem.zeroes(sg_image_content);
+        content.subimage[0][0].ptr = data.ptr;
+        content.subimage[0][0].size = self.width * self.height * @sizeOf(u32);
+        sg_update_image(self.img, &content);
         // aya.gfx.device.setTextureData2D(self.tex, .color, 0, 0, self.width, self.height, 0, &data[0], @intCast(i32, data.len));
     }
 
