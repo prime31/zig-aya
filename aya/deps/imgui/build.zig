@@ -2,12 +2,6 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub const LibType = enum(i32) {
-    static,
-    dynamic, // requires DYLD_LIBRARY_PATH to point to the dylib path
-    exe_compiled,
-};
-
 pub fn build(b: *std.build.Builder) anyerror!void {
     const exe = b.addStaticLibrary("JunkLib", null);
     linkArtifact(b, exe, b.standardTargetOptions(.{}), .static, "");
@@ -15,25 +9,8 @@ pub fn build(b: *std.build.Builder) anyerror!void {
 }
 
 /// rel_path is used to add package paths. It should be the the same path used to include this build file
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, lib_type: LibType) void {
-    switch (lib_type) {
-        .static => {
-            const lib = b.addStaticLibrary("imgui", null);
-            lib.setBuildMode(builtin.Mode.ReleaseSmall);
-            lib.setTarget(target);
-
-            compileImGui(b, lib, target);
-            lib.install();
-
-            artifact.linkLibrary(lib);
-        },
-        .dynamic => {
-            @panic("not implemented");
-        },
-        .exe_compiled => {
-            compileImGui(b, artifact, target);
-        },
-    }
+pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target) void {
+    compileImGui(b, artifact, target);
 }
 
 fn compileImGui(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target) void {

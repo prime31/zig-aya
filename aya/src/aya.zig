@@ -3,8 +3,8 @@ const std = @import("std");
 pub const WindowConfig = @import("window.zig").WindowConfig;
 
 // libs
-pub const sdl = @import("sdl");
-pub const fna = @import("fna");
+pub const sokol = @import("sokol");
+pub const filebrowser = @import("filebrowser");
 
 // aya namespaces
 pub const gfx = @import("gfx/gfx.zig");
@@ -15,19 +15,18 @@ pub const math = @import("math/math.zig");
 pub const mem = @import("mem/mem.zig");
 pub const utils = @import("utils/utils.zig");
 pub const tilemap = @import("tilemap/tilemap.zig");
+pub const window = @import("window.zig");
 
 // aya objects
-pub var window: Window = undefined;
 pub var time: Time = undefined;
 pub var input: Input = undefined;
 pub var debug: Debug = undefined;
 
-const Window = @import("window.zig").Window;
 const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
 const Debug = @import("debug.zig").Debug;
 
-const imgui = @import("imgui/implementation.zig");
+usingnamespace sokol;
 
 pub const Config = struct {
     init: fn () void,
@@ -35,96 +34,89 @@ pub const Config = struct {
     render: fn () void,
     shutdown: ?fn () void = null,
 
-    update_rate: f64 = 60, // desired fps
+    swap_interval: c_int = 1,
     gfx: gfx.Config = gfx.Config{},
     window: WindowConfig = WindowConfig{},
-
-    imgui: bool = false, // whether imgui should be disabled
-    imgui_viewports: bool = false, // whether imgui viewports should be enabled
-    imgui_docking: bool = true, // whether imgui docking should be enabled
-    imgui_icon_font: bool = true, // whether to include a utf8 icon font
+    onFileDropped: ?fn ([]const u8) void = null,
 };
 
-pub fn run(config: Config) !void {
-    // force GL for windows. DX seems to seg fault...
-    if (std.Target.current.os.tag == .windows) {
-        _ = sdl.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-    }
-    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
-        sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
-        return error.SDLInitializationFailed;
-    }
-    defer sdl.SDL_Quit();
+var state = struct {
+    config: Config = undefined,
+    cmd_down: bool = false,
+}{};
 
+pub fn run(config: Config) !void {
+    state.config = config;
+
+    var app_desc = std.mem.zeroes(sapp_desc);
+    app_desc.init_cb = init;
+    app_desc.frame_cb = update;
+    app_desc.cleanup_cb = cleanup;
+    app_desc.event_cb = event;
+
+    app_desc.width = config.window.width;
+    app_desc.height = config.window.height;
+    app_desc.swap_interval = config.swap_interval;
+    app_desc.high_dpi = config.window.high_dpi;
+    app_desc.window_title = config.window.title.ptr;
+
+    if (state.config.onFileDropped == null) {
+        app_desc.max_dropped_files = 0;
+    }
+
+    app_desc.alpha = false;
+    _ = sapp_run(&app_desc);
+}
+
+// Event functions
+export fn init() void {
     mem.initTmpAllocator();
 
-    window = try Window.init(config.window);
-    defer window.deinit();
+    var desc = std.mem.zeroes(sg_desc);
+    desc.context = sapp_sgcontext();
+    sg_setup(&desc);
 
-    var params = fna.PresentationParameters{
-        .backBufferWidth = config.window.width,
-        .backBufferHeight = config.window.height,
-        .deviceWindowHandle = window.sdl_window,
-    };
-    try gfx.init(&params, config.gfx);
-    defer gfx.deinit();
-
-    time = Time.init(config.update_rate);
-    input = Input.init(window.scale());
-    debug = try Debug.init();
-    defer debug.deinit();
-
-    if (config.imgui) imgui.init(gfx.device, window.sdl_window, config.imgui_docking, config.imgui_viewports, config.imgui_icon_font);
-
-    config.init();
-    runLoop(config.update, config.render, config.imgui);
-
-    if (config.shutdown) |shutdown| {
-        shutdown();
-    }
-
-    if (config.imgui) imgui.deinit();
+    gfx.init(state.config.gfx);
+    state.config.init();
 }
 
-fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {
-    while (!pollEvents(imgui_enabled)) {
-        // if ImGui is running we force a timer resync every frame. This ensures we get exactly one update call and one render call
-        // each frame which prevents ImGui from flickering due to skipped/doubled update calls.
-        if (imgui_enabled) {
-            imgui.newFrame();
-            time.resync();
+export fn update() void {
+    state.config.update();
+    state.config.render();
+    gfx.commit();
+}
+
+export fn event(e: [*c]const sapp_event) void {
+    // special handling of dropped files
+    if (e[0].type == .SAPP_EVENTTYPE_FILE_DROPPED) {
+        if (state.config.onFileDropped) |onFileDropped| {
+            const dropped_file_cnt = sapp_get_num_dropped_files();
+            var i: usize = 0;
+            while (i < dropped_file_cnt) : (i += 1) {
+                onFileDropped(std.mem.spanZ(sapp_get_dropped_file_path(@intCast(c_int, i))));
+            }
         }
+    }
 
-        gfx.device.beginFrame();
-
-        time.tick(update);
-        render();
-
-        gfx.commit();
-        if (imgui_enabled) imgui.render();
-        gfx.device.swapBuffers(window.sdl_window);
+    // handle cmd+Q on macos
+    if (std.Target.current.os.tag == .macosx) {
+        if (e[0].type == .SAPP_EVENTTYPE_KEY_DOWN) {
+            if (e[0].key_code == .SAPP_KEYCODE_LEFT_SUPER) {
+                state.cmd_down = true;
+            } else if (state.cmd_down and e[0].key_code == .SAPP_KEYCODE_Q) {
+                sapp_request_quit();
+            }
+        } else if (e[0].type == .SAPP_EVENTTYPE_KEY_UP and e[0].key_code == .SAPP_KEYCODE_LEFT_SUPER) {
+            state.cmd_down = false;
+        }
     }
 }
 
-/// returns true when its time to quit
-fn pollEvents(imgui_enabled: bool) bool {
-    input.newFrame();
-    var event: sdl.SDL_Event = undefined;
+export fn cleanup() void {
+    if (state.config.shutdown) |shutdown| shutdown();
+    sg_shutdown();
+}
 
-    while (sdl.SDL_PollEvent(&event) != 0) {
-        // ignore events imgui eats
-        if (imgui_enabled and imgui.handleEvent(&event)) continue;
-
-        switch (event.type) {
-            sdl.SDL_QUIT => return true,
-            sdl.SDL_WINDOWEVENT => {
-                if (event.window.windowID == window.id) {
-                    if (event.window.event == @enumToInt(sdl.SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)) return true;
-                    window.handleEvent(&event.window);
-                }
-            },
-            else => input.handleEvent(&event),
-        }
-    }
-    return false;
+pub fn quit() void {
+    sapp_request_quit();
 }

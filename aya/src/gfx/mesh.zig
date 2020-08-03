@@ -1,76 +1,52 @@
 const std = @import("std");
-const fna = @import("fna");
 const aya = @import("../aya.zig");
-const gfx = @import("gfx.zig");
+const gfx = aya.gfx;
 const buffers = @import("buffers.zig");
+usingnamespace aya.sokol;
 
 pub const Mesh = struct {
-    index_buffer: buffers.IndexBuffer,
-    vert_buffer: buffers.VertexBuffer,
-    vert_buffer_binding: fna.VertexBufferBinding = undefined,
+    bindings: sg_bindings = undefined,
+    element_count: c_int,
 
-    pub fn init(comptime T: type, vertex_count: i32, index_count: i32, vbuff_dynamic: bool, ibuff_dynamic: bool) Mesh {
-        var mesh = Mesh{
-            .index_buffer = buffers.IndexBuffer.init(index_count, ibuff_dynamic),
-            .vert_buffer = buffers.VertexBuffer.init(T, vertex_count, vbuff_dynamic),
+    pub fn init(comptime T: type, verts: []T, indices: []u16) Mesh {
+        const vertex_buffer = buffers.VertexBuffer.make(T, verts, .SG_USAGE_IMMUTABLE);
+        const index_buffer = buffers.IndexBuffer.make(u16, indices, .SG_USAGE_IMMUTABLE);
+        return .{
+            .bindings = buffers.Bindings.make(vertex_buffer, index_buffer),
+            .element_count = @intCast(c_int, indices.len),
         };
-
-        mesh.vert_buffer_binding = fna.VertexBufferBinding{
-            .vertexBuffer = mesh.vert_buffer.buffer,
-            .vertexDeclaration = buffers.VertexBuffer.vertexDeclarationForType(T) catch unreachable,
-        };
-
-        return mesh;
     }
 
     pub fn deinit(self: Mesh) void {
-        self.index_buffer.deinit();
-        self.vert_buffer.deinit();
+        sg_destroy_buffer(self.bindings.vertex_buffers[0]);
+        sg_destroy_buffer(self.bindings.index_buffer);
     }
 
-    /// render the mesh. Assumes .triangle_list and .sixteen_bit index buffer ele size
-    pub fn draw(self: *Mesh, num_vertices: i32) void {
-        const primitive_count = @divExact(num_vertices, 2);
-
-        aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, 0); // last 2 params: bindings_updated: u8, base_vertex: i32
-        aya.gfx.device.drawIndexedPrimitives(.triangle_list, 0, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+    pub fn draw(self: *Mesh) void {
+        sg_apply_bindings(&self.bindings);
+        sg_draw(0, self.element_count, 1);
     }
 };
 
-/// Contains a dynamic VertexBuffer and a slice of verts. The IndexBuffer is optionally dynamic. If it is dynamic
-/// a slice of indices will also be maintained.
+/// Contains a dynamic vert buffer and a slice of verts
 pub fn DynamicMesh(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        index_buffer: buffers.IndexBuffer,
-        vert_buffer: buffers.VertexBuffer,
-        vert_buffer_binding: fna.VertexBufferBinding = undefined,
+        bindings: sg_bindings,
         verts: []T,
-        indices: []i16 = undefined,
         allocator: *std.mem.Allocator,
 
-        pub fn init(allocator: ?*std.mem.Allocator, vertex_count: i32, index_count: i32, ibuff_dynamic: bool) !Self {
+        pub fn init(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []u16) !Self {
             const alloc = allocator orelse aya.mem.allocator;
+            const vertex_buffer = buffers.VertexBuffer.makeMutable(T, vertex_count, .SG_USAGE_DYNAMIC);
+            const index_buffer = buffers.IndexBuffer.make(u16, indices, .SG_USAGE_IMMUTABLE);
 
-            var mesh = Self{
-                .index_buffer = buffers.IndexBuffer.init(index_count, ibuff_dynamic),
-                .vert_buffer = buffers.VertexBuffer.init(T, vertex_count, true),
+            return Self {
+                .bindings = buffers.Bindings.make(vertex_buffer, index_buffer),
                 .verts = try alloc.alloc(T, @intCast(usize, vertex_count)),
-                .indices = &[_]i16{},
                 .allocator = alloc,
             };
-
-            if (ibuff_dynamic) {
-                mesh.indices = try alloc.alloc(i16, @intCast(usize, index_count));
-            }
-
-            mesh.vert_buffer_binding = fna.VertexBufferBinding{
-                .vertexBuffer = mesh.vert_buffer.buffer,
-                .vertexDeclaration = buffers.VertexBuffer.vertexDeclarationForType(T) catch unreachable,
-            };
-
-            return mesh;
         }
 
         pub fn deinit(self: Self) void {
@@ -101,13 +77,13 @@ pub fn DynamicMesh(comptime T: type) type {
         }
 
         /// uploads to the GPU the slice from start to end
-        pub fn appendVertSlice(self: Self, start_index: i32, num_verts: i32, options: fna.SetDataOptions) void {
+        pub fn appendVertSlice(self: Self, start_index: i32, num_verts: i32) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
             // cheat a bit here and use the VertexBufferBinding data to get the element size of our verts
             const offset_in_bytes = start_index * @intCast(i32, @sizeOf(T));
             const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
 
-            self.vert_buffer.setData(T, vert_slice, offset_in_bytes, options);
+            // self.vert_buffer.setData(T, vert_slice, offset_in_bytes);
         }
 
         pub fn updateIndices(self: Self, options: fna.SetDataOptions) void {
@@ -126,20 +102,8 @@ pub fn DynamicMesh(comptime T: type) type {
         }
 
         pub fn draw(self: *Self, base_vertex: i32, num_vertices: i32, primitive_count: i32) void {
-            aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
-            aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
+            // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
+            // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
         }
     };
-}
-
-test "test mesh" {
-    var mesh = Mesh.init(buffers.Vertex, 5, 5, true, false);
-    mesh.draw(2);
-    mesh.deinit();
-
-    var dyn_mesh = try DynamicMesh(buffers.Vertex).init(null, 10, 10, false);
-    dyn_mesh.updateAllVerts(.none);
-    dyn_mesh.draw(0, 2);
-    _ = try dyn_mesh.expandBuffers(15, 14);
-    dyn_mesh.deinit();
 }

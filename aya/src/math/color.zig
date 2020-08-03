@@ -67,6 +67,15 @@ pub const Color = extern union {
         };
     }
 
+    pub fn asSlice(self: Color) [4]f32 {
+        return [_]f32 {
+            @intToFloat(f32, self.comps.r) / 255,
+            @intToFloat(f32, self.comps.g) / 255,
+            @intToFloat(f32, self.comps.b) / 255,
+            @intToFloat(f32, self.comps.a) / 255,
+        };
+    }
+
     pub fn scale(self: Color, s: f32) Color {
         const r = @floatToInt(i32, @intToFloat(f32, self.r_val()) * s);
         const g = @floatToInt(i32, @intToFloat(f32, self.g_val()) * s);
