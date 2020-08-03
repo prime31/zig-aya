@@ -9,6 +9,7 @@ pub const Texture = extern struct {
 
     pub const Filter = enum { linear, nearest };
 
+    /// creates a render texture for offscreen rendering
     pub fn initOffscreen(width: i32, height: i32, filter: Filter) Texture {
         var img_desc = std.mem.zeroes(sg_image_desc);
         img_desc.render_target = true;
@@ -79,6 +80,16 @@ pub const Texture = extern struct {
         defer upaya.stb_image.stbi_image_free(load_res);
 
         return Texture.initWithData(load_res[0..@intCast(usize, w * h * channels)], w, h, filter);
+    }
+
+    pub fn initCheckerboard() Texture {
+        var pixels = [_]u32{
+            0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+            0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+            0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+            0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+        };
+        return initWithColorData(pixels[0..], 4, 4, .nearest);
     }
 
     pub fn deinit(self: Texture) void {
