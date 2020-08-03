@@ -85,6 +85,7 @@ pub fn setPipeline(pipeline: Pipeline) void {
     //     shader.setParamByIndex(aya.math.Mat32, shader.transform_matrix_index, state.transform_mat);
     // }
     sg_apply_pipeline(pipeline.pip);
+    sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &state.transform_mat.data, @sizeOf(math.Mat32));
 }
 
 // Passes

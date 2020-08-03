@@ -27,7 +27,7 @@ pub const Pipeline = extern struct {
     pub fn getDefaultPipelineDesc() sg_pipeline_desc {
         var pipeline_desc = std.mem.zeroes(sg_pipeline_desc);
         pipeline_desc.layout.attrs[0].format = .SG_VERTEXFORMAT_FLOAT2;
-        pipeline_desc.layout.attrs[1].format = .SG_VERTEXFORMAT_FLOAT3;
+        pipeline_desc.layout.attrs[1].format = .SG_VERTEXFORMAT_FLOAT2;
         pipeline_desc.layout.attrs[2].format = .SG_VERTEXFORMAT_UBYTE4N;
         // pipeline_desc.layout.buffers[0].stride = 28;
 
@@ -36,8 +36,8 @@ pub const Pipeline = extern struct {
         pipeline_desc.blend.enabled = true;
         pipeline_desc.blend.src_factor_rgb = .SG_BLENDFACTOR_SRC_ALPHA;
         pipeline_desc.blend.dst_factor_rgb = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        pipeline_desc.blend.src_factor_alpha = .SG_BLENDFACTOR_ONE;
-        pipeline_desc.blend.dst_factor_alpha = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        // pipeline_desc.blend.src_factor_alpha = .SG_BLENDFACTOR_ONE;
+        // pipeline_desc.blend.dst_factor_alpha = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
         pipeline_desc.depth_stencil.depth_compare_func = .SG_COMPAREFUNC_LESS_EQUAL;
         pipeline_desc.depth_stencil.depth_write_enabled = false;
@@ -57,7 +57,7 @@ pub const Pipeline = extern struct {
         shader_desc.vs.uniform_blocks[0].size = @sizeOf(aya.math.Mat32);
         shader_desc.vs.uniform_blocks[0].uniforms[0].name = "TransformMatrix";
         shader_desc.vs.uniform_blocks[0].uniforms[0].type = .SG_UNIFORMTYPE_FLOAT3;
-        shader_desc.vs.uniform_blocks[0].uniforms[0].array_count = 1;
+        shader_desc.vs.uniform_blocks[0].uniforms[0].array_count = 2;
 
         return shader_desc;
     }
@@ -89,15 +89,16 @@ const vs_metal =
 \\ {
 \\     float2 VaryingTexCoord [[user(locn0)]];
 \\     float4 VaryingColor [[user(locn1)]];
-\\     float4 gl_Position [[position]];
+\\     float4 Position [[position]];
 \\ };
 \\
 \\ static inline __attribute__((always_inline))
 \\ float4 position(thread const float3x2& transMat, thread const float2& localPosition)
 \\ {
-\\     // position = float4(mul(float3(position.xy, 1), TransformMatrix), 0, 1);
-\\     return float4(localPosition, 0.0, 1.0);
+\\     //return float4(localPosition * transMat, 0.0);
+\\     //return float4(localPosition, 0.0, 1.0);
 \\     //return float4(transMat * float3(localPosition, 1.0), 0.0, 1.0);
+\\     return float4(transMat * float3(localPosition, 0.0), 0.0, 1.0);
 \\ }
 \\
 \\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float3, 2>& TransformMatrix [[buffer(0)]])
@@ -105,9 +106,12 @@ const vs_metal =
 \\     vs_out out = {};
 \\     out.VaryingTexCoord = in.VertTexCoord;
 \\     out.VaryingColor = in.VertColor;
+\\      // 0, 2, 4, 1, 3, 5 -> 0x, 0z, 1y, 0y, 1x, 1z
+\\     //float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].z, TransformMatrix[1].y, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].z);
 \\     float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[0].z, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[1].z);
-\\     //out.gl_Position = position(matrix, in.VertPosition);
-\\     out.gl_Position = float4(in.VertPosition, 0.0, 1.0);
+\\     matrix = float3x2(0.003, -0.000, -0.000, -0.004, -1.000, 1.000);
+\\     matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[0].z, TransformMatrix[1].x, -1.000, 1.000);
+\\     out.Position = position(matrix, in.VertPosition);
 \\     return out;
 \\ }
 ;
@@ -143,7 +147,7 @@ const fs_metal =
 \\     float4 param = in.VaryingColor;
 \\     float2 param_1 = in.VaryingTexCoord;
 \\     out.frag_color = effect(param, MainTex, MainTexSmplr, param_1);
-\\     out.frag_color += float4(1, 1, 1, 1);
+\\     out.frag_color = in.VaryingColor;
 \\     return out;
 \\ }
 ;

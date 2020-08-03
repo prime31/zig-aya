@@ -32,7 +32,6 @@ pub const Texture = extern struct {
         img_desc.wrap_v = .SG_WRAP_CLAMP_TO_EDGE;
         img_desc.min_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
         img_desc.mag_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
-        // img_desc.content.subimage[0][0].size = width * height * 4 * @sizeOf(u8);
 
         return .{ .width = width, .height = height, .img = sg_make_image(&img_desc) };
     }
@@ -64,7 +63,7 @@ pub const Texture = extern struct {
         img_desc.mag_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
         img_desc.content.subimage[0][0].ptr = pixels.ptr;
         img_desc.content.subimage[0][0].size = width * height * @sizeOf(u32);
-        img_desc.label = "upaya-texture";
+        img_desc.label = "aya-texture";
 
         return .{ .width = width, .height = height, .img = sg_make_image(&img_desc) };
     }
