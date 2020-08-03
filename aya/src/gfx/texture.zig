@@ -1,4 +1,5 @@
 const std = @import("std");
+const stb_image = @import("stb_image");
 const aya = @import("../aya.zig");
 usingnamespace aya.sokol;
 
@@ -70,14 +71,14 @@ pub const Texture = extern struct {
     }
 
     pub fn initFromFile(file: []const u8, filter: Filter) !Texture {
-        const image_contents = try upaya.fs.read(aya.mem.tmp_allocator, file);
+        const image_contents = try aya.fs.read(aya.mem.tmp_allocator, file);
 
         var w: c_int = undefined;
         var h: c_int = undefined;
         var channels: c_int = undefined;
-        const load_res = upaya.stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
+        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
         if (load_res == null) return error.ImageLoadFailed;
-        defer upaya.stb_image.stbi_image_free(load_res);
+        defer stb_image.stbi_image_free(load_res);
 
         return Texture.initWithData(load_res[0..@intCast(usize, w * h * channels)], w, h, filter);
     }
@@ -118,15 +119,15 @@ pub const Texture = extern struct {
         @panic("shit");
     }
 
-    pub fn imTextureID(self: Texture) upaya.imgui.ImTextureID {
+    pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
         return @intToPtr(*c_void, self.img.id);
     }
 
     /// returns true if the image was loaded successfully
     pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
-        const image_contents = upaya.fs.read(upaya.mem.tmp_allocator, file) catch unreachable;
+        const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
         var comp: c_int = undefined;
-        if (upaya.stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+        if (aya.stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
             return true;
         }
 

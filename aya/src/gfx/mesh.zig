@@ -80,20 +80,22 @@ pub fn DynamicMesh(comptime T: type) type {
                 return;
             }
             self.verts_updated = true;
-            // self.vert_buffer.setData(T, self.verts, 0, options);
+
             sg_update_buffer(self.bindings.vertex_buffers[0], self.verts.ptr, @intCast(c_int, self.verts.len * @sizeOf(T)));
-            // sg_update_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) void;
-            // sg_append_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) c_int;
         }
 
         /// uploads to the GPU the slice from start to end
-        pub fn appendVertSlice(self: Self, start_index: i32, num_verts: i32) void {
+        pub fn appendVertSlice(self: *Self, start_index: i32, num_verts: i32) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
-            // cheat a bit here and use the VertexBufferBinding data to get the element size of our verts
-            const offset_in_bytes = start_index * @intCast(i32, @sizeOf(T));
-            const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
+            if (self.verts_updated) {
+                return;
+            }
+            self.verts_updated = true;
 
+            const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
             // self.vert_buffer.setData(T, vert_slice, offset_in_bytes);
+            self.bindings.vertex_buffer_offsets[0] = sg_append_buffer(self.bindings.vertex_buffers[0], vert_slice.ptr, @intCast(c_int, vert_slice.len * @sizeOf(T)));
+            // sg_append_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) c_int;
         }
 
         pub fn draw(self: *Self) void {

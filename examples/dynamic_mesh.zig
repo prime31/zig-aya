@@ -23,13 +23,13 @@ fn init() void {
     }; //0, 1, 2, 0, 2, 3,
     mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex).init(null, 4, indices[0..]) catch unreachable;
 
-    mesh.verts[0] = .{ .pos = .{ .x = 220, .y = 20 }, .uv = .{ .x = 1, .y = 0 }, .col = 0x00FF0FFF };
+    mesh.verts[0] = .{ .pos = .{ .x = 220, .y = 20 }, .uv = .{ .x = 1, .y = 0 }, .col = 0xFFFF0FFF };
     mesh.verts[1] = .{ .pos = .{ .x = 20, .y = 20 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF00FFFF };
-    mesh.verts[2] = .{ .pos = .{ .x = 20, .y = 220 }, .uv = .{ .x = 0, .y = 1 }, .col = 0x00FFFFFF };
+    mesh.verts[2] = .{ .pos = .{ .x = 20, .y = 220 }, .uv = .{ .x = 0, .y = 1 }, .col = 0xFFFFFFFF };
     mesh.verts[3] = .{ .pos = .{ .x = 220, .y = 220 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF };
     mesh.updateAllVerts();
 
-    tex = aya.gfx.Texture.initCheckerboard();
+    tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
     mesh.bindings.fs_images[0] = tex.img;
 }
 
@@ -54,5 +54,6 @@ fn render() void {
     aya.gfx.beginNullPass();
     aya.gfx.beginPass(.{ .color = aya.math.Color.gold });
     mesh.draw();
+    aya.draw.tex(tex, 400, 400);
     aya.gfx.endPass();
 }
