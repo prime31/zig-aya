@@ -4,6 +4,8 @@ const fs = aya.fs;
 const gfx = aya.gfx;
 usingnamespace aya.sokol;
 
+const metal = std.Target.current.os.tag == .macosx;
+
 pub const Pipeline = extern struct {
     pip: sg_pipeline,
     shader: sg_shader,
@@ -29,7 +31,6 @@ pub const Pipeline = extern struct {
         pipeline_desc.layout.attrs[0].format = .SG_VERTEXFORMAT_FLOAT2;
         pipeline_desc.layout.attrs[1].format = .SG_VERTEXFORMAT_FLOAT2;
         pipeline_desc.layout.attrs[2].format = .SG_VERTEXFORMAT_UBYTE4N;
-        // pipeline_desc.layout.buffers[0].stride = 28;
 
         pipeline_desc.index_type = .SG_INDEXTYPE_UINT16;
 
@@ -42,7 +43,8 @@ pub const Pipeline = extern struct {
         pipeline_desc.depth_stencil.depth_compare_func = .SG_COMPAREFUNC_LESS_EQUAL;
         pipeline_desc.depth_stencil.depth_write_enabled = false;
 
-        pipeline_desc.blend.color_format = .SG_PIXELFORMAT_BGRA8; // metal only for bgra? SG_PIXELFORMAT_RGBA8;
+        // pipeline_desc.blend.color_format = .SG_PIXELFORMAT_BGRA8; // metal only for bgra? SG_PIXELFORMAT_RGBA8;
+        // pipeline_desc.blend.color_format = .SG_PIXELFORMAT_RGBA8; // metal only for bgra? SG_PIXELFORMAT_RGBA8;
         // pipeline_desc.blend.depth_format = .SG_PIXELFORMAT_NONE;
         pipeline_desc.rasterizer.cull_mode = .SG_CULLMODE_NONE;
 
@@ -54,20 +56,68 @@ pub const Pipeline = extern struct {
     pub fn getDefaultShaderDesc() sg_shader_desc {
         var shader_desc = std.mem.zeroes(sg_shader_desc);
         shader_desc.fs.images[0].name = "MainTex";
+        shader_desc.fs.images[0].type = .SG_IMAGETYPE_2D;
         shader_desc.vs.uniform_blocks[0].size = @sizeOf(aya.math.Mat32);
         shader_desc.vs.uniform_blocks[0].uniforms[0].name = "TransformMatrix";
-        shader_desc.vs.uniform_blocks[0].uniforms[0].type = .SG_UNIFORMTYPE_FLOAT3;
-        shader_desc.vs.uniform_blocks[0].uniforms[0].array_count = 2;
+        shader_desc.vs.uniform_blocks[0].uniforms[0].type = .SG_UNIFORMTYPE_FLOAT2;
+        shader_desc.vs.uniform_blocks[0].uniforms[0].array_count = 3;
 
         return shader_desc;
     }
 
     pub fn makeShader(comptime vert: []const u8, comptime frag: []const u8, shader_desc: *sg_shader_desc) sg_shader {
-        shader_desc.vs.source = vs_metal ++ vert;
-        shader_desc.fs.source = fs_metal ++ frag;
+        shader_desc.vs.source = if (metal) vs_metal ++ vert else vs_gl ++ vert;
+        shader_desc.fs.source = if (metal) fs_metal ++ frag else fs_gl ++ frag;
         return sg_make_shader(shader_desc);
     }
 };
+
+const vs_gl =
+\\#version 330
+\\uniform vec2 TransformMatrix[3];
+\\
+\\layout (location=0) in vec2 VertPosition;
+\\layout (location=1) in vec2 VertTexCoord;
+\\layout (location=2) in vec4 VertColor;
+\\
+\\out vec2 VaryingTexCoord;
+\\out vec4 VaryingColor;
+\\
+\\vec4 position(mat3x2 transMat, vec2 localPosition);
+\\
+\\void main() {
+\\  VaryingTexCoord = VertTexCoord;
+\\  VaryingColor = VertColor;
+\\  mat3x2 mat = mat3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
+\\	gl_Position = position(mat, VertPosition);
+\\}
+\\
+\\vec4 position(mat3x2 transMat, vec2 localPosition) {
+\\	return vec4(transMat * vec3(localPosition, 0), 0, 1);
+\\}
+;
+
+const fs_gl =
+\\#version 330
+\\uniform sampler2D MainTex;
+\\uniform vec4 via_ScreenSize;
+\\
+\\in vec2 VaryingTexCoord;
+\\in vec4 VaryingColor;
+\\
+\\#define via_PixelCoord (vec2(gl_FragCoord.x, (gl_FragCoord.y * via_ScreenSize.z) + via_ScreenSize.w))
+\\
+\\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord);
+\\
+\\layout (location=0) out vec4 frag_color;
+\\void main() {
+\\	frag_color = effect(VaryingColor, MainTex, VaryingTexCoord.st);
+\\}
+\\
+\\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord) {
+\\	return texture(tex, texcoord) * vcolor;
+\\}
+;
 
 const vs_metal =
 \\ #pragma clang diagnostic ignored "-Wmissing-prototypes"
@@ -95,22 +145,17 @@ const vs_metal =
 \\ static inline __attribute__((always_inline))
 \\ float4 position(thread const float3x2& transMat, thread const float2& localPosition)
 \\ {
-\\     //return float4(localPosition * transMat, 0.0);
-\\     //return float4(localPosition, 0.0, 1.0);
-\\     //return float4(transMat * float3(localPosition, 1.0), 0.0, 1.0);
 \\     return float4(transMat * float3(localPosition, 0.0), 0.0, 1.0);
 \\ }
 \\
-\\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float3, 2>& TransformMatrix [[buffer(0)]])
+\\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float2, 3>& TransformMatrix [[buffer(0)]])
 \\ {
 \\     vs_out out = {};
 \\     out.VaryingTexCoord = in.VertTexCoord;
 \\     out.VaryingColor = in.VertColor;
-\\      // 0, 2, 4, 1, 3, 5 -> 0x, 0z, 1y, 0y, 1x, 1z
-\\     //float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].z, TransformMatrix[1].y, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].z);
-\\     float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[0].z, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[1].z);
-\\     matrix = float3x2(0.003, -0.000, -0.000, -0.004, -1.000, 1.000);
-\\     matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[0].z, TransformMatrix[1].x, -1.000, 1.000);
+\\
+\\     //float3x2 matrix = float3x2(0.003, -0.000, -0.000, -0.004, -1.000, 1.000); // identity for default win size
+\\     float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
 \\     out.Position = position(matrix, in.VertPosition);
 \\     return out;
 \\ }
@@ -136,10 +181,7 @@ const fs_metal =
 \\ };
 \\
 \\ static inline __attribute__((always_inline))
-\\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSmplr, thread const float2& texcoord)
-\\ {
-\\     return tex.sample(texSmplr, texcoord) * vcolor;
-\\ }
+\\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord);
 \\
 \\ fragment main0_out _main(main0_in in [[stage_in]], texture2d<float> MainTex [[texture(0)]], sampler MainTexSmplr [[sampler(0)]])
 \\ {
@@ -147,7 +189,13 @@ const fs_metal =
 \\     float4 param = in.VaryingColor;
 \\     float2 param_1 = in.VaryingTexCoord;
 \\     out.frag_color = effect(param, MainTex, MainTexSmplr, param_1);
-\\     out.frag_color = in.VaryingColor;
 \\     return out;
 \\ }
+\\
+\\ static inline __attribute__((always_inline))
+\\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord)
+\\ {
+\\     return tex.sample(texSampler, texcoord) * vcolor;
+\\ }
+\\
 ;
