@@ -32,7 +32,7 @@ pub const Batcher = struct {
         }
 
         return Batcher{
-            .mesh = try DynamicMesh(Vertex).init(alloc, max_sprites * 4, indices),
+            .mesh = try DynamicMesh(Vertex).initWithOptions(alloc, max_sprites * 4, indices, .SG_USAGE_STREAM),
             .draw_calls = try std.ArrayList(DrawCall).initCapacity(alloc, 10),
         };
     }

@@ -80,9 +80,11 @@ pub fn createPostProcessStack() PostProcessStack {
     return PostProcessStack.init(null, state.default_pass.design_w, state.default_pass.design_h);
 }
 
-pub fn setPipeline(pipeline: Pipeline) void {
+pub fn setPipeline(pipeline: ?Pipeline) void {
+    const pip = pipeline orelse state.default_pipeline;
+
     draw.batcher.flush();
-    sg_apply_pipeline(pipeline.pip);
+    sg_apply_pipeline(pip.pip);
     sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &state.transform_mat.data, @sizeOf(math.Mat32));
 }
 
@@ -117,7 +119,7 @@ pub fn beginNullPass() void {
 pub fn beginPass(config: PassConfig) void {
     config.apply(&state.pass_action);
 
-    var proj_mat: math.Mat32 = undefined;
+    var proj_mat: math.Mat32 = math.Mat32.init();
 
     // if we already blitted to the screen we can only blit to the backbuffer
     if (state.blitted_to_screen) {
@@ -139,7 +141,7 @@ pub fn beginPass(config: PassConfig) void {
     state.transform_mat = proj_mat;
 
     // if we were given a Pipeline use it else set the default Pipeline
-    setPipeline(config.pipeline orelse state.default_pipeline);
+    setPipeline(config.pipeline);
 }
 
 pub fn endPass() void {

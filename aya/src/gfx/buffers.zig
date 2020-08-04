@@ -16,15 +16,13 @@ pub const VertexPositionColor = packed struct {
 };
 
 pub const VertexBuffer = struct {
-    pub fn make(comptime T: type, vertices: []T, usage: sg_usage) sg_buffer {
+    pub fn make(comptime T: type, vertices: []T) sg_buffer {
         var buffer_desc = std.mem.zeroes(sg_buffer_desc);
         buffer_desc.type = .SG_BUFFERTYPE_VERTEXBUFFER;
         buffer_desc.size = @intCast(c_int, vertices.len * @sizeOf(T));
-        buffer_desc.usage = usage;
+        buffer_desc.usage = .SG_USAGE_IMMUTABLE;
+        buffer_desc.content = vertices.ptr;
 
-        if (usage == .SG_USAGE_IMMUTABLE) {
-            buffer_desc.content = vertices.ptr;
-        }
         return sg_make_buffer(&buffer_desc);
     }
 
@@ -38,17 +36,15 @@ pub const VertexBuffer = struct {
 };
 
 pub const IndexBuffer = struct {
-    pub fn make(comptime T: type, indices: []T, usage: sg_usage) sg_buffer {
+    pub fn make(comptime T: type, indices: []T) sg_buffer {
         std.debug.assert(T == u16 or T == u32);
 
         var buffer_desc = std.mem.zeroes(sg_buffer_desc);
         buffer_desc.type = .SG_BUFFERTYPE_INDEXBUFFER;
         buffer_desc.size = @intCast(c_int, indices.len * @sizeOf(T));
-        buffer_desc.usage = usage;
+        buffer_desc.usage = .SG_USAGE_IMMUTABLE;
+        buffer_desc.content = indices.ptr;
 
-        if (usage == .SG_USAGE_IMMUTABLE) {
-            buffer_desc.content = indices.ptr;
-        }
         return sg_make_buffer(&buffer_desc);
     }
 
