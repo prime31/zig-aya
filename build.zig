@@ -6,10 +6,12 @@ const aya_build = @import("aya/build.zig");
 
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
-    const include_imgui = false;
+    var include_imgui = false;
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
+        [_][]const u8{ "primitives", "examples/primitives.zig" },
+        [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
         [_][]const u8{ "tilemap", "examples/tilemap.zig" },
         [_][]const u8{ "fonts", "examples/fonts.zig" },
         [_][]const u8{ "batcher", "examples/batcher.zig" },
@@ -17,14 +19,13 @@ pub fn build(b: *Builder) void {
         [_][]const u8{ "mesh", "examples/dynamic_mesh.zig" },
         [_][]const u8{ "mesh", "examples/mesh.zig" },
         [_][]const u8{ "empty", "examples/empty.zig" },
+        [_][]const u8{ "imgui", "examples/imgui.zig" },
 
         // [_][]const u8{ "shaders", "examples/shaders.zig" },
-        // [_][]const u8{ "imgui", "examples/imgui.zig" },
-        // [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
-        // [_][]const u8{ "primitives", "examples/primitives.zig" },
     };
 
     for (examples) |example, i| {
+        include_imgui = std.mem.eql(u8, example[0], "imgui");
         createExe(b, target, example[0], example[1], include_imgui);
 
         // first element in the list is added as "run" so "zig build run" works
