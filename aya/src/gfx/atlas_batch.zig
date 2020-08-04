@@ -8,45 +8,47 @@ const DynamicMesh = @import("mesh.zig").DynamicMesh;
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers
 pub const AtlasBatch = struct {
     mesh: DynamicMesh(Vertex),
-    max_sprites: i32,
+    max_sprites: usize,
     sprite_count: usize = 0,
     texture: aya.gfx.Texture,
     buffer_dirty: bool = false,
     dirty_range: struct { start: i32, end: i32 },
 
     /// AtlasBatch does not take ownership of the texture passed in
-    pub fn init(allocator: ?*std.mem.Allocator, texture: aya.gfx.Texture, max_sprites: i32) !AtlasBatch {
+    pub fn init(allocator: ?*std.mem.Allocator, texture: aya.gfx.Texture, max_sprites: usize) !AtlasBatch {
         const alloc = allocator orelse aya.mem.allocator;
 
-        var batch = AtlasBatch{
-            .mesh = try DynamicMesh(Vertex).init(alloc, max_sprites * 4, max_sprites * 6, false),
+        return AtlasBatch{
+            .mesh = try DynamicMesh(Vertex).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),
             .max_sprites = max_sprites,
             .texture = texture,
             .dirty_range = .{ .start = 0, .end = 0 },
         };
-
-        try batch.setIndexBufferData(max_sprites);
-
-        return batch;
     }
 
     pub fn deinit(self: AtlasBatch) void {
         self.mesh.deinit();
     }
 
-    /// fills in the IndexBuffer and uploads it to the GPU
-    fn setIndexBufferData(self: *AtlasBatch, max_sprites: i32) !void {
-        var indices = try aya.mem.tmp_allocator.alloc(i16, @intCast(usize, max_sprites * 6));
+    fn getIndexBufferData(max_sprites: usize) ![]u16 {
+        var indices = try aya.mem.tmp_allocator.alloc(u16, max_sprites * 6);
         var i: usize = 0;
         while (i < max_sprites) : (i += 1) {
-            indices[i * 3 * 2 + 0] = @intCast(i16, i) * 4 + 0;
-            indices[i * 3 * 2 + 1] = @intCast(i16, i) * 4 + 1;
-            indices[i * 3 * 2 + 2] = @intCast(i16, i) * 4 + 2;
-            indices[i * 3 * 2 + 3] = @intCast(i16, i) * 4 + 0;
-            indices[i * 3 * 2 + 4] = @intCast(i16, i) * 4 + 2;
-            indices[i * 3 * 2 + 5] = @intCast(i16, i) * 4 + 3;
+            indices[i * 3 * 2 + 0] = @intCast(u16, i) * 4 + 0;
+            indices[i * 3 * 2 + 1] = @intCast(u16, i) * 4 + 1;
+            indices[i * 3 * 2 + 2] = @intCast(u16, i) * 4 + 2;
+            indices[i * 3 * 2 + 3] = @intCast(u16, i) * 4 + 0;
+            indices[i * 3 * 2 + 4] = @intCast(u16, i) * 4 + 2;
+            indices[i * 3 * 2 + 5] = @intCast(u16, i) * 4 + 3;
         }
-        self.mesh.index_buffer.setData(i16, indices, 0, .none);
+        return indices;
+    }
+
+    /// TODO: fills in the IndexBuffer and uploads it to the GPU
+    fn setIndexBufferData(self: *AtlasBatch, max_sprites: usize) !void {
+        var indices = getIndexBufferData(max_sprites);
+        // self.mesh.index_buffer.setData(i16, indices, 0, .none);
+        @panic("oh no");
     }
 
     /// makes sure the mesh buffers are large enough. Expands them by 50% if they are not. Can fail horribly.
@@ -54,7 +56,7 @@ pub const AtlasBatch = struct {
         if (self.sprite_count < self.max_sprites) return;
 
         // we dont update the max_sprites value unless all allocations succeed. If they dont, we bail.
-        const new_max_sprites = self.max_sprites + @floatToInt(i32, @intToFloat(f32, self.max_sprites) * 0.5);
+        const new_max_sprites = self.max_sprites + @floatToInt(usize, @intToFloat(f32, self.max_sprites) * 0.5);
         try self.mesh.expandBuffers(new_max_sprites * 4, new_max_sprites * 6);
         try self.setIndexBufferData(new_max_sprites);
         self.max_sprites = new_max_sprites;
@@ -96,11 +98,11 @@ pub const AtlasBatch = struct {
 
     pub fn draw(self: *AtlasBatch) void {
         if (self.buffer_dirty) {
-            self.mesh.appendVertSlice(0, @intCast(i32, self.sprite_count * 4), .no_overwrite);
+            self.mesh.appendVertSlice(0, @intCast(i32, self.sprite_count * 4));
             self.buffer_dirty = false;
         }
 
-        aya.gfx.Texture.bindTexture(self.texture.tex, 0);
-        self.mesh.drawQuads(0, @intCast(i32, self.sprite_count * 4));
+        self.mesh.bindings.fs_images[0] = self.texture.img;
+        self.mesh.drawPartialBuffer(0, @intCast(i32, self.sprite_count * 6));
     }
 };

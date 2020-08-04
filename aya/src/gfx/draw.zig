@@ -37,7 +37,7 @@ pub const draw = struct {
     pub fn texViewport(texture: gfx.Texture, viewport: math.RectI, transform: math.Mat32) void {
         quad.setImageDimensions(texture.width, texture.height);
         quad.setViewportRectI(viewport);
-        batcher.draw(texture.tex, quad, transform, math.Color.white);
+        batcher.draw(texture, quad, transform, math.Color.white);
     }
 
     pub fn text(str: []const u8, x: f32, y: f32, fb: ?*gfx.FontBook) void {

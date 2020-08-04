@@ -59,19 +59,19 @@ pub fn DynamicMesh(comptime T: type) type {
         }
 
         /// deinits the current VertexBuffer and creates a new one with the new_vertex_count
-        pub fn expandBuffers(self: *Self, new_vertex_count: i32, new_index_count: i32) !void {
+        pub fn expandBuffers(self: *Self, new_vertex_count: usize, new_index_count: usize) !void {
             @panic("wtf, just make a new mesh or something");
-            self.vert_buffer.deinit();
-            self.vert_buffer = buffers.VertexBuffer.init(T, new_vertex_count, true);
-            self.vert_buffer_binding.vertexBuffer = self.vert_buffer.buffer;
-            self.verts = try self.allocator.realloc(self.verts, @intCast(usize, new_vertex_count));
+            // self.vert_buffer.deinit();
+            // self.vert_buffer = buffers.VertexBuffer.init(T, new_vertex_count, true);
+            // self.vert_buffer_binding.vertexBuffer = self.vert_buffer.buffer;
+            // self.verts = try self.allocator.realloc(self.verts, @intCast(usize, new_vertex_count));
 
-            const ibuff_dynamic = self.indices.len > 0;
-            self.index_buffer.deinit();
-            self.index_buffer = buffers.IndexBuffer.init(new_index_count, ibuff_dynamic);
-            if (ibuff_dynamic) {
-                self.indices = try self.allocator.realloc(self.indices, @intCast(usize, new_index_count));
-            }
+            // const ibuff_dynamic = self.indices.len > 0;
+            // self.index_buffer.deinit();
+            // self.index_buffer = buffers.IndexBuffer.init(new_index_count, ibuff_dynamic);
+            // if (ibuff_dynamic) {
+            //     self.indices = try self.allocator.realloc(self.indices, @intCast(usize, new_index_count));
+            // }
         }
 
         /// try not to use .none when using dynamic vert buffers

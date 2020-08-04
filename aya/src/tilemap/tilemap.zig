@@ -37,9 +37,9 @@ pub const Map = struct {
     }
 
     /// currently loads just the first Tileset's image until multiple Tilesets are supported
-    pub fn loadTexture(self: *Map, map_folder: []const u8) aya.gfx.Texture {
+    pub fn loadTexture(self: *Map, map_folder: []const u8, filter: aya.gfx.Texture.Filter) aya.gfx.Texture {
         const image_path = std.fmt.allocPrint(aya.mem.tmp_allocator, "{}/{}", .{ map_folder, self.tilesets[0].image }) catch unreachable;
-        return aya.gfx.Texture.initFromFile(image_path) catch unreachable;
+        return aya.gfx.Texture.initFromFile(image_path, filter) catch unreachable;
     }
 
     pub fn worldToTileX(self: Map, x: f32) i32 {
@@ -159,8 +159,8 @@ pub const TileLayer = struct {
     tiles: []TileId,
 
     /// used by the MapRenderer to optimize the AtlasBatch size
-    pub fn totalNonEmptyTiles(self: TileLayer) i32 {
-        var cnt = @as(i32, 0);
+    pub fn totalNonEmptyTiles(self: TileLayer) usize {
+        var cnt = @as(usize, 0);
 
         for (self.tiles) |t| {
             if (t >= 0) {
