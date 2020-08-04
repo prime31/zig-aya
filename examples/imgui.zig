@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
-const imgui = @import("imgui");
+usingnamespace @import("imgui");
+usingnamespace @import("sokol");
 
 var demo_open: bool = true;
 
@@ -9,24 +10,33 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
-        .imgui = true,
         .window = .{
             .width = 1024,
             .height = 768,
-        }
+        },
     });
 }
 
 fn init() void {
-    const res = imgui.igDebugCheckVersionAndDataLayout("1.77 WIP", @sizeOf(imgui.ImGuiIO), @sizeOf(imgui.ImGuiStyle), @sizeOf(imgui.ImVec2), @sizeOf(imgui.ImVec4), @sizeOf(imgui.ImDrawVert), @sizeOf(imgui.ImDrawIdx));
-    std.debug.warn("good? {s}\n", .{res});
+    var imgui_desc = std.mem.zeroes(simgui_desc_t);
+    imgui_desc.dpi_scale = sapp_dpi_scale();
+    imgui_desc.ini_filename = "imgui.ini";
+    simgui_setup(&imgui_desc);
 }
 
 fn update() void {
-    imgui.igShowDemoWindow(&demo_open);
+    // TODO: wire up an input event
+    simgui_new_frame(aya.window.width(), aya.window.height(), 0.017);
+    igShowDemoWindow(&demo_open);
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
+    aya.gfx.endPass();
+
+    aya.gfx.blitToScreen(aya.math.Color.black);
+
+    aya.gfx.beginPass(.{});
+    simgui_render();
     aya.gfx.endPass();
 }
