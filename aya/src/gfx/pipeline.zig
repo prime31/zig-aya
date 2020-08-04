@@ -14,7 +14,10 @@ pub const Pipeline = extern struct {
         return .{};
     }
 
-    pub fn deinit(self: Pipeline) void {}
+    pub fn deinit(self: Pipeline) void {
+        sg_destroy_pipeline(self.pip);
+        sg_destroy_shader(self.shader);
+    }
 
     // static methods
     pub fn makeDefaultPipeline() Pipeline {

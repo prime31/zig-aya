@@ -25,8 +25,8 @@ pub const OffscreenPass = struct {
 
     pub fn deinit(self: OffscreenPass) void {
         sg_destroy_pass(self.pass);
-        sg_destroy_image(self.color_tex);
-        sg_destroy_iamge(self.depth_tex);
+        sg_destroy_image(self.color_tex.img);
+        sg_destroy_image(self.depth_tex.img);
     }
 };
 

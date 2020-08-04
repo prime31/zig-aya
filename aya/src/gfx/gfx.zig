@@ -153,8 +153,8 @@ pub fn flush() void {
 }
 
 pub fn postProcess(stack: *PostProcessStack) void {
-    state.transform_mat = math.Mat32.initOrtho(@intToFloat(f32, state.default_pass.render_tex.tex.width), @intToFloat(f32, state.default_pass.render_tex.tex.height));
-    stack.process(&state.default_pass.render_tex);
+    state.transform_mat = math.Mat32.initOrtho(@intToFloat(f32, state.default_pass.offscreen_pass.color_tex.width), @intToFloat(f32, state.default_pass.offscreen_pass.color_tex.height));
+    stack.process(state.default_pass.offscreen_pass);
 }
 
 /// renders the default OffscreenPass to the backbuffer using the ResolutionScaler

@@ -13,7 +13,7 @@ pub const Batcher = struct {
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
 
     const DrawCall = struct {
-        texture: ?sg_image,
+        texture: sg_image,
         quad_count: i32,
     };
 
@@ -55,12 +55,14 @@ pub const Batcher = struct {
         self.mesh.appendVertSlice(self.buffer_offset, self.quad_count * 4);
 
         // run through all our accumulated draw calls
+        var base_element: i32 = 0;
         for (self.draw_calls.items) |*draw_call| {
-            self.mesh.bindings.fs_images[0] = draw_call.texture.?;
-            self.mesh.drawPartialBuffer(0, draw_call.quad_count * 6);
+            self.mesh.bindings.fs_images[0] = draw_call.texture;
+            self.mesh.drawPartialBuffer(base_element, draw_call.quad_count * 6);
 
             self.buffer_offset += draw_call.quad_count * 4;
-            draw_call.texture = null;
+            draw_call.texture.id = SG_INVALID_ID;
+            base_element += draw_call.quad_count * 6;
         }
 
         self.quad_count = 0;
@@ -68,7 +70,7 @@ pub const Batcher = struct {
     }
 
     /// ensures the vert buffer has enough space and manages the draw call command buffer when textures change
-    fn ensureCapacity(self: *Batcher, texture: ?sg_image) !void {
+    fn ensureCapacity(self: *Batcher, texture: sg_image) !void {
         // if we run out of buffer we have to flush the batch and possibly discard the whole buffer
         if (self.vert_index + 4 > self.mesh.verts.len) {
             self.flush();
@@ -80,8 +82,8 @@ pub const Batcher = struct {
         }
 
         // start a new draw call if we dont already have one going or whenever the texture changes
-        if (self.draw_calls.items.len == 0 or self.draw_calls.items[self.draw_calls.items.len - 1].texture.?.id != texture.?.id) {
-            try self.draw_calls.append(.{ .texture = texture.?, .quad_count = 0 });
+        if (self.draw_calls.items.len == 0 or self.draw_calls.items[self.draw_calls.items.len - 1].texture.id != texture.id) {
+            try self.draw_calls.append(.{ .texture = texture, .quad_count = 0 });
         }
     }
 
