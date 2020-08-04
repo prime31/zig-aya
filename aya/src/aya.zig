@@ -72,6 +72,7 @@ pub fn run(config: Config) !void {
 export fn init() void {
     mem.initTmpAllocator();
     debug = Debug.init() catch unreachable;
+    input = Input.init(window.scale());
 
     var desc = std.mem.zeroes(sg_desc);
     desc.context = sapp_sgcontext();
@@ -82,6 +83,7 @@ export fn init() void {
 }
 
 export fn update() void {
+    input.newFrame();
     state.config.update();
     state.config.render();
     gfx.commit();
@@ -110,6 +112,11 @@ export fn event(e: [*c]const sapp_event) void {
         } else if (e[0].type == .SAPP_EVENTTYPE_KEY_UP and e[0].key_code == .SAPP_KEYCODE_LEFT_SUPER) {
             state.cmd_down = false;
         }
+    }
+
+    switch (e[0].type) {
+        .SAPP_EVENTTYPE_RESIZED, .SAPP_EVENTTYPE_ICONIFIED, .SAPP_EVENTTYPE_RESTORED, .SAPP_EVENTTYPE_SUSPENDED, .SAPP_EVENTTYPE_RESUMED => window.handleEvent(@ptrCast(*const sapp_event, &e[0])),
+        else => input.handleEvent(@ptrCast(*const sapp_event, &e[0])),
     }
 }
 

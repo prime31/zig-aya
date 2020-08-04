@@ -1,6 +1,7 @@
 const std = @import("std");
 const gfx = @import("gfx/gfx.zig");
 const math = @import("math/math.zig");
+usingnamespace @import("sokol");
 const FixedList = @import("utils/fixed_list.zig").FixedList;
 
 const released: u3 = 1; // true only the frame the key is released
@@ -14,13 +15,13 @@ pub const MouseButton = enum(usize) {
 };
 
 pub const Input = struct {
-    keys: [@intCast(usize, @enumToInt(sdl.SDL_Scancode.SDL_NUM_SCANCODES))]u2 = [_]u2{0} ** @intCast(usize, @enumToInt(sdl.SDL_Scancode.SDL_NUM_SCANCODES)),
+    keys: [@intCast(usize, SAPP_KEYCODE_MENU)]u2 = [_]u2{0} ** @intCast(usize, SAPP_KEYCODE_MENU),
     dirty_keys: FixedList(i32, 10),
     mouse_buttons: [4]u2 = [_]u2{0} ** 4,
     dirty_mouse_buttons: FixedList(u2, 3),
-    mouse_wheel_y: i32 = 0,
-    mouse_rel_x: i32 = 0,
-    mouse_rel_y: i32 = 0,
+    mouse_wheel_y: f32 = 0,
+    mouse_x: f32 = 0,
+    mouse_y: f32 = 0,
     window_scale: i32 = 0,
     res_scaler: gfx.ResolutionScaler = undefined,
 
@@ -59,63 +60,56 @@ pub const Input = struct {
         }
 
         self.mouse_wheel_y = 0;
-        self.mouse_rel_x = 0;
-        self.mouse_rel_y = 0;
     }
 
-    pub fn handleEvent(self: *Input, event: *sdl.SDL_Event) void {
-        switch (event.type) {
-            sdl.SDL_KEYDOWN, sdl.SDL_KEYUP => self.handleKeyboardEvent(&event.key),
-            sdl.SDL_MOUSEBUTTONDOWN, sdl.SDL_MOUSEBUTTONUP => self.handleMouseEvent(&event.button),
-            sdl.SDL_MOUSEWHEEL => self.mouse_wheel_y = event.wheel.y,
-            sdl.SDL_MOUSEMOTION => {
-                self.mouse_rel_x = event.motion.xrel;
-                self.mouse_rel_y = event.motion.yrel;
+    pub fn handleEvent(self: *Input, evt: *const sapp_event) void {
+        switch (evt.type) {
+            .SAPP_EVENTTYPE_KEY_DOWN, .SAPP_EVENTTYPE_KEY_UP => self.handleKeyboardEvent(evt),
+            .SAPP_EVENTTYPE_MOUSE_DOWN, .SAPP_EVENTTYPE_MOUSE_UP => self.handleMouseEvent(evt),
+            .SAPP_EVENTTYPE_MOUSE_MOVE => {
+                self.mouse_x = evt.mouse_x;
+                self.mouse_y = evt.mouse_y;
             },
-            sdl.SDL_CONTROLLERAXISMOTION => std.debug.warn("SDL_CONTROLLERAXISMOTION\n", .{}),
-            sdl.SDL_CONTROLLERBUTTONDOWN, sdl.SDL_CONTROLLERBUTTONUP => std.debug.warn("SDL_CONTROLLERBUTTONUP/DOWN\n", .{}),
-            sdl.SDL_CONTROLLERDEVICEADDED, sdl.SDL_CONTROLLERDEVICEREMOVED => std.debug.warn("SDL_CONTROLLERDEVICEADDED/REMOVED\n", .{}),
-            sdl.SDL_CONTROLLERDEVICEREMAPPED => std.debug.warn("SDL_CONTROLLERDEVICEREMAPPED\n", .{}),
+            .SAPP_EVENTTYPE_MOUSE_SCROLL => {
+                self.mouse_wheel_y = evt.scroll_y;
+            },
             else => {},
         }
     }
 
-    fn handleKeyboardEvent(self: *Input, evt: *sdl.SDL_KeyboardEvent) void {
-        const scancode = @enumToInt(evt.keysym.scancode);
+    fn handleKeyboardEvent(self: *Input, evt: *const sapp_event) void {
+        const scancode = @enumToInt(evt.key_code);
         self.dirty_keys.append(scancode);
 
-        if (evt.state == 0) {
+        if (evt.type == .SAPP_EVENTTYPE_KEY_UP) {
             self.keys[@intCast(usize, scancode)] = released;
         } else {
             self.keys[@intCast(usize, scancode)] = pressed;
         }
-
-        // std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
     }
 
-    fn handleMouseEvent(self: *Input, evt: *sdl.SDL_MouseButtonEvent) void {
-        self.dirty_mouse_buttons.append(@intCast(u2, evt.button));
-        if (evt.state == 0) {
-            self.mouse_buttons[@intCast(usize, evt.button)] = released;
+    fn handleMouseEvent(self: *Input, evt: *const sapp_event) void {
+        const button = @enumToInt(evt.mouse_button);
+        self.dirty_mouse_buttons.append(@intCast(u2, button));
+        if (evt.type == .SAPP_EVENTTYPE_MOUSE_UP) {
+            self.mouse_buttons[@intCast(usize, button)] = released;
         } else {
-            self.mouse_buttons[@intCast(usize, evt.button)] = pressed;
+            self.mouse_buttons[@intCast(usize, button)] = pressed;
         }
-
-        // std.debug.warn("mouse: {}\n", .{evt});
     }
 
     /// only true if down this frame and not down the previous frame
-    pub fn keyPressed(self: Input, scancode: sdl.SDL_Scancode) bool {
+    pub fn keyPressed(self: Input, scancode: sapp_keycode) bool {
         return self.keys[@intCast(usize, @enumToInt(scancode))] == pressed;
     }
 
     /// true the entire time the key is down
-    pub fn keyDown(self: Input, scancode: sdl.SDL_Scancode) bool {
+    pub fn keyDown(self: Input, scancode: sapp_keycode) bool {
         return self.keys[@intCast(usize, @enumToInt(scancode))] > released;
     }
 
     /// true only the frame the key is released
-    pub fn keyUp(self: Input, scancode: sdl.SDL_Scancode) bool {
+    pub fn keyUp(self: Input, scancode: sapp_keycode) bool {
         return self.keys[@intCast(usize, @enumToInt(scancode))] == released;
     }
 
@@ -139,11 +133,8 @@ pub const Input = struct {
     }
 
     pub fn mousePos(self: Input, x: *i32, y: *i32) void {
-        var xc: c_int = undefined;
-        var yc: c_int = undefined;
-        _ = sdl.SDL_GetMouseState(&xc, &yc);
-        x.* = @intCast(i32, xc) * self.window_scale;
-        y.* = @intCast(i32, yc) * self.window_scale;
+        x.* = self.mouse_x;
+        y.* = self.mouse_y;
     }
 
     // gets the scaled mouse position based on the currently bound render texture scale and offset
