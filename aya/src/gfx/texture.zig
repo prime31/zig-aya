@@ -16,7 +16,20 @@ pub const Texture = extern struct {
         img_desc.render_target = true;
         img_desc.width = width;
         img_desc.height = height;
-        img_desc.pixel_format = .SG_PIXELFORMAT_RGBA8;
+        // img_desc.pixel_format = .SG_PIXELFORMAT_RGBA8;
+        img_desc.min_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
+        img_desc.mag_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
+
+        return .{ .width = width, .height = height, .img = sg_make_image(&img_desc) };
+    }
+
+    /// creates a render texture for offscreen rendering
+    pub fn initDepthStencil(width: i32, height: i32, filter: Filter) Texture {
+        var img_desc = std.mem.zeroes(sg_image_desc);
+        img_desc.render_target = true;
+        img_desc.width = width;
+        img_desc.height = height;
+        img_desc.pixel_format = .SG_PIXELFORMAT_DEPTH_STENCIL;
         img_desc.min_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
         img_desc.mag_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
 

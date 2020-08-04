@@ -32,6 +32,7 @@ pub const Config = struct {
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
     resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
     batcher_max_sprites: usize = 1000, // defines the size of the vertex/index buffers based on the number of sprites/quads
+    texture_filter: Texture.Filter = .nearest,
 };
 
 // locals
@@ -40,7 +41,7 @@ const math = @import("../math/math.zig");
 
 var state = struct {
     debug_render_enabled: bool = false,
-    default_pass_action: sg_pass_action = undefined,
+    pass_action: sg_pass_action = undefined,
     default_pipeline: Pipeline = undefined,
     default_pass: DefaultOffscreenPass = undefined,
     blitted_to_screen: bool = false,
@@ -59,7 +60,7 @@ pub fn init(config: Config) void {
         design_w = aya.window.width();
         design_h = aya.window.height();
     }
-    state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy);
+    state.default_pass = DefaultOffscreenPass.init(design_w, design_h, config.resolution_policy, config.texture_filter);
 }
 
 pub fn deinit() void {
@@ -80,23 +81,31 @@ pub fn createPostProcessStack() PostProcessStack {
 }
 
 pub fn setPipeline(pipeline: Pipeline) void {
-    draw.batcher.flush(false);
-    // if (shader.transform_matrix_index < std.math.maxInt(usize)) {
-    //     shader.setParamByIndex(aya.math.Mat32, shader.transform_matrix_index, state.transform_mat);
-    // }
+    draw.batcher.flush();
     sg_apply_pipeline(pipeline.pip);
     sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &state.transform_mat.data, @sizeOf(math.Mat32));
 }
 
 // Passes
-pub const Pass = struct {
-    color: ?math.Color = math.Color.aya,
+pub const PassConfig = struct {
+    color: math.Color = math.Color.aya,
+    color_action: sg_action = .SG_ACTION_CLEAR,
+    stencil_action: sg_action = .SG_ACTION_CLEAR,
+    stencil: u8 = 0,
+
     trans_mat: ?math.Mat32 = null,
     pipeline: ?Pipeline = null,
-    render_texture: ?Texture = null,
+    pass: ?OffscreenPass = null,
+
+    pub fn apply(self: PassConfig, pass_action: *sg_pass_action) void {
+        pass_action.colors[0].action = self.color_action;
+        pass_action.colors[0].val = self.color.asArray();
+        pass_action.stencil.action = self.stencil_action;
+        pass_action.stencil.val = self.stencil;
+    }
 };
 
-/// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
+/// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default pipeline
 /// will not be set and no render texture will be set. This is useful when making a full ImGui application.
 pub fn beginNullPass() void {
     state.blitted_to_screen = true;
@@ -105,24 +114,21 @@ pub fn beginNullPass() void {
 // OffscreenPasses should be rendered first. If no pass is in the PassConfig rendering will be done to the
 // DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
 // If another pass is run after blitToScreen rendering will be to the backbuffer.
-pub fn beginPass(config: Pass) void {
-    state.default_pass_action.colors[0].action = .SG_ACTION_CLEAR;
-    state.default_pass_action.colors[0].val = if (config.color) |col| col.asSlice() else [_]f32{ 0.2, 0.2, 0.2, 1.0 };
+pub fn beginPass(config: PassConfig) void {
+    config.apply(&state.pass_action);
 
     var proj_mat: math.Mat32 = undefined;
 
     // if we already blitted to the screen we can only blit to the backbuffer
     if (state.blitted_to_screen) {
-        sg_begin_default_pass(&state.default_pass_action, aya.window.width(), aya.window.height());
-        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, aya.window.width()), @intToFloat(f32, aya.window.height()));
+        const size = aya.window.size();
+        sg_begin_default_pass(&state.pass_action, size.w, size.h);
+        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, size.w), @intToFloat(f32, size.h));
     } else {
         // if we were given an OffscreenPass use it else use our DefaultOffscreenPass
-        std.debug.print("----------------- need a pass ass: {}\n", .{"dang"});
-        const rt = config.render_texture orelse state.default_pass.render_tex;
-        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, rt.width), @intToFloat(f32, rt.height));
-        if (config.color) |color| {
-            // clear(color);
-        }
+        const pass = config.pass orelse state.default_pass.offscreen_pass;
+        sg_begin_pass(pass.pass, &state.pass_action);
+        proj_mat = math.Mat32.initOrtho(@intToFloat(f32, pass.color_tex.width), @intToFloat(f32, pass.color_tex.height));
     }
 
     // if we were given a transform matrix multiply it here
@@ -137,9 +143,13 @@ pub fn beginPass(config: Pass) void {
 }
 
 pub fn endPass() void {
-    draw.batcher.flush(false);
+    draw.batcher.flush();
     aya.debug.render(state.debug_render_enabled);
     sg_end_pass();
+}
+
+pub fn flush() void {
+    draw.batcher.flush();
 }
 
 pub fn postProcess(stack: *PostProcessStack) void {
@@ -149,6 +159,7 @@ pub fn postProcess(stack: *PostProcessStack) void {
 
 /// renders the default OffscreenPass to the backbuffer using the ResolutionScaler
 pub fn blitToScreen(letterbox_color: math.Color) void {
+    if (state.blitted_to_screen) return;
     state.blitted_to_screen = true;
 
     // TODO: Hack until we get window resized events
@@ -156,18 +167,17 @@ pub fn blitToScreen(letterbox_color: math.Color) void {
 
     beginPass(.{.color = letterbox_color});
     const scaler = state.default_pass.scaler;
-    draw.texScale(state.default_pass.render_tex, @intToFloat(f32, scaler.x), @intToFloat(f32, scaler.y), scaler.scale);
+    draw.texScale(state.default_pass.offscreen_pass.color_tex, @intToFloat(f32, scaler.x), @intToFloat(f32, scaler.y), scaler.scale);
     endPass();
 }
 
 /// if we havent yet blitted to the screen do so now
 pub fn commit() void {
-    draw.batcher.endFrame();
-
     if (!state.blitted_to_screen) {
         blitToScreen(math.Color.black);
     }
 
+    draw.batcher.endFrame();
     state.blitted_to_screen = false;
     sg_commit();
 }

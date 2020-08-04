@@ -6,7 +6,7 @@ usingnamespace aya.sokol;
 
 pub const Vertex = packed struct {
     pos: Vec2,
-    uv: Vec2 = Vec2{ .x = 0, .y = 0 },
+    uv: Vec2 = .{ .x = 0, .y = 0 },
     col: u32 = 0xFFFFFFFF,
 };
 

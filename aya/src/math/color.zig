@@ -67,7 +67,7 @@ pub const Color = extern union {
         };
     }
 
-    pub fn asSlice(self: Color) [4]f32 {
+    pub fn asArray(self: Color) [4]f32 {
         return [_]f32 {
             @intToFloat(f32, self.comps.r) / 255,
             @intToFloat(f32, self.comps.g) / 255,

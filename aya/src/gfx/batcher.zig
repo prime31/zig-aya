@@ -9,13 +9,12 @@ pub const Batcher = struct {
     draw_calls: std.ArrayList(DrawCall),
 
     vert_index: usize = 0, // current index into the vertex array
-    vert_count: i32 = 0, // total verts that we have not yet rendered
+    quad_count: i32 = 0, // total quads that we have not yet rendered
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
-    discard_next: bool = false, // flag for dealing with the Metal issue where we have to discard our buffer 2 times
 
     const DrawCall = struct {
         texture: ?sg_image,
-        vert_count: i32,
+        quad_count: i32,
     };
 
     pub fn init(allocator: ?*std.mem.Allocator, max_sprites: usize) !Batcher {
@@ -45,30 +44,26 @@ pub const Batcher = struct {
 
     /// called at the end of the frame when all drawing is complete. Flushes the batch and resets local state.
     pub fn endFrame(self: *Batcher) void {
-        self.flush(false);
+        self.flush();
         self.vert_index = 0;
-        self.vert_count = 0;
         self.buffer_offset = 0;
     }
 
-    pub fn flush(self: *Batcher, discard_buffer: bool) void {
-        if (self.vert_count == 0) return;
+    pub fn flush(self: *Batcher) void {
+        if (self.quad_count == 0) return;
 
-        // if we ran out of space and dont support no_overwrite we have to discard the buffer
-        self.discard_next = false;
-
-        self.mesh.appendVertSlice(self.buffer_offset, self.vert_count);
+        self.mesh.appendVertSlice(self.buffer_offset, self.quad_count * 4);
 
         // run through all our accumulated draw calls
         for (self.draw_calls.items) |*draw_call| {
-            // aya.gfx.Texture.bindTexture(draw_call.texture.?, 0);
-            self.mesh.drawPartialBuffer(self.buffer_offset, draw_call.vert_count);
+            self.mesh.bindings.fs_images[0] = draw_call.texture.?;
+            self.mesh.drawPartialBuffer(0, draw_call.quad_count * 6);
 
-            self.buffer_offset += draw_call.vert_count;
+            self.buffer_offset += draw_call.quad_count * 4;
             draw_call.texture = null;
         }
 
-        self.vert_count = 0;
+        self.quad_count = 0;
         self.draw_calls.items.len = 0;
     }
 
@@ -76,21 +71,17 @@ pub const Batcher = struct {
     fn ensureCapacity(self: *Batcher, texture: ?sg_image) !void {
         // if we run out of buffer we have to flush the batch and possibly discard the whole buffer
         if (self.vert_index + 4 > self.mesh.verts.len) {
-            // TODO: is this hack here for Metal discard hack?
-            if (self.draw_calls.items.len == 0) {
-                // self.mesh.appendVertSlice(0, 1, .discard);
-            } else {
-                self.flush(true);
-            }
+            self.flush();
 
             self.vert_index = 0;
-            self.vert_count = 0;
+            self.quad_count = 0;
             self.buffer_offset = 0;
+            @panic("dead");
         }
 
         // start a new draw call if we dont already have one going or whenever the texture changes
         if (self.draw_calls.items.len == 0 or self.draw_calls.items[self.draw_calls.items.len - 1].texture.?.id != texture.?.id) {
-            try self.draw_calls.append(.{ .texture = texture.?, .vert_count = 0 });
+            try self.draw_calls.append(.{ .texture = texture.?, .quad_count = 0 });
         }
     }
 
@@ -103,15 +94,8 @@ pub const Batcher = struct {
         // copy the quad positions, uvs and color into vertex array transforming them with the matrix as we do it
         mat.transformQuad(self.mesh.verts[self.vert_index .. self.vert_index + 4], quad, color);
 
-        self.draw_calls.items[self.draw_calls.items.len - 1].vert_count += 4;
-        self.vert_count += 4;
+        self.draw_calls.items[self.draw_calls.items.len - 1].quad_count += 1;
+        self.quad_count += 1;
         self.vert_index += 4;
     }
 };
-
-test "test batcher" {
-    var batcher = try Batcher.init(null, 10);
-    _ = try batcher.ensureCapacity(null);
-    batcher.flush(false);
-    batcher.deinit();
-}

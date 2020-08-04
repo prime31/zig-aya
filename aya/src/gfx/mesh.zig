@@ -84,31 +84,18 @@ pub fn DynamicMesh(comptime T: type) type {
             sg_update_buffer(self.bindings.vertex_buffers[0], self.verts.ptr, @intCast(c_int, self.verts.len * @sizeOf(T)));
         }
 
-        /// uploads to the GPU the slice from start to end
+        /// uploads to the GPU the slice from start with num_verts
         pub fn appendVertSlice(self: *Self, start_index: i32, num_verts: i32) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
-            if (self.verts_updated) {
-                return;
-            }
-            self.verts_updated = true;
-
             const vert_slice = self.verts[@intCast(usize, start_index)..@intCast(usize, start_index + num_verts)];
-            // self.vert_buffer.setData(T, vert_slice, offset_in_bytes);
             self.bindings.vertex_buffer_offsets[0] = sg_append_buffer(self.bindings.vertex_buffers[0], vert_slice.ptr, @intCast(c_int, vert_slice.len * @sizeOf(T)));
-            // sg_append_buffer(buf: sg_buffer, data_ptr: ?*const c_void, data_size: c_int) c_int;
         }
 
         pub fn draw(self: *Self) void {
-            // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
-            // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
-            sg_apply_bindings(&self.bindings);
-            sg_draw(0, self.element_count, 1);
-            self.verts_updated = false;
+            self.drawPartialBuffer(0, self.element_count);
         }
 
         pub fn drawPartialBuffer(self: *Self, base_element: i32, num_elements: i32) void {
-            // aya.gfx.device.applyVertexBufferBindings(&self.vert_buffer_binding, 1, false, base_vertex);
-            // aya.gfx.device.drawIndexedPrimitives(.triangle_list, base_vertex, 0, num_vertices, 0, primitive_count, self.index_buffer.buffer, .sixteen_bit);
             sg_apply_bindings(&self.bindings);
             sg_draw(base_element, num_elements, 1);
             self.verts_updated = false;
