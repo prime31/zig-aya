@@ -21,9 +21,7 @@ pub const Params = extern struct {
     user_ptr: *c_void,
     renderCreate: ?fn (?*c_void, c_int, c_int) callconv(.C) c_int = null,
     renderResize: ?fn (?*c_void, c_int, c_int) callconv(.C) c_int = null,
-    renderUpdate: ?fn (?*c_void, [*c]c_int, [*c]const u8) callconv(.C) void = null,
-    renderDraw: ?fn (?*c_void, [*c]const f32, [*c]const f32, [*c]const c_uint, c_int) callconv(.C) void = null,
-    renderDelete: ?fn (?*c_void) callconv(.C) void = null,
+    renderUpdate: ?fn (?*c_void, [*c]c_int, [*c]const u8) callconv(.C) c_int = null,
 };
 
 pub const Flags = extern enum(u8) {

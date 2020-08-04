@@ -103,19 +103,18 @@ pub const FontBook = struct {
         return renderCreate(ctx, width, height);
     }
 
-    fn renderUpdate(ctx: ?*c_void, rect: [*c]c_int, data: [*c]const u8) callconv(.C) void {
+    fn renderUpdate(ctx: ?*c_void, rect: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
         // TODO: only update the rect that changed
         var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
         if (!self.tex_dirty or self.last_update == aya.time.frames()) {
             self.tex_dirty = true;
-            std.debug.print("still dirty: {}\n", .{aya.time.frames()});
-            return;
+            return 0;
         }
 
         const tex_area = @intCast(usize, self.width * self.height);
         var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
             std.debug.warn("failed to allocate texture data: {}\n", .{err});
-            return;
+            return 0;
         };
         const source = data[0..tex_area];
 
@@ -128,5 +127,6 @@ pub const FontBook = struct {
 
         self.texture.?.setData(pixels);
         self.tex_dirty = false;
+        return 1;
     }
 };
