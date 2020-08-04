@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-const sdl = @import("sdl");
+const sokol = @import("sokol");
 const Map = aya.tilemap.Map;
 
 var map: *Map = undefined;
@@ -35,17 +35,17 @@ fn init() void {
 fn update() void {
     var move = aya.math.Vec2{};
 
-    // if (aya.input.keyDown(sdl.SDL_Scancode.SDL_SCANCODE_RIGHT)) {
-    //     move.x += speed;
-    // } else if (aya.input.keyDown(sdl.SDL_Scancode.SDL_SCANCODE_LEFT)) {
-    //     move.x -= speed;
-    // }
+    if (aya.input.keyDown(.SAPP_KEYCODE_RIGHT)) {
+        move.x += speed;
+    } else if (aya.input.keyDown(.SAPP_KEYCODE_LEFT)) {
+        move.x -= speed;
+    }
 
-    // if (aya.input.keyDown(sdl.SDL_Scancode.SDL_SCANCODE_UP)) {
-    //     move.y -= speed;
-    // } else if (aya.input.keyDown(sdl.SDL_Scancode.SDL_SCANCODE_DOWN)) {
-    //     move.y += speed;
-    // }
+    if (aya.input.keyDown(.SAPP_KEYCODE_UP)) {
+        move.y -= speed;
+    } else if (aya.input.keyDown(.SAPP_KEYCODE_DOWN)) {
+        move.y += speed;
+    }
 
     if (move.x != 0 or move.y != 0) {
         aya.tilemap.move(map, player, &move);
