@@ -41,7 +41,7 @@ pub const draw = struct {
     }
 
     pub fn text(str: []const u8, x: f32, y: f32, fb: ?*gfx.FontBook) void {
-        var book = if (fb) |fb_resolved| fb_resolved else fontbook;
+        var book = fb orelse fontbook;
         // TODO: dont hardcode scale as 4
         var matrix = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = 4, .sy = 4 });
         book.setAlign(.default);
@@ -81,7 +81,7 @@ pub const draw = struct {
             quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
             quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            batcher.draw(book.texture.?.tex, quad, matrix, options.color);
+            batcher.draw(book.texture.?, quad, matrix, options.color);
         }
     }
 
