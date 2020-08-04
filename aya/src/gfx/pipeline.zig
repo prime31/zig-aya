@@ -37,8 +37,8 @@ pub const Pipeline = extern struct {
         pipeline_desc.blend.enabled = true;
         pipeline_desc.blend.src_factor_rgb = .SG_BLENDFACTOR_SRC_ALPHA;
         pipeline_desc.blend.dst_factor_rgb = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        // pipeline_desc.blend.src_factor_alpha = .SG_BLENDFACTOR_ONE;
-        // pipeline_desc.blend.dst_factor_alpha = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        pipeline_desc.blend.src_factor_alpha = .SG_BLENDFACTOR_ONE;
+        pipeline_desc.blend.dst_factor_alpha = .SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
         pipeline_desc.depth_stencil.depth_compare_func = .SG_COMPAREFUNC_LESS_EQUAL;
         pipeline_desc.depth_stencil.depth_write_enabled = false;
