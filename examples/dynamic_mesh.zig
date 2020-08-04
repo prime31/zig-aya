@@ -11,9 +11,9 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .shutdown = shutdown,
-        .gfx = .{
-            .resolution_policy = .none,
-        },
+        // .gfx = .{
+        //     .resolution_policy = .none,
+        // },
     });
 }
 
@@ -51,9 +51,11 @@ fn update() void {
 }
 
 fn render() void {
-    aya.gfx.beginNullPass();
-    aya.gfx.beginPass(.{ .color = aya.math.Color.gold });
+    aya.gfx.beginPass(.{ .color = aya.math.Color.aya });
     mesh.draw();
+    aya.draw.tex(tex, 10, 10);
     aya.draw.tex(tex, 400, 400);
     aya.gfx.endPass();
+
+    aya.gfx.blitToScreen(aya.math.Color.yellow);
 }

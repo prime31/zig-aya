@@ -15,7 +15,7 @@ pub fn handleEvent(event: anytype) void {}
 
 /// returns the drawable size / the window size. Used to scale mouse coords when the OS gives them to us in points.
 pub fn scale() f32 {
-    return @intToFloat(f32, sapp_width()) / @intToFloat(f32, sapp_height());
+    return sapp_dpi_scale();
 }
 
 pub fn width() i32 {
@@ -24,4 +24,8 @@ pub fn width() i32 {
 
 pub fn height() i32 {
     return sapp_height();
+}
+
+pub fn size() struct { w: i32, h: i32 } {
+    return .{ .w = sapp_width(), .h = sapp_height() };
 }

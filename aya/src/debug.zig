@@ -61,7 +61,7 @@ pub const Debug = struct {
     }
 
     pub fn render(self: *Debug, enabled: bool) void {
-        if (enabled) {
+        if (enabled and self.debug_items.items.len > 0) {
             for (self.debug_items.items) |item| {
                 switch (item) {
                     .point => |pt| draw.point(pt.pos, pt.size, pt.color),
@@ -77,6 +77,7 @@ pub const Debug = struct {
                     .text => |text| draw.text(text.text, text.pos.x, text.pos.y, null),
                 }
             }
+            aya.gfx.flush();
         }
         self.debug_items.items.len = 0;
     }
