@@ -9,8 +9,8 @@ pub const Mesh = struct {
     element_count: c_int,
 
     pub fn init(comptime T: type, verts: []T, indices: []u16) Mesh {
-        const vertex_buffer = buffers.VertexBuffer.make(T, verts, .SG_USAGE_IMMUTABLE);
-        const index_buffer = buffers.IndexBuffer.make(u16, indices, .SG_USAGE_IMMUTABLE);
+        const vertex_buffer = buffers.VertexBuffer.make(T, verts);
+        const index_buffer = buffers.IndexBuffer.make(u16, indices);
         return .{
             .bindings = buffers.Bindings.make(vertex_buffer, index_buffer),
             .element_count = @intCast(c_int, indices.len),
@@ -40,9 +40,13 @@ pub fn DynamicMesh(comptime T: type) type {
         allocator: *std.mem.Allocator,
 
         pub fn init(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []u16) !Self {
+            return initWithOptions(allocator, vertex_count, indices, .SG_USAGE_DYNAMIC);
+        }
+
+        pub fn initWithOptions(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []u16, usage: sg_usage) !Self {
             const alloc = allocator orelse aya.mem.allocator;
-            const vertex_buffer = buffers.VertexBuffer.makeMutable(T, vertex_count, .SG_USAGE_DYNAMIC);
-            const index_buffer = buffers.IndexBuffer.make(u16, indices, .SG_USAGE_IMMUTABLE);
+            const vertex_buffer = buffers.VertexBuffer.makeMutable(T, vertex_count, usage);
+            const index_buffer = buffers.IndexBuffer.make(u16, indices);
 
             return Self{
                 .bindings = buffers.Bindings.make(vertex_buffer, index_buffer),

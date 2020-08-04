@@ -20,6 +20,10 @@ pub const Mat32 = struct {
 
     pub const identity = Mat32{ .data = .{ 1, 0, 0, 1, 0, 0 } };
 
+    pub fn format(self: Mat32, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return writer.print("{d:0.4}, {d:0.4}, {d:0.4}, {d:0.4}, {d:0.4}, {d:0.4}", .{self.data[0], self.data[1], self.data[2], self.data[3], self.data[4], self.data[5]});
+    }
+
     pub fn init() Mat32 {
         return identity;
     }
