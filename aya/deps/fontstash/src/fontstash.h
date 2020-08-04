@@ -126,9 +126,6 @@ FONS_DEF void fonsSetBlur(FONScontext* s, float blur);
 FONS_DEF void fonsSetAlign(FONScontext* s, int align);
 FONS_DEF void fonsSetFont(FONScontext* s, int font);
 
-// Draw text
-FONS_DEF float fonsDrawText(FONScontext* s, float x, float y, const char* string, const char* end);
-
 // Measure text
 FONS_DEF float fonsTextBounds(FONScontext* s, float x, float y, const char* string, const char* end, float* bounds);
 FONS_DEF void fonsLineBounds(FONScontext* s, float y, float* miny, float* maxy);
@@ -141,9 +138,6 @@ FONS_DEF int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, struct FON
 // Pull texture changes
 FONS_DEF const unsigned char* fonsGetTextureData(FONScontext* stash, int* width, int* height);
 FONS_DEF int fonsValidateTexture(FONScontext* s, int* dirty);
-
-// Draws the stash texture for debugging
-FONS_DEF void fonsDrawDebug(FONScontext* s, float x, float y);
 
 #ifdef __cplusplus
 }
@@ -436,10 +430,6 @@ struct FONScontext
 	FONSatlas* atlas;
 	int cfonts;
 	int nfonts;
-	float verts[FONS_VERTEX_COUNT*2];
-	float tcoords[FONS_VERTEX_COUNT*2];
-	unsigned int colors[FONS_VERTEX_COUNT];
-	int nverts;
 	unsigned char* scratch;
 	int nscratch;
 	FONSstate states[FONS_MAX_STATES];
@@ -1212,16 +1202,6 @@ static void fons__flush(FONScontext* stash)
 	}
 }
 
-static __inline void fons__vertex(FONScontext* stash, float x, float y, float s, float t, unsigned int c)
-{
-	stash->verts[stash->nverts*2+0] = x;
-	stash->verts[stash->nverts*2+1] = y;
-	stash->tcoords[stash->nverts*2+0] = s;
-	stash->tcoords[stash->nverts*2+1] = t;
-	stash->colors[stash->nverts] = c;
-	stash->nverts++;
-}
-
 static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, short isize)
 {
 	if (stash->params.flags & FONS_ZERO_TOPLEFT) {
@@ -1246,70 +1226,6 @@ static float fons__getVertAlign(FONScontext* stash, FONSfont* font, int align, s
 		}
 	}
 	return 0.0;
-}
-
-FONS_DEF float fonsDrawText(FONScontext* stash,
-				   float x, float y,
-				   const char* str, const char* end)
-{
-	FONSstate* state = fons__getState(stash);
-	unsigned int codepoint;
-	unsigned int utf8state = 0;
-	FONSglyph* glyph = NULL;
-	FONSquad q;
-	int prevGlyphIndex = -1;
-	short isize = (short)(state->size*10.0f);
-	short iblur = (short)state->blur;
-	float scale;
-	FONSfont* font;
-	float width;
-
-	if (stash == NULL) return x;
-	if (state->font < 0 || state->font >= stash->nfonts) return x;
-	font = stash->fonts[state->font];
-	if (font->data == NULL) return x;
-
-	scale = fons__tt_getPixelHeightScale(&font->font, (float)isize/10.0f);
-
-	if (end == NULL)
-		end = str + strlen(str);
-
-	// Align horizontally
-	if (state->align & FONS_ALIGN_LEFT) {
-		// empty
-	} else if (state->align & FONS_ALIGN_RIGHT) {
-		width = fonsTextBounds(stash, x,y, str, end, NULL);
-		x -= width;
-	} else if (state->align & FONS_ALIGN_CENTER) {
-		width = fonsTextBounds(stash, x,y, str, end, NULL);
-		x -= width * 0.5f;
-	}
-	// Align vertically.
-	y += fons__getVertAlign(stash, font, state->align, isize);
-
-	for (; str != end; ++str) {
-		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
-			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize, iblur);
-		if (glyph != NULL) {
-			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
-
-			if (stash->nverts+6 > FONS_VERTEX_COUNT)
-				fons__flush(stash);
-
-			fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, state->color);
-			fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, state->color);
-			fons__vertex(stash, q.x1, q.y0, q.s1, q.t0, state->color);
-
-			fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, state->color);
-			fons__vertex(stash, q.x0, q.y1, q.s0, q.t1, state->color);
-			fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, state->color);
-		}
-		prevGlyphIndex = glyph != NULL ? glyph->index : -1;
-	}
-	fons__flush(stash);
-
-	return x;
 }
 
 // this used to take in a "const char* end" but instead we now can pass it a non null-terminated
@@ -1384,54 +1300,6 @@ FONS_DEF int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* 
 	iter->next = str;
 
 	return 1;
-}
-
-FONS_DEF void fonsDrawDebug(FONScontext* stash, float x, float y)
-{
-	int i;
-	int w = stash->params.width;
-	int h = stash->params.height;
-	float u = w == 0 ? 0 : (1.0f / w);
-	float v = h == 0 ? 0 : (1.0f / h);
-
-	if (stash->nverts+6+6 > FONS_VERTEX_COUNT)
-		fons__flush(stash);
-
-	// Draw background
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+0, u, v, 0x0fffffff);
-
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+0, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
-
-	// Draw texture
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+0, 1, 0, 0xffffffff);
-
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+0, y+h, 0, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
-
-	// Drawbug draw atlas
-	for (i = 0; i < stash->atlas->nnodes; i++) {
-		FONSatlasNode* n = &stash->atlas->nodes[i];
-
-		if (stash->nverts+6 > FONS_VERTEX_COUNT)
-			fons__flush(stash);
-
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+0, u, v, 0xc00000ff);
-
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+0, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-	}
-
-	fons__flush(stash);
 }
 
 FONS_DEF float fonsTextBounds(FONScontext* stash,
