@@ -74,7 +74,7 @@ pub const AtlasBatch = struct {
     }
 
     pub fn setViewport(self: *AtlasBatch, index: usize, viewport: aya.math.RectI, mat: ?aya.math.Mat32, color: aya.math.Color) void {
-        var quad = aya.math.Quad.init(viewport.x, viewport.y, viewport.w, viewport.h, self.texture.width, self.texture.height);
+        var quad = aya.math.Quad.init(@intToFloat(f32, viewport.x), @intToFloat(f32, viewport.y), @intToFloat(f32, viewport.w), @intToFloat(f32, viewport.h), self.texture.width, self.texture.height);
         self.set(index, quad, mat, color);
     }
 
