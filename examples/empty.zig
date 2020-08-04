@@ -16,6 +16,6 @@ fn init() void {}
 fn update() void {}
 
 fn render() void {
-    aya.gfx.beginPass(.{ .color = aya.math.Color.aya });
+    aya.gfx.beginPass(.{});
     aya.gfx.endPass();
 }
