@@ -169,17 +169,3 @@ pub const Input = struct {
         y.* = self.mouse_rel_y;
     }
 };
-
-test "test input" {
-    var input = Input.init(1);
-    _ = input.keyPressed(.SDL_SCANCODE_A);
-    _ = input.mousePressed(.left);
-    _ = input.mouseWheel();
-
-    var x: i32 = undefined;
-    var y: i32 = undefined;
-    _ = input.mousePosScaled(&x, &y);
-
-    _ = input.mousePosScaledVec();
-    input.mouseRelMotion(&x, &y);
-}

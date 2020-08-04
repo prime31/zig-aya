@@ -9,6 +9,8 @@ pub const FontBook = struct {
     tex_filter: aya.gfx.Texture.Filter,
     width: i32 = 0,
     height: i32 = 0,
+    tex_dirty: bool = false,
+    last_update: u32 = 0,
     allocator: *std.mem.Allocator,
 
     pub const Align = fons.Align;
@@ -104,6 +106,11 @@ pub const FontBook = struct {
     fn renderUpdate(ctx: ?*c_void, rect: [*c]c_int, data: [*c]const u8) callconv(.C) void {
         // TODO: only update the rect that changed
         var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
+        if (!self.tex_dirty or self.last_update == aya.time.frames()) {
+            self.tex_dirty = true;
+            std.debug.print("still dirty: {}\n", .{aya.time.frames()});
+            return;
+        }
 
         const tex_area = @intCast(usize, self.width * self.height);
         var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
@@ -120,5 +127,6 @@ pub const FontBook = struct {
         }
 
         self.texture.?.setData(pixels);
+        self.tex_dirty = false;
     }
 };

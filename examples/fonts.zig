@@ -16,46 +16,27 @@ pub fn main() anyerror!void {
 }
 
 fn init() void {
-    book = aya.gfx.FontBook.init(null, 128, 128, .point) catch unreachable;
+    book = aya.gfx.FontBook.init(null, 128, 128, .nearest) catch unreachable;
     font = book.addFont("assets/ProggyTiny.ttf");
     book.setSize(10);
-
-    var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
-    var mat = aya.math.Mat32.initOrtho(640, 480);
-    shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
-    shader.apply();
-
-    sdl.SDL_AddEventWatch(onKeyPressed, null);
-}
-
-fn onKeyPressed(ctx: ?*c_void, evt: [*c]sdl.SDL_Event) callconv(.C) c_int {
-    if (evt[0].type == sdl.SDL_KEYUP) {
-        const c_key = sdl.SDL_GetKeyName(evt[0].key.keysym.sym);
-
-        const span = std.mem.spanZ(c_key);
-        aya.draw.text(span, 40, 50, book);
-        const c_key_lwr = std.ascii.toLower(span[0]);
-        aya.draw.text(&[_]u8{c_key_lwr}, 20, 50, book);
-    }
-
-    return 0;
 }
 
 fn update() void {
-    aya.debug.drawText("what the fuck", .{}, null);
+    aya.debug.drawText("what the fuck", .{ .x = 0, .y = 450 }, null);
 }
 
 fn render() void {
-    if (aya.input.mouseDown(.left)) {
-        aya.draw.text("pooop", 200, 50, null);
-    }
+    aya.gfx.beginPass(.{});
+    // if (aya.input.mouseDown(.left)) {
+    aya.draw.text("pooop", 200, 50, null);
+    // }
 
-    if (aya.input.mouseDown(.right)) {
-        aya.draw.text("fucker", 200, 50, book);
-    }
+    // if (aya.input.mouseDown(.right)) {
+    aya.draw.text("fucker", 10, 150, book);
+    // }
 
     aya.draw.textOptions("fucker", null, .{ .x = 300, .y = 150, .sx = 3, .sy = 3, .rot = 0.785, .color = Color.yellow });
 
-    aya.draw.tex(book.texture.?, 10, 60);
+    aya.draw.tex(book.texture.?, 10, 250);
     aya.gfx.endPass();
 }

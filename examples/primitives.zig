@@ -16,11 +16,6 @@ pub fn main() !void {
 }
 
 fn init() void {
-    var shader = aya.gfx.Shader.initFromFile("assets/SpriteEffect.fxb") catch unreachable;
-    var mat = aya.math.Mat32.initOrtho(640, 480);
-    shader.setParam(aya.math.Mat32, "TransformMatrix", mat);
-    shader.apply();
-
     tri_batch = aya.gfx.TriangleBatcher.init(null, 100) catch unreachable;
 }
 
