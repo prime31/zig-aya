@@ -34,7 +34,7 @@ fn render() void {
     aya.draw.hollowPolygon(poly[0..], 2, math.Color.gold);
     aya.gfx.endPass();
 
-    aya.gfx.beginPass(.{.color = null});
+    aya.gfx.beginPass(.{.color_action = .SG_ACTION_DONTCARE});
     tri_batch.drawTriangle(.{ .x = 50, .y = 50 }, .{ .x = 150, .y = 150 }, .{ .x = 0, .y = 150 }, Color.black);
     tri_batch.drawTriangle(.{ .x = 300, .y = 50 }, .{ .x = 350, .y = 150 }, .{ .x = 200, .y = 150 }, Color.lime);
     tri_batch.endFrame();
