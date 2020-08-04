@@ -37,6 +37,7 @@ fn render() void {
 
     aya.draw.textOptions("fucker", null, .{ .x = 300, .y = 150, .sx = 3, .sy = 3, .rot = 0.785, .color = Color.yellow });
 
-    aya.draw.tex(book.texture.?, 10, 250);
+    aya.draw.hollowRect(.{.x = 100, .y = 250}, 128, 128, 1, Color.pink);
+    aya.draw.tex(book.texture.?, 100, 250);
     aya.gfx.endPass();
 }
