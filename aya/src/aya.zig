@@ -71,12 +71,13 @@ pub fn run(config: Config) !void {
 // Event functions
 export fn init() void {
     mem.initTmpAllocator();
-    debug = Debug.init() catch unreachable;
-    input = Input.init(window.scale());
 
     var desc = std.mem.zeroes(sg_desc);
     desc.context = sapp_sgcontext();
     sg_setup(&desc);
+
+    debug = Debug.init() catch unreachable;
+    input = Input.init(window.scale());
 
     gfx.init(state.config.gfx);
     state.config.init();
