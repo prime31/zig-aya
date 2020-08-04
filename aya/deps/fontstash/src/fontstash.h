@@ -68,9 +68,8 @@ struct FONSparams {
 	void* userPtr;
 	int (*renderCreate)(void* uptr, int width, int height);
 	int (*renderResize)(void* uptr, int width, int height);
-	void (*renderUpdate)(void* uptr, int* rect, const unsigned char* data);
-	void (*renderDraw)(void* uptr, const float* verts, const float* tcoords, const unsigned int* colors, int nverts);
-	void (*renderDelete)(void* uptr);
+	// return 1 if the texture was successfully updated else 0
+	int (*renderUpdate)(void* uptr, int* rect, const unsigned char* data);
 };
 typedef struct FONSparams FONSparams;
 
@@ -1079,7 +1078,7 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 		stash->handleError(stash->errorUptr, FONS_ATLAS_FULL, 0);
 		added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
 	}
-    
+
     // out of room. double our textre size
 	if (added == 0) {
         fonsExpandAtlas(stash, stash->params.width * 2, stash->params.height * 2);
@@ -1201,20 +1200,15 @@ static void fons__flush(FONScontext* stash)
 {
 	// Flush texture
 	if (stash->dirtyRect[0] < stash->dirtyRect[2] && stash->dirtyRect[1] < stash->dirtyRect[3]) {
-		if (stash->params.renderUpdate != NULL)
-			stash->params.renderUpdate(stash->params.userPtr, stash->dirtyRect, stash->texData);
-		// Reset dirty rect
-		stash->dirtyRect[0] = stash->params.width;
-		stash->dirtyRect[1] = stash->params.height;
-		stash->dirtyRect[2] = 0;
-		stash->dirtyRect[3] = 0;
-	}
-
-	// Flush triangles
-	if (stash->nverts > 0) {
-		if (stash->params.renderDraw != NULL)
-			stash->params.renderDraw(stash->params.userPtr, stash->verts, stash->tcoords, stash->colors, stash->nverts);
-		stash->nverts = 0;
+		if (stash->params.renderUpdate != NULL) {
+			if (stash->params.renderUpdate(stash->params.userPtr, stash->dirtyRect, stash->texData)) {
+				// Reset dirty rect only if the texture was updated in the callback
+				stash->dirtyRect[0] = stash->params.width;
+				stash->dirtyRect[1] = stash->params.height;
+				stash->dirtyRect[2] = 0;
+				stash->dirtyRect[3] = 0;
+			}
+		}
 	}
 }
 
@@ -1320,8 +1314,7 @@ FONS_DEF float fonsDrawText(FONScontext* stash,
 
 // this used to take in a "const char* end" but instead we now can pass it a non null-terminated
 // string and the length
-FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
-					 float x, float y, const char* str, int len)
+FONS_DEF int fonsTextIterInit(FONScontext* stash, FONStextIter* iter, float x, float y, const char* str, int len)
 {
 	FONSstate* state = fons__getState(stash);
 	float width;
@@ -1592,9 +1585,6 @@ FONS_DEF void fonsDeleteInternal(FONScontext* stash)
 {
 	int i;
 	if (stash == NULL) return;
-
-	if (stash->params.renderDelete)
-		stash->params.renderDelete(stash->params.userPtr);
 
 	for (i = 0; i < stash->nfonts; ++i)
 		fons__freeFont(stash->fonts[i]);
