@@ -31,7 +31,7 @@ pub const Debug = struct {
         pos: math.Vec2,
         w: f32,
         h: f32,
-        thickness: f32,
+        thickness: f32 = 0,
         hollow: bool = false,
         color: math.Color,
     };
@@ -92,8 +92,8 @@ pub const Debug = struct {
         self.debug_items.append(.{ .line = line }) catch return;
     }
 
-    pub fn drawRect(self: *Debug, pos: math.Vec2, width: f32, height: f32, thickness: f32, color: ?math.Color) void {
-        const rect = Rect{ .pos = pos, .w = width, .h = height, .thickness = thickness, .hollow = false, .color = color orelse math.Color.white };
+    pub fn drawRect(self: *Debug, pos: math.Vec2, width: f32, height: f32, color: ?math.Color) void {
+        const rect = Rect{ .pos = pos, .w = width, .h = height, .hollow = false, .color = color orelse math.Color.white };
         self.debug_items.append(.{ .rect = rect }) catch return;
     }
 

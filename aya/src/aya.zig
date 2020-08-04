@@ -71,6 +71,7 @@ pub fn run(config: Config) !void {
 // Event functions
 export fn init() void {
     mem.initTmpAllocator();
+    debug = Debug.init() catch unreachable;
 
     var desc = std.mem.zeroes(sg_desc);
     desc.context = sapp_sgcontext();

@@ -53,9 +53,8 @@ fn update() void {
 fn render() void {
     aya.gfx.beginPass(.{ .color = aya.math.Color.aya });
     mesh.draw();
+    aya.debug.drawRect(.{.x=400, .y=10}, 40, 40, null);
     aya.draw.tex(tex, 10, 10);
     aya.draw.tex(tex, 400, 400);
     aya.gfx.endPass();
-
-    aya.gfx.blitToScreen(aya.math.Color.yellow);
 }
