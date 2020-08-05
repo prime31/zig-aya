@@ -33,16 +33,25 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         .name = "fontstash",
         .path = "aya/deps/fontstash/fontstash.zig",
     };
+    const shaders = Pkg{
+        .name = "shaders",
+        .path = "aya/shaders/shaders.zig",
+        .dependencies = &[_]Pkg{sokol},
+    };
     const aya = Pkg{
         .name = "aya",
         .path = "aya/src/aya.zig",
-        .dependencies = &[_]Pkg{sokol, imgui, stb_image, fontstash},
+        .dependencies = &[_]Pkg{sokol, imgui, stb_image, fontstash, shaders},
     };
 
     // packages exported to userland
     artifact.addPackage(sokol);
     artifact.addPackage(imgui);
     artifact.addPackage(aya);
+
+    // shaders
+    artifact.addIncludeDir("aya/shaders");
+    artifact.addCSourceFile("aya/shaders/basics.c", &[_][]const u8{"-std=c99"});
 }
 
 // add tests.zig file runnable via "zig build test"

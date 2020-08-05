@@ -73,7 +73,17 @@ pub const Sepia = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.pipeline = aya.gfx.Pipeline.makeDefaultPipeline();
+        var shader_desc = aya.gfx.Pipeline.getDefaultShaderDesc();
+        shader_desc.fs.uniform_blocks[0].size = @intCast(c_int, @sizeOf(aya.math.Vec3));
+        shader_desc.fs.uniform_blocks[0].uniforms[0].name = "sepia_tone";
+        shader_desc.fs.uniform_blocks[0].uniforms[0].type = .SG_UNIFORMTYPE_FLOAT3;
+        const shader = aya.gfx.Pipeline.makeShader(&shader_desc);
+
+        var pipeline_desc = aya.gfx.Pipeline.getDefaultPipelineDesc();
+        pipeline_desc.shader = shader;
+        self.pipeline = .{ .pip = aya.sg_make_pipeline(&pipeline_desc), .shader = shader };
+
+        // self.pipeline = aya.gfx.Pipeline.makeDefaultPipeline();
         // self.shader.setParam(aya.math.Vec3, "_sepiaTone", aya.math.Vec3{ .x = 1.2, .y = 1.0, .z = 0.8 });
         self.postprocessor = .{ .process = process };
     }
