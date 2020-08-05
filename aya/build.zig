@@ -62,3 +62,12 @@ pub fn addTests(b: *Builder, target: std.build.Target) void {
     const test_step = b.step("test", "Run tests in tests.zig");
     test_step.dependOn(&tst.step);
 }
+
+pub fn addBuildShaders(b: *Builder, target: std.build.Target) void {
+    var exe = b.addExecutable("build-shaders", "aya/shaders/build_shaders.zig");
+    exe.setOutputDir("zig-cache/bin");
+
+    const run_cmd = exe.run();
+    const exe_step = b.step("build-shaders", "build all Sokol shaders");
+    exe_step.dependOn(&run_cmd.step);
+}

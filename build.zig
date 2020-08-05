@@ -34,6 +34,7 @@ pub fn build(b: *Builder) void {
     }
 
     aya_build.addTests(b, target);
+    aya_build.addBuildShaders(b, target);
 }
 
 // creates an exe with all the required dependencies
