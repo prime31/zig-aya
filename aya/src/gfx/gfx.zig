@@ -51,7 +51,7 @@ var state = struct {
 pub fn init(config: Config) void {
     draw.init(config) catch unreachable;
     state.debug_render_enabled = !config.disable_debug_render;
-    state.default_pipeline = Pipeline.makeDefaultPipeline();
+    state.default_pipeline = Pipeline.initDefaultPipeline();
 
     // if we were passed 0's for design size default to the window/backbuffer size
     var design_w = config.design_width;
@@ -72,7 +72,7 @@ pub fn getResolutionScaler() ResolutionScaler {
     return state.default_pass.scaler;
 }
 
-pub fn getFontBook() FontBook {
+pub fn getFontBook() *FontBook {
     return draw.fontbook;
 }
 
@@ -86,6 +86,7 @@ pub fn setPipeline(pipeline: ?Pipeline) void {
     draw.batcher.flush();
     sg_apply_pipeline(pip.pip);
     sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &state.transform_mat.data, @sizeOf(math.Mat32));
+    pip.applyUniforms();
 }
 
 // Passes

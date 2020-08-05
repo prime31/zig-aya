@@ -36,19 +36,7 @@ fn shutdown() void {
     stack.deinit();
 }
 
-fn update() void {
-    // if (aya.input.keyUp(.SDL_SCANCODE_K)) {
-    //     var w: i32 = 0;
-    //     var h: i32 = 0;
-    //     aya.window.size(&w, &h);
-
-    //     if (w < 1280) {
-    //         aya.window.setSize(1280, 960);
-    //     } else {
-    //         aya.window.setSize(640, 480);
-    //     }
-    // }
-}
+fn update() void {}
 
 fn render() void {
     // render offscreen
@@ -63,11 +51,9 @@ fn render() void {
     aya.gfx.beginPass(.{});
     aya.draw.texScale(checker_tex, 5, 5, 10);
     aya.draw.texScale(checker_tex, 55, 55, 2);
-    // aya.gfx.flush();
 
     aya.draw.texScale(font_tex, 200, 100, 0.2);
     aya.draw.texScale(font_tex, 300, 200, 0.2);
-    // aya.gfx.flush();
 
     aya.draw.line(.{ .x = 0, .y = 0 }, aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
     aya.draw.point(.{ .x = 350, .y = 350 }, 10, math.Color.sky_blue);
