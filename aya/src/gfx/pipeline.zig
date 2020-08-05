@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("../aya.zig");
 const fs = aya.fs;
 const gfx = aya.gfx;
+const shaders = @import("shaders");
 usingnamespace aya.sokol;
 
 const metal = std.Target.current.os.tag == .macosx;
@@ -21,8 +22,10 @@ pub const Pipeline = extern struct {
 
     // static methods
     pub fn makeDefaultPipeline() Pipeline {
-        var shader_desc = getDefaultShaderDesc();
-        const shader = makeShader("", "", &shader_desc);
+        // var shader_desc = getDefaultShaderDesc();
+        // const shader = makeShader(&shader_desc);
+
+        const shader = sg_make_shader(shaders.sprite_shader_desc());
 
         var pipeline_desc = getDefaultPipelineDesc();
         pipeline_desc.shader = shader;
@@ -68,135 +71,138 @@ pub const Pipeline = extern struct {
         return shader_desc;
     }
 
-    pub fn makeShader(comptime vert: []const u8, comptime frag: []const u8, shader_desc: *sg_shader_desc) sg_shader {
-        shader_desc.vs.source = if (metal) vs_metal ++ vert else vs_gl ++ vert;
-        shader_desc.fs.source = if (metal) fs_metal ++ frag else fs_gl ++ frag;
+    pub fn makeShader(shader_desc: *sg_shader_desc) sg_shader {
+        shader_desc.vs.source = if (metal) vs_metal else vs_gl;
+        shader_desc.fs.source = if (metal) fs_metal else fs_gl;
         return sg_make_shader(shader_desc);
     }
 };
 
 const vs_gl =
-\\#version 330
-\\uniform vec2 TransformMatrix[3];
-\\
-\\layout (location=0) in vec2 VertPosition;
-\\layout (location=1) in vec2 VertTexCoord;
-\\layout (location=2) in vec4 VertColor;
-\\
-\\out vec2 VaryingTexCoord;
-\\out vec4 VaryingColor;
-\\
-\\vec4 position(mat3x2 transMat, vec2 localPosition);
-\\
-\\void main() {
-\\  VaryingTexCoord = VertTexCoord;
-\\  VaryingColor = VertColor;
-\\  mat3x2 mat = mat3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
-\\	gl_Position = position(mat, VertPosition);
-\\}
-\\
-\\vec4 position(mat3x2 transMat, vec2 localPosition) {
-\\	return vec4(transMat * vec3(localPosition, 1), 0, 1);
-\\}
+    \\#version 330
+    \\uniform vec2 TransformMatrix[3];
+    \\
+    \\layout (location=0) in vec2 VertPosition;
+    \\layout (location=1) in vec2 VertTexCoord;
+    \\layout (location=2) in vec4 VertColor;
+    \\
+    \\out vec2 VaryingTexCoord;
+    \\out vec4 VaryingColor;
+    \\
+    \\vec4 position(mat3x2 transMat, vec2 localPosition);
+    \\
+    \\void main() {
+    \\  VaryingTexCoord = VertTexCoord;
+    \\  VaryingColor = VertColor;
+    \\  mat3x2 mat = mat3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
+    \\	gl_Position = position(mat, VertPosition);
+    \\}
+    \\
+    \\vec4 position(mat3x2 transMat, vec2 localPosition) {
+    \\	return vec4(transMat * vec3(localPosition, 1), 0, 1);
+    \\}
 ;
 
 const fs_gl =
-\\#version 330
-\\uniform sampler2D MainTex;
-\\uniform vec4 via_ScreenSize;
-\\
-\\in vec2 VaryingTexCoord;
-\\in vec4 VaryingColor;
-\\
-\\#define via_PixelCoord (vec2(gl_FragCoord.x, (gl_FragCoord.y * via_ScreenSize.z) + via_ScreenSize.w))
-\\
-\\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord);
-\\
-\\layout (location=0) out vec4 frag_color;
-\\void main() {
-\\	frag_color = effect(VaryingColor, MainTex, VaryingTexCoord.st);
-\\}
-\\
-\\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord) {
-\\	return texture(tex, texcoord) * vcolor;
-\\}
+    \\#version 330
+    \\uniform sampler2D MainTex;
+    \\uniform vec4 via_ScreenSize;
+    \\
+    \\in vec2 VaryingTexCoord;
+    \\in vec4 VaryingColor;
+    \\
+    \\#define via_PixelCoord (vec2(gl_FragCoord.x, (gl_FragCoord.y * via_ScreenSize.z) + via_ScreenSize.w))
+    \\
+    \\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord);
+    \\
+    \\layout (location=0) out vec4 frag_color;
+    \\void main() {
+    \\	frag_color = effect(VaryingColor, MainTex, VaryingTexCoord.st);
+    \\}
+    \\
+    \\vec4 effect(vec4 vcolor, sampler2D tex, vec2 texcoord) {
+    \\	return texture(tex, texcoord) * vcolor;
+    \\}
 ;
 
 const vs_metal =
-\\ #pragma clang diagnostic ignored "-Wmissing-prototypes"
-\\ #pragma clang diagnostic ignored "-Wmissing-braces"
-\\
-\\ #include <metal_stdlib>
-\\ #include <simd/simd.h>
-\\
-\\ using namespace metal;
-\\
-\\ struct vs_in
-\\ {
-\\     float2 VertPosition [[attribute(0)]];
-\\     float2 VertTexCoord [[attribute(1)]];
-\\     float4 VertColor [[attribute(2)]];
-\\ };
-\\
-\\ struct vs_out
-\\ {
-\\     float2 VaryingTexCoord [[user(locn0)]];
-\\     float4 VaryingColor [[user(locn1)]];
-\\     float4 Position [[position]];
-\\ };
-\\
-\\ static inline __attribute__((always_inline))
-\\ float4 position(thread const float3x2& transMat, thread const float2& localPosition)
-\\ {
-\\     return float4(transMat * float3(localPosition, 1.0), 0.0, 1.0);
-\\ }
-\\
-\\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float2, 3>& TransformMatrix [[buffer(0)]])
-\\ {
-\\     vs_out out = {};
-\\     out.VaryingTexCoord = in.VertTexCoord;
-\\     out.VaryingColor = in.VertColor;
-\\
-\\     //float3x2 matrix = float3x2(0.003, -0.000, -0.000, -0.004, -1.000, 1.000); // identity for default win size
-\\     float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
-\\     out.Position = position(matrix, in.VertPosition);
-\\     return out;
-\\ }
+    \\ #pragma clang diagnostic ignored "-Wmissing-prototypes"
+    \\ #pragma clang diagnostic ignored "-Wmissing-braces"
+    \\
+    \\ #include <metal_stdlib>
+    \\ #include <simd/simd.h>
+    \\
+    \\ using namespace metal;
+    \\
+    \\ struct vs_in
+    \\ {
+    \\     float2 VertPosition [[attribute(0)]];
+    \\     float2 VertTexCoord [[attribute(1)]];
+    \\     float4 VertColor [[attribute(2)]];
+    \\ };
+    \\
+    \\ struct vs_out
+    \\ {
+    \\     float2 VaryingTexCoord [[user(locn0)]];
+    \\     float4 VaryingColor [[user(locn1)]];
+    \\     float4 Position [[position]];
+    \\ };
+    \\
+    \\ static inline __attribute__((always_inline))
+    \\ float4 position(thread const float3x2& transMat, thread const float2& localPosition);
+    \\
+    \\ vertex vs_out _main(vs_in in [[stage_in]], constant array<float2, 3>& TransformMatrix [[buffer(0)]])
+    \\ {
+    \\     vs_out out = {};
+    \\     out.VaryingTexCoord = in.VertTexCoord;
+    \\     out.VaryingColor = in.VertColor;
+    \\
+    \\     //float3x2 matrix = float3x2(0.003, -0.000, -0.000, -0.004, -1.000, 1.000); // identity for default win size
+    \\     float3x2 matrix = float3x2(TransformMatrix[0].x, TransformMatrix[0].y, TransformMatrix[1].x, TransformMatrix[1].y, TransformMatrix[2].x, TransformMatrix[2].y);
+    \\     out.Position = position(matrix, in.VertPosition);
+    \\     return out;
+    \\ }
+    \\
+    \\ static inline __attribute__((always_inline))
+    \\ float4 position(thread const float3x2& transMat, thread const float2& localPosition)
+    \\ {
+    \\     return float4(transMat * float3(localPosition, 1.0), 0.0, 1.0);
+    \\ }
 ;
 
 const fs_metal =
-\\ #pragma clang diagnostic ignored "-Wmissing-prototypes"
-\\
-\\ #include <metal_stdlib>
-\\ #include <simd/simd.h>
-\\
-\\ using namespace metal;
-\\
-\\ struct main0_out
-\\ {
-\\     float4 frag_color [[color(0)]];
-\\ };
-\\
-\\ struct main0_in
-\\ {
-\\     float2 VaryingTexCoord [[user(locn0)]];
-\\     float4 VaryingColor [[user(locn1)]];
-\\ };
-\\
-\\ static inline __attribute__((always_inline))
-\\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord);
-\\
-\\ fragment main0_out _main(main0_in in [[stage_in]], texture2d<float> MainTex [[texture(0)]], sampler MainTexSmplr [[sampler(0)]])
-\\ {
-\\     main0_out out = {};
-\\     out.frag_color = effect(in.VaryingColor, MainTex, MainTexSmplr, in.VaryingTexCoord);
-\\     return out;
-\\ }
-\\
-\\ static inline __attribute__((always_inline))
-\\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord)
-\\ {
-\\     return tex.sample(texSampler, texcoord) * vcolor;
-\\ }
-\\
+    \\ #pragma clang diagnostic ignored "-Wmissing-prototypes"
+    \\
+    \\ #include <metal_stdlib>
+    \\ #include <simd/simd.h>
+    \\
+    \\ using namespace metal;
+    \\
+    \\ struct main0_out
+    \\ {
+    \\     float4 frag_color [[color(0)]];
+    \\ };
+    \\
+    \\ struct main0_in
+    \\ {
+    \\     float2 VaryingTexCoord [[user(locn0)]];
+    \\     float4 VaryingColor [[user(locn1)]];
+    \\ };
+    \\
+    \\ static inline __attribute__((always_inline))
+    \\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord);
+    \\
+    \\ fragment main0_out _main(main0_in in [[stage_in]], texture2d<float> MainTex [[texture(0)]], sampler MainTexSmplr [[sampler(0)]])
+    \\ {
+    \\     main0_out out = {};
+    \\     out.frag_color = effect(in.VaryingColor, MainTex, MainTexSmplr, in.VaryingTexCoord);
+    \\     return out;
+    \\ }
+    \\
+    \\ static inline __attribute__((always_inline))
+    \\ float4 effect(thread const float4& vcolor, thread const texture2d<float> tex, thread const sampler texSampler, thread const float2& texcoord)
+    \\ {
+    \\     return tex.sample(texSampler, texcoord) * vcolor;
+    \\ }
+    \\
 ;
