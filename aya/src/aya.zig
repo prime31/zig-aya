@@ -84,10 +84,10 @@ export fn init() void {
 }
 
 export fn update() void {
-    input.newFrame();
     state.config.update();
     state.config.render();
     gfx.commit();
+    input.newFrame();
 }
 
 export fn event(e: [*c]const sapp_event) void {

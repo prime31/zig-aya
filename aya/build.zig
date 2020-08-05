@@ -48,6 +48,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     artifact.addPackage(sokol);
     artifact.addPackage(imgui);
     artifact.addPackage(aya);
+    artifact.addPackage(shaders);
 
     // shaders
     artifact.addIncludeDir("aya/shaders");
