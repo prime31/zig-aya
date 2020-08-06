@@ -48,23 +48,25 @@ var state = struct {
 pub fn run(config: Config) !void {
     state.config = config;
 
-    var app_desc = std.mem.zeroes(sapp_desc);
-    app_desc.init_cb = init;
-    app_desc.frame_cb = update;
-    app_desc.cleanup_cb = cleanup;
-    app_desc.event_cb = event;
+    var app_desc = std.mem.zeroInit(sapp_desc, .{
+        .init_cb = init,
+        .frame_cb = update,
+        .cleanup_cb = cleanup,
+        .event_cb = event,
 
-    app_desc.width = config.window.width;
-    app_desc.height = config.window.height;
-    app_desc.swap_interval = config.swap_interval;
-    app_desc.high_dpi = config.window.high_dpi;
-    app_desc.window_title = config.window.title.ptr;
+        .width = config.window.width,
+        .height = config.window.height,
+        .swap_interval = config.swap_interval,
+        .high_dpi = config.window.high_dpi,
+        .window_title = config.window.title.ptr,
+
+        .alpha = false,
+    });
 
     if (state.config.onFileDropped == null) {
         app_desc.max_dropped_files = 0;
     }
 
-    app_desc.alpha = false;
     _ = sapp_run(&app_desc);
 }
 
@@ -72,8 +74,7 @@ pub fn run(config: Config) !void {
 export fn init() void {
     mem.initTmpAllocator();
 
-    var desc = std.mem.zeroes(sg_desc);
-    desc.context = sapp_sgcontext();
+    var desc = std.mem.zeroInit(sg_desc, .{ .context = sapp_sgcontext() });
     sg_setup(&desc);
 
     debug = Debug.init() catch unreachable;

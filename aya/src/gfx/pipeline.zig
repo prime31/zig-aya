@@ -34,15 +34,33 @@ pub const Pipeline = struct {
             total_uniforms += 1;
         }
 
+        for (shader_desc.vs.uniform_blocks) |uni| {
+            if (uni.size == 0) break;
+            total_uniforms += 1;
+        }
+
         var uniforms = if (total_uniforms == 0) &[_]UniformBlock{} else aya.mem.allocator.alloc(UniformBlock, total_uniforms) catch unreachable;
+        var index: usize = 0;
+        for (shader_desc.vs.uniform_blocks) |uni, i| {
+            if (uni.size == 0) break;
+            uniforms[index] = .{
+                .shader_stage = .SG_SHADERSTAGE_VS,
+                .index = @intCast(c_int, i),
+                .size = uni.size,
+                .data = aya.mem.allocator.alloc(u8, @intCast(usize, uni.size)) catch unreachable,
+            };
+            index += 1;
+        }
+
         for (shader_desc.fs.uniform_blocks) |uni, i| {
             if (uni.size == 0) break;
-            uniforms[i] = .{
+            uniforms[index] = .{
                 .shader_stage = .SG_SHADERSTAGE_FS,
                 .index = @intCast(c_int, i),
                 .size = uni.size,
                 .data = aya.mem.allocator.alloc(u8, @intCast(usize, uni.size)) catch unreachable,
             };
+            index += 1;
         }
 
         return .{ .pip = sg_make_pipeline(&pipeline_desc), .shader = shader, .uniforms = uniforms };
@@ -65,12 +83,18 @@ pub const Pipeline = struct {
         unreachable;
     }
 
-    pub fn setUniform(self: Pipeline, uniform_index: usize, data: []u8) void {
+    pub fn setUniform(self: Pipeline, uniform_index: usize, data: []const u8) void {
         // only set and dirty the uniform if it changed
-        if (std.mem.eql(u8, data, self.uniforms[uniform_index].data)) return;
+        if (aya.mem.eqlSub(u8, data, self.uniforms[uniform_index].data)) return;
 
         std.mem.copy(u8, self.uniforms[uniform_index].data, data);
         self.uniforms[uniform_index].dirty = true;
+    }
+
+    pub fn setTransformMatrixUniform(self: Pipeline, matrix: aya.math.Mat32) void {
+        // transform matrix should always be the first uniform
+        var bytes = std.mem.asBytes(&matrix);
+        self.setUniform(0, bytes[0..]);
     }
 
     pub fn setFragUniform(self: Pipeline, index: usize, data: []u8) void {
