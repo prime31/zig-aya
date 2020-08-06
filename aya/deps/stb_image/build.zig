@@ -18,6 +18,6 @@ fn compileStbImage(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build
     exe.linkLibC();
     exe.addIncludeDir("aya/deps/stb_image/src");
 
-    const lib_cflags = &[_][]const u8{"-std=c99"};
+    const lib_cflags = &[_][]const u8{"-std=c99", "-O3"};
     exe.addCSourceFile("aya/deps/stb_image/src/stb_image_impl.c", lib_cflags);
 }

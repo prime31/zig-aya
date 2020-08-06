@@ -2,11 +2,7 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, include_imgui: bool) void {
-    compileSokol(b, artifact, target, include_imgui);
-}
-
-fn compileSokol(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, include_imgui: bool) void {
+pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, include_imgui: bool) void {
     exe.linkLibC();
 
     if (target.isDarwin()) {
@@ -33,7 +29,7 @@ fn compileSokol(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Ta
     exe.addIncludeDir("aya/deps/sokol");
 
     const imgui_flag = if (include_imgui) "-DNOTHING" else "-DDISABLE_IMGUI=1";
-    const c_flags = if (std.Target.current.os.tag == .macosx) [_][]const u8{ "-std=c99", "-ObjC", "-fobjc-arc", imgui_flag } else [_][]const u8{ "-std=c99", imgui_flag };
+    const c_flags = if (std.Target.current.os.tag == .macosx) [_][]const u8{ "-std=c99", "-ObjC", "-fobjc-arc", "-O3", imgui_flag } else [_][]const u8{ "-std=c99", "-O3", imgui_flag };
 
     exe.addCSourceFile("aya/deps/sokol/compile_sokol.c", &c_flags);
 }
