@@ -85,7 +85,7 @@ pub fn setPipeline(pipeline: ?Pipeline) void {
 
     draw.batcher.flush();
     sg_apply_pipeline(pip.pip);
-    sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &state.transform_mat.data, @sizeOf(math.Mat32));
+    pip.setTransformMatrixUniform(state.transform_mat);
     pip.applyUniforms();
 }
 
