@@ -107,6 +107,24 @@
             "options": {
                 "cwd": "${fileDirname}"
             },
+            "command": "./sokol-shdc --input shd.glsl --output ../basics.h --slang glsl330:metal_macos --format sokol_impl",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Compile Shaders and Generate shaders.zig",
+            "type": "shell",
+            "options": {
+                "cwd": "${fileDirname}"
+            },
             "command": "./sokol-shdc --input shd.glsl --output ../basics.h --slang glsl330:metal_macos --format sokol_impl && cd ${workspaceFolder} && zig build build-shaders",
             "problemMatcher": [
                 "$gcc"

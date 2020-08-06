@@ -62,8 +62,8 @@ pub const Time = struct {
         return self.timestep.fixed_deltatime;
     }
 
-    pub fn now(self: Time) u64 {
-        return sdl.SDL_GetPerformanceCounter();
+    pub fn now(self: Time) i64 {
+        return std.time.milliTimestamp();
     }
 
     /// returns the time in milliseconds since the last call

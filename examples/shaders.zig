@@ -4,8 +4,15 @@ const shaders = @import("shaders");
 
 var tex: aya.gfx.Texture = undefined;
 var lines_pip: aya.gfx.Pipeline = undefined;
+var noise_pip: aya.gfx.Pipeline = undefined;
+var stack: aya.gfx.PostProcessStack = undefined;
 
-pub const Params = extern struct {
+pub const NoiseParams = extern struct {
+    time: f32,
+    power: f32,
+};
+
+pub const LinesParams = extern struct {
     line_size: f32,
     line_color: aya.math.Vec4 align(16),
 };
@@ -21,12 +28,16 @@ pub fn main() !void {
 fn init() void {
     tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
     lines_pip = aya.gfx.Pipeline.init(shaders.lines_shader_desc());
+    noise_pip = aya.gfx.Pipeline.init(shaders.noise_shader_desc());
 
-    var params = Params{
+    var params = LinesParams{
         .line_size = 4,
         .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
     };
     lines_pip.setFragUniform(0, std.mem.asBytes(&params));
+
+    stack = aya.gfx.createPostProcessStack();
+    _ = stack.add(aya.gfx.Vignette, {});
 }
 
 fn update() void {
@@ -37,15 +48,18 @@ fn update() void {
             if (aya.input.keyPressed(.SAPP_KEYCODE_5)) break :blk 5;
             break :blk 3;
         };
-        var params = Params{
+        var params = LinesParams{
             .line_size = line_size,
             .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
         };
         lines_pip.setFragUniform(0, std.mem.asBytes(&params));
     }
-    if (aya.input.keyPressed(.SAPP_KEYCODE_1)) {
 
-    }
+    var params = NoiseParams{
+        .time = @intToFloat(f32, 1596745096890 - aya.time.now()),
+        .power = 100,
+    };
+    noise_pip.setFragUniform(0, std.mem.asBytes(&params));
 }
 
 fn render() void {
@@ -58,5 +72,13 @@ fn render() void {
         aya.gfx.setPipeline(lines_pip);
     }
     aya.draw.texScale(tex, 230, 230, 3);
+
+    if (!aya.input.keyDown(.SAPP_KEYCODE_SPACE)) {
+        aya.gfx.setPipeline(noise_pip);
+    }
+    aya.draw.texScale(tex, 100, 230, 3);
     aya.gfx.endPass();
+
+    aya.gfx.postProcess(&stack);
+    
 }
