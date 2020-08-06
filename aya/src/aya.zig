@@ -4,7 +4,7 @@ pub const WindowConfig = @import("window.zig").WindowConfig;
 
 // libs
 pub const sokol = @import("sokol");
-pub const filebrowser = @import("filebrowser");
+pub const imgui = @import("imgui");
 
 // aya namespaces
 pub const gfx = @import("gfx/gfx.zig");
@@ -26,6 +26,7 @@ const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
 const Debug = @import("debug.zig").Debug;
 
+const has_imgui = @hasDecl(@import("root"), "imgui");
 usingnamespace sokol;
 
 pub const Config = struct {
@@ -81,28 +82,33 @@ export fn init() void {
     input = Input.init(window.scale());
 
     gfx.init(state.config.gfx);
+    if (has_imgui) {
+        var imgui_desc = std.mem.zeroes(simgui_desc_t);
+        imgui_desc.dpi_scale = sapp_dpi_scale();
+        imgui_desc.ini_filename = "imgui.ini";
+        simgui_setup(&imgui_desc);
+    }
     state.config.init();
 }
 
 export fn update() void {
+    if (has_imgui) simgui_new_frame(window.width(), window.height(), 0.017);
+
     state.config.update();
     state.config.render();
+
+    if (has_imgui) {
+        gfx.blitToScreen(math.Color.black);
+        gfx.beginPass(.{});
+        simgui_render();
+        gfx.endPass();
+    }
+
     gfx.commit();
     input.newFrame();
 }
 
 export fn event(e: [*c]const sapp_event) void {
-    // special handling of dropped files
-    if (e[0].type == .SAPP_EVENTTYPE_FILE_DROPPED) {
-        if (state.config.onFileDropped) |onFileDropped| {
-            const dropped_file_cnt = sapp_get_num_dropped_files();
-            var i: usize = 0;
-            while (i < dropped_file_cnt) : (i += 1) {
-                onFileDropped(std.mem.spanZ(sapp_get_dropped_file_path(@intCast(c_int, i))));
-            }
-        }
-    }
-
     // handle cmd+Q on macos
     if (std.Target.current.os.tag == .macosx) {
         if (e[0].type == .SAPP_EVENTTYPE_KEY_DOWN) {
@@ -115,6 +121,8 @@ export fn event(e: [*c]const sapp_event) void {
             state.cmd_down = false;
         }
     }
+
+    if (has_imgui and simgui_handle_event(e)) return;
 
     switch (e[0].type) {
         .SAPP_EVENTTYPE_RESIZED, .SAPP_EVENTTYPE_ICONIFIED, .SAPP_EVENTTYPE_RESTORED, .SAPP_EVENTTYPE_SUSPENDED, .SAPP_EVENTTYPE_RESUMED => window.handleEvent(@ptrCast(*const sapp_event, &e[0])),
