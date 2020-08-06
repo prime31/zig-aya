@@ -81,6 +81,7 @@ pub const Sepia = struct {
     pub fn initialize(self: *@This(), data: anytype) void {
         self.pipeline = aya.gfx.Pipeline.init(shaders.sepia_shader_desc());
         self.postprocessor = .{ .process = process };
+
         self.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
         self.pipeline.setFragUniform(0, std.mem.asBytes(&self.sepia_tone));
     }
@@ -88,5 +89,39 @@ pub const Sepia = struct {
     pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
         processor.blit(tex, self.pipeline);
+    }
+
+    pub fn setTone(self: *@This(), tone: aya.math.Vec3) void {
+        self.sepia_tone = tone;
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.sepia_tone));
+    }
+};
+
+pub const Vignette = struct {
+    postprocessor: PostProcessor,
+    pipeline: aya.gfx.Pipeline,
+    params: struct { radius: f32, power: f32 },
+
+    pub fn deinit(self: @This()) void {
+        self.pipeline.deinit();
+    }
+
+    pub fn initialize(self: *@This(), data: anytype) void {
+        self.pipeline = aya.gfx.Pipeline.init(shaders.vignette_shader_desc());
+        self.postprocessor = .{ .process = process };
+
+        self.params = .{ .radius = 1.2, .power = 1 };
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+    }
+
+    pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
+        const self = processor.getParent(@This());
+        processor.blit(tex, self.pipeline);
+    }
+
+    pub fn setUniforms(self: *@This(), radius: f32, power: 32) void {
+        self.params.radius = radius;
+        self.params.power = power;
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
     }
 };

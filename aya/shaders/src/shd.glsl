@@ -1,5 +1,13 @@
 // ./sokol-shdc --input shd.glsl --output basics.h --slang glsl330:metal_macos --format sokol_impl
 
+// reusable blocks
+@block rand
+float rand(vec2 co){
+	return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+@end
+
+
 @vs sprite_vs
 uniform vs_params {
 	vec4 TransformMatrix[2];
@@ -98,4 +106,44 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @program lines sprite_vs lines_fs
 
 
-//#define via_PixelCoord (vec2(gl_FragCoord.x, (gl_FragCoord.y * via_ScreenSize.z) + via_ScreenSize.w))
+@fs noise_fs
+@include_block sprite_fs_main
+uniform noise_fs_params {
+	float time;
+	float power; // 100
+};
+
+@include_block rand
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec4 color = texture(tex, tex_coord);
+	float x = (tex_coord.x + 4) * (tex_coord.y + 4) * (sin(time) * 10);
+	vec3 grain = vec3(mod((mod(x, 13) + 1) * (mod(x, 123) + 1), 0.01) - 0.005) * power;
+	color.rgb += grain;
+
+	return color;
+}
+@end
+
+@program noise sprite_vs noise_fs
+
+
+@fs vignette_fs
+@include_block sprite_fs_main
+uniform vignette_fs_params {
+	float radius; // 1.25
+	float power; // 1.0
+};
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec4 color = texture(tex, tex_coord);
+
+	vec2 dist = (tex_coord - 0.5f) * radius;
+	dist.x = 1 - dot(dist, dist) * power;
+	color.rgb *= dist.x;
+
+	return color;
+}
+@end
+
+@program vignette sprite_vs vignette_fs

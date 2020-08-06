@@ -9,8 +9,9 @@ pub const Texture = @import("texture.zig").Texture;
 pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 
 pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
-// TODO: move Sepia to its own file
+// TODO: move Sepia/Vignette to its own file
 pub const Sepia = @import("post_process_stack.zig").Sepia;
+pub const Vignette = @import("post_process_stack.zig").Vignette;
 
 pub const Batcher = @import("batcher.zig").Batcher;
 pub const TriangleBatcher = @import("triangle_batcher.zig").TriangleBatcher;
