@@ -107,7 +107,7 @@
             "options": {
                 "cwd": "${fileDirname}"
             },
-            "command": "./sokol-shdc --input shd.glsl --output ../basics.h --slang glsl330:metal_macos --format sokol_impl",
+            "command": "./sokol-shdc --input shd.glsl --output ../basics.h --slang glsl330:metal_macos --format sokol_impl && cd ${workspaceFolder} && zig build build-shaders",
             "problemMatcher": [
                 "$gcc"
             ],
