@@ -44,6 +44,7 @@ pub const Align = extern enum(c_int) {
     left_middle = 17,
     center_middle = 18,
     right_middle = 20,
+    top_left = 9,
 };
 
 pub const ErrorCode = extern enum(c_int) {

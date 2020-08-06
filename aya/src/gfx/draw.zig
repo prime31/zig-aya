@@ -43,8 +43,7 @@ pub const draw = struct {
     pub fn text(str: []const u8, x: f32, y: f32, fb: ?*gfx.FontBook) void {
         var book = fb orelse fontbook;
         // TODO: dont hardcode scale as 4
-        var matrix = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = 4, .sy = 4 });
-        book.setAlign(.default);
+        var matrix = math.Mat32.initTransform(.{ .x = x, .y = y, .sx = 2, .sy = 2 });
 
         var fons_quad = book.getQuad();
         var iter = book.getTextIterator(str);
