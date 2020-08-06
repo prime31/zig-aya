@@ -26,7 +26,7 @@ const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
 const Debug = @import("debug.zig").Debug;
 
-const has_imgui = @hasDecl(@import("root"), "imgui");
+const has_imgui: bool = if (@hasDecl(@import("root"), "imgui")) @import("root").imgui else false;
 usingnamespace sokol;
 
 pub const Config = struct {
@@ -82,7 +82,9 @@ export fn init() void {
     input = Input.init(window.scale());
 
     gfx.init(state.config.gfx);
+
     if (has_imgui) {
+        std.debug.print("setup imgui\n", .{});
         var imgui_desc = std.mem.zeroes(simgui_desc_t);
         imgui_desc.dpi_scale = sapp_dpi_scale();
         imgui_desc.ini_filename = "imgui.ini";

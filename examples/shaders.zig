@@ -80,5 +80,5 @@ fn render() void {
     aya.gfx.endPass();
 
     aya.gfx.postProcess(&stack);
-    
+
 }
