@@ -19,8 +19,8 @@ void main() {
 
 	// 0.0031, -0.0000, -0.0000, -0.0042, -1.0000, 1.0000
 	// transMat[0] = vec2(0.003125, -0.000);
-	//transMat[1] = vec2(-0.000, -0.004167);
-	//transMat[2] = vec2(-1.000, 1.000);
+	// transMat[1] = vec2(-0.000, -0.004167);
+	// transMat[2] = vec2(-1.000, 1.000);
 	gl_Position = vec4(transMat * vec3(VertPosition, 1), 0, 1);
 }
 @end

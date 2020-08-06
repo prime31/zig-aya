@@ -1,9 +1,8 @@
 usingnamespace @import("sokol");
 
-pub extern fn sprite_shader_desc() [*c]const sg_shader_desc;
-pub extern fn sepia_shader_desc() [*c]const sg_shader_desc;
 pub extern fn lines_shader_desc() [*c]const sg_shader_desc;
-
+pub extern fn sepia_shader_desc() [*c]const sg_shader_desc;
+pub extern fn sprite_shader_desc() [*c]const sg_shader_desc;
 
 // for generating the cimport.zig file uncomment this
 // const std = @import("std");
