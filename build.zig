@@ -6,6 +6,8 @@ const aya_build = @import("aya/build.zig");
 
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
+
+    // ImGui requires `pub const imgui = true;` in the root file and `include_imgui` to be true so it is compiled in
     var include_imgui = false;
 
     // first item in list will be added as "run" so `zig build run` will always work

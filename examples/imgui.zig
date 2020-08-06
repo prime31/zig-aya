@@ -3,7 +3,7 @@ const aya = @import("aya");
 usingnamespace @import("imgui");
 usingnamespace @import("sokol");
 
-const imgui = false;
+pub const imgui = true;
 var demo_open: bool = true;
 
 pub fn main() !void {
@@ -15,7 +15,6 @@ pub fn main() !void {
             .width = 1024,
             .height = 768,
         },
-        .imgui = true,
     });
 }
 
