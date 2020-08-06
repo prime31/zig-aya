@@ -62,6 +62,10 @@ pub const FontBook = struct {
         fons.fonsSetAlign(self.stash, alignment);
     }
 
+    pub fn clearState(self: *FontBook) void {
+        fons.fonsClearState(self.stash);
+    }
+
     pub fn getTextIterator(self: *FontBook, str: []const u8) fons.TextIter {
         var iter = std.mem.zeroes(fons.TextIter);
         const res = fons.fonsTextIterInit(self.stash, &iter, 0, 0, str.ptr, @intCast(c_int, str.len));

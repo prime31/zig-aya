@@ -22,22 +22,24 @@ fn init() void {
 }
 
 fn update() void {
-    aya.debug.drawText("what the fuck", .{ .x = 0, .y = 450 }, null);
+    aya.debug.drawText("what the fuck, im at 0,450. top-left", .{ .x = 0, .y = 450 }, null);
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
-    // if (aya.input.mouseDown(.left)) {
-    aya.draw.text("pooop", 200, 50, null);
-    // }
+    aya.draw.text("top-left", 0, 40, book);
 
-    // if (aya.input.mouseDown(.right)) {
-    aya.draw.text("fucker", 10, 150, book);
-    // }
+    if (aya.input.mouseDown(.left)) {
+        aya.draw.text("pooop, left button", 200, 50, null);
+    }
+
+    if (aya.input.mouseDown(.right)) {
+        aya.draw.text("fucker, right button", 10, 150, book);
+    }
 
     aya.draw.textOptions("fucker", null, .{ .x = 300, .y = 150, .sx = 3, .sy = 3, .rot = 0.785, .color = Color.yellow });
 
-    aya.draw.hollowRect(.{.x = 100, .y = 250}, 128, 128, 1, Color.pink);
+    aya.draw.hollowRect(.{ .x = 100, .y = 250 }, 128, 128, 1, Color.pink);
     aya.draw.tex(book.texture.?, 100, 250);
     aya.gfx.endPass();
 }

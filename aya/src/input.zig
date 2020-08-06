@@ -9,9 +9,9 @@ const down: u3 = 2; // true the entire time the key is down
 const pressed: u3 = 3; // only true if down this frame and not down the previous frame
 
 pub const MouseButton = enum(usize) {
-    left = 1,
+    left = 0,
+    right = 1,
     middle = 2,
-    right = 3,
 };
 
 pub const Input = struct {
