@@ -97,10 +97,13 @@ pub const Pipeline = struct {
         self.setUniform(0, bytes[0..]);
     }
 
-    pub fn setFragUniform(self: Pipeline, index: usize, data: []u8) void {
+    /// sets a frag uniform in the Pipeline. data should be a pointer to the struct.
+    pub fn setFragUniform(self: Pipeline, index: usize, data: anytype) void {
+        std.debug.assert(@typeInfo(@TypeOf(data)) == .Pointer);
+
         for (self.uniforms) |uni, i| {
             if (uni.shader_stage == .SG_SHADERSTAGE_FS and uni.index == index) {
-                self.setUniform(i, data);
+                self.setUniform(i, std.mem.asBytes(data));
             }
         }
     }

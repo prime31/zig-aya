@@ -44,6 +44,15 @@ pub fn between(val: anytype, start: anytype, end: anytype) bool {
     return start <= val and val <= end;
 }
 
+pub fn repeat(t: f32, len: f32) f32 {
+    return t - std.math.floor(t / len) * len;
+}
+
+pub fn pingpong(t: f32, len: f32) f32 {
+    const tt = repeat(t, len * 2);
+    return len - std.math.absFloat(tt - len);
+}
+
 test "test math.rand" {
     rand.seed(0);
 

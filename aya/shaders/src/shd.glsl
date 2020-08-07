@@ -13,9 +13,9 @@ uniform vs_params {
 	vec4 TransformMatrix[2];
 };
 
-in vec2 VertPosition;
-in vec2 VertTexCoord;
-in vec4 VertColor;
+layout(location = 0) in vec2 VertPosition;
+layout(location = 1) in vec2 VertTexCoord;
+layout(location = 2) in vec4 VertColor;
 
 out vec2 VaryingTexCoord;
 out vec4 VaryingColor;
@@ -175,3 +175,36 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program pixel_glitch sprite_vs pixel_glitch_fs
+
+
+
+@fs dissolve_fs
+@include_block sprite_fs_main
+uniform dissolve_fs_params {
+	float progress; // 0 - 1 where 0 is no change to s0 and 1 will discard all of s0 where dissolve_tex.r < value
+	float dissolve_threshold; // 0.04
+	vec4 dissolve_threshold_color; // the color that will be used when dissolve_tex is between progress +- dissolve_threshold
+};
+uniform sampler2D dissolve_tex;
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	float _progress = progress + dissolve_threshold;
+
+	vec4 color = texture(tex, tex_coord);
+	// get dissolve from 0 - 1 where 0 is pure white and 1 is pure black
+	float dissolve_amount = 1 - texture(dissolve_tex, tex_coord).r;
+
+	// when our dissolve.r (dissolve_amount) is less than progress we discard
+	if(dissolve_amount < _progress - dissolve_threshold)
+		discard;
+
+	float tmp = abs(_progress - dissolve_threshold - dissolve_amount) / dissolve_threshold;
+	float colorAmount = mix(1, 0, 1 - clamp(tmp, 0.0, 1.0));
+	vec4 thresholdColor = mix(vec4(0, 0, 0, 1), dissolve_threshold_color, colorAmount);
+
+	float b = dissolve_amount < _progress ? 1.0 : 0.0;
+	return mix(color, color * thresholdColor, b);
+}
+@end
+
+@program dissolve sprite_vs dissolve_fs

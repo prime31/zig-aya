@@ -1,5 +1,6 @@
 const gfx = @import("gfx.zig");
 const math = @import("../math/math.zig");
+const sokol = @import("sokol");
 
 pub const draw = struct {
     pub var batcher: gfx.Batcher = undefined;
@@ -20,8 +21,13 @@ pub const draw = struct {
     }
 
     /// binds a Texture to the sg_bindings in the Batchers DynamicMesh
-    pub fn bindTexture(tex: gfx.Texture, slot: usize) void {
-        batcher.mesh.bindings.fs_images[slot] = tex.tex;
+    pub fn bindTexture(texture: gfx.Texture, slot: usize) void {
+        batcher.mesh.bindings.fs_images[slot] = texture.img;
+    }
+
+    /// unbinds a previously bound texture. All texture slots > 0 must be unbound manually!
+    pub fn unbindTexture(slot: usize) void {
+        batcher.mesh.bindings.fs_images[slot] = sokol.sg_image{ .id = sokol.SG_INVALID_ID };
     }
 
     // Drawing
