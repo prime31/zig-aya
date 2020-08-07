@@ -19,6 +19,11 @@ pub const draw = struct {
         fontbook.setSize(10);
     }
 
+    /// binds a Texture to the sg_bindings in the Batchers DynamicMesh
+    pub fn bindTexture(tex: gfx.Texture, slot: usize) void {
+        batcher.mesh.bindings.fs_images[slot] = tex.tex;
+    }
+
     // Drawing
     pub fn tex(texture: gfx.Texture, x: f32, y: f32) void {
         quad.setFill(texture.width, texture.height);

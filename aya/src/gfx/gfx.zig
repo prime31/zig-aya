@@ -82,6 +82,10 @@ pub fn createPostProcessStack() PostProcessStack {
     return PostProcessStack.init(null, state.default_pass.design_w, state.default_pass.design_h);
 }
 
+pub fn defaultPipeline() Pipeline {
+    return state.default_pipeline;
+}
+
 pub fn setPipeline(pipeline: ?Pipeline) void {
     const pip = pipeline orelse state.default_pipeline;
 

@@ -22,6 +22,7 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
+        .shutdown = shutdown,
     });
 }
 
@@ -38,7 +39,15 @@ fn init() void {
 
     stack = aya.gfx.createPostProcessStack();
     _ = stack.add(aya.gfx.PixelGlitch, {});
+    _ = stack.add(aya.gfx.Sepia, {});
     _ = stack.add(aya.gfx.Vignette, {});
+}
+
+fn shutdown() void {
+    tex.deinit();
+    lines_pip.deinit();
+    noise_pip.deinit();
+    stack.deinit();
 }
 
 fn update() void {
@@ -57,7 +66,7 @@ fn update() void {
     }
 
     var params = NoiseParams{
-        .time = @intToFloat(f32, 1596745096890 - aya.time.now()),
+        .time = aya.time.seconds(),
         .power = 100,
     };
     noise_pip.setFragUniform(0, std.mem.asBytes(&params));
