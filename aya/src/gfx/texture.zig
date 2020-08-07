@@ -16,7 +16,8 @@ pub const Texture = extern struct {
         img_desc.render_target = true;
         img_desc.width = width;
         img_desc.height = height;
-        // img_desc.pixel_format = .SG_PIXELFORMAT_RGBA8;
+        img_desc.wrap_u = .SG_WRAP_CLAMP_TO_EDGE;
+        img_desc.wrap_v = .SG_WRAP_CLAMP_TO_EDGE;
         img_desc.min_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
         img_desc.mag_filter = if (filter == .linear) .SG_FILTER_LINEAR else .SG_FILTER_NEAREST;
 

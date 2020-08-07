@@ -37,6 +37,7 @@ fn init() void {
     lines_pip.setFragUniform(0, std.mem.asBytes(&params));
 
     stack = aya.gfx.createPostProcessStack();
+    _ = stack.add(aya.gfx.PixelGlitch, {});
     _ = stack.add(aya.gfx.Vignette, {});
 }
 
@@ -60,11 +61,20 @@ fn update() void {
         .power = 100,
     };
     noise_pip.setFragUniform(0, std.mem.asBytes(&params));
+
+    if (@mod(aya.time.frames(), 5) == 0) {
+        var glitch = aya.gfx.PixelGlitch.Params{
+            .vertical_size = aya.math.rand.range(f32, 1, 5),
+            .horizontal_offset = aya.math.rand.range(f32, 1, 10),
+            .screen_size = aya.window.sizeVec2(),
+        };
+        stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setParams(glitch);
+    }
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
-    aya.draw.text("Hold space to disable effect", 0, 30, null);
+    aya.draw.text("Hold space to disable effect, p disables post processing", 0, 30, null);
     aya.draw.text("3 - 5 for line thickness", 0, 65, null);
     aya.draw.texScale(tex, 30, 30, 3);
 
@@ -79,6 +89,7 @@ fn render() void {
     aya.draw.texScale(tex, 100, 230, 3);
     aya.gfx.endPass();
 
-    aya.gfx.postProcess(&stack);
-
+    if (!aya.input.keyDown(.SAPP_KEYCODE_P)) {
+        aya.gfx.postProcess(&stack);
+    }
 }
