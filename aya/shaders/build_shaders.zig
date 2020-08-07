@@ -5,14 +5,19 @@ pub fn main() !void {
     // TODO: run the shader builder
     //try std.os.execveZ("aya/shaders/sokol-shdc --input shd.glsl --output ../basics.h --slang glsl330:metal_macos --format sokol_impl", "", "");
 
+    try buildShader("aya/shaders/basics.h", "aya/shaders/shaders.zig");
+    try buildShader("aya/shaders/basics3d.h", "aya/shaders/shaders3d.zig");
+}
+
+fn buildShader(src_header: []const u8, dst: []const u8) !void {
     std.debug.print("---- start parsing shader header file\n", .{});
     var buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
 
-    const file = try std.fs.cwd().openFile("aya/shaders/basics.h", .{});
+    const file = try std.fs.cwd().openFile(src_header, .{});
     defer file.close();
     const reader = file.reader();
 
-    const out_file = try std.fs.cwd().createFile("aya/shaders/shaders.zig", .{});
+    const out_file = try std.fs.cwd().createFile(dst, .{});
     defer out_file.close();
     const writer = out_file.writer();
 
@@ -34,7 +39,7 @@ pub fn main() !void {
     _ = try writer.write("\n");
     _ = try writer.write(file_footer);
 
-    std.debug.print("---- shaders.zig written\n", .{});
+    std.debug.print("---- {} written\n", .{dst});
 }
 
 

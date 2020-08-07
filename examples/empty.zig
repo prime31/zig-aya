@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 
-pub const thing = true;
 
 pub fn main() !void {
     try aya.run(.{
