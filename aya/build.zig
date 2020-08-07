@@ -38,6 +38,11 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
         .path = "aya/shaders/shaders.zig",
         .dependencies = &[_]Pkg{sokol},
     };
+    const shaders3d = Pkg{
+        .name = "shaders3d",
+        .path = "aya/shaders/shaders3d.zig",
+        .dependencies = &[_]Pkg{sokol},
+    };
     const aya = Pkg{
         .name = "aya",
         .path = "aya/src/aya.zig",
@@ -49,6 +54,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     artifact.addPackage(imgui);
     artifact.addPackage(aya);
     artifact.addPackage(shaders);
+    artifact.addPackage(shaders3d);
 
     // shaders
     artifact.addIncludeDir("aya/shaders");

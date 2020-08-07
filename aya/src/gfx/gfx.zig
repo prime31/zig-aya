@@ -153,6 +153,7 @@ pub fn beginPass(config: PassConfig) void {
 
 pub fn endPass() void {
     draw.batcher.flush();
+    setPipeline(null);
     aya.debug.render(state.debug_render_enabled);
     sg_end_pass();
 }
