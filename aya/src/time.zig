@@ -4,6 +4,7 @@ const math = @import("math/math.zig");
 const samples_for_avg = 5;
 
 pub const Time = struct {
+    start: i64,
     fps_frames: u32 = 0,
     prev_time: i64 = 0,
     curr_time: i64 = 0,
@@ -12,7 +13,9 @@ pub const Time = struct {
     frame_count: u32 = 1,
 
     pub fn init() Time {
-        return Time{};
+        return .{
+            .start = std.time.milliTimestamp(),
+        };
     }
 
     fn updateFps(self: *Time) void {
@@ -42,7 +45,7 @@ pub const Time = struct {
     }
 
     pub fn seconds(self: Time) f32 {
-        return @intToFloat(f32, std.time.milliTimestamp() * std.time.ms_per_s);
+        return @intToFloat(f32, std.time.milliTimestamp() - self.start) / std.time.ms_per_s;
     }
 
     pub fn fps(self: Time) u32 {

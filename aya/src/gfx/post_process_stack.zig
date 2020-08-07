@@ -2,17 +2,20 @@ const std = @import("std");
 const aya = @import("../aya.zig");
 const shaders = @import("shaders");
 const sokol = @import("sokol");
+const OffscreenPass = aya.gfx.OffscreenPass;
 
 /// manaages a list of PostProcessors that are used to process a render texture before blitting it to the screen.
 pub const PostProcessStack = struct {
     processors: std.ArrayList(*PostProcessor),
     allocator: *std.mem.Allocator,
+    pass: OffscreenPass,
 
     pub fn init(allocator: ?*std.mem.Allocator, design_w: i32, design_h: i32) PostProcessStack {
         const alloc = allocator orelse aya.mem.allocator;
         return .{
             .processors = std.ArrayList(*PostProcessor).init(alloc),
             .allocator = alloc,
+            .pass = OffscreenPass.init(sokol.sapp_width(), sokol.sapp_height(), .nearest),
         };
     }
 
@@ -21,6 +24,7 @@ pub const PostProcessStack = struct {
             p.deinit(p, self.allocator);
         }
         self.processors.deinit();
+        self.pass.deinit();
     }
 
     pub fn add(self: *PostProcessStack, comptime T: type, data: anytype) *T {
@@ -43,9 +47,18 @@ pub const PostProcessStack = struct {
         return processor;
     }
 
-    pub fn process(self: *PostProcessStack, pass: aya.gfx.OffscreenPass) void {
-        for (self.processors.items) |p| {
-            p.process(p, pass.color_tex);
+    pub fn process(self: *PostProcessStack, pass: OffscreenPass) void {
+        for (self.processors.items) |p, i| {
+            const offscreen_pass = if (!aya.math.isEven(i)) pass else self.pass;
+            const tex = if (aya.math.isEven(i)) pass.color_tex else self.pass.color_tex;
+            p.process(p, offscreen_pass, tex);
+        }
+
+        // if there was an odd number of post processors blit to the OffscreenPass that was passed in so it gets blitted to the backbuffer
+        if (!aya.math.isEven(self.processors.items.len)) {
+            aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE, .pass = pass, .pipeline = aya.gfx.defaultPipeline() });
+            aya.draw.tex(self.pass.color_tex, 0, 0);
+            aya.gfx.endPass();
         }
     }
 };
@@ -53,7 +66,7 @@ pub const PostProcessStack = struct {
 /// implmentors must have initialize, deinit and process methods defined. The initialize method is where default values
 /// should be set since this will be a heap allocated object.
 pub const PostProcessor = struct {
-    process: fn (*PostProcessor, aya.gfx.Texture) void,
+    process: fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
     deinit: fn (self: *PostProcessor, allocator: *std.mem.Allocator) void = undefined,
 
     pub fn getParent(self: *PostProcessor, comptime T: type) *T {
@@ -62,8 +75,8 @@ pub const PostProcessor = struct {
 
     // helper method for taking the final texture from a postprocessor and blitting it. Simple postprocessors
     // can get away with just calling this method directly.
-    pub fn blit(self: *PostProcessor, tex: aya.gfx.Texture, pipeline: aya.gfx.Pipeline) void {
-        aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE, .pipeline = pipeline });
+    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, pipeline: aya.gfx.Pipeline) void {
+        aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE, .pass = pass, .pipeline = pipeline });
         aya.draw.tex(tex, 0, 0);
         aya.gfx.endPass();
     }
@@ -86,9 +99,9 @@ pub const Sepia = struct {
         self.pipeline.setFragUniform(0, std.mem.asBytes(&self.sepia_tone));
     }
 
-    pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
+    pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(tex, self.pipeline);
+        processor.blit(pass, tex, self.pipeline);
     }
 
     pub fn setTone(self: *@This(), tone: aya.math.Vec3) void {
@@ -114,9 +127,9 @@ pub const Vignette = struct {
         self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
     }
 
-    pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
+    pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(tex, self.pipeline);
+        processor.blit(pass, tex, self.pipeline);
     }
 
     pub fn setUniforms(self: *@This(), radius: f32, power: 32) void {
@@ -145,9 +158,9 @@ pub const PixelGlitch = struct {
         self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
     }
 
-    pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
+    pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(tex, self.pipeline);
+        processor.blit(pass, tex, self.pipeline);
     }
 
     pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32, screen_size: aya.math.Vec2) void {
