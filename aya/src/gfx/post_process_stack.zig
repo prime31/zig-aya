@@ -125,3 +125,40 @@ pub const Vignette = struct {
         self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
     }
 };
+
+pub const PixelGlitch = struct {
+    postprocessor: PostProcessor,
+    pipeline: aya.gfx.Pipeline,
+    params: Params,
+
+    pub const Params = struct { vertical_size: f32, horizontal_offset: f32, screen_size: aya.math.Vec2 };
+
+    pub fn deinit(self: @This()) void {
+        self.pipeline.deinit();
+    }
+
+    pub fn initialize(self: *@This(), data: anytype) void {
+        self.pipeline = aya.gfx.Pipeline.init(shaders.pixel_glitch_shader_desc());
+        self.postprocessor = .{ .process = process };
+
+        self.params = .{ .vertical_size = 0.5, .horizontal_offset = 10, .screen_size = aya.window.sizeVec2() };
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+    }
+
+    pub fn process(processor: *PostProcessor, tex: aya.gfx.Texture) void {
+        const self = processor.getParent(@This());
+        processor.blit(tex, self.pipeline);
+    }
+
+    pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32, screen_size: aya.math.Vec2) void {
+        self.params.vertical_size = vertical_size;
+        self.params.horizontal_offset = horizontal_offset;
+        self.params.screen_size = screen_size;
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+    }
+
+    pub fn setParams(self: *@This(), params: Params) void {
+        self.params = params;
+        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+    }
+};

@@ -73,6 +73,7 @@ pub fn run(config: Config) !void {
 
 // Event functions
 export fn init() void {
+    time = Time.init();
     mem.initTmpAllocator();
 
     var desc = std.mem.zeroInit(sg_desc, .{ .context = sapp_sgcontext() });
@@ -94,6 +95,7 @@ export fn init() void {
 }
 
 export fn update() void {
+    time.tick();
     if (has_imgui) simgui_new_frame(window.width(), window.height(), 0.017);
 
     state.config.update();

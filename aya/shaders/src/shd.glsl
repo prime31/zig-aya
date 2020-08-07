@@ -147,3 +147,31 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program vignette sprite_vs vignette_fs
+
+
+@fs pixel_glitch_fs
+@include_block sprite_fs_main
+uniform pixel_glitch_fs_params {
+	float vertical_size; // vertical size in pixels or each row. default 5.0
+	float horizontal_offset; // horizontal shift in pixels. default 10.0
+	vec2 screen_size; // screen width/height
+};
+
+float hash11(float p) {
+	vec3 p3  = fract(vec3(p, p, p) * 0.1031);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    // convert vertical_size and horizontal_offset from pixels
+    float pixels = screen_size.x / vertical_size;
+    float offset = horizontal_offset / screen_size.y;
+
+    // get a number between -1 and 1 to offset the row of pixels by that is dependent on the y position
+    float r = hash11(floor(tex_coord.y * pixels)) * 2.0 - 1.0;
+	return texture(tex, vec2(tex_coord.x + r * offset, tex_coord.y));
+}
+@end
+
+@program pixel_glitch sprite_vs pixel_glitch_fs

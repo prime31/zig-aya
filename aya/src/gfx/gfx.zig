@@ -12,6 +12,7 @@ pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
 // TODO: move Sepia/Vignette to its own file
 pub const Sepia = @import("post_process_stack.zig").Sepia;
 pub const Vignette = @import("post_process_stack.zig").Vignette;
+pub const PixelGlitch = @import("post_process_stack.zig").PixelGlitch;
 
 pub const Batcher = @import("batcher.zig").Batcher;
 pub const TriangleBatcher = @import("triangle_batcher.zig").TriangleBatcher;

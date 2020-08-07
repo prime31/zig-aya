@@ -39,6 +39,10 @@ pub fn size() struct { w: i32, h: i32 } {
     return .{ .w = sapp_width(), .h = sapp_height() };
 }
 
+pub fn sizeVec2() aya.math.Vec2 {
+    return .{ .x = @intToFloat(f32, sapp_width()), .y = @intToFloat(f32, sapp_height()) };
+}
+
 pub fn active() bool {
     return window_active;
 }
