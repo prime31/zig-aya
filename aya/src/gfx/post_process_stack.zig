@@ -69,6 +69,7 @@ pub const PostProcessor = struct {
     process: fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
     deinit: fn (self: *PostProcessor, allocator: *std.mem.Allocator) void = undefined,
 
+    /// can be used externally, to get the original PostProcessor by Type or by the PostProcessor to get itself interface methods.
     pub fn getParent(self: *PostProcessor, comptime T: type) *T {
         return @fieldParentPtr(T, "postprocessor", self);
     }
@@ -96,7 +97,7 @@ pub const Sepia = struct {
         self.postprocessor = .{ .process = process };
 
         self.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.sepia_tone));
+        self.pipeline.setFragUniform(0, &self.sepia_tone);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
@@ -106,7 +107,7 @@ pub const Sepia = struct {
 
     pub fn setTone(self: *@This(), tone: aya.math.Vec3) void {
         self.sepia_tone = tone;
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.sepia_tone));
+        self.pipeline.setFragUniform(0, &self.sepia_tone);
     }
 };
 
@@ -124,7 +125,7 @@ pub const Vignette = struct {
         self.postprocessor = .{ .process = process };
 
         self.params = .{ .radius = 1.2, .power = 1 };
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+        self.pipeline.setFragUniform(0, &self.params);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
@@ -135,7 +136,7 @@ pub const Vignette = struct {
     pub fn setUniforms(self: *@This(), radius: f32, power: 32) void {
         self.params.radius = radius;
         self.params.power = power;
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+        self.pipeline.setFragUniform(0, &self.params);
     }
 };
 
@@ -155,7 +156,7 @@ pub const PixelGlitch = struct {
         self.postprocessor = .{ .process = process };
 
         self.params = .{ .vertical_size = 0.5, .horizontal_offset = 10, .screen_size = aya.window.sizeVec2() };
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+        self.pipeline.setFragUniform(0, &self.params);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
@@ -167,11 +168,11 @@ pub const PixelGlitch = struct {
         self.params.vertical_size = vertical_size;
         self.params.horizontal_offset = horizontal_offset;
         self.params.screen_size = screen_size;
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+        self.pipeline.setFragUniform(0, &self.params);
     }
 
     pub fn setParams(self: *@This(), params: Params) void {
         self.params = params;
-        self.pipeline.setFragUniform(0, std.mem.asBytes(&self.params));
+        self.pipeline.setFragUniform(0, &self.params);
     }
 };
