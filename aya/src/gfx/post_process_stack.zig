@@ -145,7 +145,15 @@ pub const PixelGlitch = struct {
     pipeline: aya.gfx.Pipeline,
     params: Params,
 
-    pub const Params = struct { vertical_size: f32, horizontal_offset: f32, screen_size: aya.math.Vec2 };
+    pub const Params = struct {
+        pub const inspect = .{
+            .vertical_size = .{ .min = 1.0, .max = 100.0 },
+        };
+
+        vertical_size: f32,
+        horizontal_offset: f32,
+        screen_size: aya.math.Vec2,
+    };
 
     pub fn deinit(self: @This()) void {
         self.pipeline.deinit();

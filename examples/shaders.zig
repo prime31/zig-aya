@@ -6,6 +6,7 @@ usingnamespace @import("imgui");
 
 pub const imgui = true;
 
+var post_process = true;
 var tex: aya.gfx.Texture = undefined;
 var clouds_tex: aya.gfx.Texture = undefined;
 var lines_pip: Pipeline = undefined;
@@ -13,36 +14,26 @@ var noise_pip: Pipeline = undefined;
 var dissolve_pip: Pipeline = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 
-pub const NoiseParams = extern struct {
-    time: f32,
-    power: f32,
-};
-
-pub const LinesParams = extern struct {
-    line_size: f32,
-    line_color: aya.math.Vec4 align(16),
-};
-
-pub const DissolveParams = extern struct {
-    progress: f32 = 0.5,
-    dissolve_threshold: f32 = 0.5,
-    dissolve_threshold_color: aya.math.Vec4 align(16),
-};
-
-var lines = LinesParams{
-    .line_size = 4,
-    .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
-};
-
-var noise = NoiseParams{
+var noise = aya.gfx.effects.Noise.Params{
     .time = 0,
     .power = 100,
 };
 
-var dissolve = DissolveParams{
+var lines = aya.gfx.effects.Lines.Params{
+    .line_size = 4,
+    .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
+};
+
+var dissolve = aya.gfx.effects.Dissolve.Params{
     .progress = 0,
-    .dissolve_threshold = 0.04,
-    .dissolve_threshold_color = aya.math.Color.orange.asVec4(),
+    .threshold = 0.04,
+    .threshold_color = aya.math.Color.orange.asVec4(),
+};
+
+var glitch = aya.gfx.PixelGlitch.Params{
+    .vertical_size = 1,
+    .horizontal_offset = 1,
+    .screen_size = .{},
 };
 
 pub fn main() !void {
@@ -51,17 +42,21 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .shutdown = shutdown,
+        .window = .{
+            .width = 1024,
+            .height = 768,
+        },
     });
 }
 
 fn init() void {
     tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
-    clouds_tex = aya.gfx.Texture.initFromFile("assets/clouds.png", .linear) catch unreachable;
-    lines_pip = Pipeline.init(shaders.lines_shader_desc());
-    noise_pip = Pipeline.init(shaders.noise_shader_desc());
-    dissolve_pip = Pipeline.init(shaders.dissolve_shader_desc());
+    clouds_tex =  aya.gfx.Texture.initFromFile("assets/clouds.png", .linear) catch unreachable;
+    lines_pip = aya.gfx.effects.Lines.init();
+    noise_pip = aya.gfx.effects.Noise.init();
+    dissolve_pip = aya.gfx.effects.Dissolve.init();
 
-    var params = LinesParams{
+    var params = aya.gfx.effects.Lines.Params{
         .line_size = 4,
         .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
     };
@@ -84,36 +79,32 @@ fn shutdown() void {
 }
 
 fn update() void {
-    if (igCollapsingHeaderBoolPtr("lines", null, ImGuiTreeNodeFlags_None)) {
-        aya.utils.inspect("lines", &lines);
+    _ = igCheckbox("Enable PostProcessing", &post_process);
+    if (aya.utils.inspect("lines", &lines)) {
+        std.debug.print("wtf: {d}\n", .{lines.line_color});
         lines_pip.setFragUniform(0, &lines);
     }
 
-    if (igCollapsingHeaderBoolPtr("noise", null, ImGuiTreeNodeFlags_None)) {
-        noise.time = aya.time.seconds();
-        aya.utils.inspect("noise", &noise);
-        noise_pip.setFragUniform(0, &noise);
-    }
+    _ = aya.utils.inspect("noise", &noise);
+    noise.time = aya.time.seconds();
+    noise_pip.setFragUniform(0, &noise);
 
-    if (@mod(aya.time.frames(), 5) == 0) {
-        var glitch = aya.gfx.PixelGlitch.Params{
-            .vertical_size = aya.math.rand.range(f32, 1, 5),
-            .horizontal_offset = aya.math.rand.range(f32, 1, 10),
-            .screen_size = aya.window.sizeVec2(),
-        };
-        stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setParams(glitch);
-    }
+    _ = aya.utils.inspect("glitch", &glitch);
+    // if (@mod(aya.time.frames(), 5) == 0) {
+    //      glitch.vertical_size = aya.math.rand.range(f32, 1, 5);
+    //      glitch.horizontal_offset = aya.math.rand.range(f32, 1, 10);
+    // }
+    glitch.screen_size = aya.window.sizeVec2();
+    stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setParams(glitch);
 
-    if (igCollapsingHeaderBoolPtr("dissolve", null, ImGuiTreeNodeFlags_None)) {
-        dissolve.progress = aya.math.pingpong(aya.time.seconds(), 1);
-        aya.utils.inspect("dissolve", &dissolve);
-        dissolve_pip.setFragUniform(0, &dissolve);
-    }
+    _ = aya.utils.inspect("dissolve", &dissolve);
+    dissolve.progress = aya.math.pingpong(aya.time.seconds(), 1);
+    dissolve_pip.setFragUniform(0, &dissolve);
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
-    aya.draw.text("Hold space to disable effect, p disables post processing", 0, 30, null);
+    aya.draw.text("Hold space to disable effects", 0, 30, null);
     aya.draw.texScale(tex, 30, 30, 3);
 
     if (!aya.input.keyDown(.SAPP_KEYCODE_SPACE)) {
@@ -136,7 +127,7 @@ fn render() void {
     aya.gfx.endPass();
     aya.draw.unbindTexture(1);
 
-    if (!aya.input.keyDown(.SAPP_KEYCODE_P)) {
+    if (post_process) {
         aya.gfx.postProcess(&stack);
     }
 }

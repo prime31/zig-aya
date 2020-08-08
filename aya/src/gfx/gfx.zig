@@ -3,6 +3,8 @@ const aya = @import("../aya.zig");
 usingnamespace aya.sokol;
 
 // exports
+pub const effects = @import("effects.zig");
+
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const Texture = @import("texture.zig").Texture;
