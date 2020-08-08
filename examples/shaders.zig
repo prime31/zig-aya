@@ -84,12 +84,16 @@ fn shutdown() void {
 }
 
 fn update() void {
-    aya.utils.inspect("lines", &lines);
-    lines_pip.setFragUniform(0, &lines);
+    if (igCollapsingHeaderBoolPtr("lines", null, ImGuiTreeNodeFlags_None)) {
+        aya.utils.inspect("lines", &lines);
+        lines_pip.setFragUniform(0, &lines);
+    }
 
-    noise.time = aya.time.seconds();
-    aya.utils.inspect("noise", &noise);
-    noise_pip.setFragUniform(0, &noise);
+    if (igCollapsingHeaderBoolPtr("noise", null, ImGuiTreeNodeFlags_None)) {
+        noise.time = aya.time.seconds();
+        aya.utils.inspect("noise", &noise);
+        noise_pip.setFragUniform(0, &noise);
+    }
 
     if (@mod(aya.time.frames(), 5) == 0) {
         var glitch = aya.gfx.PixelGlitch.Params{
@@ -100,16 +104,16 @@ fn update() void {
         stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setParams(glitch);
     }
 
-    dissolve.progress = aya.math.pingpong(aya.time.seconds(), 1);
-    dissolve_pip.setFragUniform(0, &dissolve);
-
-    aya.utils.inspect("dissolve", &dissolve);
+    if (igCollapsingHeaderBoolPtr("dissolve", null, ImGuiTreeNodeFlags_None)) {
+        dissolve.progress = aya.math.pingpong(aya.time.seconds(), 1);
+        aya.utils.inspect("dissolve", &dissolve);
+        dissolve_pip.setFragUniform(0, &dissolve);
+    }
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
     aya.draw.text("Hold space to disable effect, p disables post processing", 0, 30, null);
-    aya.draw.text("3 - 5 for line thickness", 0, 65, null);
     aya.draw.texScale(tex, 30, 30, 3);
 
     if (!aya.input.keyDown(.SAPP_KEYCODE_SPACE)) {
