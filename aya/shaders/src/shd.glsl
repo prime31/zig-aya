@@ -1,4 +1,5 @@
 // ./sokol-shdc --input shd.glsl --output basics.h --slang glsl330:metal_macos --format sokol_impl
+// beware when translating uniform structs to zig. always try to get the padding at the end if possible.
 
 // reusable blocks
 @block rand
@@ -83,8 +84,8 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @fs lines_fs
 @include_block sprite_fs_main
 uniform lines_fs_params {
-	float line_size; // width of the line in pixels
 	vec4 line_color;
+	float line_size; // width of the line in pixels
 };
 
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
@@ -182,25 +183,25 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @include_block sprite_fs_main
 uniform dissolve_fs_params {
 	float progress; // 0 - 1 where 0 is no change to s0 and 1 will discard all of s0 where dissolve_tex.r < value
-	float dissolve_threshold; // 0.04
-	vec4 dissolve_threshold_color; // the color that will be used when dissolve_tex is between progress +- dissolve_threshold
+	float threshold; // 0.04
+	vec4 threshold_color; // the color that will be used when dissolve_tex is between progress +- threshold
 };
 uniform sampler2D dissolve_tex;
 
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
-	float _progress = progress + dissolve_threshold;
+	float _progress = progress + threshold;
 
 	vec4 color = texture(tex, tex_coord);
 	// get dissolve from 0 - 1 where 0 is pure white and 1 is pure black
 	float dissolve_amount = 1 - texture(dissolve_tex, tex_coord).r;
 
 	// when our dissolve.r (dissolve_amount) is less than progress we discard
-	if(dissolve_amount < _progress - dissolve_threshold)
+	if(dissolve_amount < _progress - threshold)
 		discard;
 
-	float tmp = abs(_progress - dissolve_threshold - dissolve_amount) / dissolve_threshold;
+	float tmp = abs(_progress - threshold - dissolve_amount) / threshold;
 	float colorAmount = mix(1, 0, 1 - clamp(tmp, 0.0, 1.0));
-	vec4 thresholdColor = mix(vec4(0, 0, 0, 1), dissolve_threshold_color, colorAmount);
+	vec4 thresholdColor = mix(vec4(0, 0, 0, 1), threshold_color, colorAmount);
 
 	float b = dissolve_amount < _progress ? 1.0 : 0.0;
 	return mix(color, color * thresholdColor, b);

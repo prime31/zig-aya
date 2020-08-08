@@ -3,12 +3,13 @@ const aya = @import("aya");
 const rand = aya.math.rand;
 const shaders = @import("shaders3d");
 const Pipeline = aya.gfx.Pipeline;
+const Color = aya.math.Color;
 const Mat4 = aya.math.Mat4;
 const Vec3 = aya.math.Vec3;
 const Vec2 = aya.math.Vec2;
 usingnamespace @import("sokol");
 
-const NumParticlesEmittedPerFrame = 10;
+const NumParticlesEmittedPerFrame = 1000;
 const MaxParticles: u32 = 512 * 2014;
 
 pub const VertPosCol = extern struct {
@@ -16,7 +17,7 @@ pub const VertPosCol = extern struct {
     col: u32,
 };
 
-const CubeParams = struct {
+const InstanceParams = struct {
     mvp: Mat4,
 };
 
@@ -26,7 +27,6 @@ const State = struct {
     texture: aya.gfx.Texture,
 };
 
-var rx: f32 = 0.0;
 var ry: f32 = 0.0;
 var state: State = undefined;
 var cur_num_particles: u32 = 0;
@@ -45,20 +45,13 @@ pub fn main() !void {
 fn init() void {
     const r = 0.05;
     const verts = [_]VertPosCol{
-        .{ .pos = Vec3.init(0.0, -r, 0.0), .col = 0xFF0000FF },
-        .{ .pos = Vec3.init(r, 0.0, r), .col = 0xFF0000FF },
-        .{ .pos = Vec3.init(r, 0.0, -r), .col = 0xFF0000FF },
-        .{ .pos = Vec3.init(-r, 0.0, -r), .col = 0xFF0000FF },
-        .{ .pos = Vec3.init(-r, 0.0, r), .col = 0xFF00FF00 },
-        .{ .pos = Vec3.init(0.0, r, 0.0), .col = 0xFF00FF00 },
+        .{ .pos = Vec3.init(0.0, -r, 0.0), .col = Color.red.value },
+        .{ .pos = Vec3.init(r, 0.0, r), .col = Color.green.value },
+        .{ .pos = Vec3.init(r, 0.0, -r), .col = Color.blue.value },
+        .{ .pos = Vec3.init(-r, 0.0, -r), .col = Color.yellow.value },
+        .{ .pos = Vec3.init(-r, 0.0, r), .col = Color.fromRgb(0, 1, 1).value },
+        .{ .pos = Vec3.init(0.0, r, 0.0), .col = Color.fromRgb(1, 0, 1).value },
     };
-
-    // 1.0, 0.0, 0.0, 1.0,
-    // 0.0, 1.0, 0.0, 1.0,
-    // 0.0, 0.0, 1.0, 1.0,
-    // 1.0, 1.0, 0.0, 1.0,
-    // 0.0, 1.0, 1.0, 1.0,
-    // 1.0, 0.0, 1.0, 1.0,
 
     const indices = [_]u16{
         0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1,
@@ -100,12 +93,7 @@ fn update() void {
     aya.debug.drawText("instancing", .{ .x = 10, .y = 20 }, null);
     aya.debug.drawTextFmt("cur particles: {}", .{cur_num_particles}, .{ .x = 10, .y = 40 }, null);
 
-    const height = sapp_height();
-    const w: f32 = @intToFloat(f32, sapp_width());
-    const h: f32 = @intToFloat(f32, height);
-    const radians: f32 = 1.0472; //60 degrees
     const frame_time = 1.0 / 60.0;
-
     // emit new particles
     var i: u32 = 0;
     while (i < NumParticlesEmittedPerFrame) : (i += 1) {
@@ -117,6 +105,7 @@ fn update() void {
             break;
         }
     }
+
     i = 0;
     // update particle positions
     while (i < cur_num_particles) : (i += 1) {
@@ -146,18 +135,18 @@ fn render() void {
     const radians = aya.math.toRadians(60.0);
 
     var proj = Mat4.createPerspective(radians, w / h, 0.01, 100.0);
-    var view = Mat4.createLookAt(Vec3.init(0, 1.5, 12), Vec3.init(0, 0, 0), Vec3.init(0, 1, 0));
+    var view = Mat4.createLookAt(Vec3.init(0, 1.5, 8), Vec3.init(0, 0, 0), Vec3.init(0, 1, 0));
     var view_proj = Mat4.mul(proj, view);
 
-    ry += 2.0 / 400.0;
-    var params = CubeParams{
+    ry += 5.0 / 400.0;
+    var params = InstanceParams{
         .mvp = Mat4.mul(view_proj, Mat4.createAngleAxis(Vec3.init(0, 1, 0), ry)),
     };
 
     aya.gfx.beginPass(.{});
     sg_apply_pipeline(state.pipeline);
     sg_apply_bindings(&state.bindings);
-    sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &params, @sizeOf(CubeParams));
+    sg_apply_uniforms(.SG_SHADERSTAGE_VS, 0, &params, @sizeOf(InstanceParams));
     sg_draw(0, 24, @intCast(c_int, cur_num_particles));
     aya.gfx.endPass();
 }

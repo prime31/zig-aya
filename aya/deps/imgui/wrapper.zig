@@ -126,8 +126,9 @@ pub fn ogUnformattedTooltip(text_wrap_pos: f32, text: [*c]const u8) void {
     }
 }
 
-pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T) bool {
-    return ogDragUnsignedFormat(T, label, p_data, v_speed, p_min, p_max, null);
+pub fn ogDrag(comptime T: type, label: [*c]const u8, p_data: *T, p_min: T, p_max: T) bool {
+    const speed = std.math.min(1.0, (p_max - p_min) / 100);
+    return ogDragUnsignedFormat(T, label, p_data, speed, p_min, p_max, null);
 }
 
 pub fn ogDragUnsignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T, format: [*c]const u8) bool {
