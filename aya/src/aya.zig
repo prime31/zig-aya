@@ -26,7 +26,7 @@ const Input = @import("input.zig").Input;
 const Time = @import("time.zig").Time;
 const Debug = @import("debug.zig").Debug;
 
-const has_imgui: bool = if (@hasDecl(@import("root"), "imgui")) @import("root").imgui else false;
+pub const has_imgui: bool = if (@hasDecl(@import("root"), "imgui")) @import("root").imgui else false;
 usingnamespace sokol;
 
 pub const Config = struct {
@@ -35,6 +35,7 @@ pub const Config = struct {
     render: fn () void,
     shutdown: ?fn () void = null,
 
+    sample_count: c_int = 1,
     swap_interval: c_int = 1,
     gfx: gfx.Config = gfx.Config{},
     window: WindowConfig = WindowConfig{},
@@ -55,6 +56,7 @@ pub fn run(config: Config) !void {
         .cleanup_cb = cleanup,
         .event_cb = event,
 
+        .sample_count = config.sample_count,
         .width = config.window.width,
         .height = config.window.height,
         .swap_interval = config.swap_interval,
@@ -85,7 +87,6 @@ export fn init() void {
     gfx.init(state.config.gfx);
 
     if (has_imgui) {
-        std.debug.print("setup imgui\n", .{});
         var imgui_desc = std.mem.zeroes(simgui_desc_t);
         imgui_desc.dpi_scale = sapp_dpi_scale();
         imgui_desc.ini_filename = "imgui.ini";
@@ -103,7 +104,7 @@ export fn update() void {
 
     if (has_imgui) {
         gfx.blitToScreen(math.Color.black);
-        gfx.beginPass(.{});
+        gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE });
         simgui_render();
         gfx.endPass();
     }

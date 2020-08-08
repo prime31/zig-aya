@@ -2,6 +2,9 @@ const std = @import("std");
 const aya = @import("aya");
 const shaders = @import("shaders");
 const Pipeline = aya.gfx.Pipeline;
+usingnamespace @import("imgui");
+
+pub const imgui = true;
 
 var tex: aya.gfx.Texture = undefined;
 var clouds_tex: aya.gfx.Texture = undefined;
@@ -24,6 +27,22 @@ pub const DissolveParams = extern struct {
     progress: f32 = 0.5,
     dissolve_threshold: f32 = 0.5,
     dissolve_threshold_color: aya.math.Vec4 align(16),
+};
+
+var lines = LinesParams{
+    .line_size = 4,
+    .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
+};
+
+var noise = NoiseParams{
+    .time = 0,
+    .power = 100,
+};
+
+var dissolve = DissolveParams{
+    .progress = 0,
+    .dissolve_threshold = 0.04,
+    .dissolve_threshold_color = aya.math.Color.orange.asVec4(),
 };
 
 pub fn main() !void {
@@ -65,25 +84,12 @@ fn shutdown() void {
 }
 
 fn update() void {
-    if (aya.input.keyPressed(.SAPP_KEYCODE_3) or aya.input.keyPressed(.SAPP_KEYCODE_4) or aya.input.keyPressed(.SAPP_KEYCODE_5)) {
-        var line_size: f32 = blk: {
-            if (aya.input.keyPressed(.SAPP_KEYCODE_3)) break :blk 3;
-            if (aya.input.keyPressed(.SAPP_KEYCODE_4)) break :blk 4;
-            if (aya.input.keyPressed(.SAPP_KEYCODE_5)) break :blk 5;
-            break :blk 3;
-        };
-        var params = LinesParams{
-            .line_size = line_size,
-            .line_color = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
-        };
-        lines_pip.setFragUniform(0, &params);
-    }
+    aya.utils.inspect("lines", &lines);
+    lines_pip.setFragUniform(0, &lines);
 
-    var params = NoiseParams{
-        .time = aya.time.seconds(),
-        .power = 100,
-    };
-    noise_pip.setFragUniform(0, &params);
+    noise.time = aya.time.seconds();
+    aya.utils.inspect("noise", &noise);
+    noise_pip.setFragUniform(0, &noise);
 
     if (@mod(aya.time.frames(), 5) == 0) {
         var glitch = aya.gfx.PixelGlitch.Params{
@@ -94,12 +100,10 @@ fn update() void {
         stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setParams(glitch);
     }
 
-    var dissolve = DissolveParams{
-        .progress = aya.math.pingpong(aya.time.seconds(), 1),
-        .dissolve_threshold = 0.04,
-        .dissolve_threshold_color = aya.math.Color.orange.asVec4(),
-    };
+    dissolve.progress = aya.math.pingpong(aya.time.seconds(), 1);
     dissolve_pip.setFragUniform(0, &dissolve);
+
+    aya.utils.inspect("dissolve", &dissolve);
 }
 
 fn render() void {

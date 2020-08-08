@@ -111,4 +111,14 @@ pub const Debug = struct {
         const text_item = Text{ .pos = pos, .text = text, .color = color orelse math.Color.white };
         self.debug_items.append(.{ .text = text_item }) catch return;
     }
+
+    pub fn drawTextFmt(self: *Debug, comptime fmt: []const u8, args: anytype, pos: math.Vec2, color: ?math.Color) void {
+        const text = std.fmt.allocPrint(aya.mem.tmp_allocator, fmt, args) catch |err| {
+            std.debug.print("drawTextFormat error: {}\n", .{err});
+            return;
+        };
+
+        const text_item = Text{ .pos = pos, .text = text, .color = color orelse math.Color.white };
+        self.debug_items.append(.{ .text = text_item }) catch return;
+    }
 };
