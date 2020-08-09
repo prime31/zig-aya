@@ -78,6 +78,14 @@ pub const Mat4 = extern struct {
         return result;
     }
 
+    pub fn createTranslation(translation: Vec3) Mat4 {
+        var result = identity;
+        result.fields[3][0] = translation.x;
+        result.fields[3][1] = translation.y;
+        result.fields[3][2] = translation.z;
+        return result;
+    }
+
     pub fn createAngleAxis(axis: Vec3, angle: f32) Mat4 {
         var cos = std.math.cos(angle);
         var sin = std.math.sin(angle);
@@ -95,7 +103,7 @@ pub const Mat4 = extern struct {
         };
     }
 
-    pub fn createOrthogonal(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) Mat4 {
+    pub fn createOrthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) Mat4 {
         var result = Mat4.identity;
         result.fields[0][0] = 2 / (right - left);
         result.fields[1][1] = 2 / (top - bottom);
@@ -104,6 +112,11 @@ pub const Mat4 = extern struct {
         result.fields[3][1] = -(top + bottom) / (top - bottom);
         result.fields[3][2] = -near / (far - near);
         return result;
+    }
+
+    pub fn rotate(self: Mat4, angle: f32, axis: Vec3) Mat4 {
+        const rot = createAngleAxis(axis, angle);
+        return self.mul(rot);
     }
 
     pub fn toArray(m: Mat4) [16]f32 {
