@@ -5,6 +5,8 @@ pub const Vec3 = packed struct {
     y: f32 = 0,
     z: f32 = 0,
 
+    pub const up = init(0, 1, 0);
+
     pub fn init(x: f32, y: f32, z: f32) Vec3 {
         return .{ .x = x, .y = y, .z = z };
     }
@@ -49,6 +51,14 @@ pub const Vec3 = packed struct {
         var result: Vec3 = undefined;
         inline for (@typeInfo(Vec3).Struct.fields) |fld| {
             @field(result, fld.name) = @field(a, fld.name) - @field(b, fld.name);
+        }
+        return result;
+    }
+
+    pub fn add(a: Vec3, b: Vec3) Vec3 {
+        var result: Vec3 = undefined;
+        inline for (@typeInfo(Vec3).Struct.fields) |fld| {
+            @field(result, fld.name) = @field(a, fld.name) + @field(b, fld.name);
         }
         return result;
     }

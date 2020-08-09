@@ -22,6 +22,8 @@ pub const Input = struct {
     mouse_wheel_y: f32 = 0,
     mouse_x: f32 = 0,
     mouse_y: f32 = 0,
+    mouse_rel_x: f32 = 0,
+    mouse_rel_y: f32 = 0,
     window_scale: i32 = 0,
     res_scaler: gfx.ResolutionScaler = undefined,
 
@@ -60,6 +62,8 @@ pub const Input = struct {
         }
 
         self.mouse_wheel_y = 0;
+        self.mouse_rel_x = 0;
+        self.mouse_rel_y = 0;
     }
 
     pub fn handleEvent(self: *Input, evt: *const sapp_event) void {
@@ -67,6 +71,11 @@ pub const Input = struct {
             .SAPP_EVENTTYPE_KEY_DOWN, .SAPP_EVENTTYPE_KEY_UP => self.handleKeyboardEvent(evt),
             .SAPP_EVENTTYPE_MOUSE_DOWN, .SAPP_EVENTTYPE_MOUSE_UP => self.handleMouseEvent(evt),
             .SAPP_EVENTTYPE_MOUSE_MOVE => {
+                // TODO: why does sokol send two mouse events with the same data???
+                if (self.mouse_x == evt.mouse_x and self.mouse_y == evt.mouse_y) return;
+
+                self.mouse_rel_x = evt.mouse_x - self.mouse_x;
+                self.mouse_rel_y = self.mouse_y - evt.mouse_y;
                 self.mouse_x = evt.mouse_x;
                 self.mouse_y = evt.mouse_y;
             },
@@ -155,8 +164,7 @@ pub const Input = struct {
         return .{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
     }
 
-    pub fn mouseRelMotion(self: Input, x: *i32, y: *i32) void {
-        x.* = self.mouse_rel_x;
-        y.* = self.mouse_rel_y;
+    pub fn mouseRelMotion(self: Input) math.Vec2 {
+        return .{ .x = self.mouse_rel_x, .y = self.mouse_rel_y };
     }
 };

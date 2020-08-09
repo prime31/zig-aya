@@ -45,7 +45,7 @@ pub fn inspect(comptime label: []const u8, comptime value: anytype) bool {
     const child_type_info = @typeInfo(C);
     std.debug.assert(child_type_info == .Struct);
 
-    if (igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, ImGuiTreeNodeFlags_None)) {
+    if (igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, ImGuiTreeNodeFlags_DefaultOpen)) {
         const info = child_type_info.Struct;
         igPushIDPtr(value);
         var changed = false;
@@ -113,7 +113,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
     const child_type_info = @typeInfo(C);
 
     switch (child_type_info) {
-        .Bool => return igCheckbox(label, value),
+        .Bool => return igCheckbox(@as([*c]const u8, label.ptr), value),
         .Int => {
             var min_max = getMinMax(i32, std.meta.Child(@TypeOf(parent)), label);
             var tmp = @alignCast(@alignOf(i32), value);
