@@ -28,7 +28,7 @@ const Cube = struct {
     model: Mat4 = undefined,
 
     pub fn init(pos: Vec3, radius: f32) Cube {
-        return .{ .pos = pos, .radius = radius, .speed = pos.y };
+        return .{ .pos = pos, .radius = radius, .speed = aya.math.rand.range(f32, 0.1, 3) };
     }
 
     pub fn update(self: *Cube) void {
@@ -129,18 +129,7 @@ const State = struct {
 var cube_rot: f32 = 0;
 var state: State = undefined;
 
-var cubes = [_]Cube{
-    Cube.init(Vec3.init(0.0, 2.0, 5.0), 15),
-    Cube.init(Vec3.init(2.0, 5.0, -5.0), 20),
-    Cube.init(Vec3.init(-1.5, -2.2, -2.5), 25),
-    Cube.init(Vec3.init(-3.8, -2.0, -12.3), 35),
-    Cube.init(Vec3.init(2.4, -0.4, -3.5), 20),
-    Cube.init(Vec3.init(-10.7, 3.0, -7.5), 25),
-    Cube.init(Vec3.init(10.3, -2.0, -2.5), 35),
-    Cube.init(Vec3.init(10.5, 2.0, -2.5), 20),
-    Cube.init(Vec3.init(10.5, 0.2, -1.5), 25),
-    Cube.init(Vec3.init(-10.3, 1.0, -1.5), 35),
-};
+var cubes: []Cube = undefined;
 
 pub fn main() !void {
     state.cam = .{};
@@ -157,6 +146,13 @@ pub fn main() !void {
 }
 
 fn init() void {
+    cubes = aya.mem.allocator.alloc(Cube, 1400) catch unreachable;
+    var i: usize = 0;
+    while (i < cubes.len) : (i += 1) {
+        var range = aya.math.rand.range(f32, 5, 50);
+        cubes[i] = Cube.init(Vec3.init(aya.math.rand.range(f32, 5, 50), aya.math.rand.range(f32, 5, 150), aya.math.rand.range(f32, 5, 50)), range);
+    }
+
     const verts = [_]VertPosColTex{
         .{ .pos = Vec3.init(-1.0, -1.0, -1.0), .col = Color.red.value, .uv = Vec2.init(0, 0) },
         .{ .pos = Vec3.init(1.0, -1.0, -1.0), .col = Color.red.value, .uv = Vec2.init(1, 0) },
