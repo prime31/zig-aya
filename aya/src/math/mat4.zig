@@ -86,6 +86,37 @@ pub const Mat4 = extern struct {
         return result;
     }
 
+    pub fn createWorld(pos: Vec3, forward: Vec3, up: Vec3) Mat4 {
+        const z = forward.normalize();
+        var x = Vec3.cross(forward, up);
+        var y = Vec3.cross(x, forward);
+        x = x.normalize();
+        y = y.normalize();
+
+        var result = identity;
+
+        // right
+        result.fields[0][0] = x.x;
+        result.fields[0][1] = x.y;
+        result.fields[0][2] = x.z;
+
+        // up
+        result.fields[1][0] = y.x;
+        result.fields[1][1] = y.y;
+        result.fields[1][2] = y.z;
+
+        // forward
+        result.fields[2][0] = -z.x;
+        result.fields[2][1] = -z.y;
+        result.fields[2][2] = -z.z;
+
+        // translation
+        result.fields[3][0] = pos.x;
+        result.fields[3][1] = pos.y;
+        result.fields[3][2] = pos.z;
+        return result;
+    }
+
     pub fn createAngleAxis(axis: Vec3, angle: f32) Mat4 {
         var cos = std.math.cos(angle);
         var sin = std.math.sin(angle);

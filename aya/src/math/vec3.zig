@@ -5,6 +5,7 @@ pub const Vec3 = packed struct {
     y: f32 = 0,
     z: f32 = 0,
 
+    pub const zero = init(0, 0, 0);
     pub const up = init(0, 1, 0);
 
     pub fn init(x: f32, y: f32, z: f32) Vec3 {
