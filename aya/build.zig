@@ -52,6 +52,7 @@ pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std
     // packages exported to userland
     artifact.addPackage(sokol);
     artifact.addPackage(imgui);
+    artifact.addPackage(stb_image);
     artifact.addPackage(aya);
     artifact.addPackage(shaders);
     artifact.addPackage(shaders3d);
