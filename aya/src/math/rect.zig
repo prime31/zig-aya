@@ -14,6 +14,10 @@ pub const RectI = struct {
     w: i32 = 0,
     h: i32 = 0,
 
+    pub fn init(x: i32, y: i32, w: i32, h: i32) RectI {
+        return .{ .x = x, .y = y, .w = w, .h = h };
+    }
+
     pub fn right(self: RectI) i32 {
         return self.x + self.w;
     }
@@ -84,7 +88,7 @@ pub const RectI = struct {
         };
     }
 
-    pub fn contains(x: i32, y: i32) bool {
-        return r.x <= x and x < r.right() and r.y <= y and y < r.bottom();
+    pub fn contains(self: RectI, x: i32, y: i32) bool {
+        return self.x <= x and x < self.right() and self.y <= y and y < self.bottom();
     }
 };
