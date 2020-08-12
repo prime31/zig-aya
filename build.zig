@@ -34,6 +34,7 @@ pub fn build(b: *Builder) void {
 
     for (examples) |example, i| {
         include_imgui = std.mem.eql(u8, example[0], "imgui") or std.mem.eql(u8, example[0], "shaders") or std.mem.eql(u8, example[0], "cubes") or std.mem.eql(u8, example[0], "spinning_cubes");
+        include_imgui = true;
         createExe(b, target, example[0], example[1], include_imgui);
 
         // first element in the list is added as "run" so "zig build run" works
