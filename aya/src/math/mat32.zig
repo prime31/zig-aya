@@ -116,8 +116,10 @@ pub const Mat32 = struct {
 
     pub fn transformVec2Slice(self: Mat32, comptime T: type, dst: []T, src: []Vec2) void {
         for (src) |item, i| {
-            dst[i].pos.x = src[i].x * self.data[0] + src[i].y * self.data[2] + self.data[4];
-            dst[i].pos.y = src[i].x * self.data[1] + src[i].y * self.data[3] + self.data[5];
+            const x = src[i].x * self.data[0] + src[i].y * self.data[2] + self.data[4];
+            const y = src[i].x * self.data[1] + src[i].y * self.data[3] + self.data[5];
+            dst[i].x = x;
+            dst[i].y = y;
         }
     }
 
