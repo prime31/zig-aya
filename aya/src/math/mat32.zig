@@ -16,7 +16,7 @@ const math = std.math;
 pub const Mat32 = struct {
     data: [6]f32 = undefined,
 
-    const TransformParams = struct { x: f32, y: f32, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 };
+    pub const TransformParams = struct { x: f32 = 0, y: f32 = 0, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 };
 
     pub const identity = Mat32{ .data = .{ 1, 0, 0, 1, 0, 0 } };
 

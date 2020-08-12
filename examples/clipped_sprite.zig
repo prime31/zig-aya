@@ -2,8 +2,12 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 const Color = math.Color;
+usingnamespace @import("imgui");
 
+pub const imgui = true;
 var tex: aya.gfx.Texture = undefined;
+var trans: math.Mat32.TransformParams = .{};
+var trans2: math.Mat32.TransformParams = .{};
 
 pub fn main() !void {
     try aya.run(.{
@@ -18,18 +22,33 @@ fn init() void {
     TexturePolygon.generateMesh("assets/sword_dude.png", 2, 0);
 }
 
-fn update() void {}
+fn update() void {
+    _ = aya.utils.inspect("Trans", &trans);
+    _ = aya.utils.inspect("Trans2", &trans2);
+    igText("fart");
+}
 
 fn render() void {
     aya.gfx.beginPass(.{});
     var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
-    var mat = math.Mat32.initTransform(.{.x = 200, .y = 200, .sx = 4, .sy = -4});
+    var mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = -1 });
     mat.transformVec2Slice(math.Vec2, poly, poly);
 
-    // const poly = [_]math.Vec2{ .{ .x = 400, .y = 30 }, .{ .x = 420, .y = 10 }, .{ .x = 430, .y = 80 }, .{ .x = 410, .y = 60 }, .{ .x = 375, .y = 40 } };
     aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
 
-    aya.draw.texScale(tex, 200, 200, 4);
+    poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
+    // mat = math.Mat32.initTransform(.{ .sx = 1, .sy = -1, .ox = 0, .oy = 64 });
+    mat = math.Mat32.initTransform(trans);
+    mat.transformVec2Slice(math.Vec2, poly, poly);
+    mat = math.Mat32.initTransform(trans2);
+    mat.transformVec2Slice(math.Vec2, poly, poly);
+    mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = 1 });
+    mat.transformVec2Slice(math.Vec2, poly, poly);
+
+    aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
+    aya.draw.point(.{ .x = 200, .y = 200 }, 4, math.Color.black);
+
+    aya.draw.texScale(tex, 200, 200, 1);
     aya.gfx.endPass();
 }
 
