@@ -6,6 +6,8 @@ usingnamespace @import("imgui");
 
 pub const imgui = true;
 var tex: aya.gfx.Texture = undefined;
+var tri_batch: aya.gfx.TriangleBatcher = undefined;
+
 var trans: math.Mat32.TransformParams = .{};
 var trans2: math.Mat32.TransformParams = .{};
 
@@ -18,37 +20,64 @@ pub fn main() !void {
 }
 
 fn init() void {
-    tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
-    TexturePolygon.generateMesh("assets/sword_dude.png", 2, 0);
+    tri_batch = aya.gfx.TriangleBatcher.init(null, 100) catch unreachable;
+    tex = aya.gfx.Texture.initFromFile("assets/plant.png", .nearest) catch unreachable;
+    TexturePolygon.generateMesh("assets/plant.png", 2, 0);
 }
 
 fn update() void {
     _ = aya.utils.inspect("Trans", &trans);
     _ = aya.utils.inspect("Trans2", &trans2);
-    igText("fart");
+
+    if (ogButton("go")) {
+        var poly = TexturePolygon.generateMesh2("assets/plant.png", 2, 0);
+        for (poly) |pt| {
+            std.debug.print("{d}\n", .{pt});
+        }
+    }
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
-    var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
-    var mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = -1 });
-    mat.transformVec2Slice(math.Vec2, poly, poly);
+    // var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
+    // var mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = -1 });
+    // mat.transformVec2Slice(math.Vec2, poly, poly);
 
-    aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
+    // aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
 
-    poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
-    // mat = math.Mat32.initTransform(.{ .sx = 1, .sy = -1, .ox = 0, .oy = 64 });
-    mat = math.Mat32.initTransform(trans);
-    mat.transformVec2Slice(math.Vec2, poly, poly);
-    mat = math.Mat32.initTransform(trans2);
-    mat.transformVec2Slice(math.Vec2, poly, poly);
-    mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = 1 });
-    mat.transformVec2Slice(math.Vec2, poly, poly);
+    // poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
+    // // mat = math.Mat32.initTransform(.{ .sx = 1, .sy = -1, .ox = 0, .oy = 64 });
+    // mat = math.Mat32.initTransform(trans);
+    // mat.transformVec2Slice(math.Vec2, poly, poly);
+    // mat = math.Mat32.initTransform(trans2);
+    // mat.transformVec2Slice(math.Vec2, poly, poly);
+    // mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = 1 });
+    // mat.transformVec2Slice(math.Vec2, poly, poly);
 
-    aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
+    // aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
+    // aya.draw.point(.{ .x = 200, .y = 200 }, 4, math.Color.black);
     aya.draw.point(.{ .x = 200, .y = 200 }, 4, math.Color.black);
 
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 37.40 }, .{ .x = 0.40, .y = 38.60 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 32.20 }, .{ .x = 0.00, .y = 37.40 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.40, .y = 38.60 }, .{ .x = 20.00, .y = 35.80 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 22.00, .y = 45.50 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 0.40, .y = 38.60 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 22.00, .y = 45.50 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 33.60 }, .{ .x = 22.00, .y = 45.50 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 26.00, .y = 48.00 }, .{ .x = 38.10, .y = 50.00 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 38.10, .y = 50.00 }, .{ .x = 36.90, .y = 30.50 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 36.90, .y = 30.50 }, .{ .x = 26.00, .y = 27.30 }, .{ .x = 26.00, .y = 33.60 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 50.00 }, .{ .x = 38.10, .y = 50.00 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 22.00, .y = 48.20 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 24.20, .y = 49.30 }, Color.lime);
+
+    tri_batch.endFrame();
+
+    // const poly = [_]math.Vec2{ .{ .x = 36.90, .y = 30.50 }, .{ .x = 38.10, .y = 50.00 }, .{ .x = 26.00, .y = 50.00 }, .{ .x = 26.00, .y = 48.00 }, .{ .x = 24.20, .y = 49.30 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 0.40, .y = 38.60 }, .{ .x = 0.00, .y = 37.40 }, .{ .x = 0.00, .y = 32.20 }, .{ .x = 3.60, .y = 28.60 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 26.00, .y = 33.60 }, .{ .x = 26.00, .y = 27.30 } };
+    // aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
+
     aya.draw.texScale(tex, 200, 200, 1);
+    aya.draw.tex(tex, 0, 0);
     aya.gfx.endPass();
 }
 
