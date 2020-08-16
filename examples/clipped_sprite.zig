@@ -20,9 +20,9 @@ pub fn main() !void {
 }
 
 fn init() void {
-    tri_batch = aya.gfx.TriangleBatcher.init(null, 100) catch unreachable;
-    tex = aya.gfx.Texture.initFromFile("assets/plant.png", .nearest) catch unreachable;
-    TexturePolygon.generateMesh("assets/plant.png", 2, 0);
+    tri_batch = aya.gfx.TriangleBatcher.init(null, 1000) catch unreachable;
+    tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
+    TexturePolygon.generateMesh("assets/sword_dude.png", 2, 0);
 }
 
 fn update() void {
@@ -30,7 +30,7 @@ fn update() void {
     _ = aya.utils.inspect("Trans2", &trans2);
 
     if (ogButton("go")) {
-        var poly = TexturePolygon.generateMesh2("assets/plant.png", 2, 0);
+        var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
         for (poly) |pt| {
             std.debug.print("{d}\n", .{pt});
         }
@@ -58,18 +58,18 @@ fn render() void {
     // aya.draw.point(.{ .x = 200, .y = 200 }, 4, math.Color.black);
     aya.draw.point(.{ .x = 200, .y = 200 }, 4, math.Color.black);
 
-    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 37.40 }, .{ .x = 0.40, .y = 38.60 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 32.20 }, .{ .x = 0.00, .y = 37.40 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.40, .y = 38.60 }, .{ .x = 20.00, .y = 35.80 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 22.00, .y = 45.50 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 0.40, .y = 38.60 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 22.00, .y = 45.50 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 33.60 }, .{ .x = 22.00, .y = 45.50 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 26.00, .y = 48.00 }, .{ .x = 38.10, .y = 50.00 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 38.10, .y = 50.00 }, .{ .x = 36.90, .y = 30.50 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 36.90, .y = 30.50 }, .{ .x = 26.00, .y = 27.30 }, .{ .x = 26.00, .y = 33.60 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 50.00 }, .{ .x = 38.10, .y = 50.00 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 22.00, .y = 48.20 }, Color.lime);
-    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 24.20, .y = 49.30 }, Color.lime);
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 37.40 }, .{ .x = 0.40, .y = 38.60 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.00, .y = 32.20 }, .{ .x = 0.00, .y = 37.40 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 3.60, .y = 28.60 }, .{ .x = 0.40, .y = 38.60 }, .{ .x = 20.00, .y = 35.80 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 22.00, .y = 45.50 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 0.40, .y = 38.60 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 22.00, .y = 45.50 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 33.60 }, .{ .x = 22.00, .y = 45.50 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 26.00, .y = 48.00 }, .{ .x = 38.10, .y = 50.00 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 33.60 }, .{ .x = 38.10, .y = 50.00 }, .{ .x = 36.90, .y = 30.50 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 36.90, .y = 30.50 }, .{ .x = 26.00, .y = 27.30 }, .{ .x = 26.00, .y = 33.60 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 26.00, .y = 50.00 }, .{ .x = 38.10, .y = 50.00 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 22.00, .y = 48.20 }, Color.purple);
+    tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 24.20, .y = 49.30 }, Color.purple);
 
     tri_batch.endFrame();
 
