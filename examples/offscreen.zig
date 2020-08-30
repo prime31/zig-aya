@@ -1,6 +1,5 @@
 const std = @import("std");
 const aya = @import("aya");
-const sdl = @import("sdl");
 const math = aya.math;
 
 var checker_tex: aya.gfx.Texture = undefined;
