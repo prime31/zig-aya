@@ -12,6 +12,7 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
+        [_][]const u8{ "markov", "examples/markov.zig" },
         [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
         [_][]const u8{ "primitives", "examples/primitives.zig" },
         [_][]const u8{ "entities", "examples/entities.zig" },
@@ -33,8 +34,7 @@ pub fn build(b: *Builder) void {
     };
 
     for (examples) |example, i| {
-        include_imgui = std.mem.eql(u8, example[0], "imgui") or std.mem.eql(u8, example[0], "shaders") or std.mem.eql(u8, example[0], "clipper") or std.mem.eql(u8, example[0], "cubes") or std.mem.eql(u8, example[0], "spinning_cubes");
-        // include_imgui = true;
+        include_imgui = true;
         createExe(b, target, example[0], example[1], include_imgui);
 
         // first element in the list is added as "run" so "zig build run" works
