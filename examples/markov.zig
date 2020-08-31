@@ -49,6 +49,7 @@ const map = [_]u8{
 
 var minimum_rows: usize = 10;
 var generated_map: []const u8 = undefined;
+var tilemap: Tilemap = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -58,6 +59,9 @@ pub fn main() !void {
         .window = .{
             .width = 1024,
             .height = 768,
+        },
+        .gfx = .{
+            .batcher_max_sprites = 5000,
         },
     });
 }
@@ -81,12 +85,16 @@ fn generateMap() void {
 
     markov.addSourceMap(&map, 10, 37);
     generated_map = markov.generate(minimum_rows);
+
+    tilemap = Tilemap.initWithData(generated_map, 10, generated_map.len / 10);
+    tilemap.rotate();
 }
 
 fn render() void {
     aya.gfx.beginPass(.{});
     drawMap(map[0..], 10, 37, 10, 10, 4);
     drawMap(generated_map, 10, generated_map.len / 10, 100, 10, 8);
+    drawMap(tilemap.map, tilemap.w, tilemap.h, 10, 500, 4);
     aya.gfx.endPass();
 }
 
@@ -96,9 +104,9 @@ fn drawMap(data: []const u8, w: usize, h: usize, x_pos: f32, y_pos: f32, scale: 
         var x: usize = 0;
         while (x < w) : (x += 1) {
             var color = aya.math.Color.transparent;
-            if (data[x + y * 10] == 2) {
+            if (data[x + y * w] == 2) {
                 color = aya.math.Color.white;
-            } else if (data[x + y * 10] == 1) {
+            } else if (data[x + y * w] == 1) {
                 color = aya.math.Color.black;
             } else {
                 continue;
@@ -263,5 +271,51 @@ pub const Markov = struct {
             entry.entry.value = std.StringHashMap(u8).init(&self.arena.allocator);
         }
         incrementItemCount(&entry.entry.value, next);
+    }
+};
+
+pub const Tilemap = struct {
+    w: usize,
+    h: usize,
+    map: []u8,
+
+    pub fn initWithData(data: []const u8, width: usize, height: usize) Tilemap {
+        return .{
+            .w = width,
+            .h = height,
+            .map = std.mem.dupe(std.testing.allocator, u8, data) catch unreachable,
+        };
+    }
+
+    pub fn deinit(self: Tilemap) void {
+        std.testing.allocator.free(self.map);
+    }
+
+    pub fn rotate(self: *Tilemap) void {
+        var rotated = std.testing.allocator.alloc(u8, self.map.len) catch unreachable;
+
+        var y: usize = 0;
+        while (y < self.h) : (y += 1) {
+            var x: usize = 0;
+            while (x < self.w) : (x += 1) {
+                rotated[y + x * self.h] = self.map[x + y * self.w];
+            }
+        }
+
+        std.testing.allocator.free(self.map);
+        self.map = rotated;
+        std.mem.swap(usize, &self.w, &self.h);
+    }
+
+    pub fn print(self: Tilemap) void {
+        var y: usize = 0;
+        while (y < self.h) : (y += 1) {
+            var x: usize = 0;
+            while (x < self.w) : (x += 1) {
+                std.debug.print("{}, ", .{self.map[x + y * self.w]});
+            }
+            std.debug.print("\n", .{});
+        }
+        std.debug.print("\n", .{});
     }
 };
