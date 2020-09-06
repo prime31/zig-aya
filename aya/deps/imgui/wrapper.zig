@@ -50,6 +50,12 @@ pub fn ogGetCursorPos() ImVec2 {
     return pos;
 }
 
+pub fn ogGetWindowSize() ImVec2 {
+    var pos = ImVec2{};
+    igGetWindowSize(&pos);
+    return pos;
+}
+
 pub fn ogGetMouseDragDelta(button: ImGuiMouseButton, lock_threshold: f32) ImVec2 {
     var pos = ImVec2{};
     igGetMouseDragDelta(&pos, button, lock_threshold);

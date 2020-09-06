@@ -71,6 +71,22 @@ pub const Mat32 = struct {
         self.data[5] = vals.y - vals.ox * self.data[1] - vals.oy * self.data[3];
     }
 
+    pub fn invert(self: Mat32) Mat32 {
+        var res = Mat32{};
+        var det = 1 / (self.data[0] * self.data[3] - self.data[1] * self.data[2]);
+
+        res.data[0] = self.data[3] * det;
+        res.data[1] = -self.data[1] * det;
+
+        res.data[2] = -self.data[2] * det;
+        res.data[3] = self.data[0] * det;
+
+        res.data[4] = (self.data[5] * self.data[2] - self.data[4] * self.data[3]) * det;
+        res.data[5] = -(self.data[5] * self.data[0] - self.data[4] * self.data[1]) * det;
+
+        return res;
+    }
+
     pub fn mul(self: Mat32, r: Mat32) Mat32 {
         var result = Mat32{};
         result.data[0] = self.data[0] * r.data[0] + self.data[2] * r.data[1];
