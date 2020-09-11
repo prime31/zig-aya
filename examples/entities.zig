@@ -102,7 +102,7 @@ pub const EntityManager = struct {
             _ = self.occupied.addOne() catch unreachable;
         }
 
-        self.occupied.items[index] = false;
+        self.occupied.items[index] = true;
         var entity = &self.entities.items[index];
         entity.slot = index;
 
