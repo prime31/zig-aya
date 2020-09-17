@@ -24,4 +24,6 @@ comptime {
     // _ = @import("src/gfx/offscreen_pass.zig"); // Zig bug: TODO buf_read_value_bytes union type
 
     _ = @import("src/utils/utils.zig");
+
+    _ = @import("src/physics/multi_hash_map.zig");
 }

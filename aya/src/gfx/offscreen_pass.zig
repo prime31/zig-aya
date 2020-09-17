@@ -76,8 +76,3 @@ pub const DefaultOffscreenPass = struct {
         self.scaler = self.policy.getScaler(self.design_w, self.design_h);
     }
 };
-
-test "test offscreen pass" {
-    const def_pass = DefaultOffscreenPass.init(320, 240, .best_fit);
-    def_pass.deinit();
-}
