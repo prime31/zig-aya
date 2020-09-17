@@ -209,3 +209,28 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program dissolve sprite_vs dissolve_fs
+
+
+
+@fs rgb_shift_fs
+@include_block sprite_fs_main
+uniform rgb_shift_fs_params {
+	float shift; // 0-1 range (clamp(0, p * p * p, 1) where p is sound pitch normalized to 0-1)
+	float alpha; // (1 - p) * 40 + 2
+	vec2 screen_size; // screen width/height
+};
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec2 tc = tex_coord;
+	vec2 scale = vec2(1.0 / screen_size.x, 1.0 / screen_size.y);
+
+	vec4 r = texture(tex, vec2(tc.x + shift * scale.x, tc.y - shift * scale.y));
+	vec4 g = texture(tex, vec2(tc.x, tc.y + shift * scale.y));
+	vec4 b = texture(tex, vec2(tc.x - shift * scale.x, tc.y - shift * scale.y));
+	float a = r.a + g.a + b.a / 3.0;
+
+	return vec4(r.r, g.g, b.b, a * alpha);
+}
+@end
+
+@program rgb_shift sprite_vs rgb_shift_fs

@@ -4,6 +4,7 @@ pub extern fn dissolve_shader_desc() [*c]const sg_shader_desc;
 pub extern fn lines_shader_desc() [*c]const sg_shader_desc;
 pub extern fn noise_shader_desc() [*c]const sg_shader_desc;
 pub extern fn pixel_glitch_shader_desc() [*c]const sg_shader_desc;
+pub extern fn rgb_shift_shader_desc() [*c]const sg_shader_desc;
 pub extern fn sepia_shader_desc() [*c]const sg_shader_desc;
 pub extern fn sprite_shader_desc() [*c]const sg_shader_desc;
 pub extern fn vignette_shader_desc() [*c]const sg_shader_desc;
