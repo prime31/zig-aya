@@ -197,6 +197,3 @@ pub fn commit() void {
 // import all the drawing methods
 usingnamespace @import("draw.zig");
 
-test "gfx tests" {
-    setRenderTexture(null);
-}

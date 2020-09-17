@@ -137,7 +137,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
 }
 
 test "test cstr" {
-    const std = @import("std");
+    // const std = @import("std");
     const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
     defer std.testing.allocator.free(slice);
     const span = std.mem.spanZ(slice);
