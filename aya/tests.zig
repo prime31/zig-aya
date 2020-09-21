@@ -26,4 +26,5 @@ comptime {
     _ = @import("src/utils/utils.zig");
 
     _ = @import("src/physics/multi_hash_map.zig");
+    _ = @import("src/physics/spatial_hash.zig");
 }
