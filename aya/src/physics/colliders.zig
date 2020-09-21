@@ -12,6 +12,10 @@ pub const Collider = struct {
             .kind = kind,
         };
     }
+
+    pub fn bounds(self: Collider) math.Rect {
+        return .{};
+    }
 };
 
 pub const ColliderKind = union(enum) {
