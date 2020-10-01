@@ -6,6 +6,26 @@ pub const Rect = struct {
     y: f32 = 0,
     w: f32 = 0,
     h: f32 = 0,
+
+    pub fn right(self: Rect) f32 {
+        return self.x + self.w;
+    }
+
+    pub fn left(self: Rect) f32 {
+        return self.x;
+    }
+
+    pub fn top(self: Rect) f32 {
+        return self.y;
+    }
+
+    pub fn bottom(self: Rect) f32 {
+        return self.y + self.h;
+    }
+
+    pub fn contains(self: Rect, x: f32, y: f32) bool {
+        return self.x <= x and x < self.right() and self.y <= y and y < self.bottom();
+    }
 };
 
 pub const RectI = struct {
@@ -90,5 +110,18 @@ pub const RectI = struct {
 
     pub fn contains(self: RectI, x: i32, y: i32) bool {
         return self.x <= x and x < self.right() and self.y <= y and y < self.bottom();
+    }
+
+    pub fn unionRect(self: RectI, r2: RectI) RectI {
+        var res = RectI{};
+        res.x = std.math.min(self.x, r2.x);
+        res.y = std.math.min(self.y, r2.y);
+        res.w = std.math.max(self.right(), r2.right()) - res.x;
+        res.h = std.math.max(self.bottom(), r2.bottom()) - res.y;
+        return res;
+    }
+
+    pub fn unionPoint(self: RectI, x: i32, y: i32) RectI {
+        return self.unionRect(.{ .x = x, .y = y });
     }
 };
