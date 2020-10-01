@@ -29,10 +29,10 @@ fn init() void {
 }
 
 fn shutdown() void {
+    stack.deinit();
     checker_tex.deinit();
     font_tex.deinit();
     pass.deinit();
-    stack.deinit();
 }
 
 fn update() void {}
