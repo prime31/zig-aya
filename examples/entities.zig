@@ -3,24 +3,44 @@ const aya = @import("aya");
 const math = aya.math;
 const Color = math.Color;
 
-var manager: EntityManager = undefined;
-
 pub fn main() !void {
     try aya.run(.{
         .init = init,
         .update = update,
         .render = render,
     });
-
-    manager.deinit();
 }
 
 fn init() void {
-    manager = EntityManager.init();
+    var manager = EntityManager.init();
+    defer manager.deinit();
+
     var player = manager.create(Player);
     manager.destroy(player.entity, Player);
 
     var e2 = manager.create(Enemy);
+
+    generational();
+}
+
+fn generational() void {
+    var manager = GenerationalEntityManager.init(10);
+    defer manager.deinit();
+
+    var player = manager.create();
+    var enemy = manager.create();
+
+    var player_id = player.id;
+    std.debug.print("get player before dead: {}\n", .{manager.getEntity(player_id)});
+    manager.destroy(player);
+    std.debug.print("get player after dead: {}\n", .{manager.getEntity(player_id)});
+
+    player = manager.create();
+
+    player_id = player.id;
+    std.debug.print("get player before dead: {}\n", .{manager.getEntity(player_id)});
+    manager.destroy(player);
+    std.debug.print("get player after dead: {}\n", .{manager.getEntity(player_id)});
 }
 
 fn update() void {}
@@ -115,5 +135,67 @@ pub const EntityManager = struct {
     pub fn destroy(self: *EntityManager, entity: *Entity, comptime T: type) void {
         self.occupied.items[entity.slot] = false;
         aya.mem.allocator.destroy(entity.cast(T));
+    }
+};
+
+
+pub const GenerationalEntity = struct {
+    id: u32,
+    pos: math.Vec2 = .{},
+};
+
+pub const GenerationalEntityManager = struct {
+    entities: []GenerationalEntity,
+    handles: []EntityHandle,
+
+    const EntityHandle = struct {
+        index: u16,
+        generation: u16 = 0,
+    };
+
+    pub fn init(count: usize) GenerationalEntityManager {
+        var handles = aya.mem.allocator.alloc(EntityHandle, count) catch unreachable;
+        var i = count - 1;
+        while (count >= 0) : (i -= 1) {
+            handles[i] = .{ .index = @intCast(u16, count - 1 - i) };
+            if (i == 0) break;
+        }
+
+        return .{
+            .entities = aya.mem.allocator.alloc(GenerationalEntity, count) catch unreachable,
+            .handles = handles,
+        };
+    }
+
+    pub fn deinit(self: GenerationalEntityManager) void {
+        aya.mem.allocator.free(self.entities);
+        aya.mem.allocator.free(self.handles);
+    }
+
+    pub fn create(self: *GenerationalEntityManager) *GenerationalEntity {
+        var slot = self.handles[self.handles.len - 1];
+        slot.generation += 1;
+        self.handles.len -= 1;
+
+        var entity = &self.entities[slot.index];
+        entity.* = std.mem.zeroes(GenerationalEntity);
+        entity.id = @bitCast(u32, slot);
+
+        return entity;
+    }
+
+    pub fn destroy(self: *GenerationalEntityManager, entity: *GenerationalEntity) void {
+        const slot = @bitCast(EntityHandle, entity.id);
+        self.handles.len += 1;
+        self.handles[self.handles.len - 1] = slot;
+        entity.*.id = std.math.maxInt(u32);
+    }
+
+    pub fn getEntity(self: *GenerationalEntityManager, id: u32) ?*GenerationalEntity {
+        const slot = @bitCast(EntityHandle, id);
+        var entity = &self.entities[slot.index];
+
+        if (entity.id == id) return entity;
+        return null;
     }
 };
