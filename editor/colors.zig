@@ -1,6 +1,26 @@
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
+pub var ui_tint: ImVec4 = rgbaToVec4(135, 45, 176, 255);
+
+pub fn init() void {
+    setDefaultImGuiStyle();
+}
+
+fn setDefaultImGuiStyle() void {
+    var style = igGetStyle();
+    style.TabRounding = 2;
+    style.FrameRounding = 4;
+    style.WindowBorderSize = 1;
+    style.WindowRounding = 0;
+    style.WindowMenuButtonPosition = ImGuiDir_None;
+    style.Colors[ImGuiCol_WindowBg] = ogColorConvertU32ToFloat4(rgbaToU32(25, 25, 25, 255));
+    style.Colors[ImGuiCol_TextSelectedBg] = ogColorConvertU32ToFloat4(rgbaToU32(66, 150, 250, 187));
+    style.Colors[ImGuiCol_PopupBg] = rgbaToVec4(20, 20, 20, 255);
+
+    // setTintColor(ui_tint);
+}
+
 pub fn setTintColor(color: ImVec4) void {
     var colors = &igGetStyle().Colors;
     colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2);
@@ -47,12 +67,12 @@ pub fn rgbToU32(r: i32, g: i32, b: i32) ImU32 {
     return igGetColorU32Vec4(.{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = 1 });
 }
 
-pub fn rgbToVec4(r: i32, g: i32, b: i32) ImVec4 {
-    return .{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = 1 };
-}
-
 pub fn rgbaToU32(r: i32, g: i32, b: i32, a: i32) ImU32 {
     return igGetColorU32Vec4(.{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) / 255 });
+}
+
+pub fn rgbToVec4(r: i32, g: i32, b: i32) ImVec4 {
+    return .{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = 1 };
 }
 
 pub fn rgbaToVec4(r: i32, g: i32, b: i32, a: i32) ImVec4 {

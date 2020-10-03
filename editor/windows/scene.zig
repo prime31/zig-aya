@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
+const editor = @import("../editor.zig");
 usingnamespace @import("imgui");
 
 const Camera = struct {
@@ -63,7 +64,16 @@ pub const Scene = struct {
         self.pass.?.deinit();
     }
 
-    pub fn update(self: *@This()) void {
+    pub fn draw(self: *@This(), state: *editor.AppState) void {
+        igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
+        if (igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar)) {
+            self.update(state);
+        }
+        igEnd();
+        igPopStyleVar(1);
+    }
+
+    pub fn update(self: *@This(), state: *editor.AppState) void {
         // handle initial creation and resizing of the OffscreenPass
         var content_region = ogGetContentRegionAvail();
         if (self.pass) |pass| {
@@ -80,13 +90,13 @@ pub const Scene = struct {
         self.handleInput();
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
-        self.draw();
+        self.render();
         aya.gfx.endPass();
 
         ogImage(self.pass.?.color_tex.imTextureID(), self.pass.?.color_tex.width, self.pass.?.color_tex.height);
     }
 
-    fn draw(self: @This()) void {
+    fn render(self: @This()) void {
         // get mouse in world space
         const mouse = self.cam.igScreenToWorld(igGetIO().MousePos.subtract(ogGetCursorScreenPos()));
 
