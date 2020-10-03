@@ -70,7 +70,7 @@ fn beginDock() void {
     igPopStyleVar(1);
 
     const io = igGetIO();
-    const dockspace_id = igGetIDStr("upaya-dockspace");
+    const dockspace_id = igGetIDStr("aya-dockspace");
     // igDockBuilderRemoveNode(dockspace_id); // uncomment for testing initial layout setup code
     if (igDockBuilderGetNode(dockspace_id) == null) {
         var dock_main_id = igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
@@ -87,14 +87,19 @@ fn setupDockLayout(id: ImGuiID) void {
     // dock_main_id is the left node after this
     const right_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.3, null, &dock_main_id);
 
-    // bottom_right_id is the bottom node after this
-    var bottom_right_id: ImGuiID = 0;
-    const top_right_id = igDockBuilderSplitNode(right_id, ImGuiDir_Up, 0.5, null, &bottom_right_id);
-    igDockBuilderDockWindow("Entities", top_right_id);
-    igDockBuilderDockWindow("Inspector", bottom_right_id);
+    // dock_main_id is the center node after this
+    const left_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.3, null, &dock_main_id);
+
+    // bottom_left_id is the bottom node after this
+    var bottom_left_id: ImGuiID = 0;
+    const top_left_id = igDockBuilderSplitNode(left_id, ImGuiDir_Up, 0.3, null, &bottom_left_id);
+    igDockBuilderDockWindow("Layers", top_left_id);
+    igDockBuilderDockWindow("Entities", bottom_left_id);
+
+    igDockBuilderDockWindow("Inspector", right_id);
 
     // dock_main_id is the bottom node after this
-    const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.6, null, &dock_main_id);
+    const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.75, null, &dock_main_id);
     igDockBuilderDockWindow("Scene", tl_id);
     igDockBuilderDockWindow("Assets", dock_main_id);
 
