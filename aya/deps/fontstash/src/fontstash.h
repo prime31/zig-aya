@@ -1,6 +1,4 @@
 //
-//  NOTE sokol: all IO functions have been removed
-//
 // Copyright (c) 2009-2013 Mikko Mononen memon@inside.org
 //
 // This software is provided 'as-is', without any express or implied
