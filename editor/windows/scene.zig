@@ -98,9 +98,10 @@ pub const Scene = struct {
 
     fn render(self: @This()) void {
         // get mouse in world space
-        const mouse = self.cam.igScreenToWorld(igGetIO().MousePos.subtract(ogGetCursorScreenPos()));
+        const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
+        const mouse = self.cam.igScreenToWorld(mouse_screen);
 
-        self.drawGridLines();
+        // self.drawGridLines();
 
         aya.draw.rect(.{}, 40, 40, math.Color.white);
         aya.draw.text("wtf", mouse.x, mouse.y, null);
