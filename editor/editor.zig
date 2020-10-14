@@ -22,6 +22,7 @@ pub const Editor = struct {
 
     pub fn deinit(self: @This()) void {
         self.scene.deinit();
+        self.state.deinit();
     }
 
     pub fn update(self: *@This()) void {
