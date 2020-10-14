@@ -16,8 +16,8 @@ pub fn main() !void {
             .resolution_policy = .none,
         },
         .window = .{
-            .width = 1024,
-            .height = 768,
+            .width = 1280,
+            .height = 800,
             .title = "Aya Edit",
         },
     });
@@ -96,7 +96,11 @@ fn setupDockLayout(id: ImGuiID) void {
     igDockBuilderDockWindow("Layers", top_left_id);
     igDockBuilderDockWindow("Entities", bottom_left_id);
 
-    igDockBuilderDockWindow("Inspector", right_id);
+    // bottom_left_id is the bottom node after this
+    var bottom_right_id: ImGuiID = 0;
+    var top_right_id = igDockBuilderSplitNode(right_id, ImGuiDir_Up, 0.65, null, &bottom_right_id);
+    igDockBuilderDockWindow("Inspector", top_right_id);
+    igDockBuilderDockWindow("Palette", bottom_right_id);
 
     // dock_main_id is the bottom node after this
     const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.75, null, &dock_main_id);

@@ -87,24 +87,34 @@ pub const Scene = struct {
             self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y), .nearest);
         }
 
-        self.handleInput();
+        const tmp = ogGetCursorScreenPos();
+        ogImage(self.pass.?.color_tex.imTextureID(), self.pass.?.color_tex.width, self.pass.?.color_tex.height);
+        igSetCursorScreenPos(tmp);
+        if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
-        self.render();
+        self.render(state);
         aya.gfx.endPass();
 
-        ogImage(self.pass.?.color_tex.imTextureID(), self.pass.?.color_tex.width, self.pass.?.color_tex.height);
+        aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE, .trans_mat = self.cam.transMat() });
+        aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
+        aya.gfx.endPass();
     }
 
-    fn render(self: @This()) void {
+    fn render(self: @This(), state: *editor.AppState) void {
         // get mouse in world space
         const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
         const mouse = self.cam.igScreenToWorld(mouse_screen);
 
         // self.drawGridLines();
 
+        for (state.layers.items) |layer| {
+            layer.draw(state);
+        }
+
         aya.draw.rect(.{}, 40, 40, math.Color.white);
         aya.draw.text("wtf", mouse.x, mouse.y, null);
+        aya.draw.text("origin", 0, 0, null);
     }
 
     fn drawGridLines(self: @This()) void {
@@ -140,7 +150,7 @@ pub const Scene = struct {
         }
     }
 
-    fn handleInput(self: *@This()) void {
+    fn handleInput(self: *@This(), state: *editor.AppState) void {
         // scrolling via drag with alt or super key down
         if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
             var scroll_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);

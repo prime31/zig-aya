@@ -2,7 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
-pub const AppState = @import("app_state.zig").AppState;
+usingnamespace @import("data/data.zig");
 
 pub const menu = @import("menu.zig");
 pub const colors = @import("colors.zig");
@@ -15,7 +15,7 @@ pub const Editor = struct {
     pub fn init() Editor {
         colors.init();
         return .{
-            .state = AppState.init(),
+            .state = AppState.initWithTestData(),
             .scene = windows.Scene.init(),
         };
     }
@@ -26,7 +26,7 @@ pub const Editor = struct {
     }
 
     pub fn update(self: *@This()) void {
-        menu.draw(self.state);
+        menu.draw(&self.state);
 
         self.scene.draw(&self.state);
 
@@ -36,6 +36,9 @@ pub const Editor = struct {
 
         _ = igBegin("Assets", null, ImGuiWindowFlags_None);
         igEnd();
+
+        // _ = igBegin("Palette", null, ImGuiWindowFlags_None);
+        // igEnd();
 
         // igShowDemoWindow(null);
         // _ = igBegin("sadfasdf", null, ImGuiWindowFlags_None);

@@ -131,6 +131,7 @@ pub const FontBook = struct {
 
         self.texture.?.setData(pixels);
         self.tex_dirty = false;
+        self.last_update = aya.time.frames();
         return 1;
     }
 };

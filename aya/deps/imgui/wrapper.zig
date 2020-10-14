@@ -5,6 +5,10 @@ pub const icons = @import("font_awesome.zig");
 extern fn _ogImage(user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2) void;
 extern fn _ogImageButton(user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int) bool;
 
+pub fn ogPushIDUsize(id: usize) void {
+    igPushIDInt(@intCast(c_int, id));
+}
+
 /// only true if down this frame and not down the previous frame
 pub fn ogKeyPressed(key: usize) bool {
     return igGetIO().KeysDown[key] and igGetIO().KeysDownDuration[key] == 0;

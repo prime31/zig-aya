@@ -4,37 +4,40 @@ const editor = @import("../editor.zig");
 usingnamespace @import("imgui");
 
 var name_buf: [25:0]u8 = undefined;
-var new_layer_type: LayerType = .tilemap;
-
-pub const LayerType = enum(u8) {
-    tilemap,
-    auto_tilemap,
-    entity,
-};
-
-pub const TilemapLayer = struct {
-    name: []const u8,
-};
-
-pub const AutoTilemapLayer = struct {
-    name: []const u8,
-};
-
-pub const EntityLayer = struct {
-    name: []const u8,
-};
-
-pub const Layer = union {
-    tilemap: TilemapLayer,
-    auto_tilemap: AutoTilemapLayer,
-    entity: EntityLayer,
-};
+var new_layer_type: editor.LayerType = .tilemap;
 
 pub fn draw(state: *editor.AppState) void {
     if (igBegin("Layers", null, ImGuiWindowFlags_None)) {
-        // loop through all layers and draw their names as selectables
+        var delete_index: usize = std.math.maxInt(usize);
+        for (state.layers.items) |layer, i| {
+            ogPushIDUsize(i);
+            defer igPopID();
 
-        if (ogButton("Add Layer")) {
+            if (igSelectableBool(layer.name(), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - 25 })) {
+                state.selected_layer_index = i;
+            }
+
+            igSameLine(igGetWindowContentRegionWidth() - 3, 0);
+            igSetCursorPosY(igGetCursorPosY() - 3);
+            if (ogButton("X")) {
+                delete_index = i;
+            }
+        }
+
+        if (delete_index < std.math.maxInt(usize)) {
+            if (state.layers.items.len == 1 or delete_index == state.selected_layer_index) {
+                state.selected_layer_index = 0;
+            } else if (delete_index < state.selected_layer_index) {
+                state.selected_layer_index -= 1;
+            }
+            var layer = state.layers.orderedRemove(delete_index);
+            layer.deinit();
+        }
+
+        if (state.layers.items.len > 0) igDummy(.{ .y = 5 });
+
+        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
+        if (igButton("Add Layer", .{.x = 75})) {
             std.mem.set(u8, &name_buf, 0);
             new_layer_type = .tilemap;
             igOpenPopup("##add-layer");
@@ -65,21 +68,21 @@ fn addLayerPopup(state: *editor.AppState) void {
         const tag_name_c = std.cstr.addNullByte(aya.mem.tmp_allocator, tag_name) catch unreachable;
         _ = std.mem.replace(u8, tag_name_c, "_", " ", tag_name_c);
         if (igBeginCombo("##type", &tag_name_c[0], ImGuiComboFlags_None)) {
-            inline for (@typeInfo(LayerType).Enum.fields) |field| {
+            inline for (@typeInfo(editor.LayerType).Enum.fields) |field| {
                 var buf: [15]u8 = undefined;
                 _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-                if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
-                    new_layer_type = @intToEnum(LayerType, field.value);
+                if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(editor.LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
+                    new_layer_type = @intToEnum(editor.LayerType, field.value);
                 }
             }
             igEndCombo();
         }
-        igSpacing();
 
         const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
         if (igButton("Add Layer", .{ .x = -1, .y = 0 }) and label_sentinel_index > 0) {
             igCloseCurrentPopup();
-            std.debug.print("new layer name: {}\n", .{name_buf[0..label_sentinel_index]});
+            state.layers.append(editor.Layer.init(new_layer_type, name_buf[0..label_sentinel_index])) catch unreachable;
+            state.selected_layer_index = state.layers.items.len - 1;
         }
 
         igEndPopup();
