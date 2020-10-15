@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
+usingnamespace @import("imgui");
 
 pub const AppState = @import("app_state.zig").AppState;
 
@@ -14,7 +15,9 @@ pub const TilemapLayer = struct {
         aya.mem.allocator.free(self.name);
     }
 
-    pub fn draw(self: @This(), state: *AppState) void {
+    pub fn draw(self: @This(), state: *AppState) void {}
+
+    pub fn handleSceneInput(self: @This(), state: *AppState, mouse_world: ImVec2) void {
         aya.draw.text(self.name, 100, 0, null);
     }
 };
@@ -30,8 +33,10 @@ pub const AutoTilemapLayer = struct {
         aya.mem.allocator.free(self.name);
     }
 
-    pub fn draw(self: @This(), state: *AppState) void {
-        aya.draw.text(self.name, 100, 20, null);
+    pub fn draw(self: @This(), state: *AppState) void {}
+
+    pub fn handleSceneInput(self: @This(), state: *AppState, mouse_world: ImVec2) void {
+        aya.draw.text(self.name, 100, 0, null);
     }
 };
 
@@ -46,8 +51,10 @@ pub const EntityLayer = struct {
         aya.mem.allocator.free(self.name);
     }
 
-    pub fn draw(self: @This(), state: *AppState) void {
-        aya.draw.text(self.name, 100, 40, null);
+    pub fn draw(self: @This(), state: *AppState) void {}
+
+    pub fn handleSceneInput(self: @This(), state: *AppState, mouse_world: ImVec2) void {
+        aya.draw.text(self.name, 100, 0, null);
     }
 };
 
@@ -76,7 +83,7 @@ pub const Layer = union(LayerType) {
         };
     }
 
-    pub fn deinit(self: Layer) void {
+    pub fn deinit(self: @This()) void {
         switch (self) {
             .tilemap => |layer| layer.deinit(),
             .auto_tilemap => |layer| layer.deinit(),
@@ -84,7 +91,7 @@ pub const Layer = union(LayerType) {
         }
     }
 
-    pub fn name(self: Layer) [:0]const u8 {
+    pub fn name(self: @This()) [:0]const u8 {
         return switch (self) {
             .tilemap => |layer| layer.name,
             .auto_tilemap => |layer| layer.name,
@@ -92,11 +99,19 @@ pub const Layer = union(LayerType) {
         };
     }
 
-    pub fn draw(self: Layer, state: *AppState) void {
+    pub fn draw(self: @This(), state: *AppState) void {
         switch (self) {
             .tilemap => |layer| layer.draw(state),
             .auto_tilemap => |layer| layer.draw(state),
             .entity => |layer| layer.draw(state),
+        }
+    }
+
+    pub fn handleSceneInput(self: @This(), state: *AppState, mouse_world: ImVec2) void {
+        switch (self) {
+            .tilemap => |layer| layer.handleSceneInput(state, mouse_world),
+            .auto_tilemap => |layer| layer.handleSceneInput(state, mouse_world),
+            .entity => |layer| layer.handleSceneInput(state, mouse_world),
         }
     }
 };
