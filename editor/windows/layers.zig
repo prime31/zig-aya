@@ -17,6 +17,7 @@ pub fn draw(state: *editor.AppState) void {
                 state.selected_layer_index = i;
             }
 
+            // make some room for the buttons
             igSameLine(igGetWindowContentRegionWidth() - 3, 0);
             igSetCursorPosY(igGetCursorPosY() - 3);
             if (ogButton("X")) {
@@ -36,6 +37,7 @@ pub fn draw(state: *editor.AppState) void {
 
         if (state.layers.items.len > 0) igDummy(.{ .y = 5 });
 
+        // right-align the button
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
         if (igButton("Add Layer", .{.x = 75})) {
             std.mem.set(u8, &name_buf, 0);

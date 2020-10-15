@@ -44,7 +44,7 @@ const Camera = struct {
     }
 
     pub fn bounds(self: Camera) math.Rect {
-        var window_size = ogGetWindowSize();
+        var window_size = ogGetContentRegionAvail();
         var tl = self.screenToWorld(.{});
         var br = self.screenToWorld(math.Vec2{ .x = window_size.x, .y = window_size.y });
 
@@ -98,13 +98,15 @@ pub const Scene = struct {
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE, .trans_mat = self.cam.transMat() });
         aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
+        const bounds = self.cam.bounds();
+        aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 4, math.Color.yellow);
         aya.gfx.endPass();
     }
 
     fn render(self: @This(), state: *editor.AppState) void {
         // get mouse in world space
         const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
-        const mouse = self.cam.igScreenToWorld(mouse_screen);
+        const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
         // self.drawGridLines();
 
@@ -112,8 +114,13 @@ pub const Scene = struct {
             layer.draw(state);
         }
 
+        // the selected layer now handles input and gets to draw on top of all the other layers
+        if (igIsItemHovered(ImGuiHoveredFlags_None) and state.layers.items.len > 0) {
+            state.layers.items[state.selected_layer_index].handleSceneInput(state, mouse_world);
+        }
+
         aya.draw.rect(.{}, 40, 40, math.Color.white);
-        aya.draw.text("wtf", mouse.x, mouse.y, null);
+        aya.draw.text("wtf", mouse_world.x, mouse_world.y, null);
         aya.draw.text("origin", 0, 0, null);
     }
 
