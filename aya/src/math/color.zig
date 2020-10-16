@@ -10,6 +10,82 @@ pub const Color = extern union {
         a: u8,
     },
 
+    /// parses a hex string color literal.
+    /// allowed formats are:
+    /// - `RGB`
+    /// - `RGBA`
+    /// - `#RGB`
+    /// - `#RGBA`
+    /// - `RRGGBB`
+    /// - `#RRGGBB`
+    /// - `RRGGBBAA`
+    /// - `#RRGGBBAA`
+    pub fn parse(comptime str: []const u8) !Color {
+        switch (str.len) {
+            // RGB
+            3 => {
+                const r = try std.fmt.parseInt(u8, str[0..1], 16);
+                const g = try std.fmt.parseInt(u8, str[1..2], 16);
+                const b = try std.fmt.parseInt(u8, str[2..3], 16);
+
+                return fromBytes(
+                    r | (r << 4),
+                    g | (g << 4),
+                    b | (b << 4),
+                );
+            },
+
+            // #RGB, RGBA
+            4 => {
+                if (str[0] == '#')
+                    return parse(str[1..]);
+
+                const r = try std.fmt.parseInt(u8, str[0..1], 16);
+                const g = try std.fmt.parseInt(u8, str[1..2], 16);
+                const b = try std.fmt.parseInt(u8, str[2..3], 16);
+                const a = try std.fmt.parseInt(u8, str[3..4], 16);
+
+                // bit-expand the patters to a uniform range
+                return fromBytes(
+                    r | (r << 4),
+                    g | (g << 4),
+                    b | (b << 4),
+                    a | (a << 4),
+                );
+            },
+
+            // #RGBA
+            5 => return parse(str[1..]),
+
+            // RRGGBB
+            6 => {
+                const r = try std.fmt.parseInt(u8, str[0..2], 16);
+                const g = try std.fmt.parseInt(u8, str[2..4], 16);
+                const b = try std.fmt.parseInt(u8, str[4..6], 16);
+
+                return fromBytes(r, g, b, 255);
+            },
+
+            // #RRGGBB
+            7 => return parse(str[1..]),
+
+            // RRGGBBAA
+            8 => {
+                const r = try std.fmt.parseInt(u8, str[0..2], 16);
+                const g = try std.fmt.parseInt(u8, str[2..4], 16);
+                const b = try std.fmt.parseInt(u8, str[4..6], 16);
+                const a = try std.fmt.parseInt(u8, str[6..8], 16);
+
+                return fromBytes(r, g, b, a);
+            },
+
+            // #RRGGBBAA
+            9 => return parse(str[1..]),
+
+            else => return error.UnknownFormat,
+        }
+    }
+
     pub fn fromBytes(r: u8, g: u8, b: u8, a: u8) Color {
         return .{ .value = (r) | (@as(u32, g) << 8) | (@as(u32, b) << 16) | (@as(u32, a) << 24) };
     }
@@ -68,7 +144,7 @@ pub const Color = extern union {
     }
 
     pub fn asArray(self: Color) [4]f32 {
-        return [_]f32 {
+        return [_]f32{
             @intToFloat(f32, self.comps.r) / 255,
             @intToFloat(f32, self.comps.g) / 255,
             @intToFloat(f32, self.comps.b) / 255,
