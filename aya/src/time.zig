@@ -53,7 +53,7 @@ pub const Time = struct {
     }
 
     pub fn dt(self: Time) f32 {
-        return self.timestep.fixed_deltatime;
+        return 1.0 / 60.0;
     }
 
     pub fn now(self: Time) i64 {

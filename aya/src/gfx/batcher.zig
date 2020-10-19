@@ -18,6 +18,7 @@ pub const Batcher = struct {
     };
 
     pub fn init(allocator: ?*std.mem.Allocator, max_sprites: usize) !Batcher {
+        if (max_sprites * 6 > std.math.maxInt(u16)) @panic("max_sprites exceeds u16 index buffer size");
         const alloc = allocator orelse aya.mem.allocator;
 
         var indices = try aya.mem.tmp_allocator.alloc(u16, @intCast(usize, max_sprites * 6));

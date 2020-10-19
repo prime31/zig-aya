@@ -141,6 +141,10 @@ pub const Input = struct {
         return self.mouse_wheel_y;
     }
 
+    pub fn mousePosVec(self: Input) math.Vec2 {
+        return .{ .x = self.mouse_x, .y = self.mouse_y };
+    }
+
     pub fn mousePos(self: Input, x: *i32, y: *i32) void {
         x.* = self.mouse_x;
         y.* = self.mouse_y;
