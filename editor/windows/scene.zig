@@ -4,57 +4,9 @@ const math = aya.math;
 const editor = @import("../editor.zig");
 usingnamespace @import("imgui");
 
-const Camera = struct {
-    pos: math.Vec2 = .{},
-    zoom: f32 = 1,
-
-    pub fn transMat(self: Camera) math.Mat32 {
-        var window_half_size = ogGetWindowSize().scale(0.5);
-
-        var transform = math.Mat32.identity;
-
-        var tmp = math.Mat32.identity;
-        tmp.translate(-self.pos.x, -self.pos.y);
-        transform = tmp.mul(transform);
-
-        tmp = math.Mat32.identity;
-        tmp.scale(self.zoom, self.zoom);
-        transform = tmp.mul(transform);
-
-        tmp = math.Mat32.identity;
-        tmp.translate(window_half_size.x, window_half_size.y);
-        transform = tmp.mul(transform);
-
-        return transform;
-    }
-
-    pub fn clampZoom(self: *Camera) void {
-        self.zoom = std.math.clamp(self.zoom, 0.2, 5);
-    }
-
-    pub fn screenToWorld(self: Camera, pos: math.Vec2) math.Vec2 {
-        var inv_trans_mat = self.transMat().invert();
-        return inv_trans_mat.transformVec2(pos);
-    }
-
-    /// calls screenToWorld converting to ImVec2s
-    pub fn igScreenToWorld(self: Camera, pos: ImVec2) ImVec2 {
-        const tmp = self.screenToWorld(math.Vec2{ .x = pos.x, .y = pos.y });
-        return .{ .x = tmp.x, .y = tmp.y };
-    }
-
-    pub fn bounds(self: Camera) math.Rect {
-        var window_size = ogGetContentRegionAvail();
-        var tl = self.screenToWorld(.{});
-        var br = self.screenToWorld(math.Vec2{ .x = window_size.x, .y = window_size.y });
-
-        return math.Rect{ .x = tl.x, .y = tl.y, .w = br.x - tl.x, .h = br.y - tl.y };
-    }
-};
-
 pub const Scene = struct {
     pass: ?aya.gfx.OffscreenPass = null,
-    cam: Camera = .{},
+    cam: editor.Camera = .{},
 
     pub fn init() Scene {
         return .{};
@@ -93,14 +45,15 @@ pub const Scene = struct {
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
+        aya.draw.rect(.{}, 200 * 16, 200 * 16, math.Color.black); // the map area defined
         self.render(state);
         aya.gfx.endPass();
 
-        aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE, .trans_mat = self.cam.transMat() });
-        aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
-        const bounds = self.cam.bounds();
-        aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 4, math.Color.yellow);
-        aya.gfx.endPass();
+        // aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE, .trans_mat = self.cam.transMat() });
+        // aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
+        // const bounds = self.cam.bounds();
+        // aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 4, math.Color.yellow);
+        // aya.gfx.endPass();
     }
 
     fn render(self: @This(), state: *editor.AppState) void {
@@ -116,10 +69,11 @@ pub const Scene = struct {
 
         // the selected layer now handles input and gets to draw on top of all the other layers
         if (igIsItemHovered(ImGuiHoveredFlags_None) and state.layers.items.len > 0) {
-            state.layers.items[state.selected_layer_index].handleSceneInput(state, mouse_world);
+            state.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
         }
 
-        aya.draw.rect(.{}, 40, 40, math.Color.white);
+        aya.draw.rect(.{}, 16, 16, math.Color.white);
+        aya.draw.rect(.{ .x = 16, .y = 16 }, 16, 16, math.Color.sky_blue);
         aya.draw.text("wtf", mouse_world.x, mouse_world.y, null);
         aya.draw.text("origin", 0, 0, null);
     }
