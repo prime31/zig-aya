@@ -1,12 +1,13 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-
 usingnamespace @import("data/data.zig");
 
 pub const menu = @import("menu.zig");
 pub const colors = @import("colors.zig");
 pub const windows = @import("windows/windows.zig");
+
+pub const Camera = @import("camera.zig").Camera;
 
 pub const Editor = struct {
     state: AppState,
