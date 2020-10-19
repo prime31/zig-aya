@@ -2,6 +2,7 @@ usingnamespace @import("sokol");
 
 pub extern fn dissolve_shader_desc() [*c]const sg_shader_desc;
 pub extern fn lines_shader_desc() [*c]const sg_shader_desc;
+pub extern fn mode7_shader_desc() [*c]const sg_shader_desc;
 pub extern fn noise_shader_desc() [*c]const sg_shader_desc;
 pub extern fn pixel_glitch_shader_desc() [*c]const sg_shader_desc;
 pub extern fn rgb_shift_shader_desc() [*c]const sg_shader_desc;

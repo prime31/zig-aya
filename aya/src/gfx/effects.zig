@@ -48,3 +48,24 @@ pub const Dissolve = struct {
         return Pipeline.init(shaders.dissolve_shader_desc());
     }
 };
+
+pub const Mode7 = struct {
+    pub const Params = extern struct {
+        mapw: f32 = 0,
+        maph: f32 = 0,
+        x: f32 = 0,
+        y: f32 = 0,
+        zoom: f32 = 0,
+        fov: f32 = 0,
+        offset: f32 = 0,
+        wrap: f32 = 0,
+        x1: f32 = 0,
+        x2: f32 = 0,
+        y1: f32 = 0,
+        y2: f32 = 0,
+    };
+
+    pub fn init() Pipeline {
+        return Pipeline.init(shaders.mode7_shader_desc());
+    }
+};
