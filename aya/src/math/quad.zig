@@ -22,7 +22,7 @@ pub const Quad = struct {
         self.setViewport(viewport.x, viewport.y, viewport.w, viewport.h);
     }
 
-pub fn setViewportRectI(self: *Quad, viewport: RectI) void {
+    pub fn setViewportRectI(self: *Quad, viewport: RectI) void {
         self.setViewport(@intToFloat(f32, viewport.x), @intToFloat(f32, viewport.y), @intToFloat(f32, viewport.w), @intToFloat(f32, viewport.h));
     }
 

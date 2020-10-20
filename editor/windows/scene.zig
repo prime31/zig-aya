@@ -6,10 +6,10 @@ usingnamespace @import("imgui");
 
 pub const Scene = struct {
     pass: ?aya.gfx.OffscreenPass = null,
-    cam: editor.Camera = .{},
+    cam: editor.Camera,
 
     pub fn init() Scene {
-        return .{};
+        return .{ .cam = editor.Camera.init() };
     }
 
     pub fn deinit(self: @This()) void {
@@ -37,6 +37,10 @@ pub const Scene = struct {
 
         if (self.pass == null) {
             self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y), .nearest);
+            if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
+                // TODO: center cam at startup?
+                self.cam.pos = .{ .x = content_region.x / 3, .y = content_region.y / 2.2 };
+            }
         }
 
         const tmp = ogGetCursorScreenPos();
@@ -63,12 +67,12 @@ pub const Scene = struct {
 
         // self.drawGridLines();
 
-        for (state.layers.items) |layer| {
-            layer.draw(state);
+        for (state.layers.items) |*layer, i| {
+            layer.draw(state, state.selected_layer_index == i);
         }
 
         // the selected layer now handles input and gets to draw on top of all the other layers
-        if (igIsItemHovered(ImGuiHoveredFlags_None) and state.layers.items.len > 0) {
+        if (state.layers.items.len > 0) {
             state.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
         }
 

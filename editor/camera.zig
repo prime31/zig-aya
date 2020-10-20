@@ -7,6 +7,10 @@ pub const Camera = struct {
     pos: math.Vec2 = .{},
     zoom: f32 = 1,
 
+    pub fn init() Camera {
+        return .{};
+    }
+
     pub fn transMat(self: Camera) math.Mat32 {
         var window_half_size = ogGetWindowSize().scale(0.5);
 

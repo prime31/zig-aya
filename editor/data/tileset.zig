@@ -1,9 +1,11 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
+const editor = @import("../editor.zig");
 const Color = aya.math.Color;
 usingnamespace @import("imgui");
 
+pub const AppState = @import("app_state.zig").AppState;
 
 pub const Tileset = struct {
     tile_size: usize,
@@ -97,4 +99,57 @@ pub const Tileset = struct {
             }
         }
     }
+
+    pub fn draw(self: *Tileset, state: *AppState) void {
+        defer igEnd();
+        if (!igBegin("Palette", null, ImGuiWindowFlags_AlwaysAutoResize)) return;
+
+        var origin = ogGetCursorScreenPos();
+        const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
+        ogImage(self.tex.imTextureID(), self.tex.width * @intCast(i32, zoom), self.tex.height * @intCast(i32, zoom));
+
+        // draw selected tile
+        addTileToDrawList(self.tile_size * zoom, origin, self.selected, self.tiles_per_row, self.spacing * zoom);
+
+        // check input for toggling selected state
+        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+            if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
+                self.selected = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
+            }
+        }
+    }
+
+    pub fn viewportForTile(self: Tileset, tile: usize) aya.math.RectI {
+        const x = @mod(tile, self.tiles_per_row);
+        const y = @divTrunc(tile, self.tiles_per_row);
+
+        return .{
+            .x = @intCast(i32, (x * self.tile_size + self.spacing) + self.spacing),
+            .y = @intCast(i32, (y * self.tile_size + self.spacing) + self.spacing),
+            .w = @intCast(i32, self.tile_size),
+            .h = @intCast(i32, self.tile_size),
+        };
+    }
 };
+
+pub fn tileIndexUnderPos(pos: ImVec2, rect_size: usize, origin: ImVec2) struct { x: usize, y: usize } {
+    const final_pos = pos.subtract(origin);
+    return .{ .x = @divTrunc(@floatToInt(usize, final_pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, final_pos.y), rect_size) };
+}
+
+/// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
+pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u8, per_row: usize, tile_spacing: usize) void {
+    const x = @mod(tile, per_row);
+    const y = @divTrunc(tile, per_row);
+
+    var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
+    tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
+    tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
+    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), editor.colors.rgbaToU32(116, 252, 253, 100));
+
+    // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
+    tl.x += 1;
+    tl.y += 1;
+    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), editor.colors.rgbToU32(116, 252, 253), 2);
+}
