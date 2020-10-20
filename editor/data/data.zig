@@ -1,37 +1,59 @@
 const std = @import("std");
 const aya = @import("aya");
+const math = aya.math;
 usingnamespace @import("imgui");
+
+const fixme_tile_size: usize = 16;
 
 const Camera = @import("../camera.zig").Camera;
 pub const AppState = @import("app_state.zig").AppState;
 
-pub fn tileIndexUnderPos(position: ImVec2, origin: ImVec2, tile_size: usize) struct { x: usize, y: usize } {
-    var pos = position;
-    pos.x -= origin.x;
-    pos.y -= origin.y;
+pub const Tileset = @import("tileset.zig").Tileset;
+const Point = struct { x: usize, y: usize };
 
-    if (pos.x < 0 or pos.y < 0) return .{ .x = 0, .y = 0 };
-    return .{ .x = @divTrunc(@floatToInt(usize, pos.x), tile_size), .y = @divTrunc(@floatToInt(usize, pos.y), tile_size) };
+/// given a world-space position returns the tile under it
+pub fn tileIndexUnderPos(position: ImVec2, tile_size: usize) ?Point {
+    if (position.x < 0 or position.y < 0) return null;
+    return Point{ .x = @divTrunc(@floatToInt(usize, position.x), tile_size), .y = @divTrunc(@floatToInt(usize, position.y), tile_size) };
 }
 
-pub const Tilemap = struct {
+pub const Size = struct {
     w: usize,
     h: usize,
-    data: []u8,
 
-    pub fn init(width: usize, height: usize) Tilemap {
+    pub fn init(width: usize, height: usize) Size {
+        return .{ .w = width, .h = height };
+    }
+};
+
+pub const Tile = extern union {
+    value: u16,
+    comps: packed struct {
+        tile: u12,
+        reserved: u1,
+        horizontal: u1,
+        vertical: u1,
+        diagonal: u1,
+    },
+};
+
+pub const Tilemap = struct {
+    size: Size,
+    tileset: Tileset,
+    data: []u16,
+
+    pub fn init(size: Size) Tilemap {
         return .{
-            .w = width,
-            .h = height,
-            .data = aya.mem.allocator.alloc(u8, width * height) catch unreachable,
+            .size = size,
+            .tileset = Tileset.init(fixme_tile_size),
+            .data = aya.mem.allocator.alloc(u16, size.w * size.h) catch unreachable,
         };
     }
 
-    pub fn initWithData(width: usize, height: usize, data: []const u8) Tilemap {
+    pub fn initWithData(data: []const u16, size: Size) Tilemap {
         return .{
-            .w = width,
-            .h = height,
-            .data = std.mem.dupe(aya.mem.allocator, u8, data) catch unreachable,
+            .size = size,
+            .data = std.mem.dupe(aya.mem.allocator, u16, data) catch unreachable,
         };
     }
 
@@ -40,18 +62,18 @@ pub const Tilemap = struct {
     }
 
     pub fn clear(self: TilemapLayer) void {
-        std.mem.set(u8, self.data, 0);
+        std.mem.set(u16, self.data, 0);
     }
 
-    pub fn getTile(self: Tilemap, x: usize, y: usize) u8 {
+    pub fn getTile(self: Tilemap, x: usize, y: usize) u16 {
         if (x > self.w or y > self.h) {
             return 0;
         }
-        return self.layers[self.current_layer].data[x + y * self.w];
+        return self.data[x + y * self.w];
     }
 
-    pub fn setTile(self: Tilemap, x: usize, y: usize, value: u8) void {
-        self.layers[self.current_layer].data[x + y * self.w] = value;
+    pub fn setTile(self: Tilemap, x: usize, y: usize, value: u16) void {
+        self.data[x + y * self.w] = value;
     }
 };
 
@@ -59,10 +81,10 @@ pub const TilemapLayer = struct {
     name: [:0]const u8,
     tilemap: Tilemap,
 
-    pub fn init(name: []const u8) TilemapLayer {
+    pub fn init(name: []const u8, size: Size) TilemapLayer {
         return .{
             .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
-            .tilemap = Tilemap.init(200, 200),
+            .tilemap = Tilemap.init(size),
         };
     }
 
@@ -74,12 +96,16 @@ pub const TilemapLayer = struct {
     pub fn draw(self: @This(), state: *AppState) void {}
 
     pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+        // mouse positions need to be subtracted from origin to get into screen space (window space really)
         const origin = ogGetCursorScreenPos();
         // const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
         // const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
-        var tile = tileIndexUnderPos(mouse_world, origin, 16);
-        std.debug.print("tile: {d}\n", .{tile});
+        if (tileIndexUnderPos(mouse_world, 16)) |tile| {
+            const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tilemap.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tilemap.tileset.tile_size) };
+            aya.draw.hollowRect(pos, 16, 16, 1, math.Color.yellow);
+        }
+
         aya.draw.text(self.name, 100, 0, null);
     }
 };
@@ -87,7 +113,7 @@ pub const TilemapLayer = struct {
 pub const AutoTilemapLayer = struct {
     name: [:0]const u8,
 
-    pub fn init(name: []const u8) AutoTilemapLayer {
+    pub fn init(name: []const u8, size: Size) AutoTilemapLayer {
         return .{ .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable };
     }
 
@@ -105,7 +131,7 @@ pub const AutoTilemapLayer = struct {
 pub const EntityLayer = struct {
     name: [:0]const u8,
 
-    pub fn init(name: []const u8) EntityLayer {
+    pub fn init(name: []const u8, size: Size) EntityLayer {
         return .{ .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable };
     }
 
@@ -131,16 +157,16 @@ pub const Layer = union(LayerType) {
     auto_tilemap: AutoTilemapLayer,
     entity: EntityLayer,
 
-    pub fn init(layer_type: LayerType, layer_name: []const u8) Layer {
+    pub fn init(layer_type: LayerType, layer_name: []const u8, size: Size) Layer {
         return switch (layer_type) {
             .tilemap => .{
-                .tilemap = TilemapLayer.init(layer_name),
+                .tilemap = TilemapLayer.init(layer_name, size),
             },
             .auto_tilemap => .{
-                .auto_tilemap = AutoTilemapLayer.init(layer_name),
+                .auto_tilemap = AutoTilemapLayer.init(layer_name, size),
             },
             .entity => .{
-                .entity = EntityLayer.init(layer_name),
+                .entity = EntityLayer.init(layer_name, size),
             },
         };
     }

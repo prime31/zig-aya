@@ -80,10 +80,10 @@ fn addLayerPopup(state: *editor.AppState) void {
             igEndCombo();
         }
 
-        const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
-        if (igButton("Add Layer", .{ .x = -1, .y = 0 }) and label_sentinel_index > 0) {
+        const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
+        if (igButton("Add Layer", .{ .x = -1, .y = 0 }) and name.len > 0) {
             igCloseCurrentPopup();
-            state.layers.append(editor.Layer.init(new_layer_type, name_buf[0..label_sentinel_index])) catch unreachable;
+            state.layers.append(editor.Layer.init(new_layer_type, name, state.map_size)) catch unreachable;
             state.selected_layer_index = state.layers.items.len - 1;
         }
 

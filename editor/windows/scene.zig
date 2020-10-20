@@ -72,10 +72,10 @@ pub const Scene = struct {
             state.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
         }
 
-        aya.draw.rect(.{}, 16, 16, math.Color.white);
-        aya.draw.rect(.{ .x = 16, .y = 16 }, 16, 16, math.Color.sky_blue);
-        aya.draw.text("wtf", mouse_world.x, mouse_world.y, null);
-        aya.draw.text("origin", 0, 0, null);
+        // aya.draw.rect(.{}, 16, 16, math.Color.white);
+        // aya.draw.rect(.{ .x = 16, .y = 16 }, 16, 16, math.Color.sky_blue);
+        // aya.draw.text("wtf", mouse_world.x, mouse_world.y, null);
+        // aya.draw.text("origin", 0, 0, null);
     }
 
     fn drawGridLines(self: @This()) void {
