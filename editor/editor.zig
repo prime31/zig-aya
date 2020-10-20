@@ -29,17 +29,13 @@ pub const Editor = struct {
     pub fn update(self: *@This()) void {
         menu.draw(&self.state);
 
-        self.scene.draw(&self.state);
-
         windows.layers.draw(&self.state);
+        self.scene.draw(&self.state); // AFTER layers, in case any layers were removed
         windows.entities.draw(&self.state);
         windows.inspector.draw(&self.state);
 
         _ = igBegin("Assets", null, ImGuiWindowFlags_None);
         igEnd();
-
-        // _ = igBegin("Palette", null, ImGuiWindowFlags_None);
-        // igEnd();
 
         // igShowDemoWindow(null);
         // _ = igBegin("sadfasdf", null, ImGuiWindowFlags_None);
