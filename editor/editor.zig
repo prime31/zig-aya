@@ -3,7 +3,9 @@ const aya = @import("aya");
 usingnamespace @import("imgui");
 usingnamespace @import("data/data.zig");
 
+pub const utils = @import("utils.zig");
 pub const menu = @import("menu.zig");
+pub const data = @import("data/data.zig");
 pub const colors = @import("colors.zig");
 pub const windows = @import("windows/windows.zig");
 

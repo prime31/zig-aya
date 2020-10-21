@@ -6,13 +6,14 @@ const Color = aya.math.Color;
 usingnamespace @import("imgui");
 
 pub const AppState = @import("app_state.zig").AppState;
+pub const Tile = @import("data.zig").Tile;
 
 pub const Tileset = struct {
     tile_size: usize,
     spacing: usize,
     tex: aya.gfx.Texture = undefined,
     tiles_per_row: usize = 0,
-    selected: u8 = 0,
+    selected: Tile = Tile.init(0),
 
     pub fn init(tile_size: usize) Tileset {
         var ts = Tileset{
@@ -109,13 +110,13 @@ pub const Tileset = struct {
         ogImage(self.tex.imTextureID(), self.tex.width * @intCast(i32, zoom), self.tex.height * @intCast(i32, zoom));
 
         // draw selected tile
-        addTileToDrawList(self.tile_size * zoom, origin, self.selected, self.tiles_per_row, self.spacing * zoom);
+        addTileToDrawList(self.tile_size * zoom, origin, self.selected.comps.tile_index, self.tiles_per_row, self.spacing * zoom);
 
         // check input for toggling selected state
         if (igIsItemHovered(ImGuiHoveredFlags_None)) {
             if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
                 var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
-                self.selected = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
+                self.selected.value = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
             }
         }
     }
@@ -139,7 +140,7 @@ pub fn tileIndexUnderPos(pos: ImVec2, rect_size: usize, origin: ImVec2) struct {
 }
 
 /// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
-pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u8, per_row: usize, tile_spacing: usize) void {
+pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u16, per_row: usize, tile_spacing: usize) void {
     const x = @mod(tile, per_row);
     const y = @divTrunc(tile, per_row);
 

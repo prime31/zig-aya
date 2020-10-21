@@ -82,6 +82,14 @@ pub fn ogIsAnyMouseDragging() bool {
     return igIsMouseDragging(ImGuiMouseButton_Left, 0) or igIsMouseDragging(ImGuiMouseButton_Right, 0);
 }
 
+pub fn ogIsAnyMouseDown() bool {
+    return igIsMouseDown(ImGuiMouseButton_Left) or igIsMouseDown(ImGuiMouseButton_Right);
+}
+
+pub fn ogIsAnyMouseReleased() bool {
+    return igIsMouseReleased(ImGuiMouseButton_Left) or igIsMouseReleased(ImGuiMouseButton_Right);
+}
+
 pub fn ogGetContentRegionAvail() ImVec2 {
     var pos = ImVec2{};
     igGetContentRegionAvail(&pos);

@@ -5,11 +5,20 @@ usingnamespace @import("imgui");
 
 const fixme_tile_size: usize = 16;
 
-const Camera = @import("../camera.zig").Camera;
-pub const AppState = @import("app_state.zig").AppState;
+const editor = @import("../editor.zig");
 
+pub const AppState = @import("app_state.zig").AppState;
 pub const Tileset = @import("tileset.zig").Tileset;
+
+const Camera = @import("../camera.zig").Camera;
 const Point = struct { x: usize, y: usize };
+
+/// given a mouse position returns the tile under it
+pub fn tileIndexUnderMouse(position: ImVec2, tile_size: usize, camera: Camera) ?Point {
+    // mouse positions need to be subtracted from origin of content rect to get into screen space (window space really)
+    const mouse_screen = position.subtract(ogGetCursorScreenPos());
+    return tileIndexUnderPos(camera.igScreenToWorld(mouse_screen), tile_size);
+}
 
 /// given a world-space position returns the tile under it
 pub fn tileIndexUnderPos(position: ImVec2, tile_size: usize) ?Point {
@@ -26,15 +35,20 @@ pub const Size = struct {
     }
 };
 
+/// convenience struct for housing a tile that saves the trouble of bitshifting for setting/getting upper bits
 pub const Tile = extern union {
     value: u16,
     comps: packed struct {
-        tile: u12,
+        tile_index: u12,
         reserved: u1,
         horizontal: u1,
         vertical: u1,
         diagonal: u1,
     },
+
+    pub fn init(value: u16) Tile {
+        return .{ .value = value };
+    }
 };
 
 const TileRenderInfo = struct {
@@ -147,6 +161,9 @@ pub const TilemapLayer = struct {
     name: [:0]const u8,
     tilemap: Tilemap,
     tileset: Tileset,
+    shift_dragged: bool = false,
+    dragged: bool = false,
+    prev_mouse_pos: ImVec2 = .{},
 
     pub fn init(name: []const u8, size: Size) TilemapLayer {
         return .{
@@ -169,28 +186,79 @@ pub const TilemapLayer = struct {
         }
     }
 
-    pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        // mouse positions need to be subtracted from origin to get into screen space (window space really)
-        const origin = ogGetCursorScreenPos();
-        // const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
-        // const mouse_world = self.cam.igScreenToWorld(mouse_screen);
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+        if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
+
+        // TODO: this check above really exists in Scene and shouldnt be here. Somehow propograte that data here.
+        if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;
 
         if (tileIndexUnderPos(mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
-            aya.draw.hollowRect(pos, 16, 16, 1, math.Color.yellow);
 
-            if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
-                // TODO: this check above really exists in Scene and shouldnt be here. Somehow propograte that data here.
-            } else if (igIsMouseDown(ImGuiMouseButton_Left) and !igGetIO().KeyShift) {
-                // if the mouse down last frame, get last mouse pos and ensure we dont skip tiles when drawing
-                // if (dragged) {
-                //     commitInBetweenTiles(state, tile.x, tile.y, origin, @intCast(u8, state.selected_brush_index + 1));
-                // }
-                self.tilemap.setTile(tile, self.tileset.selected + 1);
+            // dont draw the current tile under the mouse if we are shift-dragging
+            if (!self.shift_dragged) aya.draw.hollowRect(pos, 16, 16, 1, math.Color.yellow);
+
+            if (ogIsAnyMouseDragging() and igGetIO().KeyShift) { // box selection with left/right mouse + shift
+                var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
+                if (tileIndexUnderMouse(dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                    const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
+                    const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size);
+                    const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size);
+                    const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
+
+                    const color = if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
+                    aya.draw.hollowRect(.{ .x = min_x, .y = max_y }, max_x - min_x, min_y - max_y, 1, color);
+
+                    self.shift_dragged = true;
+                }
+            } else if (ogIsAnyMouseReleased() and self.shift_dragged) {
+                self.shift_dragged = false;
+
+                var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
+                var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
+                if (tileIndexUnderMouse(dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                    const min_x = std.math.min(tile.x, tile2.x);
+                    var min_y = std.math.min(tile.y, tile2.y);
+                    const max_x = std.math.max(tile.x, tile2.x);
+                    const max_y = std.math.max(tile.y, tile2.y);
+
+                    // either set the tile to a brush or 0 depending on mouse button
+                    const tile_value = if (igIsMouseReleased(ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
+                    while (min_y <= max_y) : (min_y += 1) {
+                        var x = min_x;
+                        while (x <= max_x) : (x += 1) {
+                            self.tilemap.setTile(.{ .x = x, .y = min_y }, tile_value);
+                        }
+                    }
+                }
+            } else if (ogIsAnyMouseDown() and !igGetIO().KeyShift) {
+                // if the mouse was down last frame, get last mouse pos and ensure we dont skip tiles when drawing
+                const tile_value = if (igIsMouseDown(ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
+                if (self.dragged) {
+                    self.commitInBetweenTiles(tile, camera, tile_value);
+                }
+                self.dragged = true;
+                self.prev_mouse_pos = igGetIO().MousePos;
+
+                self.tilemap.setTile(tile, tile_value);
+            } else if (ogIsAnyMouseReleased()) {
+                self.dragged = false;
             }
         }
 
         aya.draw.text(self.name, 0, 0, null);
+    }
+
+    pub fn commitInBetweenTiles(self: *@This(), tile: Point, camera: Camera, color: u16) void {
+        if (tileIndexUnderMouse(self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
+            const abs_x = std.math.absInt(@intCast(i32, tile.x) - @intCast(i32, prev_tile.x)) catch unreachable;
+            const abs_y = std.math.absInt(@intCast(i32, tile.y) - @intCast(i32, prev_tile.y)) catch unreachable;
+            if (abs_x <= 1 and abs_y <= 1) {
+                return;
+            }
+
+            editor.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
+        }
     }
 };
 
@@ -290,11 +358,11 @@ pub const Layer = union(LayerType) {
     }
 
     /// used for the editing UI, called after all other drawing so it can render on top of everything. Called only for the selected Layer.
-    pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        switch (self) {
-            .tilemap => |layer| layer.handleSceneInput(state, camera, mouse_world),
-            .auto_tilemap => |layer| layer.handleSceneInput(state, camera, mouse_world),
-            .entity => |layer| layer.handleSceneInput(state, camera, mouse_world),
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+        switch (self.*) {
+            .tilemap => |*layer| layer.handleSceneInput(state, camera, mouse_world),
+            .auto_tilemap => |*layer| layer.handleSceneInput(state, camera, mouse_world),
+            .entity => |*layer| layer.handleSceneInput(state, camera, mouse_world),
         }
     }
 };
