@@ -86,6 +86,7 @@ pub const struct_sapp_desc = extern struct {
     user_cursor: bool,
     enable_clipboard: bool,
     clipboard_size: c_int,
+    enable_dragndrop: bool,
     max_dropped_files: c_int,
     max_dropped_file_path_length: c_int,
     html5_canvas_name: [*c]const u8,
@@ -129,7 +130,7 @@ pub const SAPP_EVENTTYPE_RESUMED = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYP
 pub const SAPP_EVENTTYPE_UPDATE_CURSOR = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYPE_UPDATE_CURSOR);
 pub const SAPP_EVENTTYPE_QUIT_REQUESTED = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYPE_QUIT_REQUESTED);
 pub const SAPP_EVENTTYPE_CLIPBOARD_PASTED = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYPE_CLIPBOARD_PASTED);
-pub const SAPP_EVENTTYPE_FILE_DROPPED = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYPE_FILE_DROPPED);
+pub const SAPP_EVENTTYPE_FILES_DROPPED = @enumToInt(enum_sapp_event_type.SAPP_EVENTTYPE_FILES_DROPPED);
 pub const _SAPP_EVENTTYPE_NUM = @enumToInt(enum_sapp_event_type._SAPP_EVENTTYPE_NUM);
 pub const _SAPP_EVENTTYPE_FORCE_U32 = @enumToInt(enum_sapp_event_type._SAPP_EVENTTYPE_FORCE_U32);
 pub const enum_sapp_event_type = extern enum(c_int) {
@@ -155,7 +156,7 @@ pub const enum_sapp_event_type = extern enum(c_int) {
     SAPP_EVENTTYPE_UPDATE_CURSOR = 19,
     SAPP_EVENTTYPE_QUIT_REQUESTED = 20,
     SAPP_EVENTTYPE_CLIPBOARD_PASTED = 21,
-    SAPP_EVENTTYPE_FILE_DROPPED = 22,
+    SAPP_EVENTTYPE_FILES_DROPPED = 22,
     _SAPP_EVENTTYPE_NUM = 23,
     _SAPP_EVENTTYPE_FORCE_U32 = 2147483647,
     _,

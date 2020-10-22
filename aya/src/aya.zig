@@ -34,12 +34,12 @@ pub const Config = struct {
     update: fn () void,
     render: fn () void,
     shutdown: ?fn () void = null,
+    onFileDropped: ?fn ([]const u8) void = null,
 
     sample_count: c_int = 1,
     swap_interval: c_int = 1,
     gfx: gfx.Config = gfx.Config{},
     window: WindowConfig = WindowConfig{},
-    onFileDropped: ?fn ([]const u8) void = null,
 };
 
 var state = struct {
@@ -68,6 +68,8 @@ pub fn run(config: Config) !void {
 
     if (state.config.onFileDropped == null) {
         app_desc.max_dropped_files = 0;
+    } else {
+        app_desc.enable_dragndrop = true;
     }
 
     _ = sapp_run(&app_desc);
@@ -114,6 +116,17 @@ export fn update() void {
 }
 
 export fn event(e: [*c]const sapp_event) void {
+    // special handling of dropped files
+    if (e[0].type == .SAPP_EVENTTYPE_FILES_DROPPED) {
+        if (state.config.onFileDropped) |onFileDropped| {
+            const dropped_file_cnt = sapp_get_num_dropped_files();
+            var i: usize = 0;
+            while (i < dropped_file_cnt) : (i += 1) {
+                onFileDropped(std.mem.spanZ(sapp_get_dropped_file_path(@intCast(c_int, i))));
+            }
+        }
+    }
+
     // handle cmd+Q on macos
     if (std.Target.current.os.tag == .macosx) {
         if (e[0].type == .SAPP_EVENTTYPE_KEY_DOWN) {

@@ -12,6 +12,7 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .shutdown = shutdown,
+        .onFileDropped = Editor.onFileDropped,
         .gfx = .{
             .resolution_policy = .none,
         },

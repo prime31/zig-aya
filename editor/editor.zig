@@ -46,4 +46,8 @@ pub const Editor = struct {
         // }
         // igEnd();
     }
+
+    pub fn onFileDropped(file: []const u8) void {
+        std.debug.print("---- file drop: {}\n", .{file});
+    }
 };
