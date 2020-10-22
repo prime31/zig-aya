@@ -32,6 +32,7 @@ pub const Tileset = struct {
         var spacing: usize = 0;
         if (!validateImage(file, self.tile_size, &spacing)) {
             std.debug.print("invalid file. failed validation\n", .{});
+            return;
         }
 
         self.tex.deinit();
@@ -57,8 +58,6 @@ pub const Tileset = struct {
                     }
                 }
             }
-
-            return false;
         }
 
         return false;
