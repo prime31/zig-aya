@@ -42,15 +42,15 @@ pub const Tile = extern union {
     }
 
     pub fn flipH(self: *Tile) void {
-        self.comps.horizontal = if (self.comps.horizontal == 1) 0 else 1;
+        self.comps.horizontal = @boolToInt(self.comps.horizontal != 1);
     }
 
     pub fn flipV(self: *Tile) void {
-        self.comps.vertical = if (self.comps.vertical == 1) 0 else 1;
+        self.comps.vertical = @boolToInt(self.comps.vertical != 1);
     }
 
     pub fn flipD(self: *Tile) void {
-        self.comps.diagonal = if (self.comps.diagonal == 1) 0 else 1;
+        self.comps.diagonal = @boolToInt(self.comps.diagonal != 1);
     }
 };
 
