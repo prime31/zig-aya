@@ -202,8 +202,8 @@ pub const TilemapLayer = struct {
                 var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
                 if (tileIndexUnderMouse(dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
-                    const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size);
-                    const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size);
+                    const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
+                    const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
 
                     const color = if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;

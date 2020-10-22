@@ -90,6 +90,10 @@ pub const Color = extern union {
         return .{ .value = (r) | (@as(u32, g) << 8) | (@as(u32, b) << 16) | (@as(u32, a) << 24) };
     }
 
+    pub fn fromRgbBytes(r: u8, g: u8, b: u8) Color {
+        return fromBytes(r, g, b, 255);
+    }
+
     pub fn fromRgb(r: f32, g: f32, b: f32) Color {
         return fromBytes(@floatToInt(u8, @round(r * 255)), @floatToInt(u8, @round(g * 255)), @floatToInt(u8, @round(b * 255)), @as(u8, 255));
     }

@@ -64,27 +64,26 @@ pub const Tileset = struct {
         return false;
     }
 
-    /// generates a texture with 4x4, 16px blocks of color
+    /// generates a texture with 3x3, 16px blocks of color
     fn generateTexture() aya.gfx.Texture {
         var colors = [_]u32{
-            Color.white.value,   Color.black.value,  Color.gray.value,   Color.aya.value,
-            Color.yellow.value,  Color.orange.value, Color.pink.value,   Color.red.value,
-            Color.lime.value,    Color.blue.value,   Color.beige.value,  Color.voilet.value,
-            Color.magenta.value, Color.green.value,  Color.maroon.value, Color.sky_blue.value,
+            Color.fromRgbBytes(189, 63, 110).value, Color.fromRgbBytes(242, 165, 59).value, Color.fromRgbBytes(252, 234, 87).value,
+            Color.fromRgbBytes(103, 223, 84).value, Color.fromRgbBytes(82, 172, 247).value, Color.fromRgbBytes(128, 118, 152).value,
+            Color.fromRgbBytes(237, 127, 166).value, Color.fromRgbBytes(246, 205, 174).value, Color.fromRgbBytes(115, 45, 81).value,
         };
 
-        var pixels: [16 * 4 * 16 * 4]u32 = undefined;
+        var pixels: [16 * 3 * 16 * 3]u32 = undefined;
         var y: usize = 0;
-        while (y < 16 * 4) : (y += 1) {
+        while (y < 16 * 3) : (y += 1) {
             var x: usize = 0;
-            while (x < 16 * 4) : (x += 1) {
+            while (x < 16 * 3) : (x += 1) {
                 const xx = @divTrunc(x, 16);
                 const yy = @divTrunc(y, 16);
-                pixels[x + y * 16 * 4] = colors[xx + yy * 2];
+                pixels[x + y * 16 * 3] = colors[xx + yy * 3];
             }
         }
 
-        return aya.gfx.Texture.initWithColorData(&pixels, 16 * 4, 16 * 4, .nearest);
+        return aya.gfx.Texture.initWithColorData(&pixels, 16 * 3, 16 * 3, .nearest);
     }
 
     pub fn setTexture(self: *Tileset, tex: aya.gfx.Texture) void {
