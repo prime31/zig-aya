@@ -3,8 +3,6 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const fixme_tile_size: usize = 16;
-
 const editor = @import("../editor.zig");
 
 pub const AppState = @import("app_state.zig").AppState;
@@ -165,11 +163,11 @@ pub const TilemapLayer = struct {
     dragged: bool = false,
     prev_mouse_pos: ImVec2 = .{},
 
-    pub fn init(name: []const u8, size: Size) TilemapLayer {
+    pub fn init(name: []const u8, size: Size, tile_size: usize) TilemapLayer {
         return .{
             .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
             .tilemap = Tilemap.init(size),
-            .tileset = Tileset.init(fixme_tile_size),
+            .tileset = Tileset.init(tile_size),
         };
     }
 
@@ -267,11 +265,11 @@ pub const AutoTilemapLayer = struct {
     tilemap: Tilemap,
     tileset: Tileset,
 
-    pub fn init(name: []const u8, size: Size) AutoTilemapLayer {
+    pub fn init(name: []const u8, size: Size, tile_size: usize) AutoTilemapLayer {
         return .{
             .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
             .tilemap = Tilemap.init(size),
-            .tileset = Tileset.init(fixme_tile_size),
+            .tileset = Tileset.init(tile_size),
         };
     }
 
@@ -317,13 +315,13 @@ pub const Layer = union(LayerType) {
     auto_tilemap: AutoTilemapLayer,
     entity: EntityLayer,
 
-    pub fn init(layer_type: LayerType, layer_name: []const u8, size: Size) Layer {
+    pub fn init(layer_type: LayerType, layer_name: []const u8, size: Size, tile_size: usize) Layer {
         return switch (layer_type) {
             .tilemap => .{
-                .tilemap = TilemapLayer.init(layer_name, size),
+                .tilemap = TilemapLayer.init(layer_name, size, tile_size),
             },
             .auto_tilemap => .{
-                .auto_tilemap = AutoTilemapLayer.init(layer_name, size),
+                .auto_tilemap = AutoTilemapLayer.init(layer_name, size, tile_size),
             },
             .entity => .{
                 .entity = EntityLayer.init(layer_name, size),

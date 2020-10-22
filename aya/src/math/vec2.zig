@@ -38,6 +38,10 @@ pub const Vec2 = packed struct {
         self.y *= s;
     }
 
+    pub fn clamp(self: Vec2, min: Vec2, max: Vec2) Vec2 {
+        return .{ .x = math.clamp(self.x, min.x, max.x), .y = math.clamp(self.y, min.y, max.y) };
+    }
+
     pub fn angleBetween(self: Vec2, to: Vec2) f32 {
         return math.atan2(f32, to.y - self.y, to.x - self.x);
     }
