@@ -102,7 +102,7 @@ pub const Tileset = struct {
         }
     }
 
-    pub fn draw(self: *Tileset, state: *AppState) void {
+    pub fn draw(self: *Tileset) void {
         defer igEnd();
         if (!igBegin("Palette", null, ImGuiWindowFlags_AlwaysAutoResize)) return;
 

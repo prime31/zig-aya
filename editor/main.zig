@@ -46,8 +46,6 @@ fn update() void {
 
 fn render() void {
     aya.gfx.beginNullPass();
-    aya.gfx.beginPass(.{});
-    aya.gfx.endPass();
 }
 
 fn beginDock() void {

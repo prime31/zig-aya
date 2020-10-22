@@ -54,7 +54,7 @@ pub const Layer = union(LayerType) {
     }
 
     /// used for doing the actual drawing of the layer as it appears in-game (and its associated imgui windows/popups), not the
-    /// editing UI that is rendered in the Scene
+    /// editing UI that is rendered in the Scene when this is the selected Layer
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
         switch (self.*) {
             .tilemap => |*layer| layer.draw(state, is_selected),
