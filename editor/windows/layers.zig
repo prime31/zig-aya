@@ -83,7 +83,7 @@ fn addLayerPopup(state: *editor.AppState) void {
         const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
         if (igButton("Add Layer", .{ .x = -1, .y = 0 }) and name.len > 0) {
             igCloseCurrentPopup();
-            state.layers.append(editor.Layer.init(new_layer_type, name, state.map_size)) catch unreachable;
+            state.layers.append(editor.Layer.init(new_layer_type, name, state.map_size, state.tile_size)) catch unreachable;
             state.selected_layer_index = state.layers.items.len - 1;
         }
 

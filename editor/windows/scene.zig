@@ -123,6 +123,13 @@ pub const Scene = struct {
             self.cam.pos.x -= scroll_delta.x * 1 / self.cam.zoom;
             self.cam.pos.y -= scroll_delta.y * 1 / self.cam.zoom;
             igResetMouseDragDelta(ImGuiMouseButton_Left);
+
+            const bounds = self.cam.bounds();
+            var half_screen = math.Vec2{ .x = bounds.w, .y = bounds.h };
+            half_screen.scale(0.5);
+            const max = math.Vec2{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) - half_screen.x, .y = @intToFloat(f32, state.map_size.h * state.tile_size) - half_screen.y };
+            self.cam.pos = self.cam.pos.clamp(half_screen, max);
+
             return;
         }
 
