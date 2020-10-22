@@ -49,7 +49,7 @@ pub const Scene = struct {
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
-        aya.draw.rect(.{}, 200 * 16, 200 * 16, math.Color.black); // the map area defined
+        aya.draw.rect(.{}, @intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size), math.Color.black); // the map area defined
         self.render(state);
         aya.gfx.endPass();
 
@@ -124,9 +124,10 @@ pub const Scene = struct {
             self.cam.pos.y -= scroll_delta.y * 1 / self.cam.zoom;
             igResetMouseDragDelta(ImGuiMouseButton_Left);
 
+            // dont allow camera to move outside of map bounds
             const bounds = self.cam.bounds();
             var half_screen = math.Vec2{ .x = bounds.w, .y = bounds.h };
-            half_screen.scale(0.5);
+            half_screen.scale(0.45); // allow a bit of padding around the map
             const max = math.Vec2{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) - half_screen.x, .y = @intToFloat(f32, state.map_size.h * state.tile_size) - half_screen.y };
             self.cam.pos = self.cam.pos.clamp(half_screen, max);
 

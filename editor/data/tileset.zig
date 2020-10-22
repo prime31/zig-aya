@@ -80,6 +80,8 @@ pub const Tileset = struct {
                 const xx = @divTrunc(x, 16);
                 const yy = @divTrunc(y, 16);
                 pixels[x + y * 16 * 3] = colors[xx + yy * 3];
+
+                if (x == 15 or x == 14) pixels[x + y * 16 * 3] = Color.white.value;
             }
         }
 
