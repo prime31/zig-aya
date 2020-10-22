@@ -17,22 +17,6 @@ pub const EntityLayer = @import("entity_layer.zig").EntityLayer;
 const Camera = @import("../camera.zig").Camera;
 pub const Point = struct { x: usize, y: usize };
 
-/// given a mouse position returns the tile under it
-pub fn tileIndexUnderMouse(state: *AppState, position: ImVec2, tile_size: usize, camera: Camera) ?Point {
-    // mouse positions need to be subtracted from origin of content rect to get into screen space (window space really)
-    const mouse_screen = position.subtract(ogGetCursorScreenPos());
-    return tileIndexUnderPos(state, camera.igScreenToWorld(mouse_screen), tile_size);
-}
-
-/// given a world-space position returns the tile under it or null if position is out of bounds
-pub fn tileIndexUnderPos(state: *AppState, position: ImVec2, tile_size: usize) ?Point {
-    if (position.x < 0 or position.y < 0) return null;
-    if (position.x > @intToFloat(f32, state.map_size.w * state.tile_size)) return null;
-    if (position.y > @intToFloat(f32, state.map_size.h * state.tile_size)) return null;
-
-    return Point{ .x = @divTrunc(@floatToInt(usize, position.x), tile_size), .y = @divTrunc(@floatToInt(usize, position.y), tile_size) };
-}
-
 pub const Size = struct {
     w: usize,
     h: usize,
