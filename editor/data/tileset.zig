@@ -13,6 +13,7 @@ pub const Tileset = struct {
     spacing: usize,
     tex: aya.gfx.Texture = undefined,
     tiles_per_row: usize = 0,
+    tiles_per_col: usize = 0,
     selected: Tile = Tile.init(0),
 
     pub fn init(tile_size: usize) Tileset {
@@ -91,13 +92,24 @@ pub const Tileset = struct {
 
     pub fn setTexture(self: *Tileset, tex: aya.gfx.Texture) void {
         self.tex = tex;
+        self.tiles_per_row = 0;
+        self.tiles_per_col = 0;
 
-        // calculate tiles_per_row
+        // calculate tiles_per_row and tiles_per_col
         var accum: usize = self.spacing * 2;
         while (true) {
             self.tiles_per_row += 1;
             accum += self.tile_size + self.spacing;
             if (accum >= self.tex.width) {
+                break;
+            }
+        }
+
+        accum = self.spacing * 2;
+        while (true) {
+            self.tiles_per_col += 1;
+            accum += self.tile_size + 2 * self.spacing;
+            if (accum >= self.tex.height) {
                 break;
             }
         }

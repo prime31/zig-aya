@@ -43,18 +43,19 @@ pub const Brushset = struct {
 
     /// generates a texture with 3x3, 16px blocks of color
     fn generateTexture() aya.gfx.Texture {
-        var pixels: [16 * 3 * 16 * 3]u32 = undefined;
+        const tile_size = 16;
+        var pixels: [tile_size * 3 * tile_size * 3]u32 = undefined;
         var y: usize = 0;
-        while (y < 16 * 3) : (y += 1) {
+        while (y < tile_size * 3) : (y += 1) {
             var x: usize = 0;
-            while (x < 16 * 3) : (x += 1) {
-                const xx = @divTrunc(x, 16);
-                const yy = @divTrunc(y, 16);
-                pixels[x + y * 16 * 3] = editor.colors.brushes[xx + yy * 3];
+            while (x < tile_size * 3) : (x += 1) {
+                const xx = @divTrunc(x, tile_size);
+                const yy = @divTrunc(y, tile_size);
+                pixels[x + y * tile_size * 3] = editor.colors.brushes[xx + yy * 3];
             }
         }
 
-        return aya.gfx.Texture.initWithColorData(&pixels, 16 * 3, 16 * 3, .nearest);
+        return aya.gfx.Texture.initWithColorData(&pixels, tile_size * 3, tile_size * 3, .nearest);
     }
 
     pub fn setTexture(self: *Brushset, tex: aya.gfx.Texture) void {
@@ -98,7 +99,7 @@ pub const Brushset = struct {
             if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
                 var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
                 self.selected.value = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
-                // igCloseCurrentPopup();
+                // igCloseCurrentPopup(); // TODO: why does this close this popup and the one under it?
             }
         }
     }
