@@ -79,13 +79,13 @@ pub const Brushset = struct {
         });
         igSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
 
-        if (!igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-            self.drawNaked();
+        if (igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+            self.drawWithoutWindow();
             igEnd();
         }
     }
 
-    pub fn drawNaked(self: *Brushset) void {
+    pub fn drawWithoutWindow(self: *Brushset) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
         var origin = ogGetCursorScreenPos();
         ogImage(self.tex.imTextureID(), self.tex.width * @intCast(i32, zoom), self.tex.height * @intCast(i32, zoom));
