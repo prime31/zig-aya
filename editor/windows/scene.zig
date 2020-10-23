@@ -18,11 +18,11 @@ pub const Scene = struct {
 
     pub fn draw(self: *@This(), state: *editor.AppState) void {
         igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
-        if (igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar)) {
-            self.update(state);
-        }
-        igEnd();
+        _ = igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar);
         igPopStyleVar(1);
+
+        self.update(state);
+        igEnd();
     }
 
     pub fn update(self: *@This(), state: *editor.AppState) void {
@@ -47,6 +47,7 @@ pub const Scene = struct {
         ogImage(self.pass.?.color_tex.imTextureID(), self.pass.?.color_tex.width, self.pass.?.color_tex.height);
         igSetCursorScreenPos(tmp);
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
+
 
         aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
         aya.draw.rect(.{}, @intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size), math.Color.black); // the map area defined

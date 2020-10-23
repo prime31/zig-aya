@@ -1,10 +1,30 @@
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
+const Color = aya.math.Color;
+
 pub var ui_tint: ImVec4 = rgbaToVec4(135, 45, 176, 255);
+
+pub var brush_required: ImU32 = 0;
+pub var brush_negated: ImU32 = 0;
+pub var brush_selected: ImU32 = 0;
+pub var pattern_center: ImU32 = 0;
+
+// TODO: these are duplicated in Tileset
+pub var brushes = [_]ImU32{
+    Color.fromRgbBytes(189, 63, 110).value,  Color.fromRgbBytes(242, 165, 59).value,  Color.fromRgbBytes(252, 234, 87).value,
+    Color.fromRgbBytes(103, 223, 84).value,  Color.fromRgbBytes(82, 172, 247).value,  Color.fromRgbBytes(128, 118, 152).value,
+    Color.fromRgbBytes(237, 127, 166).value, Color.fromRgbBytes(246, 205, 174).value, Color.fromRgbBytes(115, 45, 81).value,
+};
 
 pub fn init() void {
     setDefaultImGuiStyle();
+
+    brush_required = rgbToU32(117, 249, 76);
+    brush_negated = rgbToU32(235, 50, 35);
+    brush_selected = rgbToU32(82, 172, 247);
+
+    pattern_center = rgbToU32(255, 253, 84);
 }
 
 fn setDefaultImGuiStyle() void {

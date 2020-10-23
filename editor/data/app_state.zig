@@ -21,8 +21,9 @@ pub const AppState = struct {
             .layers = std.ArrayList(Layer).init(aya.mem.allocator),
         };
 
+        state.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
         state.layers.append(Layer.init(.tilemap, "Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
-        state.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap", state.map_size, state.tile_size)) catch unreachable;
+        state.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
         state.layers.append(Layer.init(.tilemap, "Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
         state.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
 

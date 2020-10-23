@@ -14,6 +14,10 @@ pub const TilemapLayer = @import("tilemap_layer.zig").TilemapLayer;
 pub const AutoTilemapLayer = @import("auto_tilemap_layer.zig").AutoTilemapLayer;
 pub const EntityLayer = @import("entity_layer.zig").EntityLayer;
 
+pub const Rule = @import("rules.zig").Rule;
+pub const RuleSet = @import("rules.zig").RuleSet;
+pub const RuleTile = @import("rules.zig").RuleTile;
+
 const Camera = @import("../camera.zig").Camera;
 pub const Point = struct { x: usize, y: usize };
 
