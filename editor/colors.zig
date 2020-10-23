@@ -8,7 +8,10 @@ pub var ui_tint: ImVec4 = rgbaToVec4(135, 45, 176, 255);
 pub var brush_required: ImU32 = 0;
 pub var brush_negated: ImU32 = 0;
 pub var brush_selected: ImU32 = 0;
+
 pub var pattern_center: ImU32 = 0;
+pub var rule_result_selected_outline: ImU32 = 0;
+pub var rule_result_selected_fill: ImU32 = 0;
 
 // TODO: these are duplicated in Tileset
 pub var brushes = [_]ImU32{
@@ -25,6 +28,8 @@ pub fn init() void {
     brush_selected = rgbToU32(82, 172, 247);
 
     pattern_center = rgbToU32(255, 253, 84);
+    rule_result_selected_outline = rgbToU32(116, 252, 253);
+    rule_result_selected_fill = rgbaToU32(116, 252, 253, 100);
 }
 
 fn setDefaultImGuiStyle() void {

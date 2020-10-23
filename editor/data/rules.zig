@@ -29,7 +29,9 @@ pub const RuleSet = struct {
     }
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
-    pub fn addNinceSliceRules(self: *RuleSet, map: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
+    pub fn addNinceSliceRules(self: *RuleSet, map: *AutoTilemapLayer, name_prefix: []const u8, index: usize) void {
+        const selected_brush_index = map.tileset.selected.value;
+        const tiles_per_row = map.tileset.tiles_per_row;
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
         const group = self.getNextAvailableGroup(map, name_prefix);
@@ -119,7 +121,9 @@ pub const RuleSet = struct {
         self.rules.append(rule) catch unreachable;
     }
 
-    pub fn addInnerFourRules(self: *RuleSet, map: *Map, tiles_per_row: usize, selected_brush_index: usize, name_prefix: []const u8, index: usize) void {
+    pub fn addInnerFourRules(self: *RuleSet, map: *AutoTilemapLayer, name_prefix: []const u8, index: usize) void {
+        const selected_brush_index = map.tileset.selected.value;
+        const tiles_per_row = map.tileset.tiles_per_row;
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
         const group = self.getNextAvailableGroup(map, name_prefix);

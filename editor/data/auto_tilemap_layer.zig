@@ -16,7 +16,12 @@ const Rule = data.Rule;
 const Camera = @import("../camera.zig").Camera;
 
 var name_buf: [25:0]u8 = undefined;
+var new_rule_label_buf: [25:0]u8 = undefined;
+var group_label_buf: [25:0]u8 = undefined;
 var rule_label_buf: [25:0]u8 = undefined;
+var rename_group_buf: [25:0]u8 = undefined;
+
+var nine_slice_selected: ?usize = null;
 
 var drag_drop_state = struct {
     source: union(enum) {
@@ -116,9 +121,58 @@ pub const AutoTilemapLayer = struct {
             // if we have a Rule in a group render all the Rules in that group at once
             if (self.ruleset.rules.items[i].group > 0 and self.ruleset.rules.items[i].group != group) {
                 group = self.ruleset.rules.items[i].group;
+
+                igPushIDInt(@intCast(c_int, group));
+                groupDropTarget(group, i);
+                std.mem.set(u8, &group_label_buf, 0);
+                std.mem.copy(u8, &group_label_buf, self.getGroupName(group));
+                const header_open = igCollapsingHeaderBoolPtr(&group_label_buf, null, ImGuiTreeNodeFlags_DefaultOpen);
+                groupDragDrop(group, i);
+
+                if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+                    igOpenPopup("##rename-group");
+                    std.mem.copy(u8, &rename_group_buf, self.getGroupName(group));
+                }
+
+                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+                if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
+                    _ = ogInputText("##name", &rename_group_buf, rename_group_buf.len);
+
+                    if (igButton("Rename Group", .{ .x = -1, .y = 0 })) {
+                        igCloseCurrentPopup();
+                        const label_sentinel_index = std.mem.indexOfScalar(u8, &rename_group_buf, 0).?;
+                        self.renameGroup(group, rename_group_buf[0..label_sentinel_index]);
+                        std.debug.print("grp: {}\n", .{rename_group_buf[0..label_sentinel_index]});
+                    }
+
+                    igEndPopup();
+                }
+                igPopID();
+
+                if (header_open) {
+                    igIndent(10);
+                    drag_drop_state.rendering_group = true;
+                }
+                rulesDragDrop(i, &self.ruleset.rules.items[i], true);
+
+                while (i < self.ruleset.rules.items.len and self.ruleset.rules.items[i].group == group) : (i += 1) {
+                    if (header_open and self.drawRule(i)) {
+                        delete_index = i;
+                    }
+                }
+
+                if (header_open) {
+                    igUnindent(10);
+                    drag_drop_state.rendering_group = false;
+                }
+
+                // if a group is the last item dont try to render any more! else decrement and get back to the loop start since we skipped the last item
+                if (i == self.ruleset.rules.items.len) break;
+                i -= 1;
+                continue;
             }
 
-            if (self.drawRule(&self.ruleset, &self.ruleset.rules.items[i], i)) {
+            if (self.drawRule(i)) {
                 delete_index = i;
             }
         }
@@ -140,9 +194,37 @@ pub const AutoTilemapLayer = struct {
             self.ruleset.addRule();
         }
         igSameLine(0, 10);
+
+        if (ogButton("Add 9-Slice")) {
+            igOpenPopup("nine-slice-wizard");
+            // reset temp state
+            std.mem.set(u8, &new_rule_label_buf, 0);
+            nine_slice_selected = null;
+        }
+        igSameLine(0, 10);
+
+        if (ogButton("Add Inner-4")) {
+            igOpenPopup("inner-four-wizard");
+            // reset temp state
+            std.mem.set(u8, &new_rule_label_buf, 0);
+            nine_slice_selected = null;
+        }
+
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
+            nineSlicePopup(self, 3);
+            igEndPopup();
+        }
+
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
+            nineSlicePopup(self, 2);
+            igEndPopup();
+        }
     }
 
-    pub fn drawRule(self: *@This(), ruleset: *RuleSet, rule: *Rule, index: usize) bool {
+    pub fn drawRule(self: *@This(), index: usize) bool {
+        var rule = &self.ruleset.rules.items[index];
         igPushIDPtr(rule);
         defer igPopID();
 
@@ -172,7 +254,7 @@ pub const AutoTilemapLayer = struct {
                     igCloseCurrentPopup();
 
                     // get the next available group
-                    rule.group = ruleset.getNextAvailableGroup(self, name_buf[0..label_sentinel_index]);
+                    rule.group = self.ruleset.getNextAvailableGroup(self, name_buf[0..label_sentinel_index]);
                     std.mem.set(u8, &name_buf, 0);
                 }
 
@@ -206,7 +288,7 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 4);
 
         if (ogButton(icons.copy)) {
-            ruleset.rules.append(rule.clone()) catch unreachable;
+            self.ruleset.rules.append(rule.clone()) catch unreachable;
         }
         igSameLine(0, 4);
 
@@ -215,7 +297,7 @@ pub const AutoTilemapLayer = struct {
         }
 
         // if this is the last item, add an extra drop zone for reordering
-        if (index == ruleset.rules.items.len - 1) {
+        if (index == self.ruleset.rules.items.len - 1) {
             rulesDragDrop(index + 1, rule, true);
         }
 
@@ -421,6 +503,41 @@ pub const AutoTilemapLayer = struct {
     }
 };
 
+fn groupDropTarget(group: u8, index: usize) void {
+    if (drag_drop_state.active) {
+        var cursor = ogGetCursorPos();
+        const old_pos = cursor;
+        cursor.y -= 5;
+        igSetCursorPos(cursor);
+        igPushStyleColorU32(ImGuiCol_Button, editor.colors.rgbToU32(0, 255, 0));
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
+        igPopStyleColor(1);
+        igSetCursorPos(old_pos);
+    }
+
+    if (igBeginDragDropTarget()) {
+        defer igEndDragDropTarget();
+
+        if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+            drag_drop_state.completed = true;
+            drag_drop_state.to = index;
+            drag_drop_state.above_group = true;
+            drag_drop_state.active = false;
+        }
+    }
+}
+
+fn groupDragDrop(group: u8, index: usize) void {
+    if (igBeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers)) {
+        drag_drop_state.active = true;
+        drag_drop_state.from = index;
+        drag_drop_state.source = .{ .group = group };
+        _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
+        _ = igButton("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+        igEndDragDropSource();
+    }
+}
+
 /// handles drag/drop sources and targets
 fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     var cursor = ogGetCursorPos();
@@ -533,4 +650,64 @@ pub fn tileIndexUnderMouse(rect_size: usize, origin: ImVec2) struct { x: usize, 
     pos.y -= origin.y;
 
     return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
+}
+
+fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
+    self.brushset.drawWithoutWindow();
+    igSameLine(0, 5);
+
+    var content_start_pos = ogGetCursorScreenPos();
+    ogImage(self.tileset.tex.imTextureID(), self.tileset.tex.width, self.tileset.tex.height);
+
+    const draw_list = igGetWindowDrawList();
+
+    if (nine_slice_selected) |index| {
+        const x = @mod(index, self.tileset.tiles_per_row);
+        const y = @divTrunc(index, self.tileset.tiles_per_row);
+
+        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing) };
+        tl.x += content_start_pos.x + 1 + @intToFloat(f32, self.tileset.spacing);
+        tl.y += content_start_pos.y + 1 + @intToFloat(f32, self.tileset.spacing);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), editor.colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, editor.colors.rule_result_selected_outline, 2);
+    }
+
+    // check input for toggling state
+    if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+        if (igIsMouseClicked(0, false)) {
+            var tile = tileIndexUnderMouse(@intCast(usize, self.tileset.tile_size + self.tileset.spacing), content_start_pos);
+
+            // does the nine-slice fit?
+            if (tile.x + selection_size <= self.tileset.tiles_per_row and tile.y + selection_size <= self.tileset.tiles_per_col) {
+                nine_slice_selected = @intCast(usize, tile.x + tile.y * self.tileset.tiles_per_row);
+            }
+        }
+    }
+
+    var size = ogGetContentRegionAvail();
+    igSetNextItemWidth(size.x * 0.6);
+    _ = ogInputText("##nine-slice-name", &new_rule_label_buf, new_rule_label_buf.len);
+    igSameLine(0, 5);
+
+    const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
+    const disabled = label_sentinel_index == 0 or nine_slice_selected == null;
+    if (disabled) {
+        igPushItemFlag(ImGuiItemFlags_Disabled, true);
+        igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+    }
+
+    if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
+        if (selection_size == 3) {
+            self.ruleset.addNinceSliceRules(self, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+        } else {
+            self.ruleset.addInnerFourRules(self, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
+        }
+        self.map_dirty = true;
+        igCloseCurrentPopup();
+    }
+
+    if (disabled) {
+        igPopItemFlag();
+        igPopStyleVar(1);
+    }
 }
