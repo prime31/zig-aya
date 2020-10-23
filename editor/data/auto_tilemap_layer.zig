@@ -248,7 +248,7 @@ pub const AutoTilemapLayer = struct {
             // nested popup
             igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
             if (igBeginPopup("##brushes", ImGuiWindowFlags_NoTitleBar)) {
-                self.brushset.drawNaked();
+                self.brushset.drawWithoutWindow();
                 igEndPopup();
             }
 
