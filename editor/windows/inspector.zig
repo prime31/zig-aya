@@ -4,6 +4,8 @@ const editor = @import("../editor.zig");
 usingnamespace @import("imgui");
 
 pub fn draw(state: *editor.AppState) void {
-    if (igBegin("Inspector", null, ImGuiWindowFlags_None)) {}
-    igEnd();
+    defer igEnd();
+    if (!igBegin("Inspector", null, ImGuiWindowFlags_None)) return;
+
+    _ = ogButton("word to your mother");
 }
