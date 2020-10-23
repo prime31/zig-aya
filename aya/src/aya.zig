@@ -90,11 +90,39 @@ export fn init() void {
 
     if (has_imgui) {
         var imgui_desc = std.mem.zeroes(simgui_desc_t);
+        imgui_desc.no_default_font = true;
         imgui_desc.dpi_scale = sapp_dpi_scale();
         imgui_desc.ini_filename = "imgui.ini";
         simgui_setup(&imgui_desc);
+
+        loadDefaultFont();
     }
     state.config.init();
+}
+
+fn loadDefaultFont() void {
+    var io = imgui.igGetIO();
+    _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
+
+    // add FontAwesome
+    const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ imgui.icons.icon_range_min, imgui.icons.icon_range_max, 0 };
+
+    var icons_config = imgui.ImFontConfig_ImFontConfig();
+    icons_config[0].MergeMode = true;
+    icons_config[0].PixelSnapH = true;
+    icons_config[0].FontDataOwnedByAtlas = false;
+
+    var data = @embedFile("../assets/" ++ imgui.icons.font_icon_filename_fas);
+    _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 14, icons_config, &font_awesome_range[0]);
+
+    var w: i32 = undefined;
+    var h: i32 = undefined;
+    var bytes_per_pixel: i32 = undefined;
+    var pixels: [*c]u8 = undefined;
+    imgui.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, &pixels, &w, &h, &bytes_per_pixel);
+
+    var tex = gfx.Texture.initWithData(pixels[0..@intCast(usize, w * h * bytes_per_pixel)], w, h, .nearest);
+    imgui.ImFontAtlas_SetTexID(io.Fonts, tex.imTextureID());
 }
 
 export fn update() void {
