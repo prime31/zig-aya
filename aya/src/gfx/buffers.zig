@@ -174,8 +174,9 @@ pub const VertexBuffer = struct {
     fn vertexElementsForType(comptime T: type, usages: []fna.VertexElementUsage) ![]fna.VertexElement {
         var vert_elems = try aya.mem.allocator.alloc(fna.VertexElement, usages.len);
         inline for (@typeInfo(T).Struct.fields) |field, i| {
+            const offset = @byteOffsetOf(T, field.name);
             vert_elems[i] = fna.VertexElement{
-                .offset = @intCast(i32, field.offset.?),
+                .offset = @intCast(i32, offset),
                 .vertexElementFormat = vertexFormatForType(field.field_type),
                 .vertexElementUsage = usages[i],
                 .usageIndex = 0,

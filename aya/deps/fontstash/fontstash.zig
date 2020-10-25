@@ -66,7 +66,7 @@ pub const Quad = extern struct {
     t1: f32,
 };
 
-pub const FONSfont = @Type(.Opaque);
+pub const FONSfont = opaque{};
 
 pub const TextIter = extern struct {
     x: f32,

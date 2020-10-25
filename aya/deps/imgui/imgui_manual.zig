@@ -1,7 +1,7 @@
 const assert = @import("std").debug.assert;
 
-pub const DrawListSharedData = @OpaqueType();
-pub const Context = @OpaqueType();
+pub const DrawListSharedData = opaque{};
+pub const Context = opaque{};
 pub const DrawCallback = ?fn (parent_list: ?*const DrawList, cmd: ?*const DrawCmd) callconv(.C) void;
 pub const DrawIdx = u16;
 pub const ID = u32;

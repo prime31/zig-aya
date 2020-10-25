@@ -24,7 +24,7 @@ pub const PostProcessStack = struct {
         self.render_texture.deinit();
     }
 
-    pub fn add(self: *PostProcessStack, comptime T: type, data: var) *T {
+    pub fn add(self: *PostProcessStack, comptime T: type, data: anytype) *T {
         std.debug.assert(@hasDecl(T, "initialize"));
         std.debug.assert(@hasDecl(T, "deinit"));
         std.debug.assert(@hasField(T, "postprocessor"));
@@ -86,7 +86,7 @@ pub const Sepia = struct {
         self.shader.deinit();
     }
 
-    pub fn initialize(self: *@This(), data: var) void {
+    pub fn initialize(self: *@This(), data: anytype) void {
         self.shader = aya.gfx.Shader.initFromFile("assets/Sepia.fxb") catch unreachable;
         self.shader.setParam(aya.math.Vec3, "_sepiaTone", aya.math.Vec3{ .x = 1.2, .y = 1.0, .z = 0.8 });
         self.postprocessor = .{ .process = process };

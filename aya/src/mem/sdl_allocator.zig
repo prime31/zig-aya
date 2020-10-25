@@ -7,7 +7,7 @@ var sdl_allocator_state = std.mem.Allocator{
     .resizeFn = sdlResize,
 };
 
-fn sdlAlloc(allocator: *std.mem.Allocator, len: usize, ptr_align: u29, len_align: u29) ![]u8 {
+fn sdlAlloc(allocator: *std.mem.Allocator, len: usize, ptr_align: u29, len_align: u29, ret_addr: usize) ![]u8 {
     std.debug.assert(ptr_align <= @alignOf(c_longdouble));
     const ptr = @ptrCast([*]u8, sdl.SDL_malloc(len) orelse return error.OutOfMemory);
 
@@ -18,7 +18,7 @@ fn sdlAlloc(allocator: *std.mem.Allocator, len: usize, ptr_align: u29, len_align
     return ptr[0..std.mem.alignBackwardAnyAlign(len, len_align)];
 }
 
-fn sdlResize(self: *std.mem.Allocator, old_mem: []u8, new_len: usize, len_align: u29) std.mem.Allocator.Error!usize {
+fn sdlResize(self: *std.mem.Allocator, old_mem: []u8, buf_align: u29, new_len: usize, len_align: u29, ret_addr: usize) std.mem.Allocator.Error!usize {
     if (new_len == 0) {
         sdl.SDL_free(old_mem.ptr);
         return 0;
