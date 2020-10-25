@@ -164,11 +164,11 @@ pub fn getDrawableSize(window: ?*c_void, w: *i32, h: *i32) void {
     FNA3D_GetDrawableSize(window, w, h);
 }
 
-pub const Texture = @OpaqueType();
-pub const Buffer = @OpaqueType();
-pub const Renderbuffer = @OpaqueType();
-pub const Effect = @OpaqueType();
-pub const Query = @OpaqueType();
+pub const Texture = opaque{};
+pub const Buffer = opaque{};
+pub const Renderbuffer = opaque{};
+pub const Effect = opaque{};
+pub const Query = opaque{};
 
 pub const PresentInterval = extern enum(c_int) {
     default,

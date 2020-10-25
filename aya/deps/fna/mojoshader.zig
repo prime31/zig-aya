@@ -463,11 +463,11 @@ pub extern fn MOJOSHADER_assemble(filename: [*c]const u8, source: [*c]const u8, 
 pub extern fn MOJOSHADER_compile(srcprofile: [*c]const u8, filename: [*c]const u8, source: [*c]const u8, sourcelen: c_uint, defs: [*c]const MOJOSHADER_preprocessorDefine, define_count: c_uint, include_open: MOJOSHADER_includeOpen, include_close: MOJOSHADER_includeClose, m: MOJOSHADER_malloc, f: MOJOSHADER_free, d: ?*c_void) [*c]const MOJOSHADER_compileData;
 pub extern fn MOJOSHADER_freeCompileData(data: [*c]const MOJOSHADER_compileData) void;
 pub const MOJOSHADER_glGetProcAddress = ?fn ([*c]const u8, ?*c_void) callconv(.C) ?*c_void;
-pub const struct_MOJOSHADER_glContext = @Type(.Opaque);
+pub const struct_MOJOSHADER_glContext = opaque{};
 pub const MOJOSHADER_glContext = struct_MOJOSHADER_glContext;
-pub const struct_MOJOSHADER_glShader = @Type(.Opaque);
+pub const struct_MOJOSHADER_glShader = opaque{};
 pub const MOJOSHADER_glShader = struct_MOJOSHADER_glShader;
-pub const struct_MOJOSHADER_glProgram = @Type(.Opaque);
+pub const struct_MOJOSHADER_glProgram = opaque{};
 pub const MOJOSHADER_glProgram = struct_MOJOSHADER_glProgram;
 pub extern fn MOJOSHADER_glAvailableProfiles(lookup: MOJOSHADER_glGetProcAddress, lookup_d: ?*c_void, profs: [*c][*c]const u8, size: c_int, m: MOJOSHADER_malloc, f: MOJOSHADER_free, malloc_d: ?*c_void) c_int;
 pub extern fn MOJOSHADER_glBestProfile(lookup: MOJOSHADER_glGetProcAddress, lookup_d: ?*c_void, m: MOJOSHADER_malloc, f: MOJOSHADER_free, malloc_d: ?*c_void) [*c]const u8;
@@ -505,7 +505,7 @@ pub extern fn MOJOSHADER_glProgramViewportInfo(viewportW: c_int, viewportH: c_in
 pub extern fn MOJOSHADER_glDeleteProgram(program: ?*MOJOSHADER_glProgram) void;
 pub extern fn MOJOSHADER_glDeleteShader(shader: ?*MOJOSHADER_glShader) void;
 pub extern fn MOJOSHADER_glDestroyContext(ctx: ?*MOJOSHADER_glContext) void;
-pub const struct_MOJOSHADER_mtlShader = @Type(.Opaque);
+pub const struct_MOJOSHADER_mtlShader = opaque{};
 pub const MOJOSHADER_mtlShader = struct_MOJOSHADER_mtlShader;
 pub extern fn MOJOSHADER_mtlCreateContext(mtlDevice: ?*c_void, framesInFlight: c_int, m: MOJOSHADER_malloc, f: MOJOSHADER_free, malloc_d: ?*c_void) c_int;
 pub extern fn MOJOSHADER_mtlGetError() [*c]const u8;

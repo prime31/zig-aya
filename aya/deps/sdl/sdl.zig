@@ -122,7 +122,7 @@ pub extern fn SDL_sqrt(x: f64) f64;
 pub extern fn SDL_sqrtf(x: f32) f32;
 pub extern fn SDL_tan(x: f64) f64;
 pub extern fn SDL_tanf(x: f32) f32;
-pub const struct__SDL_iconv_t = @Type(.Opaque);
+pub const struct__SDL_iconv_t = opaque{};
 pub const SDL_iconv_t = ?*struct__SDL_iconv_t;
 pub extern fn SDL_iconv_open(tocode: [*c]const u8, fromcode: [*c]const u8) SDL_iconv_t;
 pub extern fn SDL_iconv_close(cd: SDL_iconv_t) c_int;
@@ -187,13 +187,13 @@ pub const SDL_errorcode = extern enum(c_int) {
 };
 
 pub extern fn SDL_Error(code: SDL_errorcode) c_int; // /usr/local/include/SDL2/SDL_endian.h:83:3: warning: TODO implement translation of stmt class GCCAsmStmtClass
-pub const SDL_mutex = @Type(.Opaque);
+pub const SDL_mutex = opaque{};
 pub extern fn SDL_CreateMutex() ?*SDL_mutex;
 pub extern fn SDL_LockMutex(mutex: ?*SDL_mutex) c_int;
 pub extern fn SDL_TryLockMutex(mutex: ?*SDL_mutex) c_int;
 pub extern fn SDL_UnlockMutex(mutex: ?*SDL_mutex) c_int;
 pub extern fn SDL_DestroyMutex(mutex: ?*SDL_mutex) void;
-pub const SDL_sem = @Type(.Opaque);
+pub const SDL_sem = opaque{};
 pub extern fn SDL_CreateSemaphore(initial_value: Uint32) ?*SDL_sem;
 pub extern fn SDL_DestroySemaphore(sem: ?*SDL_sem) void;
 pub extern fn SDL_SemWait(sem: ?*SDL_sem) c_int;
@@ -201,7 +201,7 @@ pub extern fn SDL_SemTryWait(sem: ?*SDL_sem) c_int;
 pub extern fn SDL_SemWaitTimeout(sem: ?*SDL_sem, ms: Uint32) c_int;
 pub extern fn SDL_SemPost(sem: ?*SDL_sem) c_int;
 pub extern fn SDL_SemValue(sem: ?*SDL_sem) Uint32;
-pub const struct_SDL_cond = @Type(.Opaque);
+pub const struct_SDL_cond = opaque{};
 pub const SDL_cond = struct_SDL_cond;
 pub extern fn SDL_CreateCond() ?*SDL_cond;
 pub extern fn SDL_DestroyCond(cond: ?*SDL_cond) void;
@@ -209,7 +209,7 @@ pub extern fn SDL_CondSignal(cond: ?*SDL_cond) c_int;
 pub extern fn SDL_CondBroadcast(cond: ?*SDL_cond) c_int;
 pub extern fn SDL_CondWait(cond: ?*SDL_cond, mutex: ?*SDL_mutex) c_int;
 pub extern fn SDL_CondWaitTimeout(cond: ?*SDL_cond, mutex: ?*SDL_mutex, ms: Uint32) c_int;
-pub const struct_SDL_Thread = @Type(.Opaque);
+pub const struct_SDL_Thread = opaque{};
 pub const SDL_Thread = struct_SDL_Thread;
 pub const SDL_threadID = c_ulong;
 pub const SDL_TLSID = c_uint;
@@ -343,7 +343,7 @@ pub extern fn SDL_LoadWAV_RW(src: [*c]SDL_RWops, freesrc: c_int, spec: [*c]SDL_A
 pub extern fn SDL_FreeWAV(audio_buf: [*c]Uint8) void;
 pub extern fn SDL_BuildAudioCVT(cvt: [*c]SDL_AudioCVT, src_format: SDL_AudioFormat, src_channels: Uint8, src_rate: c_int, dst_format: SDL_AudioFormat, dst_channels: Uint8, dst_rate: c_int) c_int;
 pub extern fn SDL_ConvertAudio(cvt: [*c]SDL_AudioCVT) c_int;
-pub const struct__SDL_AudioStream = @Type(.Opaque);
+pub const struct__SDL_AudioStream = opaque{};
 pub const SDL_AudioStream = struct__SDL_AudioStream;
 pub extern fn SDL_NewAudioStream(src_format: SDL_AudioFormat, src_channels: Uint8, src_rate: c_int, dst_format: SDL_AudioFormat, dst_channels: Uint8, dst_rate: c_int) ?*SDL_AudioStream;
 pub extern fn SDL_AudioStreamPut(stream: ?*SDL_AudioStream, buf: ?*const c_void, len: c_int) c_int;
@@ -624,7 +624,7 @@ const enum_unnamed_37 = extern enum(c_int) {
 };
 pub const SDL_BlendFactor = enum_unnamed_37;
 pub extern fn SDL_ComposeCustomBlendMode(srcColorFactor: SDL_BlendFactor, dstColorFactor: SDL_BlendFactor, colorOperation: SDL_BlendOperation, srcAlphaFactor: SDL_BlendFactor, dstAlphaFactor: SDL_BlendFactor, alphaOperation: SDL_BlendOperation) SDL_BlendMode;
-pub const struct_SDL_BlitMap = @Type(.Opaque);
+pub const struct_SDL_BlitMap = opaque{};
 pub const struct_SDL_Surface = extern struct {
     flags: Uint32,
     format: [*c]SDL_PixelFormat,
@@ -694,7 +694,7 @@ const struct_unnamed_39 = extern struct {
     driverdata: ?*c_void,
 };
 pub const SDL_DisplayMode = struct_unnamed_39;
-pub const struct_SDL_Window = @Type(.Opaque);
+pub const struct_SDL_Window = opaque{};
 pub const SDL_Window = struct_SDL_Window;
 
 pub const SDL_WindowFlags = extern enum(c_int) {
@@ -1450,7 +1450,7 @@ pub extern fn SDL_StopTextInput() void;
 pub extern fn SDL_SetTextInputRect(rect: [*c]SDL_Rect) void;
 pub extern fn SDL_HasScreenKeyboardSupport() SDL_bool;
 pub extern fn SDL_IsScreenKeyboardShown(window: ?*SDL_Window) SDL_bool;
-pub const struct_SDL_Cursor = @Type(.Opaque);
+pub const struct_SDL_Cursor = opaque{};
 pub const SDL_Cursor = struct_SDL_Cursor;
 
 pub const SDL_SystemCursor = extern enum(c_int) {
@@ -1491,7 +1491,7 @@ pub extern fn SDL_GetCursor() ?*SDL_Cursor;
 pub extern fn SDL_GetDefaultCursor() ?*SDL_Cursor;
 pub extern fn SDL_FreeCursor(cursor: ?*SDL_Cursor) void;
 pub extern fn SDL_ShowCursor(toggle: c_int) c_int;
-pub const struct__SDL_Joystick = @Type(.Opaque);
+pub const struct__SDL_Joystick = opaque{};
 pub const SDL_Joystick = struct__SDL_Joystick;
 pub const struct_unnamed_55 = extern struct {
     data: [16]Uint8,
@@ -1570,7 +1570,7 @@ pub extern fn SDL_JoystickGetButton(joystick: ?*SDL_Joystick, button: c_int) Uin
 pub extern fn SDL_JoystickRumble(joystick: ?*SDL_Joystick, low_frequency_rumble: Uint16, high_frequency_rumble: Uint16, duration_ms: Uint32) c_int;
 pub extern fn SDL_JoystickClose(joystick: ?*SDL_Joystick) void;
 pub extern fn SDL_JoystickCurrentPowerLevel(joystick: ?*SDL_Joystick) SDL_JoystickPowerLevel;
-pub const struct__SDL_GameController = @Type(.Opaque);
+pub const struct__SDL_GameController = opaque{};
 pub const SDL_GameController = struct__SDL_GameController;
 pub const SDL_CONTROLLER_TYPE_UNKNOWN = @enumToInt(enum_unnamed_58.SDL_CONTROLLER_TYPE_UNKNOWN);
 pub const SDL_CONTROLLER_TYPE_XBOX360 = @enumToInt(enum_unnamed_58.SDL_CONTROLLER_TYPE_XBOX360);
@@ -2090,7 +2090,7 @@ pub const struct_SDL_UserEvent = extern struct {
     data2: ?*c_void,
 };
 pub const SDL_UserEvent = struct_SDL_UserEvent;
-pub const struct_SDL_SysWMmsg = @Type(.Opaque);
+pub const struct_SDL_SysWMmsg = opaque{};
 pub const SDL_SysWMmsg = struct_SDL_SysWMmsg;
 pub const struct_SDL_SysWMEvent = extern struct {
     type: Uint32,
@@ -2160,7 +2160,7 @@ pub extern fn SDL_EventState(type: Uint32, state: c_int) Uint8;
 pub extern fn SDL_RegisterEvents(numevents: c_int) Uint32;
 pub extern fn SDL_GetBasePath() [*c]u8;
 pub extern fn SDL_GetPrefPath(org: [*c]const u8, app: [*c]const u8) [*c]u8;
-pub const struct__SDL_Haptic = @Type(.Opaque);
+pub const struct__SDL_Haptic = opaque{};
 pub const SDL_Haptic = struct__SDL_Haptic;
 pub const struct_SDL_HapticDirection = extern struct {
     type: Uint8,
@@ -2536,9 +2536,9 @@ const enum_unnamed_82 = extern enum(c_int) {
     _,
 };
 pub const SDL_RendererFlip = enum_unnamed_82;
-pub const struct_SDL_Renderer = @Type(.Opaque);
+pub const struct_SDL_Renderer = opaque{};
 pub const SDL_Renderer = struct_SDL_Renderer;
-pub const struct_SDL_Texture = @Type(.Opaque);
+pub const struct_SDL_Texture = opaque{};
 pub const SDL_Texture = struct_SDL_Texture;
 pub extern fn SDL_GetNumRenderDrivers() c_int;
 pub extern fn SDL_GetRenderDriverInfo(index: c_int, info: [*c]SDL_RendererInfo) c_int;
@@ -2612,7 +2612,7 @@ pub extern fn SDL_GL_BindTexture(texture: ?*SDL_Texture, texw: [*c]f32, texh: [*
 pub extern fn SDL_GL_UnbindTexture(texture: ?*SDL_Texture) c_int;
 pub extern fn SDL_RenderGetMetalLayer(renderer: ?*SDL_Renderer) ?*c_void;
 pub extern fn SDL_RenderGetMetalCommandEncoder(renderer: ?*SDL_Renderer) ?*c_void;
-pub const struct__SDL_Sensor = @Type(.Opaque);
+pub const struct__SDL_Sensor = opaque{};
 pub const SDL_Sensor = struct__SDL_Sensor;
 pub const SDL_SensorID = i32;
 pub const SDL_SENSOR_INVALID = @enumToInt(enum_unnamed_83.SDL_SENSOR_INVALID);

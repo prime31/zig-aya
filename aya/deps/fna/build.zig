@@ -75,7 +75,7 @@ fn compileFna(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Targ
     };
     // -fno-sanitize=undefined fixes a crash in stb hash
 
-    const platform_cflags = if (std.Target.current.os.tag == .macosx) blk: {
+    const platform_cflags = if (std.Target.current.os.tag == .macos) blk: {
         break :blk &[_][]const u8{ "-DSUPPORT_PROFILE_HLSL=0", "-DFNA3D_DRIVER_METAL", "-DSUPPORT_PROFILE_METAL=1" };
     } else if (std.Target.current.os.tag == .windows) blk: {
         break :blk &[_][]const u8{ "-DFNA3D_DRIVER_D3D11", "-DSUPPORT_PROFILE_HLSL=1", "-DSUPPORT_PROFILE_METAL=0" };
