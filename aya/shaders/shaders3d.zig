@@ -6,7 +6,7 @@ pub extern fn instancing_shader_desc() [*c]const sg_shader_desc;
 // for generating the cimport.zig file uncomment this
 // const std = @import("std");
 // pub usingnamespace @cImport({
-//     if (std.Target.current.os.tag == .macosx) {
+//     if (std.Target.current.os.tag == .macos) {
 //         @cDefine("SOKOL_METAL", "");
 //     } else {
 //         @cDefine("SOKOL_GLCORE33", "");
