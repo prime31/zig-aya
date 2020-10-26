@@ -193,7 +193,7 @@ pub const struct_ImGuiWindowTempData = extern struct {
     StackSizesBackup: [6]c_short,
 };
 pub const ImGuiWindowTempData = struct_ImGuiWindowTempData;
-pub const struct_ImGuiWindow = @Type(.Opaque); // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1954:10: warning: struct demoted to opaque type - has bitfield
+pub const struct_ImGuiWindow =opaque{}; // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1954:10: warning: struct demoted to opaque type - has bitfield
 pub const ImGuiWindow = struct_ImGuiWindow;
 pub const struct_ImGuiTabItem = extern struct {
     ID: ImGuiID,
@@ -352,11 +352,11 @@ pub const struct_ImGuiGroupData = extern struct {
     EmitItem: bool,
 };
 pub const ImGuiGroupData = struct_ImGuiGroupData;
-pub const struct_ImGuiDockNodeSettings = @Type(.Opaque);
+pub const struct_ImGuiDockNodeSettings =opaque{};
 pub const ImGuiDockNodeSettings = struct_ImGuiDockNodeSettings;
-pub const struct_ImGuiDockNode = @Type(.Opaque); // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1551:24: warning: struct demoted to opaque type - has bitfield
+pub const struct_ImGuiDockNode =opaque{}; // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1551:24: warning: struct demoted to opaque type - has bitfield
 pub const ImGuiDockNode = struct_ImGuiDockNode;
-pub const struct_ImGuiDockRequest = @Type(.Opaque);
+pub const struct_ImGuiDockRequest =opaque{};
 pub const ImGuiDockRequest = struct_ImGuiDockRequest;
 pub const struct_ImGuiDockContext = extern struct {
     Nodes: ImGuiStorage,
@@ -877,7 +877,7 @@ pub const struct_ImFontGlyphRangesBuilder = extern struct {
     UsedChars: ImVector_ImU32,
 };
 pub const ImFontGlyphRangesBuilder = struct_ImFontGlyphRangesBuilder;
-pub const struct_ImFontGlyph = @Type(.Opaque); // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1012:18: warning: struct demoted to opaque type - has bitfield
+pub const struct_ImFontGlyph =opaque{}; // /Users/mikedesaro/Zig-Aya/deps/imgui/cimgui/cimgui.h:1012:18: warning: struct demoted to opaque type - has bitfield
 pub const ImFontGlyph = struct_ImFontGlyph;
 pub const struct_ImFontConfig = extern struct {
     FontData: ?*c_void,

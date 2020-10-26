@@ -18,7 +18,6 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
         exe.linkFramework("Audiotoolbox");
         exe.linkFramework("CoreAudio");
         exe.linkSystemLibrary("c++");
-        exe.enableSystemLinkerHack();
     } else if (target.isLinux()) {
         // Not tested
         exe.linkSystemLibrary("GL");
@@ -29,7 +28,7 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
     exe.addIncludeDir("aya/deps/sokol");
 
     const imgui_flag = if (include_imgui) "-DNOTHING" else "-DDISABLE_IMGUI=1";
-    const c_flags = if (std.Target.current.os.tag == .macosx) [_][]const u8{ "-std=c99", "-ObjC", "-fobjc-arc", "-O3", imgui_flag } else [_][]const u8{ "-std=c99", "-O3", imgui_flag };
+    const c_flags = if (std.Target.current.os.tag == .macos) [_][]const u8{ "-std=c99", "-ObjC", "-fobjc-arc", "-O3", imgui_flag } else [_][]const u8{ "-std=c99", "-O3", imgui_flag };
 
     exe.addCSourceFile("aya/deps/sokol/compile_sokol.c", &c_flags);
 }
