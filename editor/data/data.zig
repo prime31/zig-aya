@@ -102,7 +102,8 @@ pub const TileRenderInfo = struct {
         return aya.math.Mat32.initTransform(.{ .x = x, .y = y, .angle = self.rot, .sx = self.sx, .sy = self.sy, .ox = self.ox, .oy = self.oy });
     }
 
-    pub fn draw(self: TileRenderInfo, tileset: Tileset, position: math.Vec2) void {
+    /// tileset can be a Tileset or a Brushset
+    pub fn draw(self: TileRenderInfo, tileset: anytype, position: math.Vec2) void {
         const vp = tileset.viewportForTile(self.id);
 
         const tx = position.x + self.ox;

@@ -49,12 +49,16 @@ pub const Tilemap = struct {
         self.data[tile.x + tile.y * self.size.w] = value;
     }
 
-    pub fn draw(self: @This(), tileset: Tileset) void {
+    /// draws the tilemap. If map_data is passed in (for the final map in an auto tilemap) it will be used, else
+    /// Tilemap.data will be used. tileset can be either a Tileset or a Brushset.
+    pub fn draw(self: @This(), tileset: anytype, map_data: ?[]u16) void {
+        var draw_data = map_data orelse self.data;
+
         var y: usize = 0;
         while (y < self.size.h) : (y += 1) {
             var x: usize = 0;
             while (x < self.size.w) : (x += 1) {
-                const tile = self.data[x + y * self.size.w];
+                const tile = draw_data[x + y * self.size.w];
                 if (tile == 0) continue;
 
                 var info = TileRenderInfo.init(tile - 1, tileset.tile_size);

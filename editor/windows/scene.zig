@@ -54,10 +54,8 @@ pub const Scene = struct {
         self.render(state);
         aya.gfx.endPass();
 
-        // aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE, .trans_mat = self.cam.transMat() });
+        // aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE });
         // aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
-        // const bounds = self.cam.bounds();
-        // aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 4, math.Color.yellow);
         // aya.gfx.endPass();
     }
 

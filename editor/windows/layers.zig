@@ -70,7 +70,7 @@ fn addLayerPopup(state: *editor.AppState) void {
         const tag_name_c = std.cstr.addNullByte(aya.mem.tmp_allocator, tag_name) catch unreachable;
         _ = std.mem.replace(u8, tag_name_c, "_", " ", tag_name_c);
         if (igBeginCombo("##type", &tag_name_c[0], ImGuiComboFlags_None)) {
-            inline for (@typeInfo(editor.LayerType).Enum.fields) |field| {
+            inline for (std.meta.fields(editor.LayerType)) |field| {
                 var buf: [15]u8 = undefined;
                 _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
                 if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(editor.LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
