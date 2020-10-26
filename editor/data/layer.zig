@@ -64,6 +64,7 @@ pub const Layer = union(LayerType) {
     }
 
     /// used for the editing UI, called after all other drawing so it can render on top of everything. Called only for the selected Layer.
+    /// Shortcut keys can be handled here.
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         switch (self.*) {
             .tilemap => |*layer| layer.handleSceneInput(state, camera, mouse_world),

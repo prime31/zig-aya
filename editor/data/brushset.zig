@@ -60,6 +60,7 @@ pub const Brushset = struct {
         }
     }
 
+    /// draws the floating Brushes window
     pub fn draw(self: *Brushset) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
         const first_pos = igGetIO().DisplaySize.subtract(.{

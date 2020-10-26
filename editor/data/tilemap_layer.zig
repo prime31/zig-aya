@@ -37,7 +37,7 @@ pub const TilemapLayer = struct {
     }
 
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
-        self.tilemap.draw(self.tileset);
+        self.tilemap.draw(self.tileset, null);
         if (is_selected) {
             self.tileset.draw();
         }

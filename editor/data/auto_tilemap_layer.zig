@@ -55,35 +55,67 @@ var drag_drop_state = struct {
     }
 }{};
 
+/// drawing of the pre-map data (raw, pre-rules) the Tilemap is used. Final rule-processed map is stored n AutoTilemapLayer.
 pub const AutoTilemapLayer = struct {
     name: [:0]const u8,
     tilemap: Tilemap,
+    final_map: []u16,
+    random_map_data: []Randoms,
     brushset: Brushset,
     tileset: Tileset,
     ruleset: RuleSet,
     ruleset_groups: std.AutoHashMap(u8, []const u8),
+    draw_raw_pre_map: bool = true,
     map_dirty: bool = false,
     shift_dragged: bool = false,
     dragged: bool = false,
     prev_mouse_pos: ImVec2 = .{},
 
+    pub const Randoms = struct {
+        float: f32,
+        int: usize,
+    };
+
     pub fn init(name: []const u8, size: Size, tile_size: usize) AutoTilemapLayer {
-        return .{
+        var tmp_data = aya.mem.allocator.alloc(u16, size.w * size.h) catch unreachable;
+        std.mem.set(u16, tmp_data, 0);
+
+        var layer = AutoTilemapLayer{
             .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
             .tilemap = Tilemap.init(size),
+            .final_map = tmp_data,
+            .random_map_data = aya.mem.allocator.alloc(Randoms, size.w * size.h) catch unreachable,
             .brushset = Brushset.init(tile_size),
             .tileset = Tileset.init(tile_size),
             .ruleset = RuleSet.init(),
             .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator), // TODO: maybe [:0]u8?
         };
+        layer.generateRandomData();
+        return layer;
     }
 
     pub fn deinit(self: @This()) void {
         aya.mem.allocator.free(self.name);
         self.tilemap.deinit();
+        aya.mem.allocator.free(self.final_map);
+        aya.mem.allocator.free(self.random_map_data);
         self.brushset.deinit();
         self.tileset.deinit();
         self.ruleset.deinit();
+    }
+
+    /// regenerates the stored random data per tile. Needs to be called on seed change or map resize
+    pub fn generateRandomData(self: *@This()) void {
+        aya.math.rand.seed(self.ruleset.seed);
+
+        // pre-generate random data per tile
+        var i: usize = 0;
+        while (i < self.tilemap.size.w * self.tilemap.size.h) : (i += 1) {
+            self.random_map_data[i] = .{
+                .float = aya.math.rand.float(f32),
+                .int = aya.math.rand.int(usize),
+            };
+        }
     }
 
     pub fn getGroupName(self: @This(), group: u8) []const u8 {
@@ -106,13 +138,74 @@ pub const AutoTilemapLayer = struct {
         }
     }
 
-    pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
-        if (!is_selected) return;
-
-        self.tilemap.draw(self.tileset);
-        if (is_selected) {
-            self.brushset.draw();
+    fn generateFinalMap(self: *@This()) void {
+        var y: usize = 0;
+        while (y < self.tilemap.size.h) : (y += 1) {
+            var x: usize = 0;
+            while (x < self.tilemap.size.w) : (x += 1) {
+                self.final_map[x + y * self.tilemap.size.w] = self.transformTileWithRuleSet(x, y);
+            }
         }
+    }
+
+    /// handles transforming a pre-map tile (from the Tileset, painted with the Brushset) to the final_map. based on the Rules.
+    fn transformTileWithRuleSet(self: *@This(), x: usize, y: usize) u8 {
+        var rule_passed = false;
+        for (self.ruleset.rules.items) |*rule| brk: {
+            if (rule.result_tiles.len == 0) continue;
+
+            // at least one rule must pass to have a result
+            for (rule.rule_tiles) |rule_tile, i| {
+                if (rule_tile.state == .none) continue;
+                const x_offset = @intCast(i32, @mod(i, 5)) - 2;
+                const y_offset = @intCast(i32, @divTrunc(i, 5)) - 2;
+
+                // stay in bounds! We could be looking for a tile 2 away from x,y in any direction
+                const actual_x = @intCast(i32, x) + x_offset;
+                const actual_y = @intCast(i32, y) + y_offset;
+                const processed_tile = if (actual_x < 0 or actual_y < 0 or actual_x >= self.tilemap.size.w or actual_y >= self.tilemap.size.h) 0 else blk: {
+                    const index = @intCast(usize, actual_x) + @intCast(usize, actual_y) * self.tilemap.size.w;
+                    break :blk self.tilemap.data[index];
+                };
+
+                // if any rule fails, we are done with this RuleSet
+                if (!rule_tile.passes(processed_tile)) {
+                    break :brk;
+                }
+
+                rule_passed = true;
+            }
+
+            // a Rule passed. we use the chance to decide if we will return a tile
+            const random = self.random_map_data[x + y * self.tilemap.size.w];
+            const chance = random.float < @intToFloat(f32, rule.chance) / 100;
+            if (rule_passed and chance) {
+                return @intCast(u8, rule.resultTile(random.int) + 1);
+            }
+        }
+
+        return 0;
+    }
+
+    pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
+        if (self.map_dirty and (!is_selected or !self.draw_raw_pre_map)) {
+            self.generateFinalMap();
+            self.map_dirty = false;
+        }
+
+        // If not selected, always draw the final map.
+        if (!is_selected) {
+            self.tilemap.draw(self.tileset, self.final_map);
+            return;
+        }
+
+        // selected, so we could be drawing either the raw pre-map or the final tilemap
+        if (self.draw_raw_pre_map) {
+            self.tilemap.draw(self.brushset, self.tilemap.data);
+        } else {
+            self.tilemap.draw(self.tileset, self.final_map);
+        }
+        self.brushset.draw();
 
         igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
         defer igPopStyleVar(1);
@@ -196,6 +289,8 @@ pub const AutoTilemapLayer = struct {
             drag_drop_state.handle(&self.ruleset.rules);
         }
 
+        igDummy(.{ .y = 5 });
+
         if (ogButton("Add Rule")) {
             self.ruleset.addRule();
         }
@@ -214,6 +309,20 @@ pub const AutoTilemapLayer = struct {
             // reset temp state
             std.mem.set(u8, &new_rule_label_buf, 0);
             nine_slice_selected = null;
+        }
+        igSameLine(0, 10);
+
+        if (ogButton("Random Seed")) {
+            igOpenPopup("random-seed");
+        }
+
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.8 });
+        if (igBeginPopup("random-seed", ImGuiWindowFlags_None)) {
+            if (ogDrag(usize, "", &self.ruleset.seed, 1, 0, 1000)) {
+                self.generateRandomData();
+                self.map_dirty = true;
+            }
+            igEndPopup();
         }
 
         igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
@@ -290,7 +399,7 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 4);
 
         igPushItemWidth(50);
-        _ = ogDrag(u8, "", &rule.chance, 1, 0, 100);
+        if (ogDrag(u8, "", &rule.chance, 1, 0, 100)) self.map_dirty = true;
         igSameLine(0, 4);
 
         if (ogButton(icons.copy)) {
@@ -315,6 +424,7 @@ pub const AutoTilemapLayer = struct {
             var size = ogGetContentRegionAvail();
             if (igButton("Clear", ImVec2{ .x = (size.x - 4) / 1.7 })) {
                 rule.clearPatternData();
+                self.map_dirty = true;
             }
             igSameLine(0, 4);
 
@@ -436,35 +546,23 @@ pub const AutoTilemapLayer = struct {
 
             igText("Shift:");
             igSameLine(0, 10);
-            if (ogButton(icons.arrow_left)) {
-                rule.shift(.left);
-            }
+            if (ogButton(icons.arrow_left)) rule.shift(.left);
 
             igSameLine(0, 7);
-            if (ogButton(icons.arrow_up)) {
-                rule.shift(.up);
-            }
+            if (ogButton(icons.arrow_up)) rule.shift(.up);
 
             igSameLine(0, 7);
-            if (ogButton(icons.arrow_down)) {
-                rule.shift(.down);
-            }
+            if (ogButton(icons.arrow_down)) rule.shift(.down);
 
             igSameLine(0, 7);
-            if (ogButton(icons.arrow_right)) {
-                rule.shift(.right);
-            }
+            if (ogButton(icons.arrow_right)) rule.shift(.right);
 
             igText("Flip: ");
             igSameLine(0, 10);
-            if (ogButton(icons.arrows_alt_h)) {
-                rule.flip(.horizontal);
-            }
+            if (ogButton(icons.arrows_alt_h)) rule.flip(.horizontal);
 
             igSameLine(0, 4);
-            if (ogButton(icons.arrows_alt_v)) {
-                rule.flip(.vertical);
-            }
+            if (ogButton(icons.arrows_alt_v)) rule.flip(.vertical);
         }
     }
 
@@ -504,8 +602,13 @@ pub const AutoTilemapLayer = struct {
         }
     }
 
-    /// TODO: duplicated in TilemapLayer
+    /// TODO: duplicated almost exactly in TilemapLayer
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+        if (ogKeyPressed(aya.sokol.SAPP_KEYCODE_TAB)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
+
+        const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
+        aya.draw.text(if (self.draw_raw_pre_map) "Input Map" else "Final Map", text_pos.x, text_pos.y, null);
+
         if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
 
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
@@ -516,10 +619,11 @@ pub const AutoTilemapLayer = struct {
 
             // dont draw the current tile brush under the mouse if we are shift-dragging
             if (!self.shift_dragged) {
-                TileRenderInfo.init(self.tileset.selected.value, self.tileset.tile_size).draw(self.tileset, pos);
+                TileRenderInfo.init(self.brushset.selected.value, self.brushset.tile_size).draw(self.brushset, pos);
             }
 
-            if (ogIsAnyMouseDragging() and igGetIO().KeyShift) { // box selection with left/right mouse + shift
+            // box selection with left/right mouse + shift
+            if (ogIsAnyMouseDragging() and igGetIO().KeyShift) {
                 var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
                 if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
@@ -538,6 +642,7 @@ pub const AutoTilemapLayer = struct {
                 var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
                 var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
                 if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                    self.map_dirty = true;
                     const min_x = std.math.min(tile.x, tile2.x);
                     var min_y = std.math.min(tile.y, tile2.y);
                     const max_x = std.math.max(tile.x, tile2.x);
@@ -553,6 +658,8 @@ pub const AutoTilemapLayer = struct {
                     }
                 }
             } else if (ogIsAnyMouseDown() and !igGetIO().KeyShift) {
+                self.map_dirty = true;
+
                 // if the mouse was down last frame, get last mouse pos and ensure we dont skip tiles when drawing
                 const tile_value = if (igIsMouseDown(ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
                 if (self.dragged) {

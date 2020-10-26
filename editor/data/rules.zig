@@ -30,7 +30,7 @@ pub const RuleSet = struct {
 
     /// adds the Rules required for a nine-slice with index being the top-left element of the nine-slice
     pub fn addNinceSliceRules(self: *RuleSet, map: *AutoTilemapLayer, name_prefix: []const u8, index: usize) void {
-        const selected_brush_index = map.tileset.selected.value;
+        const selected_brush_index = map.brushset.selected.value;
         const tiles_per_row = map.tileset.tiles_per_row;
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
@@ -122,7 +122,7 @@ pub const RuleSet = struct {
     }
 
     pub fn addInnerFourRules(self: *RuleSet, map: *AutoTilemapLayer, name_prefix: []const u8, index: usize) void {
-        const selected_brush_index = map.tileset.selected.value;
+        const selected_brush_index = map.brushset.selected.value;
         const tiles_per_row = map.tileset.tiles_per_row;
         const x = @mod(index, tiles_per_row);
         const y = @divTrunc(index, tiles_per_row);
