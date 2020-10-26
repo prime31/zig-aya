@@ -29,18 +29,6 @@ pub const Brushset = struct {
         self.tex.deinit();
     }
 
-    pub fn loadTexture(self: *Brushset, file: []const u8) void {
-        var spacing: usize = 0;
-        if (!validateImage(file, self.tile_size, &spacing)) {
-            std.debug.print("invalid file. failed validation\n", .{});
-            return;
-        }
-
-        self.tex.deinit();
-        self.spacing = spacing;
-        self.setTexture(aya.gfx.Texture.initFromFile(file, .nearest) catch unreachable);
-    }
-
     /// generates a texture with 3x3, 16px blocks of color
     fn generateTexture() aya.gfx.Texture {
         const tile_size = 16;
@@ -58,7 +46,7 @@ pub const Brushset = struct {
         return aya.gfx.Texture.initWithColorData(&pixels, tile_size * 3, tile_size * 3, .nearest);
     }
 
-    pub fn setTexture(self: *Brushset, tex: aya.gfx.Texture) void {
+    fn setTexture(self: *Brushset, tex: aya.gfx.Texture) void {
         self.tex = tex;
 
         // calculate tiles_per_row
