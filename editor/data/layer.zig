@@ -53,6 +53,14 @@ pub const Layer = union(LayerType) {
         };
     }
 
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+        switch (self.*) {
+            .tilemap => |*layer| layer.onFileDropped(state, file),
+            .auto_tilemap => |*layer| layer.onFileDropped(state, file),
+            else => std.debug.print("EntityLayer active. Ignoring dropped file\n", .{}),
+        }
+    }
+
     /// used for doing the actual drawing of the layer as it appears in-game (and its associated imgui windows/popups), not the
     /// editing UI that is rendered in the Scene when this is the selected Layer
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {

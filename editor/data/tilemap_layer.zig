@@ -3,7 +3,7 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const editor = @import("../editor.zig");
+const root = @import("root");
 const data = @import("data.zig");
 
 const AppState = data.AppState;
@@ -36,6 +36,10 @@ pub const TilemapLayer = struct {
         self.tileset.deinit();
     }
 
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+        std.debug.print("TilemapLayer got file: {}\n", .{file});
+    }
+
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
         self.tilemap.draw(self.tileset, null);
         if (is_selected) {
@@ -53,7 +57,7 @@ pub const TilemapLayer = struct {
         if (ogKeyUp(aya.sokol.SAPP_KEYCODE_V)) self.tileset.selected.flipV();
         if (ogKeyUp(aya.sokol.SAPP_KEYCODE_R)) self.tileset.selected.flipD();
 
-        if (editor.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
+        if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
 
             // dont draw the current tile brush under the mouse if we are shift-dragging
@@ -63,7 +67,7 @@ pub const TilemapLayer = struct {
 
             if (ogIsAnyMouseDragging() and igGetIO().KeyShift) { // box selection with left/right mouse + shift
                 var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
-                if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
                     const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
@@ -79,7 +83,7 @@ pub const TilemapLayer = struct {
 
                 var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
                 var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
-                if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = std.math.min(tile.x, tile2.x);
                     var min_y = std.math.min(tile.y, tile2.y);
                     const max_x = std.math.max(tile.x, tile2.x);
@@ -111,14 +115,14 @@ pub const TilemapLayer = struct {
     }
 
     fn commitInBetweenTiles(self: *@This(), state: *AppState, tile: Point, camera: Camera, color: u16) void {
-        if (editor.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
+        if (root.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
             const abs_x = std.math.absInt(@intCast(i32, tile.x) - @intCast(i32, prev_tile.x)) catch unreachable;
             const abs_y = std.math.absInt(@intCast(i32, tile.y) - @intCast(i32, prev_tile.y)) catch unreachable;
             if (abs_x <= 1 and abs_y <= 1) {
                 return;
             }
 
-            editor.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
+            root.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
         }
     }
 };

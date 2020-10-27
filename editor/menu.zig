@@ -1,10 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
-const editor = @import("editor.zig");
+const root = @import("root");
 usingnamespace @import("imgui");
 
 
-pub fn draw(state: *editor.AppState) void {
+pub fn draw(state: *root.AppState) void {
     var show_component_editor_popup = false;
 
     if (igBeginMenuBar()) {
@@ -31,5 +31,5 @@ pub fn draw(state: *editor.AppState) void {
     }
 
     // we always need to call our popup code
-    editor.windows.component_editor.draw(state);
+    root.windows.component_editor.draw(state);
 }

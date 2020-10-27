@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-const editor = @import("../editor.zig");
+const root = @import("root");
 const Color = aya.math.Color;
 usingnamespace @import("imgui");
 
@@ -167,10 +167,10 @@ pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u16,
     var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
     tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
     tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
-    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), editor.colors.rgbaToU32(116, 252, 253, 100));
+    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), root.colors.rgbaToU32(116, 252, 253, 100));
 
     // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
     tl.x += 1;
     tl.y += 1;
-    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), editor.colors.rgbToU32(116, 252, 253), 2);
+    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), root.colors.rgbToU32(116, 252, 253), 2);
 }

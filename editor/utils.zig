@@ -2,11 +2,11 @@ const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
-const editor = @import("editor.zig");
+const root = @import("root");
 
-const AppState = editor.data.AppState;
-const Point = editor.data.Point;
-const Tilemap = editor.data.Tilemap;
+const AppState = root.data.AppState;
+const Point = root.data.Point;
+const Tilemap = root.data.Tilemap;
 const Camera = @import("camera.zig").Camera;
 
 /// given a mouse position returns the tile under it
