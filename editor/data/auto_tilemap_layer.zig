@@ -3,7 +3,7 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const editor = @import("../editor.zig");
+const root = @import("root");
 const data = @import("data.zig");
 
 const AppState = data.AppState;
@@ -102,6 +102,12 @@ pub const AutoTilemapLayer = struct {
         self.brushset.deinit();
         self.tileset.deinit();
         self.ruleset.deinit();
+    }
+
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+        if (std.mem.endsWith(u8, file, ".png")) {
+
+        }
     }
 
     /// regenerates the stored random data per tile. Needs to be called on seed change or map resize
@@ -493,10 +499,10 @@ pub const AutoTilemapLayer = struct {
 
                 var rule_tile = rule.get(x, y);
                 if (rule_tile.tile > 0) {
-                    ogAddQuadFilled(draw_list, tl, rect_size, editor.colors.brushes[rule_tile.tile - 1]);
+                    ogAddQuadFilled(draw_list, tl, rect_size, root.colors.brushes[rule_tile.tile - 1]);
                 } else {
                     // if empty rule or just with a modifier
-                    ogAddQuadFilled(draw_list, tl, rect_size, editor.colors.rgbToU32(0, 0, 0));
+                    ogAddQuadFilled(draw_list, tl, rect_size, root.colors.rgbToU32(0, 0, 0));
                 }
 
                 if (x == 2 and y == 2) {
@@ -504,17 +510,17 @@ pub const AutoTilemapLayer = struct {
                     var tl2 = tl;
                     tl2.x += 1;
                     tl2.y += 1;
-                    ogAddQuad(draw_list, tl2, size, editor.colors.pattern_center, thickness);
+                    ogAddQuad(draw_list, tl2, size, root.colors.pattern_center, thickness);
                 }
 
                 tl.x -= 1;
                 tl.y -= 1;
                 if (rule_tile.state == .negated) {
                     const size = rect_size + thickness;
-                    ogAddQuad(draw_list, tl, size, editor.colors.brush_negated, thickness);
+                    ogAddQuad(draw_list, tl, size, root.colors.brush_negated, thickness);
                 } else if (rule_tile.state == .required) {
                     const size = rect_size + thickness;
-                    ogAddQuad(draw_list, tl, size, editor.colors.brush_required, thickness);
+                    ogAddQuad(draw_list, tl, size, root.colors.brush_required, thickness);
                 }
 
                 if (hovered) {
@@ -604,7 +610,7 @@ pub const AutoTilemapLayer = struct {
 
     /// TODO: duplicated almost exactly in TilemapLayer
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        if (ogKeyPressed(aya.sokol.SAPP_KEYCODE_TAB)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
+        if (igGetIO().KeyShift and ogKeyPressed(aya.sokol.SAPP_KEYCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
         const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
         aya.draw.text(if (self.draw_raw_pre_map) "Input Map" else "Final Map", text_pos.x, text_pos.y, null);
@@ -614,7 +620,7 @@ pub const AutoTilemapLayer = struct {
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
         if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;
 
-        if (editor.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
+        if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
 
             // dont draw the current tile brush under the mouse if we are shift-dragging
@@ -625,7 +631,7 @@ pub const AutoTilemapLayer = struct {
             // box selection with left/right mouse + shift
             if (ogIsAnyMouseDragging() and igGetIO().KeyShift) {
                 var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
-                if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
                     const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
@@ -641,7 +647,7 @@ pub const AutoTilemapLayer = struct {
 
                 var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
                 var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
-                if (editor.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
+                if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     self.map_dirty = true;
                     const min_x = std.math.min(tile.x, tile2.x);
                     var min_y = std.math.min(tile.y, tile2.y);
@@ -677,14 +683,14 @@ pub const AutoTilemapLayer = struct {
 
     /// TODO: duplicated in TilemapLayer
     fn commitInBetweenTiles(self: *@This(), state: *AppState, tile: Point, camera: Camera, color: u16) void {
-        if (editor.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
+        if (root.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
             const abs_x = std.math.absInt(@intCast(i32, tile.x) - @intCast(i32, prev_tile.x)) catch unreachable;
             const abs_y = std.math.absInt(@intCast(i32, tile.y) - @intCast(i32, prev_tile.y)) catch unreachable;
             if (abs_x <= 1 and abs_y <= 1) {
                 return;
             }
 
-            editor.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
+            root.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
         }
     }
 };
@@ -695,7 +701,7 @@ fn groupDropTarget(group: u8, index: usize) void {
         const old_pos = cursor;
         cursor.y -= 5;
         igSetCursorPos(cursor);
-        igPushStyleColorU32(ImGuiCol_Button, editor.colors.rgbToU32(0, 255, 0));
+        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
         _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
@@ -748,7 +754,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
         const old_pos = ogGetCursorPos();
         cursor.y -= 5;
         igSetCursorPos(cursor);
-        igPushStyleColorU32(ImGuiCol_Button, editor.colors.rgbToU32(255, 0, 0));
+        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
         _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
@@ -854,8 +860,8 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
         var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing) };
         tl.x += content_start_pos.x + 1 + @intToFloat(f32, self.tileset.spacing);
         tl.y += content_start_pos.y + 1 + @intToFloat(f32, self.tileset.spacing);
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), editor.colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, editor.colors.rule_result_selected_outline, 2);
+        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), root.colors.rule_result_selected_fill);
+        ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, root.colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state

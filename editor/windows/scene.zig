@@ -1,22 +1,28 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-const editor = @import("../editor.zig");
+const root = @import("root");
 usingnamespace @import("imgui");
 
 pub const Scene = struct {
     pass: ?aya.gfx.OffscreenPass = null,
-    cam: editor.Camera,
+    cam: root.Camera,
 
     pub fn init() Scene {
-        return .{ .cam = editor.Camera.init() };
+        return .{ .cam = root.Camera.init() };
     }
 
     pub fn deinit(self: @This()) void {
         self.pass.?.deinit();
     }
 
-    pub fn draw(self: *@This(), state: *editor.AppState) void {
+    pub fn onFileDropped(self: @This(), state: *root.AppState, file: []const u8) void {
+        if (state.layers.items.len > 0) {
+            state.layers.items[state.selected_layer_index].onFileDropped(state, file);
+        }
+    }
+
+    pub fn draw(self: *@This(), state: *root.AppState) void {
         igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
         _ = igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar);
         igPopStyleVar(1);
@@ -25,7 +31,7 @@ pub const Scene = struct {
         igEnd();
     }
 
-    pub fn update(self: *@This(), state: *editor.AppState) void {
+    pub fn update(self: *@This(), state: *root.AppState) void {
         // handle initial creation and resizing of the OffscreenPass
         var content_region = ogGetContentRegionAvail();
         if (self.pass) |pass| {
@@ -59,7 +65,7 @@ pub const Scene = struct {
         // aya.gfx.endPass();
     }
 
-    fn render(self: @This(), state: *editor.AppState) void {
+    fn render(self: @This(), state: *root.AppState) void {
         // get mouse in world space
         const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
         const mouse_world = self.cam.igScreenToWorld(mouse_screen);
@@ -114,7 +120,7 @@ pub const Scene = struct {
         }
     }
 
-    fn handleInput(self: *@This(), state: *editor.AppState) void {
+    fn handleInput(self: *@This(), state: *root.AppState) void {
         // scrolling via drag with alt or super key down
         if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
             var scroll_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);

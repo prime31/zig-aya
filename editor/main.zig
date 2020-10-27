@@ -1,10 +1,22 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-const Editor = @import("editor.zig").Editor;
+
+usingnamespace @import("data/data.zig");
+
+pub const utils = @import("utils.zig");
+pub const menu = @import("menu.zig");
+pub const data = @import("data/data.zig");
+pub const colors = @import("colors.zig");
+pub const windows = @import("windows/windows.zig");
+
+pub const Camera = @import("camera.zig").Camera;
 
 pub const imgui = true;
-var editor: Editor = undefined;
+
+// global state
+pub var state: AppState = undefined;
+pub var scene: windows.Scene = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -12,7 +24,7 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .shutdown = shutdown,
-        .onFileDropped = Editor.onFileDropped,
+        .onFileDropped = onFileDropped,
         .gfx = .{
             .resolution_policy = .none,
         },
@@ -25,7 +37,9 @@ pub fn main() !void {
 }
 
 fn init() void {
-    editor = Editor.init();
+    colors.init();
+    state = AppState.initWithTestData();
+    scene = windows.Scene.init();
 
     var io = igGetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -36,17 +50,40 @@ fn init() void {
 }
 
 fn shutdown() void {
-    editor.deinit();
+    scene.deinit();
+    state.deinit();
 }
 
 fn update() void {
     beginDock();
-    editor.update();
+
+    menu.draw(&state);
+
+    windows.layers.draw(&state);
+    scene.draw(&state); // AFTER layers, in case any layers were removed
+    windows.entities.draw(&state);
+    windows.inspector.draw(&state);
+
+    _ = igBegin("Assets", null, ImGuiWindowFlags_None);
+    igEnd();
+
+    // igShowDemoWindow(null);
+
+    // _ = igBegin("sadfasdf", null, ImGuiWindowFlags_None);
+    // if (igColorEdit4("fart", &colors.ui_tint.x, ImGuiColorEditFlags_NoInputs)) {
+    //     colors.setTintColor(colors.ui_tint);
+    // }
+    // igEnd();
+
     igEnd();
 }
 
 fn render() void {
     aya.gfx.beginNullPass();
+}
+
+fn onFileDropped(file: []const u8) void {
+    scene.onFileDropped(&state, file);
 }
 
 fn beginDock() void {

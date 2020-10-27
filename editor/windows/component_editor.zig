@@ -1,11 +1,11 @@
 const std = @import("std");
 const upaya = @import("upaya");
-const editor = @import("../editor.zig");
+const root = @import("root");
 usingnamespace @import("imgui");
 
 var name_buf: [25]u8 = undefined;
 
-pub fn draw(state: *editor.AppState) void {
+pub fn draw(state: *root.AppState) void {
     igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
     var open: bool = true;
     if (igBeginPopupModal("Component Editor", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -47,7 +47,7 @@ pub fn draw(state: *editor.AppState) void {
     }
 }
 
-fn drawDetailsPane(state: *editor.AppState) void {
+fn drawDetailsPane(state: *root.AppState) void {
     if (igButton("Add Field", ImVec2{})) {
         igOpenPopup("##add-field");
     }
@@ -65,7 +65,7 @@ fn drawDetailsPane(state: *editor.AppState) void {
     addFieldPopup(state);
 }
 
-fn addFieldPopup(state: *editor.AppState) void {
+fn addFieldPopup(state: *root.AppState) void {
     igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##add-field", ImGuiWindowFlags_None)) {
         igText("Field Type");
