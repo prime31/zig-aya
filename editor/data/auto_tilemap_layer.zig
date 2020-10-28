@@ -675,13 +675,13 @@ pub const AutoTilemapLayer = struct {
                     self.commitInBetweenTiles(state, tile, camera, tile_value);
                 }
                 self.dragged = true;
-                self.prev_mouse_pos = igGetIO().MousePos;
 
                 self.tilemap.setTile(tile, tile_value);
             } else if (ogIsAnyMouseReleased()) {
                 self.dragged = false;
             }
         }
+        self.prev_mouse_pos = igGetIO().MousePos;
     }
 
     /// TODO: duplicated in TilemapLayer
