@@ -35,12 +35,16 @@ const TileRenderInfo = struct {
             if ((id & flipped_d) != 0) {
                 if (flip_h and flip_v) {
                     info.rot = aya.math.pi_over_2;
+                    info.sy *= -1;
                 } else if (flip_h) {
                     info.rot = -aya.math.pi_over_2;
+                    info.sy *= -1;
                 } else if (flip_v) {
                     info.rot = aya.math.pi_over_2;
+                    info.sx *= -1;
                 } else {
                     info.rot = -aya.math.pi_over_2;
+                    info.sx *= -1;
                 }
             }
         }
