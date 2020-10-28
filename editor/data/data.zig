@@ -74,7 +74,7 @@ pub const TileRenderInfo = struct {
         const flip_v = tile.comps.vertical == 1;
 
         // deal with flipping/rotating if necessary
-        if (tile.comps.horizontal == 1 or tile.comps.vertical == 1 or tile.comps.diagonal == 1) {
+        if (flip_h or flip_v or tile.comps.diagonal == 1) {
             // set the origin based on the tile_size if we are rotated
             info.ox = @intToFloat(f32, tile_size) / 2.0;
             info.oy = @intToFloat(f32, tile_size) / 2.0;
@@ -85,12 +85,16 @@ pub const TileRenderInfo = struct {
             if (tile.comps.diagonal == 1) {
                 if (flip_h and flip_v) {
                     info.rot = aya.math.pi_over_2;
+                    info.sy *= -1;
                 } else if (flip_h) {
                     info.rot = -aya.math.pi_over_2;
+                    info.sy *= -1;
                 } else if (flip_v) {
                     info.rot = aya.math.pi_over_2;
+                    info.sx *= -1;
                 } else {
                     info.rot = -aya.math.pi_over_2;
+                    info.sx *= -1;
                 }
             }
         }
