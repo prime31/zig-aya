@@ -37,7 +37,11 @@ pub const TilemapLayer = struct {
     }
 
     pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
-        std.debug.print("TilemapLayer got file: {}\n", .{file});
+        if (std.mem.endsWith(u8, file, ".png")) {
+            self.tileset.loadTexture(file) catch |err| {
+                std.debug.print("tileset failed to load image: {}\n", .{err});
+            };
+        }
     }
 
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {

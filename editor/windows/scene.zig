@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-const root = @import("root");
+const root = @import("../main.zig"); //@import("root");
 usingnamespace @import("imgui");
 
 pub const Scene = struct {
@@ -17,7 +17,10 @@ pub const Scene = struct {
     }
 
     pub fn onFileDropped(self: @This(), state: *root.AppState, file: []const u8) void {
-        if (state.layers.items.len > 0) {
+        // swallow up any project files
+        if (std.mem.endsWith(u8, file, ".editor_extension")) {
+            std.debug.print("Scene got an editor extension\n", .{});
+        } else if (state.layers.items.len > 0) {
             state.layers.items[state.selected_layer_index].onFileDropped(state, file);
         }
     }
@@ -54,15 +57,19 @@ pub const Scene = struct {
         igSetCursorScreenPos(tmp);
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
+        aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
+        // the map area and some decorations
+        aya.draw.rect(.{}, @intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size), math.Color.black);
+        aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
 
-        aya.gfx.beginPass(.{ .pass = self.pass.?, .trans_mat = self.cam.transMat() });
-        aya.draw.rect(.{}, @intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size), math.Color.black); // the map area defined
+        // outer decorations
+        aya.draw.point(.{ .x = -40, .y = -40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = -40, .y = @intToFloat(f32, state.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) + 40, .y = -40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) + 40, .y = @intToFloat(f32, state.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
+
         self.render(state);
         aya.gfx.endPass();
-
-        // aya.gfx.beginPass(.{ .pass = self.pass.?, .color_action = .SG_ACTION_DONTCARE });
-        // aya.draw.hollowRect(.{}, 300, 300, 5, aya.math.Color.sky_blue);
-        // aya.gfx.endPass();
     }
 
     fn render(self: @This(), state: *root.AppState) void {
@@ -130,12 +137,7 @@ pub const Scene = struct {
             igResetMouseDragDelta(ImGuiMouseButton_Left);
 
             // dont allow camera to move outside of map bounds
-            const bounds = self.cam.bounds();
-            var half_screen = math.Vec2{ .x = bounds.w, .y = bounds.h };
-            half_screen.scale(0.45); // allow a bit of padding around the map
-            const max = math.Vec2{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) - half_screen.x, .y = @intToFloat(f32, state.map_size.h * state.tile_size) - half_screen.y };
-            self.cam.pos = self.cam.pos.clamp(half_screen, max);
-
+            self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
             return;
         }
 
@@ -143,6 +145,7 @@ pub const Scene = struct {
             self.cam.zoom += igGetIO().MouseWheel * 0.03;
             self.cam.clampZoom();
             igGetIO().MouseWheel = 0;
+            self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
         }
     }
 };

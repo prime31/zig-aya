@@ -140,7 +140,7 @@ pub const Texture = extern struct {
     pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
         var comp: c_int = undefined;
-        if (aya.stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+        if (stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
             return true;
         }
 

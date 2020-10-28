@@ -106,7 +106,9 @@ pub const AutoTilemapLayer = struct {
 
     pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
-
+            self.tileset.loadTexture(file) catch |err| {
+                std.debug.print("tileset failed to load image: {}\n", .{err});
+            };
         }
     }
 
@@ -612,6 +614,7 @@ pub const AutoTilemapLayer = struct {
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         if (igGetIO().KeyShift and ogKeyPressed(aya.sokol.SAPP_KEYCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
+        // TODO: this needs to be in some screen-space renderer in Scene so that it isnt scaled with the camera transform matrix
         const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
         aya.draw.text(if (self.draw_raw_pre_map) "Input Map" else "Final Map", text_pos.x, text_pos.y, null);
 

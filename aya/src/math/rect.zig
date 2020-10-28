@@ -26,6 +26,19 @@ pub const Rect = struct {
     pub fn contains(self: Rect, x: f32, y: f32) bool {
         return self.x <= x and x < self.right() and self.y <= y and y < self.bottom();
     }
+
+    pub fn contract(self: Rect, horiz: f32, vert: f32) Rect {
+        var rect = self;
+        rect.x += horiz;
+        rect.y += vert;
+        rect.w -= horiz * 2;
+        rect.h -= vert * 2;
+        return rect;
+    }
+
+    pub fn expand(self: Rect, horiz: f32, vert: f32) Rect {
+        return self.contract(-horiz, -vert);
+    }
 };
 
 pub const RectI = struct {
