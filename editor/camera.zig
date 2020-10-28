@@ -32,7 +32,7 @@ pub const Camera = struct {
     }
 
     pub fn clampZoom(self: *Camera) void {
-        self.zoom = std.math.clamp(self.zoom, 0.2, 5);
+        self.zoom = std.math.clamp(self.zoom, 0.5, 5);
     }
 
     pub fn screenToWorld(self: Camera, pos: math.Vec2) math.Vec2 {
@@ -62,6 +62,11 @@ pub const Camera = struct {
         half_screen = half_screen.subtract(.{.x = padding, .y = padding});
 
         const max = math.Vec2{ .x = @intToFloat(f32, width) - half_screen.x, .y = @intToFloat(f32, height) - half_screen.y };
-        self.pos = self.pos.clamp(half_screen, max);
+        // ensure we dont zoom out so far that our clamp becomes pointless
+        if (half_screen.x > max.x or half_screen.y > max.y) {
+            self.pos = half_screen;
+        } else {
+            self.pos = self.pos.clamp(half_screen, max);
+        }
     }
 };
