@@ -29,16 +29,16 @@ pub const Tileset = struct {
         self.tex.deinit();
     }
 
-    pub fn loadTexture(self: *Tileset, file: []const u8) void {
+    pub fn loadTexture(self: *Tileset, file: []const u8) !void {
         var spacing: usize = 0;
         if (!validateImage(file, self.tile_size, &spacing)) {
             std.debug.print("invalid file. failed validation\n", .{});
-            return;
+            return error.FailedValidation;
         }
 
         self.tex.deinit();
         self.spacing = spacing;
-        self.setTexture(aya.gfx.Texture.initFromFile(file, .nearest) catch unreachable);
+        self.setTexture(try aya.gfx.Texture.initFromFile(file, .nearest));
     }
 
     /// ensures the image is a valid tileset

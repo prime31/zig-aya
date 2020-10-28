@@ -12,7 +12,7 @@ pub const Camera = struct {
     }
 
     pub fn transMat(self: Camera) math.Mat32 {
-        var window_half_size = ogGetWindowSize().scale(0.5);
+        var window_half_size = ogGetContentRegionAvail().scale(0.5);
 
         var transform = math.Mat32.identity;
 
@@ -52,5 +52,16 @@ pub const Camera = struct {
         var br = self.screenToWorld(math.Vec2{ .x = window_size.x, .y = window_size.y });
 
         return math.Rect{ .x = tl.x, .y = tl.y, .w = br.x - tl.x, .h = br.y - tl.y };
+    }
+
+    /// clamps the map to (0,0) - (width,height) with some optional padding around the outside
+    pub fn clampToMap(self: *Camera, width: usize, height: usize, padding: f32) void {
+        const bnds = self.bounds();
+        var half_screen = math.Vec2{ .x = bnds.w, .y = bnds.h };
+        half_screen.scale(0.5);
+        half_screen = half_screen.subtract(.{.x = padding, .y = padding});
+
+        const max = math.Vec2{ .x = @intToFloat(f32, width) - half_screen.x, .y = @intToFloat(f32, height) - half_screen.y };
+        self.pos = self.pos.clamp(half_screen, max);
     }
 };
