@@ -22,3 +22,12 @@ pub fn eqlSub(comptime T: type, base: []const T, b: []const T) bool {
     }
     return true;
 }
+
+/// Copy all of source into dest at position 0. dest.len must be >= source.len + 1.
+pub fn copyZ(comptime T: type, dest: []T, source: []const T) void {
+    @setRuntimeSafety(false);
+    std.debug.assert(dest.len >= source.len);
+    for (source) |s, i|
+        dest[i] = s;
+    dest[source.len] = 0;
+}

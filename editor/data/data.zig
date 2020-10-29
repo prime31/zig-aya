@@ -119,13 +119,14 @@ pub const TileRenderInfo = struct {
 };
 
 pub const Entity = struct {
-    name: [:0]const u8,
+    id: u8 = 0,
+    name: [25:0]u8 = undefined, // = [_:0]u8{0} ** 25,
 
-    pub fn init(name: []const u8) Entity {
-        return .{ .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable };
+    pub fn init(id: u8, name: []const u8) Entity {
+        var entity = Entity{ .id = id };
+        aya.mem.copyZ(u8, &entity.name, name);
+        return entity;
     }
 
-    pub fn deinit(self: @This()) void {
-        aya.mem.allocator.free(self.name);
-    }
+    pub fn deinit(self: @This()) void {}
 };
