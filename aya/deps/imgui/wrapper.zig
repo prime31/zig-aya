@@ -71,6 +71,12 @@ pub fn ogGetWindowSize() ImVec2 {
     return pos;
 }
 
+pub fn ogGetItemRectSize() ImVec2 {
+    var size = ImVec2{};
+    igGetItemRectSize(&size);
+    return size;
+}
+
 pub fn ogGetMouseDragDelta(button: ImGuiMouseButton, lock_threshold: f32) ImVec2 {
     var pos = ImVec2{};
     igGetMouseDragDelta(&pos, button, lock_threshold);
@@ -111,12 +117,6 @@ pub fn ogGetWindowContentRegionMax() ImVec2 {
     var max = ImVec2{};
     igGetWindowContentRegionMax(&max);
     return max;
-}
-
-pub fn ogGetItemRectSize() ImVec2 {
-    var size = ImVec2{};
-    igGetItemRectSize(&size);
-    return size;
 }
 
 pub fn ogGetWindowCenter() ImVec2 {

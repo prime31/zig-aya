@@ -53,6 +53,21 @@ pub const Layer = union(LayerType) {
         };
     }
 
+    pub fn setName(self: *@This(), new_name: []const u8) void {
+        const renameClosure = struct {
+            pub fn rename(l: anytype, n: []const u8) void {
+                aya.mem.allocator.free(l.name);
+                l.name = aya.mem.allocator.dupeZ(u8, n) catch unreachable;
+            }
+        }.rename;
+
+        switch (self.*) {
+            .tilemap => |*layer| renameClosure(layer, new_name),
+            .auto_tilemap => |*layer| renameClosure(layer, new_name),
+            .entity => |*layer| renameClosure(layer, new_name),
+        }
+    }
+
     pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
         switch (self.*) {
             .tilemap => |*layer| layer.onFileDropped(state, file),
