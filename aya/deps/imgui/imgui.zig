@@ -20,7 +20,7 @@ pub const FILE = extern struct {
     // _seek: ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t,
     _write: ?fn (?*c_void, [*c]const u8, c_int) callconv(.C) c_int,
     _ub: struct___sbuf,
-    _extra: ?*@Type(.Opaque),
+    _extra: ?*opaque{},
     _ur: c_int,
     _ubuf: [3]u8,
     _nbuf: [1]u8,

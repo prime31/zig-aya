@@ -179,6 +179,18 @@ pub fn ogDragSigned(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: 
     return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
 }
 
+pub fn ogDragSignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T, format: [*c]const u8) bool {
+    var min = p_min;
+    var max = p_max;
+    const data_type = switch (T) {
+        i16 => ImGuiDataType_S16,
+        i32 => ImGuiDataType_S32,
+        f32 => ImGuiDataType_Float,
+        else => unreachable,
+    };
+    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, format, 1);
+}
+
 pub fn ogColorConvertU32ToFloat4(in: ImU32) ImVec4 {
     var col = ImVec4{};
     igColorConvertU32ToFloat4(&col, in);
