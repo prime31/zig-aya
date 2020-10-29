@@ -22,29 +22,23 @@ pub fn draw(state: *root.AppState) void {
             ogUnformattedTooltip(-1, "Click and drag to reorder");
             igSameLine(0, 10);
 
-            if (igSelectableBool(layer.name(), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 25 })) {
+            if (igSelectableBool(std.mem.spanZ(&layer.name()), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 30 })) {
                 state.selected_layer_index = i;
             }
 
-            if (igBeginPopupContextItem("woot", ImGuiMouseButton_Right)) {
+            if (igBeginPopupContextItem("##layer-context-menu", ImGuiMouseButton_Right)) {
                 if (igMenuItemBool("Rename", null, false, true)) rename_index = i;
-
-                if (igBeginPopup("##rename-layer", ImGuiWindowFlags_None)) {
-                    igText("Rename the thing");
-                    igEndPopup();
-                }
-
                 igEndPopup();
             }
 
-            // make some room for the button
-            igSameLine(igGetWindowContentRegionWidth() - 3, 0);
-            if (ogButton("X")) {
+            // make some room for the delete button
+            igSameLine(igGetWindowContentRegionWidth() - 8, 0);
+            if (ogButton(icons.trash)) {
                 delete_index = i;
             }
 
             if (rename_index != null) {
-                std.mem.copy(u8, &name_buf, layer.name());
+                aya.mem.copyZ(u8, &name_buf, std.mem.spanZ(&layer.name()));
                 igOpenPopup("##rename-layer");
             }
 
@@ -92,39 +86,58 @@ fn renameLayerPopup(layer: *Layer) void {
 }
 
 fn addLayerPopup(state: *root.AppState) void {
+    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##add-layer", ImGuiWindowFlags_None)) {
         igText("Layer Name");
-        _ = ogInputText("##name", &name_buf, name_buf.len);
+        _ = ogInputText("##layer-name", &name_buf, name_buf.len);
         igSpacing();
 
-        // inline for (@typeInfo(LayerType).Enum.fields) |field| {
-        //     var buf: [15]u8 = undefined;
-        //     _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-        //     if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(LayerType, field.value), ImGuiSelectableFlags_DontClosePopups, .{})) {
-        //         new_layer_type = @intToEnum(LayerType, field.value);
+        igText("Layer Type");
+        _ = igBeginChildFrame(666, .{ .y = 55 }, ImGuiWindowFlags_None);
+        inline for (@typeInfo(root.LayerType).Enum.fields) |field| {
+            var buf: [15]u8 = undefined;
+            _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
+            if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(root.LayerType, field.value), ImGuiSelectableFlags_DontClosePopups, .{})) {
+                new_layer_type = @intToEnum(root.LayerType, field.value);
+            }
+        }
+        igEndChild();
+
+        igDummy(.{ .y = 5 });
+
+        // igText("Type");
+        // const tag_name = @tagName(new_layer_type);
+        // const tag_name_c = std.cstr.addNullByte(aya.mem.tmp_allocator, tag_name) catch unreachable;
+        // _ = std.mem.replace(u8, tag_name_c, "_", " ", tag_name_c);
+        // if (igBeginCombo("##type", &tag_name_c[0], ImGuiComboFlags_None)) {
+        //     inline for (std.meta.fields(root.LayerType)) |field| {
+        //         var buf: [15]u8 = undefined;
+        //         _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
+        //         if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(root.LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
+        //             new_layer_type = @intToEnum(root.LayerType, field.value);
+        //         }
         //     }
+        //     igEndCombo();
         // }
 
-        igText("Type");
-        const tag_name = @tagName(new_layer_type);
-        const tag_name_c = std.cstr.addNullByte(aya.mem.tmp_allocator, tag_name) catch unreachable;
-        _ = std.mem.replace(u8, tag_name_c, "_", " ", tag_name_c);
-        if (igBeginCombo("##type", &tag_name_c[0], ImGuiComboFlags_None)) {
-            inline for (std.meta.fields(root.LayerType)) |field| {
-                var buf: [15]u8 = undefined;
-                _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-                if (igSelectableBool(&buf[0], new_layer_type == @intToEnum(root.LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
-                    new_layer_type = @intToEnum(root.LayerType, field.value);
-                }
-            }
-            igEndCombo();
+        const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
+        const disabled = label_sentinel_index == 0;
+        if (disabled) {
+            igPushItemFlag(ImGuiItemFlags_Disabled, true);
+            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
         }
 
-        const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
-        if (igButton("Add Layer", .{ .x = -1, .y = 0 }) and name.len > 0) {
+        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
+        if (igButton("Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
-            state.layers.append(root.Layer.init(new_layer_type, name, state.map_size, state.tile_size)) catch unreachable;
+            state.layers.append(root.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
             state.selected_layer_index = state.layers.items.len - 1;
+        }
+        igPopStyleColor(1);
+
+        if (disabled) {
+            igPopItemFlag();
+            igPopStyleVar(1);
         }
 
         igEndPopup();

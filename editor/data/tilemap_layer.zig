@@ -15,7 +15,7 @@ const Point = data.Point;
 const Camera = @import("../camera.zig").Camera;
 
 pub const TilemapLayer = struct {
-    name: [:0]const u8,
+    name: [25:0]u8 = undefined,
     tilemap: Tilemap,
     tileset: Tileset,
     shift_dragged: bool = false,
@@ -23,15 +23,15 @@ pub const TilemapLayer = struct {
     prev_mouse_pos: ImVec2 = .{},
 
     pub fn init(name: []const u8, size: Size, tile_size: usize) TilemapLayer {
-        return .{
-            .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
+        var layer = TilemapLayer{
             .tilemap = Tilemap.init(size),
             .tileset = Tileset.init(tile_size),
         };
+        aya.mem.copyZ(u8, &layer.name, name);
+        return layer;
     }
 
     pub fn deinit(self: @This()) void {
-        aya.mem.allocator.free(self.name);
         self.tilemap.deinit();
         self.tileset.deinit();
     }

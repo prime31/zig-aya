@@ -63,7 +63,7 @@ fn update() void {
     scene.draw(&state); // AFTER layers, in case any layers were removed
 
     // ensure our windows are always present so they can be arranged sanely and dont jump into and out of existence
-    inline for (&[_][:0]const u8{"Assets", "Inspector", "Rules"}) |name| {
+    inline for (&[_][:0]const u8{"Assets", "Inspector###Inspector", "Entities###Entities"}) |name| {
         _ = igBegin(name, null, ImGuiWindowFlags_None);
         igEnd();
     }
@@ -110,12 +110,12 @@ fn beginDock() void {
     const dockspace_id = igGetIDStr("aya-dockspace");
     // igDockBuilderRemoveNode(dockspace_id); // uncomment for testing initial layout setup code
     if (igDockBuilderGetNode(dockspace_id) == null) {
-        var dock_main_id = igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+        var dock_main_id = igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton);
         igDockBuilderSetNodeSize(dockspace_id, work_size);
         setupDockLayout(dock_main_id);
     }
 
-    igDockSpace(dockspace_id, .{}, ImGuiDockNodeFlags_None, null);
+    igDockSpace(dockspace_id, .{}, ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton, null);
 }
 
 fn setupDockLayout(id: ImGuiID) void {
@@ -129,16 +129,14 @@ fn setupDockLayout(id: ImGuiID) void {
 
     // bottom_left_id is the bottom node after this
     var bottom_left_id: ImGuiID = 0;
-    const top_left_id = igDockBuilderSplitNode(left_id, ImGuiDir_Up, 0.3, null, &bottom_left_id);
+    const top_left_id = igDockBuilderSplitNode(left_id, ImGuiDir_Up, 0.35, null, &bottom_left_id);
     igDockBuilderDockWindow("Layers", top_left_id);
-    igDockBuilderDockWindow("Entities", bottom_left_id);
+    igDockBuilderDockWindow("###Entities", bottom_left_id);
 
     // bottom_left_id is the bottom node after this
     var bottom_right_id: ImGuiID = 0;
     var top_right_id = igDockBuilderSplitNode(right_id, ImGuiDir_Up, 0.65, null, &bottom_right_id);
-    igDockBuilderDockWindow("Inspector", top_right_id);
-    igDockBuilderDockWindow("Rules", top_right_id);
-    // igDockBuilderDockWindow("Palette", bottom_right_id);
+    igDockBuilderDockWindow("###Inspector", top_right_id);
 
     // dock_main_id is the bottom node after this
     const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.75, null, &dock_main_id);

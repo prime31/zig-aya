@@ -57,7 +57,7 @@ var drag_drop_state = struct {
 
 /// drawing of the pre-map data (raw, pre-rules) the Tilemap is used. Final rule-processed map is stored n AutoTilemapLayer.
 pub const AutoTilemapLayer = struct {
-    name: [:0]const u8,
+    name: [25:0]u8 = undefined,
     tilemap: Tilemap,
     final_map: []u16,
     random_map_data: []Randoms,
@@ -81,7 +81,6 @@ pub const AutoTilemapLayer = struct {
         std.mem.set(u16, tmp_data, 0);
 
         var layer = AutoTilemapLayer{
-            .name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
             .tilemap = Tilemap.init(size),
             .final_map = tmp_data,
             .random_map_data = aya.mem.allocator.alloc(Randoms, size.w * size.h) catch unreachable,
@@ -90,12 +89,12 @@ pub const AutoTilemapLayer = struct {
             .ruleset = RuleSet.init(),
             .ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator), // TODO: maybe [:0]u8?
         };
+        aya.mem.copyZ(u8, &layer.name, name);
         layer.generateRandomData();
         return layer;
     }
 
     pub fn deinit(self: @This()) void {
-        aya.mem.allocator.free(self.name);
         self.tilemap.deinit();
         aya.mem.allocator.free(self.final_map);
         aya.mem.allocator.free(self.random_map_data);
@@ -219,7 +218,7 @@ pub const AutoTilemapLayer = struct {
         defer igPopStyleVar(1);
 
         defer igEnd();
-        if (!igBegin("Rules", null, ImGuiWindowFlags_None)) return;
+        if (!igBegin("Rules###Inspector", null, ImGuiWindowFlags_None)) return;
 
         var group: u8 = 0;
         var delete_index: usize = std.math.maxInt(usize);

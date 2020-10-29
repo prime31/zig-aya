@@ -81,9 +81,6 @@ pub const Tileset = struct {
                 const xx = @divTrunc(x, 16);
                 const yy = @divTrunc(y, 16);
                 pixels[x + y * 16 * 4] = colors[xx + yy * 2];
-
-                // add a line for testing rotation/flipping
-                if (x == 15 or x == 14) pixels[x + y * 16 * 4] = Color.white.value;
             }
         }
 
@@ -124,7 +121,7 @@ pub const Tileset = struct {
         igSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
 
         defer igEnd();
-        if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) return;
+        if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) return;
 
         var origin = ogGetCursorScreenPos();
         ogImage(self.tex.imTextureID(), self.tex.width * @intCast(i32, zoom), self.tex.height * @intCast(i32, zoom));

@@ -4,8 +4,9 @@ const root = @import("../main.zig");
 usingnamespace @import("imgui");
 
 pub fn draw(state: *root.AppState) void {
+    @panic("defunkt");
     defer igEnd();
-    if (!igBegin("Inspector", null, ImGuiWindowFlags_None)) return;
+    if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
 
     _ = ogButton("word to your mother");
 
@@ -33,7 +34,7 @@ pub fn draw(state: *root.AppState) void {
     }
 }
 
-fn inspectFloat(name: [:0]const u8, value: *f32) void {
+pub fn inspectFloat(name: [:0]const u8, value: *f32) void {
     igPushIDPtr(value);
 
     igColumns(2, null, false);
@@ -58,7 +59,7 @@ fn inspectFloat(name: [:0]const u8, value: *f32) void {
     igPopID();
 }
 
-fn inspectVec2(name: [:0]const u8, vec: *aya.math.Vec2) void {
+pub fn inspectVec2(name: [:0]const u8, vec: *aya.math.Vec2) void {
     igPushIDPtr(vec);
 
     igColumns(2, null, false);
@@ -90,4 +91,17 @@ fn inspectVec2(name: [:0]const u8, vec: *aya.math.Vec2) void {
 
     igColumns(1, null, false);
     igPopID();
+}
+
+pub fn inspectInputText(label: [:0]const u8, buf: [*c]u8, buf_size: usize) void {
+    igColumns(2, null, false);
+    igSetColumnWidth(0, 100);
+    igText(label);
+    igNextColumn();
+
+    igPushItemWidth(-1);
+    _ = ogInputText("##", buf, buf_size);
+    igPopItemWidth();
+
+    igColumns(1, null, false);
 }

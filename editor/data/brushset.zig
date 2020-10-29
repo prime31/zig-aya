@@ -69,7 +69,7 @@ pub const Brushset = struct {
         });
         igSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
 
-        if (igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) {
             self.drawWithoutWindow();
             igEnd();
         }
