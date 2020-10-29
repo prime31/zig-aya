@@ -612,13 +612,19 @@ pub const AutoTilemapLayer = struct {
 
     /// TODO: duplicated almost exactly in TilemapLayer
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        if (igGetIO().KeyShift and ogKeyPressed(aya.sokol.SAPP_KEYCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
+        if ((igGetIO().KeyCtrl or igGetIO().KeySuper) and ogKeyPressed(aya.sokol.SAPP_KEYCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
         // TODO: this needs to be in some screen-space renderer in Scene so that it isnt scaled with the camera transform matrix
         const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
         aya.draw.text(if (self.draw_raw_pre_map) "Input Map" else "Final Map", text_pos.x, text_pos.y, null);
 
         if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
+
+        // shortcuts for pressing 1-9 to set the brush, only works when hovering the scene view
+        var key: usize = 49;
+        while (key < 58) : (key += 1) {
+            if (ogKeyPressed(key)) self.brushset.selected.value = @intCast(u16, key - 49);
+        }
 
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
         if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;

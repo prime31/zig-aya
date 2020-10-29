@@ -1,7 +1,9 @@
 const std = @import("std");
 const aya = @import("aya");
-const root = @import("root");
+const root = @import("../main.zig");
 usingnamespace @import("imgui");
+
+const Layer = root.data.Layer;
 
 var name_buf: [25:0]u8 = undefined;
 var new_layer_type: root.LayerType = .tilemap;
@@ -9,20 +11,44 @@ var new_layer_type: root.LayerType = .tilemap;
 pub fn draw(state: *root.AppState) void {
     if (igBegin("Layers", null, ImGuiWindowFlags_None)) {
         var delete_index: usize = std.math.maxInt(usize);
-        for (state.layers.items) |layer, i| {
+
+        for (state.layers.items) |*layer, i| {
+            var rename_index: ?usize = null;
             ogPushIDUsize(i);
             defer igPopID();
 
-            if (igSelectableBool(layer.name(), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - 25 })) {
+            _ = ogButton(icons.grip_horizontal);
+            const drag_grip_w = ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
+            ogUnformattedTooltip(-1, "Click and drag to reorder");
+            igSameLine(0, 10);
+
+            if (igSelectableBool(layer.name(), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 25 })) {
                 state.selected_layer_index = i;
             }
 
-            // make some room for the buttons
+            if (igBeginPopupContextItem("woot", ImGuiMouseButton_Right)) {
+                if (igMenuItemBool("Rename", null, false, true)) rename_index = i;
+
+                if (igBeginPopup("##rename-layer", ImGuiWindowFlags_None)) {
+                    igText("Rename the thing");
+                    igEndPopup();
+                }
+
+                igEndPopup();
+            }
+
+            // make some room for the button
             igSameLine(igGetWindowContentRegionWidth() - 3, 0);
-            igSetCursorPosY(igGetCursorPosY() - 3);
             if (ogButton("X")) {
                 delete_index = i;
             }
+
+            if (rename_index != null) {
+                std.mem.copy(u8, &name_buf, layer.name());
+                igOpenPopup("##rename-layer");
+            }
+
+            renameLayerPopup(layer);
         }
 
         if (delete_index < std.math.maxInt(usize)) {
@@ -39,7 +65,7 @@ pub fn draw(state: *root.AppState) void {
 
         // right-align the button
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
-        if (igButton("Add Layer", .{.x = 75})) {
+        if (igButton("Add Layer", .{ .x = 75 })) {
             std.mem.set(u8, &name_buf, 0);
             new_layer_type = .tilemap;
             igOpenPopup("##add-layer");
@@ -49,6 +75,20 @@ pub fn draw(state: *root.AppState) void {
         addLayerPopup(state);
     }
     igEnd();
+}
+
+fn renameLayerPopup(layer: *Layer) void {
+    if (igBeginPopup("##rename-layer", ImGuiWindowFlags_None)) {
+        _ = ogInputText("", &name_buf, name_buf.len);
+
+        const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
+        if (igButton("Rename Layer", .{ .x = -1, .y = 0 }) and name.len > 0) {
+            layer.setName(name);
+            igCloseCurrentPopup();
+        }
+
+        igEndPopup();
+    }
 }
 
 fn addLayerPopup(state: *root.AppState) void {

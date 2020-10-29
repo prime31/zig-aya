@@ -61,11 +61,12 @@ fn update() void {
 
     windows.layers.draw(&state);
     scene.draw(&state); // AFTER layers, in case any layers were removed
-    windows.entities.draw(&state);
-    windows.inspector.draw(&state);
 
-    _ = igBegin("Assets", null, ImGuiWindowFlags_None);
-    igEnd();
+    // ensure our windows are always present so they can be arranged sanely and dont jump into and out of existence
+    inline for (&[_][:0]const u8{"Assets", "Inspector", "Rules"}) |name| {
+        _ = igBegin(name, null, ImGuiWindowFlags_None);
+        igEnd();
+    }
 
     // igShowDemoWindow(null);
 
