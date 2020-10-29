@@ -66,7 +66,7 @@ fn inspectVec2(name: [:0]const u8, vec: *aya.math.Vec2) void {
     igText(name);
     igNextColumn();
 
-    igPushMultiItemsWidths(2, igCalcItemWidth() + 20);
+    igPushMultiItemsWidths(2, (ogGetContentRegionAvail().x - 40));
 
     const line_height = GImGui.*.FontSize + igGetStyle().FramePadding.y * 2;
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };

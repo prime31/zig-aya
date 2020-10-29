@@ -4,6 +4,17 @@ pub const icons = @import("font_awesome.zig");
 
 extern fn _ogImage(user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2) void;
 extern fn _ogImageButton(user_texture_id: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int) bool;
+extern fn _ogColoredText(r: f32, g: f32, b: f32, text: [*c]const u8) void;
+
+pub fn ogColoredText(r: f32, g: f32, b: f32, text: [:0]const u8) void {
+    _ogColoredText(r, g, b, text);
+}
+
+pub fn ogColoredButton(color: ImU32, label: [:0]const u8) bool {
+    igPushStyleColorU32(ImGuiCol_Button, color);
+    defer igPopStyleColor(1);
+    return ogButton(label);
+}
 
 pub fn ogPushIDUsize(id: usize) void {
     igPushIDInt(@intCast(c_int, id));
