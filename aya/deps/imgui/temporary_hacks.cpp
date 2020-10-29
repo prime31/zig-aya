@@ -16,3 +16,12 @@ CIMGUI_API bool _ogImageButton(ImTextureID user_texture_id, const ImVec2 size, c
     ImVec4 border_col;
     return ImGui::ImageButton(user_texture_id, size, uv0, uv1, frame_padding, border_col, tint_col);
 }
+
+CIMGUI_API void _ogColoredText(float r, float g, float b, const char* text) {
+    ImVec4 tint_col;
+    tint_col.x = r;
+    tint_col.y = g;
+    tint_col.z = b;
+    tint_col.w = 1;
+    ImGui::TextColored(tint_col, text);
+}
