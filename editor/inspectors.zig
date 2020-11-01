@@ -1,38 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
-const root = @import("../main.zig");
+const root = @import("main.zig");
 usingnamespace @import("imgui");
-
-pub fn draw(state: *root.AppState) void {
-    @panic("defunkt");
-    defer igEnd();
-    if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
-
-    _ = ogButton("word to your mother");
-
-    var v = aya.math.Vec2{ .x = 6, .y = 55 };
-    inspectVec2("Position", &v);
-    inspectVec2("Fart", &v);
-    inspectVec2("Big Longer Name", &v);
-    inspectFloat("Floaty", &v.x);
-    inspectFloat("Other One", &v.y);
-
-    // context delete sample
-    if (igBeginPopupContextItem("woot", ImGuiMouseButton_Right)) {
-        if (igMenuItemBool("Delete Me", null, false, true)) {}
-        igEndPopup();
-    }
-
-    if (ogButton("Add Component")) {
-        igOpenPopup("AddComponent");
-    }
-
-    if (igBeginPopup("AddComponent", ImGuiWindowFlags_None)) {
-        if (igMenuItemBool("Camera", null, false, true)) {}
-        if (igMenuItemBool("Sprite", null, false, true)) {}
-        igEndPopup();
-    }
-}
 
 pub fn inspectBool(label: [:0]const u8, value: *bool) void {
     igColumns(2, null, false);
@@ -61,7 +30,7 @@ pub fn inspectInt(label: [:0]const u8, value: *i32) void {
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-    if (igButton("R", button_size)) value.* = 0;
+    if (igButton(icons.redo, button_size)) value.* = 0;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -86,7 +55,7 @@ pub fn inspectFloat(label: [:0]const u8, value: *f32) void {
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-    if (igButton("R", button_size)) value.* = 0;
+    if (igButton(icons.redo, button_size)) value.* = 0;
     igPopStyleColor(1);
 
     igSameLine(0, 0);

@@ -24,6 +24,21 @@ pub fn ogPushIDUsize(id: usize) void {
     igPushIDInt(@intCast(c_int, id));
 }
 
+/// helper to shorten disabling controls via ogPushDisabled; defer ogPopDisabled; due to defer not working inside the if block.
+pub fn ogPushDisabled(should_push: bool) void {
+    if (should_push) {
+        igPushItemFlag(ImGuiItemFlags_Disabled, true);
+        igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.7);
+    }
+}
+
+pub fn ogPopDisabled(should_pop: bool) void {
+    if (should_pop) {
+        igPopItemFlag();
+        igPopStyleVar(1);
+    }
+}
+
 /// only true if down this frame and not down the previous frame
 pub fn ogKeyPressed(key: usize) bool {
     return igGetIO().KeysDown[key] and igGetIO().KeysDownDuration[key] == 0;
@@ -48,7 +63,7 @@ pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
     const size = ImVec2{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
     // TODO: remove when windows can handle passing ImVec4s
     // igImage(texture, size, ImVec2{}, ImVec2{ .x = 1, .y = 1 }, white, .{});
-    _ogImage(texture, size, .{}, .{ .x = 1, .y = 1});
+    _ogImage(texture, size, .{}, .{ .x = 1, .y = 1 });
 }
 
 pub fn ogImageButton(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int, bg_col: ImVec4, tint_col: ImVec4) bool {

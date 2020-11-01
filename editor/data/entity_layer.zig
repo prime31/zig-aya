@@ -6,6 +6,7 @@ usingnamespace @import("imgui");
 
 const editor = @import("../editor.zig");
 const data = @import("data.zig");
+const inspectors = @import("../inspectors.zig");
 
 const AppState = data.AppState;
 const Entity = data.Entity;
@@ -125,7 +126,7 @@ pub const EntityLayer = struct {
 
         // ogColoredText(0.5, 0.7, 0.3, &entity.name);
         // _ = ogInputText("##entity-name", &entity.name, entity.name.len);
-        @import("../windows/inspector.zig").inspectString("Name", &entity.name, entity.name.len);
+        inspectors.inspectString("Name", &entity.name, entity.name.len);
         igDummy(.{.y = 5});
 
         // componnent editor
@@ -143,16 +144,16 @@ pub const EntityLayer = struct {
 
                     switch (prop.value) {
                         .string => |*str| {
-                            @import("../windows/inspector.zig").inspectString(&src_prop.name, str, str.len);
+                            inspectors.inspectString(&src_prop.name, str, str.len);
                         },
                         .float => |*flt| {
-                            @import("../windows/inspector.zig").inspectFloat(&src_prop.name, flt);
+                            inspectors.inspectFloat(&src_prop.name, flt);
                         },
                         .int => |*int| {
-                            @import("../windows/inspector.zig").inspectInt(&src_prop.name, int);
+                            inspectors.inspectInt(&src_prop.name, int);
                         },
                         .bool => |*b| {
-                            @import("../windows/inspector.zig").inspectBool(&src_prop.name, b);
+                            inspectors.inspectBool(&src_prop.name, b);
                         },
                     }
                 }
