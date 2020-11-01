@@ -124,18 +124,18 @@ pub const EntityLayer = struct {
         defer igEnd();
         if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
 
-        // ogColoredText(0.5, 0.7, 0.3, &entity.name);
-        // _ = ogInputText("##entity-name", &entity.name, entity.name.len);
-        inspectors.inspectString("Name", &entity.name, entity.name.len);
-        igDummy(.{.y = 5});
+        inspectors.inspectString("Name", &entity.name, entity.name.len, null);
+        igDummy(.{ .y = 5 });
 
         // componnent editor
-        for (entity.components.items) |*comp| {
+        var delete_index: ?usize = null;
+        for (entity.components.items) |*comp, i| {
             igPushIDPtr(comp);
             defer igPopID();
 
+            var is_open = true;
             var src_comp = state.componentWithId(comp.component_id);
-            if (igCollapsingHeaderBoolPtr(&src_comp.name, null, ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (igCollapsingHeaderBoolPtr(&src_comp.name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
                 igIndent(10);
                 defer igUnindent(10);
 
@@ -144,23 +144,27 @@ pub const EntityLayer = struct {
 
                     switch (prop.value) {
                         .string => |*str| {
-                            inspectors.inspectString(&src_prop.name, str, str.len);
+                            inspectors.inspectString(&src_prop.name, str, str.len, &src_prop.value.string);
                         },
                         .float => |*flt| {
-                            inspectors.inspectFloat(&src_prop.name, flt);
+                            inspectors.inspectFloat(&src_prop.name, flt, src_prop.value.float);
                         },
                         .int => |*int| {
-                            inspectors.inspectInt(&src_prop.name, int);
+                            inspectors.inspectInt(&src_prop.name, int, src_prop.value.int);
                         },
                         .bool => |*b| {
-                            inspectors.inspectBool(&src_prop.name, b);
+                            inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool);
                         },
                     }
                 }
             }
+
+            if (!is_open) delete_index = i;
+
+            igDummy(.{ .y = 5 });
         }
 
-        igDummy(.{ .y = 5 });
+        if (delete_index) |index| entity.components.orderedRemove(index).deinit();
 
         // add component
         if (ogButton("Add Component")) {

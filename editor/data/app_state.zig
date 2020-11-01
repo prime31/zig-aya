@@ -42,6 +42,12 @@ pub const AppState = struct {
         comp1.addProperty(.{ .int = 55 });
         aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "an_int");
 
+        var comp2 = state.createComponent("Box");
+        comp2.addProperty(.{ .float = 55 });
+        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "width");
+        comp2.addProperty(.{ .float = 55 });
+        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "height");
+
         // entities
         var entities = Layer.init(.entity, "Entities", state.map_size, state.tile_size);
         state.layers.append(entities) catch unreachable;
