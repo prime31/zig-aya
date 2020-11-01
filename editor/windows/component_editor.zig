@@ -9,6 +9,9 @@ var name_buf: [25]u8 = undefined;
 var selected_comp: usize = 0;
 
 pub fn draw(state: *root.AppState) void {
+    igPushStyleColorU32(ImGuiCol_ModalWindowDimBg, root.colors.rgbaToU32(20, 20, 20, 200));
+    defer igPopStyleColor(1);
+
     igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
     var open: bool = true;
     if (igBeginPopupModal("Component Editor", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -43,27 +46,20 @@ pub fn draw(state: *root.AppState) void {
 
         igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##new-component", ImGuiWindowFlags_None)) {
+            defer igEndPopup();
+
             _ = ogInputText("##new-component-name", &name_buf, name_buf.len);
 
             const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
-            const disabled = name.len == 0;
-            if (disabled) {
-                igPushItemFlag(ImGuiItemFlags_Disabled, true);
-                igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
-            }
+            ogPushDisabled(name.len == 0);
+            defer ogPopDisabled(name.len == 0);
 
-            if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Create Component", .{ .x = -1, .y = 0 }) and name.len > 0) {
+            if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Create Component", .{ .x = -1, .y = 0 })) {
                 _ = state.createComponent(name);
+                std.debug.print("new comp: {}\n", .{name});
                 selected_comp = state.components.items.len - 1;
                 igCloseCurrentPopup();
             }
-
-            if (disabled) {
-                igPopItemFlag();
-                igPopStyleVar(1);
-            }
-
-            igEndPopup();
         }
     }
 }

@@ -41,7 +41,6 @@ pub const AppState = struct {
 
         comp1.addProperty(.{ .int = 55 });
         aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "an_int");
-        state.components.append(comp1) catch unreachable;
 
         // entities
         var entities = Layer.init(.entity, "Entities", state.map_size, state.tile_size);
@@ -63,9 +62,12 @@ pub const AppState = struct {
         self.components.deinit();
     }
 
-    pub fn createComponent(self: *@This(), name: []const u8) Component {
+    pub fn createComponent(self: *@This(), name: []const u8) *Component {
         defer self.next_component_id += 1;
-        return Component.init(self.next_component_id, name);
+
+        var comp = self.components.addOne() catch unreachable;
+        comp.* = Component.init(self.next_component_id, name);
+        return comp;
     }
 
     pub fn componentWithId(self: @This(), id: u8) *Component {
