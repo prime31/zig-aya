@@ -11,9 +11,13 @@ pub fn ogColoredText(r: f32, g: f32, b: f32, text: [:0]const u8) void {
 }
 
 pub fn ogColoredButton(color: ImU32, label: [:0]const u8) bool {
+    return ogColoredButtonEx(color, label, .{});
+}
+
+pub fn ogColoredButtonEx(color: ImU32, label: [:0]const u8, size: ImVec2) bool {
     igPushStyleColorU32(ImGuiCol_Button, color);
     defer igPopStyleColor(1);
-    return ogButton(label);
+    return igButton(label, size);
 }
 
 pub fn ogPushIDUsize(id: usize) void {
@@ -187,7 +191,7 @@ pub fn ogDragSigned(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: 
         f32 => ImGuiDataType_Float,
         else => unreachable,
     };
-    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, null, 1);
+    return igDragScalar(label, data_type, p_data, v_speed, &min, &max, "%.2f", 1);
 }
 
 pub fn ogDragSignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_speed: f32, p_min: T, p_max: T, format: [*c]const u8) bool {

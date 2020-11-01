@@ -40,7 +40,7 @@ pub const EntityLayer = struct {
             self.drawEntitiesWindow();
 
             if (self.entities.items.len > 0)
-                self.drawInspectorWindow(&self.entities.items[self.selected_index]);
+                self.drawInspectorWindow(state, &self.entities.items[self.selected_index]);
         }
 
         // igText("saldkfjklasdfjkdlsjf");
@@ -116,18 +116,64 @@ pub const EntityLayer = struct {
         self.addEntityPopup();
     }
 
-    fn drawInspectorWindow(self: *@This(), entity: *Entity) void {
+    fn drawInspectorWindow(self: *@This(), state: *AppState, entity: *Entity) void {
         igPushIDPtr(entity);
         defer igPopID();
 
         defer igEnd();
         if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
 
-        ogColoredText(0.5, 0.7, 0.3, &entity.name);
+        // ogColoredText(0.5, 0.7, 0.3, &entity.name);
+        // _ = ogInputText("##entity-name", &entity.name, entity.name.len);
+        @import("../windows/inspector.zig").inspectString("Name", &entity.name, entity.name.len);
+        igDummy(.{.y = 5});
 
-        _ = ogInputText("##entity-name", &entity.name, entity.name.len);
+        // componnent editor
+        for (entity.components.items) |*comp| {
+            igPushIDPtr(comp);
+            defer igPopID();
 
-        @import("../windows/inspector.zig").inspectInputText("Name", &entity.name, entity.name.len);
+            var src_comp = state.componentWithId(comp.component_id);
+            if (igCollapsingHeaderBoolPtr(&src_comp.name, null, ImGuiTreeNodeFlags_DefaultOpen)) {
+                igIndent(10);
+                defer igUnindent(10);
+
+                for (comp.props.items) |*prop| {
+                    var src_prop = src_comp.propertyWithId(prop.property_id);
+
+                    switch (prop.value) {
+                        .string => |*str| {
+                            @import("../windows/inspector.zig").inspectString(&src_prop.name, str, str.len);
+                        },
+                        .float => |*flt| {
+                            @import("../windows/inspector.zig").inspectFloat(&src_prop.name, flt);
+                        },
+                        .int => |*int| {
+                            @import("../windows/inspector.zig").inspectInt(&src_prop.name, int);
+                        },
+                        .bool => |*b| {
+                            @import("../windows/inspector.zig").inspectBool(&src_prop.name, b);
+                        },
+                    }
+                }
+            }
+        }
+
+        igDummy(.{ .y = 5 });
+
+        // add component
+        if (ogButton("Add Component")) {
+            igOpenPopup("AddComponent");
+        }
+
+        if (igBeginPopup("AddComponent", ImGuiWindowFlags_None)) {
+            for (state.components.items) |comp| {
+                if (igMenuItemBool(&comp.name, null, false, true)) {
+                    entity.addComponent(comp.spawnInstance());
+                }
+            }
+            igEndPopup();
+        }
     }
 
     fn addEntityPopup(self: *@This()) void {

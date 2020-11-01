@@ -127,13 +127,11 @@ fn addLayerPopup(state: *root.AppState) void {
             igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
         }
 
-        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
-        if (igButton("Add Layer", .{ .x = -1, .y = 0 })) {
+        if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
             state.layers.append(root.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
             state.selected_layer_index = state.layers.items.len - 1;
         }
-        igPopStyleColor(1);
 
         if (disabled) {
             igPopItemFlag();
