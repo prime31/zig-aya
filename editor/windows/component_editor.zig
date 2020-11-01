@@ -32,7 +32,7 @@ pub fn draw(state: *root.AppState) void {
         igNextColumn();
 
         if (state.components.items.len > 0) {
-            drawDetailsPane(&state.components.items[selected_comp]);
+            drawDetailsPane(state, &state.components.items[selected_comp]);
         }
 
         igColumns(1, "id", false);
@@ -68,7 +68,7 @@ pub fn draw(state: *root.AppState) void {
     }
 }
 
-fn drawDetailsPane(component: *Component) void {
+fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     igText("Name");
     igSameLine(0, 130);
     igText("Default Value");
@@ -104,19 +104,34 @@ fn drawDetailsPane(component: *Component) void {
 
     if (delete_index) |index| {
         var prop = component.props.orderedRemove(index);
+
+        // remove from any Entities that have this component
+        for (state.layers.items) |*layer| {
+            if (layer.* == .entity) {
+                for (layer.entity.entities.items) |*entity| {
+                    for (entity.components.items) |*comp| {
+                        if (comp.component_id == component.id) {
+                            comp.removeProperty(prop.id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         prop.deinit();
     }
 
-    igDummy(.{.y = 5});
+    igDummy(.{ .y = 5 });
 
     if (igButton("Add Field", .{})) {
         igOpenPopup("##add-field");
     }
 
-    addFieldPopup(component);
+    addFieldPopup(state, component);
 }
 
-fn addFieldPopup(component: *Component) void {
+fn addFieldPopup(state: *root.AppState, component: *Component) void {
     igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##add-field", ImGuiWindowFlags_None)) {
         igText("Field Type");
@@ -124,17 +139,37 @@ fn addFieldPopup(component: *Component) void {
 
         if (igSelectableBool("bool", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .bool = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (igSelectableBool("string", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .string = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (igSelectableBool("float", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .float = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (igSelectableBool("int", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .int = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
         }
 
         igEndPopup();
+    }
+}
+
+fn addLastPropertyToEntitiesContainingComponent(state: *root.AppState, component: *Component) void {
+    // remove from any Entities that have this component
+    for (state.layers.items) |*layer| {
+        if (layer.* == .entity) {
+            for (layer.entity.entities.items) |*entity| {
+                for (entity.components.items) |*comp| {
+                    if (comp.component_id == component.id) {
+                        comp.addProperty(component.props.items[component.props.items.len - 1]);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

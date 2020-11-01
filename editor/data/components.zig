@@ -25,7 +25,7 @@ pub const Component = struct {
     }
 
     pub fn spawnInstance(self: Component) ComponentInstance {
-        return  ComponentInstance.init(self);
+        return ComponentInstance.init(self);
     }
 
     pub fn propertyWithId(self: @This(), id: u8) *Property {
@@ -67,7 +67,7 @@ pub const ComponentInstance = struct {
             .props = std.ArrayList(PropertyInstance).init(aya.mem.allocator),
         };
 
-        for (src_component.props.items) |prop| comp.props.append(PropertyInstance.init(prop.id, prop.value)) catch unreachable;
+        for (src_component.props.items) |prop| comp.addProperty(prop);
 
         return comp;
     }
@@ -75,6 +75,19 @@ pub const ComponentInstance = struct {
     pub fn deinit(self: ComponentInstance) void {
         for (self.props.items) |*prop| prop.deinit();
         self.props.deinit();
+    }
+
+    pub fn removeProperty(self: *@This(), property_id: u8) void {
+        var id = for (self.props.items) |prop, i| {
+            if (prop.property_id == property_id) {
+                break i;
+            }
+        } else std.math.maxInt(usize);
+        _ = self.props.orderedRemove(id);
+    }
+
+    pub fn addProperty(self: *@This(), prop: Property) void {
+        self.props.append(PropertyInstance.init(prop.id, prop.value)) catch unreachable;
     }
 };
 
