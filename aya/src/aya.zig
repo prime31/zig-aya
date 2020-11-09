@@ -95,8 +95,6 @@ fn runLoop(update: fn () void, render: fn () void, imgui_enabled: bool) void {
             time.resync();
         }
 
-        gfx.device.beginFrame();
-
         time.tick(update);
         render();
 
