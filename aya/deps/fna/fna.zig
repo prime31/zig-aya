@@ -117,10 +117,6 @@ pub const Device = struct {
         FNA3D_SetIndexBufferData(self, buffer, offset_in_bytes, data, data_length, options);
     }
 
-    pub fn beginFrame(self: *Device) void {
-        FNA3D_BeginFrame(self);
-    }
-
     pub fn applyVertexBufferBindings(self: *Device, bindings: [*c]VertexBufferBinding, num_bindings: i32, bindings_updated: bool, base_vertex: i32) void {
         const updated: u8 = if (bindings_updated) 1 else 0;
         FNA3D_ApplyVertexBufferBindings(self, bindings, num_bindings, updated, base_vertex);
@@ -164,11 +160,11 @@ pub fn getDrawableSize(window: ?*c_void, w: *i32, h: *i32) void {
     FNA3D_GetDrawableSize(window, w, h);
 }
 
-pub const Texture = opaque{};
-pub const Buffer = opaque{};
-pub const Renderbuffer = opaque{};
-pub const Effect = opaque{};
-pub const Query = opaque{};
+pub const Texture = opaque {};
+pub const Buffer = opaque {};
+pub const Renderbuffer = opaque {};
+pub const Effect = opaque {};
+pub const Query = opaque {};
 
 pub const PresentInterval = extern enum(c_int) {
     default,
@@ -519,7 +515,6 @@ pub extern fn FNA3D_PrepareWindowAttributes() u32;
 pub extern fn FNA3D_GetDrawableSize(window: ?*c_void, x: [*c]i32, y: [*c]i32) void;
 pub extern fn FNA3D_CreateDevice(presentationParameters: [*c]PresentationParameters, debugMode: u8) ?*Device;
 pub extern fn FNA3D_DestroyDevice(device: ?*Device) void;
-pub extern fn FNA3D_BeginFrame(device: ?*Device) void;
 pub extern fn FNA3D_SwapBuffers(device: ?*Device, sourceRectangle: [*c]Rect, destinationRectangle: [*c]Rect, overrideWindowHandle: ?*c_void) void;
 pub extern fn FNA3D_Clear(device: ?*Device, options: ClearOptions, color: [*c]const Vec4, depth: f32, stencil: i32) void;
 pub extern fn FNA3D_DrawIndexedPrimitives(device: ?*Device, primitiveType: PrimitiveType, baseVertex: i32, minVertexIndex: i32, numVertices: i32, startIndex: i32, primitiveCount: i32, indices: ?*Buffer, indexElementSize: IndexElementSize) void;
