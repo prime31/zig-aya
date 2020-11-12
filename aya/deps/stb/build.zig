@@ -4,21 +4,21 @@ const Builder = std.build.Builder;
 
 pub fn build(b: *Builder) void {
     const exe = b.addStaticLibrary("JunkLib", null);
-    linkArtifact(b, exe, b.standardTargetOptions(.{}));
+    linkArtifact(b, exe, b.standardTargetOptions(.{}), .static, "");
     exe.install();
 }
 
-/// prefix_path is used to add package paths. It should be the the same path used to include this build file
 pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
     exe.linkLibC();
+    exe.addIncludeDir(prefix_path ++ "aya/deps/stb/src");
 
-    const lib_cflags = &[_][]const u8{"-O3"};
-    exe.addCSourceFile(prefix_path ++ "aya/deps/fontstash/src/fontstash.c", lib_cflags);
+    const lib_cflags = &[_][]const u8{ "-std=c99", "-O3" };
+    exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_image_impl.c", lib_cflags);
 }
 
 pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {
     return .{
-        .name = "fontstash",
-        .path = prefix_path ++ "aya/deps/fontstash/fontstash.zig",
+        .name = "stb",
+        .path = prefix_path ++ "aya/deps/stb/stb.zig",
     };
 }
