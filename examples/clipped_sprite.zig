@@ -4,7 +4,6 @@ const math = aya.math;
 const Color = math.Color;
 usingnamespace @import("imgui");
 
-pub const imgui = true;
 var tex: aya.gfx.Texture = undefined;
 var tri_batch: aya.gfx.TriangleBatcher = undefined;
 
@@ -19,13 +18,13 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     tri_batch = aya.gfx.TriangleBatcher.init(null, 1000) catch unreachable;
     tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
     TexturePolygon.generateMesh("assets/sword_dude.png", 2, 0);
 }
 
-fn update() void {
+fn update() !void {
     _ = aya.utils.inspect("Trans", &trans);
     _ = aya.utils.inspect("Trans2", &trans2);
 
@@ -37,7 +36,7 @@ fn update() void {
     }
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     // var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
     // var mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = -1 });
@@ -71,7 +70,7 @@ fn render() void {
     tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 22.00, .y = 48.20 }, Color.purple);
     tri_batch.drawTriangle(.{ .x = 26.00, .y = 48.00 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 24.20, .y = 49.30 }, Color.purple);
 
-    tri_batch.endFrame();
+    tri_batch.end();
 
     // const poly = [_]math.Vec2{ .{ .x = 36.90, .y = 30.50 }, .{ .x = 38.10, .y = 50.00 }, .{ .x = 26.00, .y = 50.00 }, .{ .x = 26.00, .y = 48.00 }, .{ .x = 24.20, .y = 49.30 }, .{ .x = 22.00, .y = 48.20 }, .{ .x = 22.00, .y = 45.50 }, .{ .x = 0.40, .y = 38.60 }, .{ .x = 0.00, .y = 37.40 }, .{ .x = 0.00, .y = 32.20 }, .{ .x = 3.60, .y = 28.60 }, .{ .x = 20.00, .y = 35.80 }, .{ .x = 26.00, .y = 33.60 }, .{ .x = 26.00, .y = 27.30 } };
     // aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);

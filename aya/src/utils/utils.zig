@@ -36,7 +36,7 @@ fn getMinMax(comptime T: type, comptime P: type, comptime name: []const u8) stru
 }
 
 pub fn inspect(comptime label: []const u8, comptime value: anytype) bool {
-    if (!aya.has_imgui) return false;
+    if (!aya.enable_imgui) return false;
 
     const T = comptime @TypeOf(value);
     std.debug.assert(std.meta.trait.isSingleItemPtr(T));

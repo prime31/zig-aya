@@ -1,6 +1,6 @@
-const gfx = @import("gfx.zig");
+const aya = @import("../../aya.zig");
+const gfx = aya.gfx;
 const math = @import("../math/math.zig");
-const sokol = @import("sokol");
 
 pub const draw = struct {
     pub var batcher: gfx.Batcher = undefined;
@@ -10,8 +10,7 @@ pub const draw = struct {
     var white_tex: gfx.Texture = undefined;
 
     pub fn init(config: gfx.Config) !void {
-        var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-        white_tex = gfx.Texture.initWithColorData(pixels[0..], 2, 2, .nearest);
+        white_tex = gfx.Texture.initSingleColor(0xFFFFFFFF);
 
         batcher = try gfx.Batcher.init(null, config.batcher_max_sprites);
 
@@ -20,14 +19,19 @@ pub const draw = struct {
         fontbook.setSize(10);
     }
 
-    /// binds a Texture to the sg_bindings in the Batchers DynamicMesh
-    pub fn bindTexture(texture: gfx.Texture, slot: usize) void {
-        batcher.mesh.bindings.fs_images[slot] = texture.img;
+    pub fn deinit() void {
+        batcher.deinit();
+        white_tex.deinit();
+    }
+
+    /// binds a Texture to the Bindings in the Batchers DynamicMesh
+    pub fn bindTexture(texture: Texture, slot: c_uint) void {
+        batcher.mesh.bindImage(texture.img, slot);
     }
 
     /// unbinds a previously bound texture. All texture slots > 0 must be unbound manually!
-    pub fn unbindTexture(slot: usize) void {
-        batcher.mesh.bindings.fs_images[slot] = sokol.sg_image{ .id = sokol.SG_INVALID_ID };
+    pub fn unbindTexture(slot: c_uint) void {
+        batcher.mesh.bindImage(0, slot);
     }
 
     // Drawing
@@ -103,7 +107,7 @@ pub const draw = struct {
     }
 
     pub fn point(position: math.Vec2, size: f32, color: math.Color) void {
-        quad.setFill(@floatToInt(i32, size), @floatToInt(i32, size));
+        quad.setFill(size, size);
 
         const offset = if (size == 1) 0 else size * 0.5;
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
@@ -121,7 +125,7 @@ pub const draw = struct {
     }
 
     pub fn rect(position: math.Vec2, width: f32, height: f32, color: math.Color) void {
-        quad.setFill(@floatToInt(i32, width), @floatToInt(i32, height));
+        quad.setFill(width, height);
         var mat = math.Mat32.initTransform(.{ .x = position.x, .y = position.y });
         batcher.draw(white_tex, quad, mat, color);
     }

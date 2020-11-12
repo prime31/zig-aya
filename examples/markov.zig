@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-usingnamespace @import("sokol");
 
 pub const imgui = true;
 
@@ -66,12 +65,12 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     tex = aya.gfx.Texture.initFromFile("/Users/desaro/Desktop/input.png", .nearest) catch unreachable;
     generateMap();
 }
 
-fn update() void {
+fn update() !void {
     if (ogButton("Regen")) {
         generateMap();
     }
@@ -90,7 +89,7 @@ fn generateMap() void {
     tilemap.rotate();
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     drawMap(map[0..], 10, 37, 10, 10, 4);
     drawMap(generated_map, 10, generated_map.len / 10, 100, 10, 8);
@@ -165,14 +164,19 @@ pub const Markov = struct {
 
     fn choose(hashmap: std.StringHashMap(u8)) []const u8 {
         var n: i32 = 0;
-        for (hashmap.items()) |entry| {
+        var iter = hashmap.iterator();
+        while (iter.next()) |entry| {
             n += @intCast(i32, entry.value);
         }
 
-        if (n <= 1) return hashmap.items()[0].key;
+        if (n <= 1) {
+            iter = hashmap.iterator();
+            return iter.next().?.key;
+        }
 
         n = aya.math.rand.range(i32, 0, n);
-        for (hashmap.items()) |entry| {
+        iter = hashmap.iterator();
+        while (iter.next()) |entry| {
             n = n - @intCast(i32, entry.value);
             if (n < 0) return entry.key;
         }
@@ -217,7 +221,15 @@ pub const Markov = struct {
                 item = choose(self.rows.get(item).?);
             }
             // reset item for the next iteration
-            item = choose(self.rows.items()[aya.math.rand.range(usize, 0, self.rows.items().len)].value);
+            var index = aya.math.rand.range(usize, 0, self.rows.count());
+            var iter = self.rows.iterator();
+            while (iter.next()) |entry| {
+                if (index == 0) {
+                    item = choose(entry.value);
+                    break;
+                }
+                index -= 1;
+            }
         }
         res.append(self.final) catch unreachable;
 

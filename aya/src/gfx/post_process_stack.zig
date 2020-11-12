@@ -1,7 +1,5 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
-const shaders = @import("shaders");
-const sokol = @import("sokol");
 const OffscreenPass = aya.gfx.OffscreenPass;
 
 /// manaages a list of PostProcessors that are used to process a render texture before blitting it to the screen.
@@ -15,7 +13,7 @@ pub const PostProcessStack = struct {
         return .{
             .processors = std.ArrayList(*PostProcessor).init(alloc),
             .allocator = alloc,
-            .pass = OffscreenPass.init(sokol.sapp_width(), sokol.sapp_height(), .nearest),
+            .pass = OffscreenPass.init(aya.window.width(), aya.window.height()),
         };
     }
 
@@ -50,14 +48,14 @@ pub const PostProcessStack = struct {
     pub fn process(self: *PostProcessStack, pass: OffscreenPass) void {
         for (self.processors.items) |p, i| {
             const offscreen_pass = if (!aya.math.isEven(i)) pass else self.pass;
-            const tex = if (aya.math.isEven(i)) pass.color_tex else self.pass.color_tex;
+            const tex = if (aya.math.isEven(i)) pass.color_texture else self.pass.color_texture;
             p.process(p, offscreen_pass, tex);
         }
 
         // if there was an odd number of post processors blit to the OffscreenPass that was passed in so it gets blitted to the backbuffer
         if (!aya.math.isEven(self.processors.items.len)) {
-            aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE, .pass = pass, .pipeline = aya.gfx.defaultPipeline() });
-            aya.draw.tex(self.pass.color_tex, 0, 0);
+            aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass });
+            aya.draw.tex(self.pass.color_texture, 0, 0);
             aya.gfx.endPass();
         }
     }

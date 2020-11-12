@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 
-var mesh: aya.gfx.DynamicMesh(aya.gfx.Vertex) = undefined;
+var mesh: aya.gfx.DynamicMesh(aya.gfx.Vertex, u16) = undefined;
 var tex: aya.gfx.Texture = undefined;
 var rng = std.rand.DefaultPrng.init(0);
 
@@ -14,11 +14,11 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     var indices = [_]u16{
         0, 1, 2, 2, 3, 0,
     }; //0, 1, 2, 0, 2, 3,
-    mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex).init(null, 4, indices[0..]) catch unreachable;
+    mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex, u16).init(null, 4, indices[0..]) catch unreachable;
 
     mesh.verts[0] = .{ .pos = .{ .x = 220, .y = 20 }, .uv = .{ .x = 1, .y = 0 }, .col = 0xFFFF0FFF };
     mesh.verts[1] = .{ .pos = .{ .x = 20, .y = 20 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF00FFFF };
@@ -27,15 +27,15 @@ fn init() void {
     mesh.updateAllVerts();
 
     tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
-    mesh.bindings.fs_images[0] = tex.img;
+    mesh.bindImage(tex.img, 0);
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     mesh.deinit();
     tex.deinit();
 }
 
-fn update() void {
+fn update() !void {
     const rx = aya.math.rand.range(f32, -2, 2);
     const ry = aya.math.rand.range(f32, -2, 2);
 
@@ -47,9 +47,9 @@ fn update() void {
     mesh.updateAllVerts();
 }
 
-fn render() void {
-    aya.gfx.beginPass(.{ .color = aya.math.Color.aya });
-    mesh.draw();
+fn render() !void {
+    aya.gfx.beginPass(.{});
+    mesh.drawAllVerts();
     aya.debug.drawRect(.{ .x = 300, .y = 200 }, 40, 40, null);
     aya.draw.tex(tex, 10, 10);
     aya.draw.tex(tex, 400, 400);

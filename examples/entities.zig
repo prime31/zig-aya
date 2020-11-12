@@ -11,7 +11,7 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     var manager = EntityManager.init();
     defer manager.deinit();
 
@@ -43,9 +43,9 @@ fn generational() void {
     std.debug.print("get player after dead: {}\n", .{manager.getEntity(player_id)});
 }
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     aya.draw.line(aya.math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
     aya.gfx.endPass();

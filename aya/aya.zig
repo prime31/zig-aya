@@ -3,7 +3,8 @@ const std = @import("std");
 pub const WindowConfig = @import("src/window.zig").WindowConfig;
 
 // libs
-pub const sokol = @import("sokol");
+const renderkit = @import("renderkit");
+const sdl = @import("sdl");
 pub const imgui = @import("imgui");
 
 // aya namespaces
@@ -15,92 +16,88 @@ pub const math = @import("src/math/math.zig");
 pub const mem = @import("src/mem/mem.zig");
 pub const utils = @import("src/utils/utils.zig");
 pub const tilemap = @import("src/tilemap/tilemap.zig");
-pub const window = @import("src/window.zig");
 
 // aya objects
+pub var window: Window = undefined;
 pub var time: Time = undefined;
 pub var input: Input = undefined;
 pub var debug: Debug = undefined;
 
-const Input = @import("src/input.zig").Input;
+const Window = @import("src/window.zig").Window;
 const Time = @import("src/time.zig").Time;
+const Input = @import("src/input.zig").Input;
 const Debug = @import("src/debug.zig").Debug;
 
-pub const has_imgui: bool = if (@hasDecl(@import("root"), "imgui")) @import("root").imgui else false;
-usingnamespace sokol;
+// search path: root.build_options, root.enable_imgui, default to false
+pub const enable_imgui: bool = if (@hasDecl(@import("root"), "build_options")) blk: {
+    break :blk @field(@import("root"), "build_options").enable_imgui;
+} else if (@hasDecl(@import("root"), "enable_imgui"))
+blk: {
+    break :blk @field(@import("root"), "enable_imgui");
+} else blk: {
+    break :blk false;
+};
 
 pub const Config = struct {
-    init: fn () void,
-    update: fn () void,
-    render: fn () void,
-    shutdown: ?fn () void = null,
+    init: fn () anyerror!void,
+    update: ?fn () anyerror!void,
+    render: fn () anyerror!void,
+    shutdown: ?fn () anyerror!void = null,
     onFileDropped: ?fn ([]const u8) void = null,
 
-    sample_count: c_int = 1,
-    swap_interval: c_int = 1,
+    update_rate: f64 = 60, // desired fps
     gfx: gfx.Config = gfx.Config{},
     window: WindowConfig = WindowConfig{},
 };
 
-var state = struct {
-    config: Config = undefined,
-    cmd_down: bool = false,
-}{};
-
 pub fn run(config: Config) !void {
-    state.config = config;
+    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMECONTROLLER) != 0) {
+        sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
+        return error.SDLInitializationFailed;
+    }
 
-    var app_desc = std.mem.zeroInit(sapp_desc, .{
-        .init_cb = init,
-        .frame_cb = update,
-        .cleanup_cb = cleanup,
-        .event_cb = event,
+    mem.initTmpAllocator();
+    window = try Window.init(config.window);
 
-        .sample_count = config.sample_count,
-        .width = config.window.width,
-        .height = config.window.height,
-        .swap_interval = config.swap_interval,
-        .high_dpi = config.window.high_dpi,
-        .window_title = config.window.title.ptr,
+    var metal_setup = renderkit.MetalSetup{};
+    if (renderkit.current_renderer == .metal) {
+        var metal_view = sdl.SDL_Metal_CreateView(window.sdl_window);
+        metal_setup.ca_layer = sdl.SDL_Metal_GetLayer(metal_view);
+    }
 
-        .alpha = false,
+    renderkit.renderer.setup(.{
+        .allocator = std.testing.allocator,
+        .gl_loader = sdl.SDL_GL_GetProcAddress,
+        .metal = metal_setup,
     });
 
-    if (state.config.onFileDropped == null) {
-        app_desc.max_dropped_files = 0;
-    } else {
-        app_desc.enable_dragndrop = true;
-    }
-
-    _ = sapp_run(&app_desc);
-}
-
-// Event functions
-export fn init() void {
-    time = Time.init();
-    mem.initTmpAllocator();
-
-    var desc = std.mem.zeroInit(sg_desc, .{ .context = sapp_sgcontext() });
-    sg_setup(&desc);
-
-    debug = Debug.init() catch unreachable;
+    gfx.init(config.gfx);
+    time = Time.init(config.update_rate);
     input = Input.init(window.scale());
+    debug = try Debug.init();
+    defer debug.deinit();
 
-    gfx.init(state.config.gfx);
+    try config.init();
 
-    if (has_imgui) {
-        var imgui_desc = std.mem.zeroes(simgui_desc_t);
-        imgui_desc.no_default_font = true;
-        imgui_desc.dpi_scale = sapp_dpi_scale();
-        imgui_desc.ini_filename = "imgui.ini";
-        simgui_setup(&imgui_desc);
+    while (!pollEvents()) {
+        time.tick();
+        if (config.update) |update| try update();
+        try config.render();
 
-        loadDefaultFont();
+        if (renderkit.current_renderer == .opengl) sdl.SDL_GL_SwapWindow(window.sdl_window);
+        gfx.commitFrame();
+        input.newFrame();
     }
-    state.config.init();
+
+    if (config.shutdown) |shutdown| try shutdown();
+
+    gfx.deinit();
+    renderkit.renderer.shutdown();
+    window.deinit();
+    sdl.SDL_Quit();
 }
 
-fn loadDefaultFont() void {
+fn loadDefaultImGuiFont() void {
     var io = imgui.igGetIO();
     _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
 
@@ -125,62 +122,20 @@ fn loadDefaultFont() void {
     imgui.ImFontAtlas_SetTexID(io.Fonts, tex.imTextureID());
 }
 
-export fn update() void {
-    time.tick();
-    if (has_imgui) simgui_new_frame(window.width(), window.height(), 0.017);
-
-    state.config.update();
-    state.config.render();
-
-    if (has_imgui) {
-        gfx.blitToScreen(math.Color.black);
-        gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE });
-        simgui_render();
-        gfx.endPass();
-    }
-
-    gfx.commit();
-    input.newFrame();
-}
-
-export fn event(e: [*c]const sapp_event) void {
-    // special handling of dropped files
-    if (e[0].type == .SAPP_EVENTTYPE_FILES_DROPPED) {
-        if (state.config.onFileDropped) |onFileDropped| {
-            const dropped_file_cnt = sapp_get_num_dropped_files();
-            var i: usize = 0;
-            while (i < dropped_file_cnt) : (i += 1) {
-                onFileDropped(std.mem.spanZ(sapp_get_dropped_file_path(@intCast(c_int, i))));
-            }
+fn pollEvents() bool {
+    var event: sdl.SDL_Event = undefined;
+    while (sdl.SDL_PollEvent(&event) != 0) {
+        switch (event.type) {
+            sdl.SDL_QUIT => return true,
+            sdl.SDL_WINDOWEVENT => {
+                if (event.window.windowID == window.id) {
+                    if (event.window.event == sdl.SDL_WINDOWEVENT_CLOSE) return true;
+                    window.handleEvent(&event.window);
+                }
+            },
+            else => input.handleEvent(&event),
         }
     }
 
-    // handle cmd+Q on macos
-    if (std.Target.current.os.tag == .macos) {
-        if (e[0].type == .SAPP_EVENTTYPE_KEY_DOWN) {
-            if (e[0].key_code == .SAPP_KEYCODE_LEFT_SUPER) {
-                state.cmd_down = true;
-            } else if (state.cmd_down and e[0].key_code == .SAPP_KEYCODE_Q) {
-                sapp_request_quit();
-            }
-        } else if (e[0].type == .SAPP_EVENTTYPE_KEY_UP and e[0].key_code == .SAPP_KEYCODE_LEFT_SUPER) {
-            state.cmd_down = false;
-        }
-    }
-
-    if (has_imgui and simgui_handle_event(e)) return;
-
-    switch (e[0].type) {
-        .SAPP_EVENTTYPE_RESIZED, .SAPP_EVENTTYPE_ICONIFIED, .SAPP_EVENTTYPE_RESTORED, .SAPP_EVENTTYPE_SUSPENDED, .SAPP_EVENTTYPE_RESUMED => window.handleEvent(@ptrCast(*const sapp_event, &e[0])),
-        else => input.handleEvent(@ptrCast(*const sapp_event, &e[0])),
-    }
-}
-
-export fn cleanup() void {
-    if (state.config.shutdown) |shutdown| shutdown();
-    sg_shutdown();
-}
-
-pub fn quit() void {
-    sapp_request_quit();
+    return false;
 }
