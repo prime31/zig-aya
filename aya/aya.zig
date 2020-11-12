@@ -81,19 +81,7 @@ pub fn run(config: Config) !void {
     debug = try Debug.init();
     defer debug.deinit();
 
-    if (enable_imgui) {
-        if (renderkit.current_renderer != .opengl) @panic("ImGui only works with OpenGL so far!");
-
-        _ = imgui.igCreateContext(null);
-        var io = imgui.igGetIO();
-        io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
-        if (config.imgui_docking) io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
-        if (config.imgui_viewports) io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
-        imgui_gl.initForGl(null, window.sdl_window, window.gl_ctx);
-
-        var style = imgui.igGetStyle();
-        style.WindowRounding = 0;
-    }
+    if (enable_imgui) initializeImGui(config);
 
     try config.init();
 
@@ -121,31 +109,6 @@ pub fn run(config: Config) !void {
     sdl.SDL_Quit();
 }
 
-fn loadDefaultImGuiFont() void {
-    var io = imgui.igGetIO();
-    _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
-
-    // add FontAwesome
-    const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ imgui.icons.icon_range_min, imgui.icons.icon_range_max, 0 };
-
-    var icons_config = imgui.ImFontConfig_ImFontConfig();
-    icons_config[0].MergeMode = true;
-    icons_config[0].PixelSnapH = true;
-    icons_config[0].FontDataOwnedByAtlas = false;
-
-    var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
-    _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 13, icons_config, &font_awesome_range[0]);
-
-    var w: i32 = undefined;
-    var h: i32 = undefined;
-    var bytes_per_pixel: i32 = undefined;
-    var pixels: [*c]u8 = undefined;
-    imgui.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, &pixels, &w, &h, &bytes_per_pixel);
-
-    var tex = gfx.Texture.initWithData(pixels[0..@intCast(usize, w * h * bytes_per_pixel)], w, h, .nearest);
-    imgui.ImFontAtlas_SetTexID(io.Fonts, tex.imTextureID());
-}
-
 fn pollEvents() bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
@@ -168,7 +131,48 @@ fn pollEvents() bool {
     return false;
 }
 
-/// returns true if the event is handled by imgui and should be ignored by via
+fn initializeImGui(config: Config) void {
+    if (renderkit.current_renderer != .opengl) @panic("ImGui only works with OpenGL so far!");
+
+    _ = imgui.igCreateContext(null);
+    var io = imgui.igGetIO();
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
+    if (config.imgui_docking) io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+    if (config.imgui_viewports) io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+    imgui_gl.initForGl(null, window.sdl_window, window.gl_ctx);
+
+    if (config.imgui_docking or config.imgui_viewports) imgui.igGetStyle().WindowRounding = 0;
+    loadDefaultImGuiFont();
+}
+
+fn loadDefaultImGuiFont() void {
+    var io = imgui.igGetIO();
+    _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
+
+    // add FontAwesome
+    const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ imgui.icons.icon_range_min, imgui.icons.icon_range_max, 0 };
+
+    var icons_config = imgui.ImFontConfig_ImFontConfig();
+    icons_config[0].MergeMode = true;
+    icons_config[0].PixelSnapH = true;
+    icons_config[0].FontDataOwnedByAtlas = false;
+
+    // optionally, override default font
+    // io.FontDefault = imgui.ImFontAtlas_AddFontFromFileTTF(io.Fonts, "/System/Library/Fonts/SFNSDisplayCondensed-Regular.otf", 18, null, null);
+    var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
+    _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 13, icons_config, &font_awesome_range[0]);
+
+    var w: i32 = undefined;
+    var h: i32 = undefined;
+    var bytes_per_pixel: i32 = undefined;
+    var pixels: [*c]u8 = undefined;
+    imgui.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, &pixels, &w, &h, &bytes_per_pixel);
+
+    var tex = gfx.Texture.initWithDataOptions(u8, w, h, pixels[0..@intCast(usize, w * h * bytes_per_pixel)], .nearest, .clamp);
+    imgui.ImFontAtlas_SetTexID(io.Fonts, tex.imTextureID());
+}
+
+/// returns true if the event is handled by imgui and should be ignored by aya
 fn imguiHandleEvent(evt: *sdl.SDL_Event) bool {
     if (imgui_gl.ImGui_ImplSDL2_ProcessEvent(evt)) {
         return switch (evt.type) {
