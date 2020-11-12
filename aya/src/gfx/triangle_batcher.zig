@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const fna = @import("fna");
 const math = aya.math;
 const Vertex = @import("buffers.zig").Vertex;

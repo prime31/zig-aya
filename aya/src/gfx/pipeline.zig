@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const fs = aya.fs;
 const gfx = aya.gfx;
 const shaders = @import("shaders");

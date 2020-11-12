@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const gfx = aya.gfx;
 const Vec2 = @import("../math/vec2.zig").Vec2;
 usingnamespace aya.sokol;

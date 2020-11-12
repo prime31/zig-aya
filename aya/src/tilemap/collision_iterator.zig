@@ -1,4 +1,4 @@
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const tilemap = aya.tilemap;
 const math = aya.math;
 

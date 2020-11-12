@@ -1,30 +1,30 @@
 const std = @import("std");
 
-pub const WindowConfig = @import("window.zig").WindowConfig;
+pub const WindowConfig = @import("src/window.zig").WindowConfig;
 
 // libs
 pub const sokol = @import("sokol");
 pub const imgui = @import("imgui");
 
 // aya namespaces
-pub const gfx = @import("gfx/gfx.zig");
+pub const gfx = @import("src/gfx/gfx.zig");
 pub const draw = gfx.draw;
-pub const fs = @import("fs.zig");
+pub const fs = @import("src/fs.zig");
 
-pub const math = @import("math/math.zig");
-pub const mem = @import("mem/mem.zig");
-pub const utils = @import("utils/utils.zig");
-pub const tilemap = @import("tilemap/tilemap.zig");
-pub const window = @import("window.zig");
+pub const math = @import("src/math/math.zig");
+pub const mem = @import("src/mem/mem.zig");
+pub const utils = @import("src/utils/utils.zig");
+pub const tilemap = @import("src/tilemap/tilemap.zig");
+pub const window = @import("src/window.zig");
 
 // aya objects
 pub var time: Time = undefined;
 pub var input: Input = undefined;
 pub var debug: Debug = undefined;
 
-const Input = @import("input.zig").Input;
-const Time = @import("time.zig").Time;
-const Debug = @import("debug.zig").Debug;
+const Input = @import("src/input.zig").Input;
+const Time = @import("src/time.zig").Time;
+const Debug = @import("src/debug.zig").Debug;
 
 pub const has_imgui: bool = if (@hasDecl(@import("root"), "imgui")) @import("root").imgui else false;
 usingnamespace sokol;
@@ -112,7 +112,7 @@ fn loadDefaultFont() void {
     icons_config[0].PixelSnapH = true;
     icons_config[0].FontDataOwnedByAtlas = false;
 
-    var data = @embedFile("../assets/" ++ imgui.icons.font_icon_filename_fas);
+    var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
     _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 13, icons_config, &font_awesome_range[0]);
 
     var w: i32 = undefined;

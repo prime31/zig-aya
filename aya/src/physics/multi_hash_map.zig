@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 
 pub fn MultiHashMap(comptime K: type, comptime V: type) type {
     return struct {

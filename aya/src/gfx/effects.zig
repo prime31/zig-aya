@@ -1,4 +1,4 @@
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const shaders = @import("shaders");
 const Pipeline = aya.gfx.Pipeline;
 const Vec2 = aya.math.Vec2;

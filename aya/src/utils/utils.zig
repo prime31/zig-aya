@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 usingnamespace @import("imgui");
 
 pub const FixedList = @import("fixed_list.zig").FixedList;

@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const physics = @import("physics.zig");
 
 // stores a mapping of the hashed position -> list of id's in the cell
