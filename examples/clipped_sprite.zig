@@ -4,6 +4,8 @@ const math = aya.math;
 const Color = math.Color;
 usingnamespace @import("imgui");
 
+pub const enable_imgui = true;
+
 var tex: aya.gfx.Texture = undefined;
 var tri_batch: aya.gfx.TriangleBatcher = undefined;
 

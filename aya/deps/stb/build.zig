@@ -9,6 +9,8 @@ pub fn build(b: *Builder) void {
 }
 
 pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+    exe.addPackage(getPackage(prefix_path));
+
     exe.linkLibC();
     exe.addIncludeDir(prefix_path ++ "aya/deps/stb/src");
 
