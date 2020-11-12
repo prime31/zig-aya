@@ -24,9 +24,9 @@ pub const Batcher = struct {
             indices[i * 3 * 2 + 0] = @intCast(u16, i) * 4 + 0;
             indices[i * 3 * 2 + 1] = @intCast(u16, i) * 4 + 1;
             indices[i * 3 * 2 + 2] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 3] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 4] = @intCast(u16, i) * 4 + 3;
-            indices[i * 3 * 2 + 5] = @intCast(u16, i) * 4 + 0;
+            indices[i * 3 * 2 + 3] = @intCast(u16, i) * 4 + 0;
+            indices[i * 3 * 2 + 4] = @intCast(u16, i) * 4 + 2;
+            indices[i * 3 * 2 + 5] = @intCast(u16, i) * 4 + 3;
         }
 
         return Batcher{
