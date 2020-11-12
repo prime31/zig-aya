@@ -39,7 +39,7 @@ pub fn draw(state: *root.AppState) void {
 
             if (rename_index != null) {
                 aya.mem.copyZ(u8, &name_buf, std.mem.spanZ(&layer.name()));
-                igOpenPopup("##rename-layer");
+                ogOpenPopup("##rename-layer");
             }
 
             renameLayerPopup(layer);
@@ -62,7 +62,7 @@ pub fn draw(state: *root.AppState) void {
         if (igButton("Add Layer", .{ .x = 75 })) {
             std.mem.set(u8, &name_buf, 0);
             new_layer_type = .tilemap;
-            igOpenPopup("##add-layer");
+            ogOpenPopup("##add-layer");
         }
 
         // we always need to call our popup code

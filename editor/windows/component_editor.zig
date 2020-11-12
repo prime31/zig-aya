@@ -40,7 +40,7 @@ pub fn draw(state: *root.AppState) void {
 
         igColumns(1, "id", false);
         if (ogButton("Add Component")) {
-            igOpenPopup("##new-component");
+            ogOpenPopup("##new-component");
             std.mem.set(u8, &name_buf, 0);
         }
 
@@ -121,7 +121,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     igDummy(.{ .y = 5 });
 
     if (igButton("Add Field", .{})) {
-        igOpenPopup("##add-field");
+        ogOpenPopup("##add-field");
     }
 
     addFieldPopup(state, component);

@@ -236,7 +236,7 @@ pub const AutoTilemapLayer = struct {
                 groupDragDrop(group, i);
 
                 if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
-                    igOpenPopup("##rename-group");
+                    ogOpenPopup("##rename-group");
                     std.mem.copy(u8, &rename_group_buf, self.getGroupName(group));
                 }
 
@@ -304,7 +304,7 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 10);
 
         if (ogButton("Add 9-Slice")) {
-            igOpenPopup("nine-slice-wizard");
+            ogOpenPopup("nine-slice-wizard");
             // reset temp state
             std.mem.set(u8, &new_rule_label_buf, 0);
             nine_slice_selected = null;
@@ -312,7 +312,7 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 10);
 
         if (ogButton("Add Inner-4")) {
-            igOpenPopup("inner-four-wizard");
+            ogOpenPopup("inner-four-wizard");
             // reset temp state
             std.mem.set(u8, &new_rule_label_buf, 0);
             nine_slice_selected = null;
@@ -320,7 +320,7 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 10);
 
         if (ogButton("Random Seed")) {
-            igOpenPopup("random-seed");
+            ogOpenPopup("random-seed");
         }
 
         igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.8 });
@@ -355,7 +355,7 @@ pub const AutoTilemapLayer = struct {
         // right-click the move button to add the Rule to a group only if not already in a group
         if (rule.group == 0) {
             if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
-                igOpenPopup("##group-name");
+                ogOpenPopup("##group-name");
                 std.mem.set(u8, &name_buf, 0);
             }
 
@@ -396,12 +396,12 @@ pub const AutoTilemapLayer = struct {
         igSameLine(0, 4);
 
         if (ogButton("Pattern")) {
-            igOpenPopup("##pattern_popup");
+            ogOpenPopup("##pattern_popup");
         }
         igSameLine(0, 4);
 
         if (ogButton("Result")) {
-            igOpenPopup("result_popup");
+            ogOpenPopup("result_popup");
         }
         igSameLine(0, 4);
 
@@ -436,17 +436,17 @@ pub const AutoTilemapLayer = struct {
             igSameLine(0, 4);
 
             if (igButton("...", .{ .x = -1, .y = 0 })) {
-                igOpenPopup("rules_hamburger");
+                ogOpenPopup("rules_hamburger");
             }
 
             self.rulesHamburgerPopup(rule);
 
             // quick brush selector
             if (ogKeyPressed(aya.sokol.SAPP_KEYCODE_B)) {
-                if (igIsPopupOpenID(igGetIDStr("##brushes"))) {
+                if (igIsPopupOpenID(igGetIDStr("##brushes"), ImGuiPopupFlags_None)) {
                     igClosePopupToLevel(1, true);
                 } else {
-                    igOpenPopup("##brushes");
+                    ogOpenPopup("##brushes");
                 }
             }
 
@@ -484,7 +484,7 @@ pub const AutoTilemapLayer = struct {
 
         var pos = ImVec2{};
         igGetCursorScreenPos(&pos);
-        _ = igInvisibleButton("##pattern_button", ImVec2{ .x = canvas_size, .y = canvas_size });
+        _ = igInvisibleButton("##pattern_button", .{ .x = canvas_size, .y = canvas_size }, ImGuiButtonFlags_None);
         const mouse_pos = igGetIO().MousePos;
         const hovered = igIsItemHovered(ImGuiHoveredFlags_None);
 
@@ -710,7 +710,7 @@ fn groupDropTarget(group: u8, index: usize) void {
         cursor.y -= 5;
         igSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
-        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
     }
@@ -763,7 +763,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
         cursor.y -= 5;
         igSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
-        _ = igInvisibleButton("", .{ .x = -1, .y = 8 });
+        _ = igInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
         igPopStyleColor(1);
         igSetCursorPos(old_pos);
 
