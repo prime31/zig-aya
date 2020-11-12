@@ -1,6 +1,6 @@
 const std = @import("std");
 const gfx = @import("gfx.zig");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 usingnamespace @import("sokol");
 
 pub const OffscreenPass = struct {

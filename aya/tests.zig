@@ -1,5 +1,4 @@
 const std = @import("std");
-const tilemap = @import("src/tilemap/tilemap.zig");
 
 // include all files with tests
 comptime {

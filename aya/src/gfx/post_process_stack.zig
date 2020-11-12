@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const shaders = @import("shaders");
 const sokol = @import("sokol");
 const OffscreenPass = aya.gfx.OffscreenPass;

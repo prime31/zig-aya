@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 
 pub const ResolutionScaler = struct {
     x: i32 = 0,

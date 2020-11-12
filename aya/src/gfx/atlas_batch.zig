@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const fna = @import("fna");
 const Vertex = @import("buffers.zig").Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;

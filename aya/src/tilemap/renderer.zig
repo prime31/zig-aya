@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("../../aya.zig");
 const gfx = aya.gfx;
 const tilemap = @import("tilemap.zig");
 
