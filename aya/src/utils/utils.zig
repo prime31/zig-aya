@@ -65,7 +65,7 @@ pub fn inspect(comptime label: []const u8, comptime value: anytype) bool {
 }
 
 pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, comptime value: anytype) bool {
-    if (!aya.has_imgui) return false;
+    if (!aya.enable_imgui) return false;
 
     const T = comptime @TypeOf(value);
     std.debug.assert(std.meta.trait.isSingleItemPtr(T));
