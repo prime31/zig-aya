@@ -16,6 +16,8 @@ pub fn main() anyerror!void {
         .render = render,
         .gfx = .{
             .resolution_policy = .show_all_pixel_perfect,
+            .design_width = 640,
+            .design_height = 480,
         },
     });
 }
@@ -42,9 +44,9 @@ fn update() !void {
     }
 
     if (aya.input.keyDown(.up)) {
-        move.y += speed;
-    } else if (aya.input.keyDown(.down)) {
         move.y -= speed;
+    } else if (aya.input.keyDown(.down)) {
+        move.y += speed;
     }
 
     if (move.x != 0 or move.y != 0) {

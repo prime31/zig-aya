@@ -25,10 +25,8 @@ pub const TriangleBatcher = struct {
         var batcher = TriangleBatcher{
             .mesh = try DynamicMesh(Vertex, u16).init(alloc, max_tris * 3, indices),
         };
-        errdefer batcher.deinit();
 
-        var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-        batcher.white_tex = aya.gfx.Texture.initWithData(u32, 2, 2, pixels[0..]);
+        batcher.white_tex = aya.gfx.Texture.initSingleColor(0xFFFFFFFF);
 
         return batcher;
     }
