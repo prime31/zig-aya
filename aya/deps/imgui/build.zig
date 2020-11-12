@@ -3,6 +3,7 @@ const std = @import("std");
 const Builder = std.build.Builder;
 
 const build_impl_type: enum { exe, static_lib, object_files } = .static_lib;
+var framework_dir: ?[]u8 = null;
 
 pub fn build(b: *std.build.Builder) anyerror!void {
     const exe = b.addStaticLibrary("JunkLib", null);
@@ -96,13 +97,15 @@ fn addImGuiGlImplementation(b: *Builder, exe: *std.build.LibExeObjStep, target: 
 
 /// helper function to get SDK path on Mac
 fn macosFrameworksDir(b: *Builder) ![]u8 {
+    if (framework_dir) |dir| return dir;
+
     var str = try b.exec(&[_][]const u8{ "xcrun", "--show-sdk-path" });
     const strip_newline = std.mem.lastIndexOf(u8, str, "\n");
     if (strip_newline) |index| {
         str = str[0..index];
     }
-    const frameworks_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ str, "/System/Library/Frameworks" });
-    return frameworks_dir;
+    framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ str, "/System/Library/Frameworks" });
+    return framework_dir.?;
 }
 
 pub fn getImGuiPackage(comptime prefix_path: []const u8) std.build.Pkg {
