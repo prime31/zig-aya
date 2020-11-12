@@ -117,4 +117,8 @@ pub const Texture = struct {
         self.* = Texture.init(width, height);
         std.debug.print("----- TODO: recreate render textures correctly with depth/stencil\n", .{});
     }
+
+    pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
+        return @intToPtr(*c_void, self.img);
+    }
 };

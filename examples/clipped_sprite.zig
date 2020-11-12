@@ -30,7 +30,7 @@ fn update() !void {
     _ = aya.utils.inspect("Trans", &trans);
     _ = aya.utils.inspect("Trans2", &trans2);
 
-    if (ogButton("go")) {
+    if (ogButton("go " ++ icons.inbox)) {
         var poly = TexturePolygon.generateMesh2("assets/sword_dude.png", 2, 0);
         for (poly) |pt| {
             std.debug.print("{d}\n", .{pt});
