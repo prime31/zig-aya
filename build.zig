@@ -6,12 +6,6 @@ const Builder = std.build.Builder;
 const Target = std.build.Target;
 const Pkg = std.build.Pkg;
 
-const renderkit_build = @import("aya/deps/renderkit/build.zig");
-const sdl_build = @import("aya/deps/sdl/build.zig");
-const imgui_build = @import("aya/deps/imgui/build.zig");
-const stb_build = @import("aya/deps/stb/build.zig");
-const fontstash_build = @import("aya/deps/fontstash/build.zig");
-
 var enable_imgui: ?bool = null;
 
 pub fn build(b: *Builder) void {
@@ -69,20 +63,31 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
         enable_imgui = b.option(bool, "imgui", "enable imgui") orelse false;
     artifact.addBuildOption(bool, "enable_imgui", enable_imgui.?);
 
+    // STB Image, Image Write, Rect Pack
+    const stb_build = @import(prefix_path ++ "aya/deps/stb/build.zig");
     stb_build.linkArtifact(b, artifact, target, prefix_path);
+
+    // FontStash
+    const fontstash_build = @import(prefix_path ++ "aya/deps/fontstash/build.zig");
     fontstash_build.linkArtifact(b, artifact, target, prefix_path);
 
+    // Dear ImGui
     // TODO: skip adding imgui altogether when enable_imgui is false. This would require builds to be made with -Denable_imgui=true
+    const imgui_build = @import(prefix_path ++ "aya/deps/imgui/build.zig");
     imgui_build.linkArtifact(b, artifact, target, prefix_path);
+    const imgui_pkg = imgui_build.getImGuiPackage(prefix_path);
+    const imgui_gl_pkg = imgui_build.getImGuiGlPackage(prefix_path);
 
+    // RenderKit
+    const renderkit_build = @import(prefix_path ++ "aya/deps/renderkit/build.zig");
     renderkit_build.addRenderKitToArtifact(b, artifact, target, prefix_path ++ "aya/deps/renderkit/");
     const renderkit_pkg = renderkit_build.getRenderKitPackage(prefix_path ++ "aya/deps/renderkit/");
 
+    // SDL
+    const sdl_build = @import(prefix_path ++ "aya/deps/sdl/build.zig");
     sdl_build.linkArtifact(artifact, target, prefix_path);
     const sdl_pkg = sdl_build.getPackage(prefix_path);
 
-    const imgui_pkg = imgui_build.getImGuiPackage(prefix_path);
-    const imgui_gl_pkg = imgui_build.getImGuiGlPackage(prefix_path);
     const stb_pkg = stb_build.getPackage(prefix_path);
     const fontstash_pkg = fontstash_build.getPackage(prefix_path);
 
