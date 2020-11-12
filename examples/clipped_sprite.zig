@@ -83,7 +83,7 @@ fn render() void {
 
 // https://github.com/cocos2d/cocos2d-x/blob/v4/cocos/2d/CCAutoPolygon.cpp
 pub const TexturePolygon = struct {
-    const stb_image = @import("stb_image");
+    const stb = @import("stb");
 
     var pixels: []const u8 = undefined;
     var threshold: u8 = 0;
@@ -97,9 +97,9 @@ pub const TexturePolygon = struct {
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var channels: c_int = undefined;
-        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb_image.STBI_grey_alpha);
+        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb.STBI_grey_alpha);
         if (load_res == null) return;
-        defer stb_image.stbi_image_free(load_res);
+        defer stb.stbi_image_free(load_res);
 
         // var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
         pixels = load_res[0..@intCast(usize, w * h * 2)];
@@ -129,8 +129,8 @@ pub const TexturePolygon = struct {
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var channels: c_int = undefined;
-        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb_image.STBI_grey_alpha);
-        defer stb_image.stbi_image_free(load_res);
+        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb.STBI_grey_alpha);
+        defer stb.stbi_image_free(load_res);
 
         // var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
         pixels = load_res[0..@intCast(usize, w * h * 2)];

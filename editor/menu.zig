@@ -27,7 +27,7 @@ pub fn draw(state: *root.AppState) void {
 
     // handle popup toggles
     if (show_component_editor_popup) {
-        igOpenPopup("Component Editor");
+        ogOpenPopup("Component Editor");
     }
 
     // we always need to call our popup code

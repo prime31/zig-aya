@@ -88,7 +88,7 @@ pub const EntityLayer = struct {
 
             if (rename_index != null) {
                 std.mem.copy(u8, &name_buf, entity.name[0..]);
-                igOpenPopup("##rename-entity");
+                ogOpenPopup("##rename-entity");
             }
 
             self.renameEntityPopup(entity);
@@ -110,7 +110,7 @@ pub const EntityLayer = struct {
         // right-align the button
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
         if (ogButton("Add Entity")) {
-            igOpenPopup("##add-entity");
+            ogOpenPopup("##add-entity");
             std.mem.set(u8, &name_buf, 0);
         }
 
@@ -168,7 +168,7 @@ pub const EntityLayer = struct {
 
         // add component
         if (ogButton("Add Component")) {
-            igOpenPopup("AddComponent");
+            ogOpenPopup("AddComponent");
         }
 
         if (igBeginPopup("AddComponent", ImGuiWindowFlags_None)) {
