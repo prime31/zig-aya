@@ -8,7 +8,7 @@ const Pkg = std.build.Pkg;
 
 const aya_build = @import("aya/build.zig");
 
-const sokol_build = @import("aya/deps/sokol/build.zig");
+const renderkit_build = @import("aya/deps/renderkit/build.zig");
 const imgui_build = @import("aya/deps/imgui/build.zig");
 const stb_build = @import("aya/deps/stb/build.zig");
 const fontstash_build = @import("aya/deps/fontstash/build.zig");
@@ -55,7 +55,6 @@ pub fn build(b: *Builder) void {
     }
 
     addTests(b, target, "");
-    addBuildShaders(b, target, "");
 }
 
 // creates an exe with all the required dependencies
@@ -81,42 +80,23 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
         imgui_build.linkArtifact(b, artifact, target, prefix_path);
     }
 
-    const sokol = Pkg{
-        .name = "sokol",
-        .path = "aya/deps/sokol/sokol.zig",
-    };
+    renderkit_build.addRenderKitToArtifact(b, exe, target, prefix_path);
+    const renderkit_pkg = renderkit_build.getRenderKitPackage(prefix_path);
     const imgui_pkg = imgui_build.getImGuiPackage(prefix_path);
     const stb_pkg = stb_build.getPackage(prefix_path);
     const fontstash_pkg = fontstash_build.getPackage(prefix_path);
 
-    const shaders = Pkg{
-        .name = "shaders",
-        .path = "aya/shaders/shaders.zig",
-        .dependencies = &[_]Pkg{sokol},
-    };
-    const shaders3d = Pkg{
-        .name = "shaders3d",
-        .path = "aya/shaders/shaders3d.zig",
-        .dependencies = &[_]Pkg{sokol},
-    };
     const aya = Pkg{
         .name = "aya",
         .path = "aya/aya.zig",
-        .dependencies = &[_]Pkg{sokol, imgui_pkg, stb_pkg, fontstash_pkg, shaders},
+        .dependencies = &[_]Pkg{renderkit_pkg, imgui_pkg, stb_pkg, fontstash_pkg},
     };
 
     // packages exported to userland
-    artifact.addPackage(sokol);
     artifact.addPackage(imgui_pkg);
     artifact.addPackage(stb_pkg);
     artifact.addPackage(fontstash_pkg);
     artifact.addPackage(aya);
-    artifact.addPackage(shaders);
-    artifact.addPackage(shaders3d);
-
-    // shaders
-    artifact.addIncludeDir("aya/shaders");
-    artifact.addCSourceFile("aya/shaders/basics.c", &[_][]const u8{"-std=c99"});
 }
 
 // add tests.zig file runnable via "zig build test"
@@ -125,13 +105,4 @@ pub fn addTests(b: *Builder, target: Target, comptime prefix_path: []const u8) v
     addAyaToArtifact(b, tst, target, false, prefix_path);
     const test_step = b.step("test", "Run tests in tests.zig");
     test_step.dependOn(&tst.step);
-}
-
-pub fn addBuildShaders(b: *Builder, target: Target, comptime prefix_path: []const u8) void {
-    var exe = b.addExecutable("build-shaders", prefix_path ++ "aya/shaders/build_shaders.zig");
-    exe.setOutputDir("zig-cache/bin");
-
-    const run_cmd = exe.run();
-    const exe_step = b.step("build-shaders", "build all Sokol shaders");
-    exe_step.dependOn(&run_cmd.step);
 }

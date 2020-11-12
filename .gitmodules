@@ -1,6 +1,6 @@
-[submodule "aya/deps/sokol/sokol"]
-	path = aya/deps/sokol/sokol
-	url = https://github.com/floooh/sokol
 [submodule "aya/deps/imgui/cimgui"]
 	path = aya/deps/imgui/cimgui
 	url = https://github.com/cimgui/cimgui.git
+[submodule "aya/deps/renderkit"]
+	path = aya/deps/renderkit
+	url = https://github.com/prime31/zig-renderkit.git
