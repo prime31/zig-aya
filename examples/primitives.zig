@@ -10,18 +10,17 @@ pub fn main() !void {
         .init = init,
         .update = update,
         .render = render,
+        .shutdown = shutdown,
     });
-
-    tri_batch.deinit();
 }
 
-fn init() void {
+fn init() !void {
     tri_batch = aya.gfx.TriangleBatcher.init(null, 100) catch unreachable;
 }
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     aya.draw.line(aya.math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
     aya.draw.point(math.Vec2.init(350, 350), 10, math.Color.sky_blue);
@@ -34,9 +33,13 @@ fn render() void {
     aya.draw.hollowPolygon(poly[0..], 2, math.Color.gold);
     aya.gfx.endPass();
 
-    aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE });
+    aya.gfx.beginPass(.{ .color_action = .dont_care });
     tri_batch.drawTriangle(.{ .x = 50, .y = 50 }, .{ .x = 150, .y = 150 }, .{ .x = 0, .y = 150 }, Color.black);
     tri_batch.drawTriangle(.{ .x = 300, .y = 50 }, .{ .x = 350, .y = 150 }, .{ .x = 200, .y = 150 }, Color.lime);
-    tri_batch.endFrame();
+    tri_batch.end();
     aya.gfx.endPass();
+}
+
+fn shutdown() !void {
+    tri_batch.deinit();
 }

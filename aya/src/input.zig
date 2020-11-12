@@ -1,38 +1,36 @@
 const std = @import("std");
-const gfx = @import("gfx/gfx.zig");
-const math = @import("math/math.zig");
-usingnamespace @import("sokol");
-const FixedList = @import("utils/fixed_list.zig").FixedList;
+const sdl = @import("sdl");
+const aya = @import("../aya.zig");
+const math = aya.math;
+pub usingnamespace @import("input_types.zig");
+
+const FixedList = aya.utils.FixedList;
 
 const released: u3 = 1; // true only the frame the key is released
 const down: u3 = 2; // true the entire time the key is down
 const pressed: u3 = 3; // only true if down this frame and not down the previous frame
 
 pub const MouseButton = enum(usize) {
-    left = 0,
-    right = 1,
+    left = 1,
     middle = 2,
+    right = 3,
 };
 
 pub const Input = struct {
-    keys: [@intCast(usize, SAPP_KEYCODE_MENU)]u2 = [_]u2{0} ** @intCast(usize, SAPP_KEYCODE_MENU),
+    keys: [@intCast(usize, @enumToInt(Keys.num_keys))]u2 = [_]u2{0} ** @intCast(usize, @enumToInt(Keys.num_keys)),
     dirty_keys: FixedList(i32, 10),
     mouse_buttons: [4]u2 = [_]u2{0} ** 4,
     dirty_mouse_buttons: FixedList(u2, 3),
-    mouse_wheel_y: f32 = 0,
-    mouse_x: f32 = 0,
-    mouse_y: f32 = 0,
-    mouse_rel_x: f32 = 0,
-    mouse_rel_y: f32 = 0,
+    mouse_wheel_y: i32 = 0,
+    mouse_rel_x: i32 = 0,
+    mouse_rel_y: i32 = 0,
     window_scale: i32 = 0,
-    res_scaler: gfx.ResolutionScaler = undefined,
 
     pub fn init(win_scale: f32) Input {
         return .{
             .dirty_keys = FixedList(i32, 10).init(),
             .dirty_mouse_buttons = FixedList(u2, 3).init(),
             .window_scale = @floatToInt(i32, win_scale),
-            .res_scaler = gfx.getResolutionScaler(),
         };
     }
 
@@ -66,60 +64,60 @@ pub const Input = struct {
         self.mouse_rel_y = 0;
     }
 
-    pub fn handleEvent(self: *Input, evt: *const sapp_event) void {
-        switch (evt.type) {
-            .SAPP_EVENTTYPE_KEY_DOWN, .SAPP_EVENTTYPE_KEY_UP => self.handleKeyboardEvent(evt),
-            .SAPP_EVENTTYPE_MOUSE_DOWN, .SAPP_EVENTTYPE_MOUSE_UP => self.handleMouseEvent(evt),
-            .SAPP_EVENTTYPE_MOUSE_MOVE => {
-                // TODO: why does sokol send two mouse events with the same data???
-                if (self.mouse_x == evt.mouse_x and self.mouse_y == evt.mouse_y) return;
-
-                self.mouse_rel_x = evt.mouse_x - self.mouse_x;
-                self.mouse_rel_y = self.mouse_y - evt.mouse_y;
-                self.mouse_x = evt.mouse_x;
-                self.mouse_y = evt.mouse_y;
+    pub fn handleEvent(self: *Input, event: *sdl.SDL_Event) void {
+        switch (event.type) {
+            sdl.SDL_KEYDOWN, sdl.SDL_KEYUP => self.handleKeyboardEvent(&event.key),
+            sdl.SDL_MOUSEBUTTONDOWN, sdl.SDL_MOUSEBUTTONUP => self.handleMouseEvent(&event.button),
+            sdl.SDL_MOUSEWHEEL => self.mouse_wheel_y = event.wheel.y,
+            sdl.SDL_MOUSEMOTION => {
+                self.mouse_rel_x = event.motion.xrel;
+                self.mouse_rel_y = event.motion.yrel;
             },
-            .SAPP_EVENTTYPE_MOUSE_SCROLL => {
-                self.mouse_wheel_y = evt.scroll_y;
-            },
+            sdl.SDL_CONTROLLERAXISMOTION => std.debug.warn("SDL_CONTROLLERAXISMOTION\n", .{}),
+            sdl.SDL_CONTROLLERBUTTONDOWN, sdl.SDL_CONTROLLERBUTTONUP => std.debug.warn("SDL_CONTROLLERBUTTONUP/DOWN\n", .{}),
+            sdl.SDL_CONTROLLERDEVICEADDED, sdl.SDL_CONTROLLERDEVICEREMOVED => std.debug.warn("SDL_CONTROLLERDEVICEADDED/REMOVED\n", .{}),
+            sdl.SDL_CONTROLLERDEVICEREMAPPED => std.debug.warn("SDL_CONTROLLERDEVICEREMAPPED\n", .{}),
             else => {},
         }
     }
 
-    fn handleKeyboardEvent(self: *Input, evt: *const sapp_event) void {
-        const scancode = @enumToInt(evt.key_code);
+    fn handleKeyboardEvent(self: *Input, evt: *sdl.SDL_KeyboardEvent) void {
+        const scancode = @enumToInt(evt.keysym.scancode);
         self.dirty_keys.append(scancode);
 
-        if (evt.type == .SAPP_EVENTTYPE_KEY_UP) {
+        if (evt.state == 0) {
             self.keys[@intCast(usize, scancode)] = released;
         } else {
             self.keys[@intCast(usize, scancode)] = pressed;
         }
+
+        // std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
     }
 
-    fn handleMouseEvent(self: *Input, evt: *const sapp_event) void {
-        const button = @enumToInt(evt.mouse_button);
-        self.dirty_mouse_buttons.append(@intCast(u2, button));
-        if (evt.type == .SAPP_EVENTTYPE_MOUSE_UP) {
-            self.mouse_buttons[@intCast(usize, button)] = released;
+    fn handleMouseEvent(self: *Input, evt: *sdl.SDL_MouseButtonEvent) void {
+        self.dirty_mouse_buttons.append(@intCast(u2, evt.button));
+        if (evt.state == 0) {
+            self.mouse_buttons[@intCast(usize, evt.button)] = released;
         } else {
-            self.mouse_buttons[@intCast(usize, button)] = pressed;
+            self.mouse_buttons[@intCast(usize, evt.button)] = pressed;
         }
+
+        // std.debug.warn("mouse: {}\n", .{evt});
     }
 
     /// only true if down this frame and not down the previous frame
-    pub fn keyPressed(self: Input, scancode: sapp_keycode) bool {
-        return self.keys[@intCast(usize, @enumToInt(scancode))] == pressed;
+    pub fn keyPressed(self: Input, key: Keys) bool {
+        return self.keys[@intCast(usize, @enumToInt(key))] == pressed;
     }
 
     /// true the entire time the key is down
-    pub fn keyDown(self: Input, scancode: sapp_keycode) bool {
-        return self.keys[@intCast(usize, @enumToInt(scancode))] > released;
+    pub fn keyDown(self: Input, key: Keys) bool {
+        return self.keys[@intCast(usize, @enumToInt(key))] > released;
     }
 
     /// true only the frame the key is released
-    pub fn keyUp(self: Input, scancode: sapp_keycode) bool {
-        return self.keys[@intCast(usize, @enumToInt(scancode))] == released;
+    pub fn keyUp(self: Input, key: Keys) bool {
+        return self.keys[@intCast(usize, @enumToInt(key))] == released;
     }
 
     /// only true if down this frame and not down the previous frame
@@ -141,24 +139,21 @@ pub const Input = struct {
         return self.mouse_wheel_y;
     }
 
-    pub fn mousePosVec(self: Input) math.Vec2 {
-        return .{ .x = self.mouse_x, .y = self.mouse_y };
-    }
-
-    pub fn mousePos(self: Input, x: *i32, y: *i32) void {
-        x.* = self.mouse_x;
-        y.* = self.mouse_y;
+    pub fn mousePos(self: Input) math.Vec2 {
+        var xc: c_int = undefined;
+        var yc: c_int = undefined;
+        _ = sdl.SDL_GetMouseState(&xc, &yc);
+        return .{ .x = @intToFloat(f32, xc * self.window_scale), .y = @intToFloat(f32, yc * self.window_scale) };
     }
 
     // gets the scaled mouse position based on the currently bound render texture scale and offset
     // as calcuated in OffscreenPass. scale should be scale and offset_n is the calculated x, y value.
-    pub fn mousePosScaled(self: Input, x: *i32, y: *i32) void {
+    pub fn mousePosScaled(self: Input) math.Vec2 {
         self.mousePos(x, y);
 
         const xf = @intToFloat(f32, x.*) - @intToFloat(f32, self.res_scaler.x);
         const yf = @intToFloat(f32, y.*) - @intToFloat(f32, self.res_scaler.y);
-        x.* = @floatToInt(i32, xf / self.res_scaler.scale);
-        y.* = @floatToInt(i32, yf / self.res_scaler.scale);
+        return .{ .x = xf / self.res_scaler.scale, .y = yf / self.res_scaler.scale };
     }
 
     pub fn mousePosScaledVec(self: Input) math.Vec2 {
@@ -168,7 +163,22 @@ pub const Input = struct {
         return .{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
     }
 
-    pub fn mouseRelMotion(self: Input) math.Vec2 {
-        return .{ .x = self.mouse_rel_x, .y = self.mouse_rel_y };
+    pub fn mouseRelMotion(self: Input, x: *i32, y: *i32) void {
+        x.* = self.mouse_rel_x;
+        y.* = self.mouse_rel_y;
     }
 };
+
+test "test input" {
+    var input = Input.init(1);
+    _ = input.keyPressed(.a);
+    _ = input.mousePressed(.left);
+    _ = input.mouseWheel();
+
+    var x: i32 = undefined;
+    var y: i32 = undefined;
+    _ = input.mousePosScaled(&x, &y);
+
+    _ = input.mousePosScaledVec();
+    input.mouseRelMotion(&x, &y);
+}

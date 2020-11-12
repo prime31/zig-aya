@@ -1,12 +1,12 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
+const rk = @import("renderkit");
 const fons = @import("fontstash");
-usingnamespace aya.sokol;
 
 pub const FontBook = struct {
     stash: *fons.Context,
     texture: ?aya.gfx.Texture,
-    tex_filter: aya.gfx.Texture.Filter,
+    tex_filter: rk.TextureFilter,
     width: i32 = 0,
     height: i32 = 0,
     tex_dirty: bool = false,
@@ -15,7 +15,7 @@ pub const FontBook = struct {
 
     pub const Align = fons.Align;
 
-    pub fn init(allocator: ?*std.mem.Allocator, width: i32, height: i32, filter: aya.gfx.Texture.Filter) !*FontBook {
+    pub fn init(allocator: ?*std.mem.Allocator, width: i32, height: i32, filter: rk.TextureFilter) !*FontBook {
         const alloc = allocator orelse aya.mem.allocator;
         var book = try alloc.create(FontBook);
         errdefer alloc.destroy(book);
@@ -88,13 +88,13 @@ pub const FontBook = struct {
     fn renderCreate(ctx: ?*c_void, width: c_int, height: c_int) callconv(.C) c_int {
         var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
 
-        if (self.texture != null and (self.texture.?.width != width or self.texture.?.height != height)) {
+        if (self.texture != null and (self.texture.?.width != @intToFloat(f32, width) or self.texture.?.height != @intToFloat(f32, height))) {
             self.texture.?.deinit();
             self.texture = null;
         }
 
         if (self.texture == null) {
-            self.texture = aya.gfx.Texture.init(width, height, self.tex_filter);
+            self.texture = aya.gfx.Texture.initWithOptions(width, height, self.tex_filter, .clamp);
         }
 
         self.width = width;
@@ -129,7 +129,7 @@ pub const FontBook = struct {
             pixels[i * 4 + 3] = alpha;
         }
 
-        self.texture.?.setData(pixels);
+        self.texture.?.setData(u8, pixels);
         self.tex_dirty = false;
         self.last_update = aya.time.frames();
         return 1;

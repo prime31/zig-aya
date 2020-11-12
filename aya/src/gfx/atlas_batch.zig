@@ -1,13 +1,13 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
 const fna = @import("fna");
-const Vertex = @import("buffers.zig").Vertex;
+const Vertex = aya.gfx.Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;
 
 // TODO: who should own and deinit the Texture?
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers
 pub const AtlasBatch = struct {
-    mesh: DynamicMesh(Vertex),
+    mesh: DynamicMesh(Vertex, u16),
     max_sprites: usize,
     sprite_count: usize = 0,
     texture: aya.gfx.Texture,
@@ -19,7 +19,7 @@ pub const AtlasBatch = struct {
         const alloc = allocator orelse aya.mem.allocator;
 
         return AtlasBatch{
-            .mesh = try DynamicMesh(Vertex).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),
+            .mesh = try DynamicMesh(Vertex, u16).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),
             .max_sprites = max_sprites,
             .texture = texture,
             .dirty_range = .{ .start = 0, .end = 0 },
@@ -54,12 +54,13 @@ pub const AtlasBatch = struct {
     /// makes sure the mesh buffers are large enough. Expands them by 50% if they are not. Can fail horribly.
     fn ensureCapacity(self: *AtlasBatch) !void {
         if (self.sprite_count < self.max_sprites) return;
+        @panic("mesh.expandBuffers not implemented");
 
         // we dont update the max_sprites value unless all allocations succeed. If they dont, we bail.
-        const new_max_sprites = self.max_sprites + @floatToInt(usize, @intToFloat(f32, self.max_sprites) * 0.5);
-        try self.mesh.expandBuffers(new_max_sprites * 4, new_max_sprites * 6);
-        try self.setIndexBufferData(new_max_sprites);
-        self.max_sprites = new_max_sprites;
+        // const new_max_sprites = self.max_sprites + @floatToInt(usize, @intToFloat(f32, self.max_sprites) * 0.5);
+        // try self.mesh.expandBuffers(new_max_sprites * 4, new_max_sprites * 6);
+        // try self.setIndexBufferData(new_max_sprites);
+        // self.max_sprites = new_max_sprites;
     }
 
     /// the workhorse. Sets the actual verts in the mesh and keeps track of if the mesh is dirty.
@@ -98,11 +99,11 @@ pub const AtlasBatch = struct {
 
     pub fn draw(self: *AtlasBatch) void {
         if (self.buffer_dirty) {
-            self.mesh.appendVertSlice(0, @intCast(i32, self.sprite_count * 4));
+            self.mesh.updateVertSlice(0, self.sprite_count * 4);
             self.buffer_dirty = false;
         }
 
-        self.mesh.bindings.fs_images[0] = self.texture.img;
-        self.mesh.drawPartialBuffer(0, @intCast(i32, self.sprite_count * 6));
+        self.mesh.bindImage(self.texture.img, 0);
+        self.mesh.draw(@intCast(i32, self.sprite_count * 6));
     }
 };

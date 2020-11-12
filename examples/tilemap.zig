@@ -16,11 +16,11 @@ pub fn main() anyerror!void {
         .render = render,
         .gfx = .{
             .resolution_policy = .show_all_pixel_perfect,
-        }
+        },
     });
 }
 
-fn init() void {
+fn init() !void {
     var bytes = aya.fs.read(aya.mem.tmp_allocator, "assets/platformer.json") catch unreachable;
     var tokens = std.json.TokenStream.init(bytes);
 
@@ -32,19 +32,19 @@ fn init() void {
     player = aya.math.RectI{.x = @floatToInt(i32, spawn.x), .y = @floatToInt(i32, spawn.y), .w = @floatToInt(i32, spawn.w), .h = @floatToInt(i32, spawn.h)};
 }
 
-fn update() void {
+fn update() !void {
     var move = aya.math.Vec2{};
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_RIGHT)) {
+    if (aya.input.keyDown(.right)) {
         move.x += speed;
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_LEFT)) {
+    } else if (aya.input.keyDown(.left)) {
         move.x -= speed;
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_UP)) {
-        move.y -= speed;
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_DOWN)) {
+    if (aya.input.keyDown(.up)) {
         move.y += speed;
+    } else if (aya.input.keyDown(.down)) {
+        move.y -= speed;
     }
 
     if (move.x != 0 or move.y != 0) {
@@ -54,7 +54,7 @@ fn update() void {
     }
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     batch.draw();
     aya.draw.hollowRect(.{.x = @intToFloat(f32, player.x), .y = @intToFloat(f32, player.y)}, @intToFloat(f32, player.w), @intToFloat(f32, player.h), 1, aya.math.Color.white);

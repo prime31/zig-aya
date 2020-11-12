@@ -15,22 +15,22 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
-    checker_tex = aya.gfx.Texture.initCheckerboard();
+fn init() !void {
+    checker_tex = aya.gfx.Texture.initCheckerTexture();
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png", .linear) catch unreachable;
 
-    checker_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, checker_tex.width), @intToFloat(f32, checker_tex.height), checker_tex.width, checker_tex.height);
-    font_quad = aya.math.Quad.init(0, 0, @intToFloat(f32, font_tex.width), @intToFloat(f32, font_tex.height), font_tex.width, font_tex.height);
+    checker_quad = aya.math.Quad.init(0, 0, checker_tex.width, checker_tex.height, checker_tex.width, checker_tex.height);
+    font_quad = aya.math.Quad.init(0, 0, font_tex.width, font_tex.height, font_tex.width, font_tex.height);
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     checker_tex.deinit();
     font_tex.deinit();
 }
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
 
     var x: usize = 0;

@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
+const rk = @import("renderkit");
 
 pub const renderer = @import("renderer.zig");
 
@@ -37,7 +38,7 @@ pub const Map = struct {
     }
 
     /// currently loads just the first Tileset's image until multiple Tilesets are supported
-    pub fn loadTexture(self: *Map, map_folder: []const u8, filter: aya.gfx.Texture.Filter) aya.gfx.Texture {
+    pub fn loadTexture(self: *Map, map_folder: []const u8, filter: rk.TextureFilter) aya.gfx.Texture {
         const image_path = std.fmt.allocPrint(aya.mem.tmp_allocator, "{}/{}", .{ map_folder, self.tilesets[0].image }) catch unreachable;
         return aya.gfx.Texture.initFromFile(image_path, filter) catch unreachable;
     }

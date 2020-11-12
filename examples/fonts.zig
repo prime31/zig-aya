@@ -15,19 +15,21 @@ pub fn main() anyerror!void {
     });
 }
 
-fn init() void {
+fn init() !void {
     book = aya.gfx.FontBook.init(null, 128, 128, .nearest) catch unreachable;
     font = book.addFont("assets/ProggyTiny.ttf");
     book.setSize(10);
 }
 
-fn update() void {
+fn update() !void {
     aya.debug.drawText("what the fuck, im at 0,450. top-left", .{ .x = 0, .y = 450 }, null);
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
-    aya.draw.text("top-left", 0, 40, book);
+    book.setAlign(.top_left);
+    aya.draw.text("top-left", 0, 0, book);
+    book.setAlign(.left);
 
     if (aya.input.mouseDown(.left)) {
         aya.draw.text("pooop, left button", 200, 50, null);

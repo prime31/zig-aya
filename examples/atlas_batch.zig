@@ -14,10 +14,10 @@ pub fn main() anyerror!void {
     });
 }
 
-fn init() void {
+fn init() !void {
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png", .linear) catch unreachable;
     batch = aya.gfx.AtlasBatch.init(null, font_tex, 200) catch unreachable;
-    quad = aya.math.Quad.init(0, 0, @intToFloat(f32, font_tex.width), @intToFloat(f32, font_tex.height), font_tex.width, font_tex.height);
+    quad = aya.math.Quad.init(0, 0, font_tex.width, font_tex.height, font_tex.width, font_tex.height);
 
     var mat = aya.math.Mat32.identity;
 
@@ -40,12 +40,12 @@ fn init() void {
         mat.translate(0, h * scale);
     }
 
-    mat.setTransform(.{ .x = 300, .y = 150, .angle = 0.3, .sx = 0.2, .sy = 0.2, .ox = @intToFloat(f32, font_tex.width) / 2.0, .oy = @intToFloat(f32, font_tex.height) / 2.0 });
+    mat.setTransform(.{ .x = 300, .y = 150, .angle = 0.3, .sx = 0.2, .sy = 0.2, .ox = font_tex.width / 2.0, .oy = font_tex.height / 2.0 });
     _ = batch.add(quad, mat, aya.math.Color.green);
     index = batch.addViewport(.{ .w = 20, .h = 20 }, null, aya.math.Color.blue);
 }
 
-fn update() void {
+fn update() !void {
     if (aya.math.rand.chance(0.9)) return;
 
     const rx = aya.math.rand.range(f32, -2, 2);
@@ -57,7 +57,7 @@ fn update() void {
     batch.setViewport(index, .{ .w = 20, .h = 20 }, mat, aya.math.rand.color());
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     batch.draw();
     aya.gfx.endPass();

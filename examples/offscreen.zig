@@ -19,30 +19,30 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
-    checker_tex = aya.gfx.Texture.initCheckerboard();
+fn init() !void {
+    checker_tex = aya.gfx.Texture.initCheckerTexture();
     font_tex = aya.gfx.Texture.initFromFile("assets/font.png", .linear) catch unreachable;
-    pass = aya.gfx.OffscreenPass.init(52, 52, .nearest);
+    pass = aya.gfx.OffscreenPass.init(52, 52);
 
     stack = aya.gfx.createPostProcessStack();
-    _ = stack.add(aya.gfx.Sepia, {});
+    // _ = stack.add(aya.gfx.Sepia, {});
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     stack.deinit();
     checker_tex.deinit();
     font_tex.deinit();
     pass.deinit();
 }
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     // render offscreen
     aya.gfx.beginPass(.{ .pass = pass, .color = aya.math.Color.lime });
-    var i = @as(usize, 0);
-    while (i <= @divFloor(pass.color_tex.width, checker_tex.width)) : (i += 1) {
-        aya.draw.tex(checker_tex, @intToFloat(f32, i * 4), @intToFloat(f32, i * 2 + 10));
+    var i = @as(f32, 0);
+    while (i <= @divFloor(pass.color_texture.width, checker_tex.width)) : (i += 1) {
+        aya.draw.tex(checker_tex, i * 4, i * 2 + 10);
     }
     aya.gfx.endPass();
 
@@ -70,8 +70,8 @@ fn render() void {
     aya.gfx.blitToScreen(aya.math.Color.black);
 
     // now render directly to the backbuffer
-    aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE });
+    aya.gfx.beginPass(.{ .color_action = .dont_care });
     aya.debug.drawPoint(.{ .x = 30, .y = 400 }, 60, aya.math.Color.yellow);
-    aya.draw.texScale(pass.color_tex, 0, 200, 2);
+    aya.draw.texScale(pass.color_texture, 0, 200, 2);
     aya.gfx.endPass();
 }

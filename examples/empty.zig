@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 
-
 pub fn main() !void {
     try aya.run(.{
         .init = init,
@@ -10,11 +9,11 @@ pub fn main() !void {
     });
 }
 
-fn init() void {}
+fn init() !void {}
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     aya.gfx.endPass();
 }
