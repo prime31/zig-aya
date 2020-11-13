@@ -58,14 +58,41 @@ pub const FontBook = struct {
         return fons.fonsAddFontMem(self.stash, name, @ptrCast([*c]const u8, data), @intCast(i32, data.len), free);
     }
 
+    // rendering and layout
     pub fn setAlign(self: *FontBook, alignment: Align) void {
         fons.fonsSetAlign(self.stash, alignment);
+    }
+
+    pub fn setSize(self: FontBook, size: f32) void {
+        fons.fonsSetSize(self.stash, size);
+    }
+
+    pub fn setColor(self: FontBook, color: aya.math.Color) void {
+        fons.fonsSetColor(self.stash, color.value);
+    }
+
+    pub fn setSpacing(self: FontBook, spacing: f32) void {
+        fons.fonsSetSpacing(self.stash, spacing);
+    }
+
+    pub fn setBlur(self: FontBook, blur: f32) void {
+        fons.fonsSetBlur(self.stash, blur);
+    }
+
+    // state management
+    pub fn pushState(self: *FontBook) void {
+        fons.fonsPushState(self.stash);
+    }
+
+    pub fn popState(self: *FontBook) void {
+        fons.fonsPopState(self.stash);
     }
 
     pub fn clearState(self: *FontBook) void {
         fons.fonsClearState(self.stash);
     }
 
+    // drawing
     pub fn getTextIterator(self: *FontBook, str: []const u8) fons.TextIter {
         var iter = std.mem.zeroes(fons.TextIter);
         const res = fons.fonsTextIterInit(self.stash, &iter, 0, 0, str.ptr, @intCast(c_int, str.len));
@@ -79,10 +106,6 @@ pub const FontBook = struct {
 
     pub fn getQuad(self: FontBook) fons.Quad {
         return std.mem.zeroes(fons.Quad);
-    }
-
-    pub fn setSize(self: FontBook, size: f32) void {
-        fons.fonsSetSize(self.stash, size);
     }
 
     fn renderCreate(ctx: ?*c_void, width: c_int, height: c_int) callconv(.C) c_int {
