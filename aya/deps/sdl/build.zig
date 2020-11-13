@@ -2,14 +2,21 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub fn linkArtifact(exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
 
-    if (target.isWindows()) {
-        // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2 then renaming
-        // the "include" folder to "SDL2". SDL2.dll and SDL2.lib need to be copied to the zig-cache/bin folder
+    if (std.builtin.os.tag == .windows) {
+        // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2
         exe.addLibPath("c:\\SDL2\\lib\\x64");
+
+        // SDL2.dll needs to be copied to the zig-cache/bin folder
+        // TODO: installFile doesnt seeem to work so manually copy the file over
+        b.installFile("c:\\SDL2\\lib\\x64\\SDL2.dll", "bin\\SDL2.dll");
+
+        std.fs.cwd().makePath("zig-cache\\bin") catch unreachable;
+        const src_dir = std.fs.cwd().openDir("c:\\SDL2\\lib\\x64", .{}) catch unreachable;
+        src_dir.copyFile("SDL2.dll", std.fs.cwd(), "zig-cache\\bin\\SDL2.dll", .{}) catch unreachable;
     }
 
     exe.addPackage(getPackage(prefix_path));

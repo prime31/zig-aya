@@ -85,7 +85,7 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
 
     // SDL
     const sdl_build = @import(prefix_path ++ "aya/deps/sdl/build.zig");
-    sdl_build.linkArtifact(artifact, target, prefix_path);
+    sdl_build.linkArtifact(b, artifact, target, prefix_path);
     const sdl_pkg = sdl_build.getPackage(prefix_path);
 
     const stb_pkg = stb_build.getPackage(prefix_path);
