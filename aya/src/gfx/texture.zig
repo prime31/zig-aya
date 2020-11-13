@@ -104,6 +104,21 @@ pub const Texture = struct {
         };
     }
 
+    /// loads an image file and returns the raw data. The data returned must be freed with stb.stbi_image_free.
+    pub fn dataFromFile(file: []const u8, width: *usize, height: *usize) ![]u8 {
+        const image_contents = try aya.fs.read(aya.mem.tmp_allocator, file);
+
+        var w: c_int = undefined;
+        var h: c_int = undefined;
+        var channels: c_int = undefined;
+        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
+        if (load_res == null) return error.ImageLoadFailed;
+
+        width.* = @intCast(usize, w);
+        height.* = @intCast(usize, h);
+        return load_res[0 .. width.* * height.* * 4];
+    }
+
     pub fn deinit(self: *const Texture) void {
         renderer.destroyImage(self.img);
     }
