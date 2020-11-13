@@ -13,6 +13,7 @@ pub const windows = @import("windows/windows.zig");
 pub const Camera = @import("camera.zig").Camera;
 
 pub const enable_imgui = true;
+var next_stall_time: f32 = 10;
 
 // global state
 pub var state: AppState = undefined;
@@ -63,7 +64,7 @@ fn update() !void {
     scene.draw(&state); // AFTER layers, in case any layers were removed
 
     // ensure our windows are always present so they can be arranged sanely and dont jump into and out of existence
-    inline for (&[_][:0]const u8{"Assets", "Inspector###Inspector", "Entities###Entities"}) |name| {
+    inline for (&[_][:0]const u8{ "Assets", "Inspector###Inspector", "Entities###Entities" }) |name| {
         _ = igBegin(name, null, ImGuiWindowFlags_None);
         igEnd();
     }
@@ -81,6 +82,16 @@ fn update() !void {
 
 fn render() !void {
     aya.gfx.beginNullPass();
+
+    // stall whenever we dont have events so that we render as little as possible. each event causes a 5s no-stall time.
+    if (aya.time.seconds() > next_stall_time) {
+        var evt: aya.sdl.SDL_Event = undefined;
+        if (aya.sdl.SDL_WaitEventTimeout(&evt, 5000) == 1) {
+            _ = aya.sdl.SDL_PushEvent(&evt);
+            next_stall_time = aya.time.seconds() + 5;
+        }
+        aya.time.resync();
+    }
 }
 
 fn onFileDropped(file: []const u8) void {
