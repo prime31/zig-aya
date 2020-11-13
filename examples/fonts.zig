@@ -30,6 +30,15 @@ fn render() !void {
     book.setAlign(.top_left);
     aya.draw.text("top-left", 0, 0, book);
     book.setAlign(.left);
+    aya.draw.text("top-left", 100, 18, book);
+
+
+    book.setAlign(.middle);
+    book.pushState();
+    book.setBlur(1.2);
+    book.setColor(aya.math.Color.blue);
+    aya.draw.text("top-left", 250, 58, book);
+    book.popState();
 
     if (aya.input.mouseDown(.left)) {
         aya.draw.text("pooop, left button", 200, 50, null);

@@ -80,7 +80,7 @@ pub const draw = struct {
             quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
             quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            batcher.draw(book.texture.?, quad, matrix, math.Color.white);
+            batcher.draw(book.texture.?, quad, matrix, math.Color{ .value = iter.color });
         }
     }
 
