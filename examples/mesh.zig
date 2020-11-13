@@ -16,7 +16,7 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     var vertices = [_]aya.gfx.Vertex{
         .{ .pos = .{ .x = 10, .y = 100 }, .uv = .{ .x = 1, .y = 0 }, .col = 0xFFFFFFFF }, // bl
         .{ .pos = .{ .x = 100, .y = 100 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF0000FF }, // br
@@ -27,20 +27,20 @@ fn init() void {
         0, 1, 2, 0, 2, 3,
     };
 
-    mesh = aya.gfx.Mesh.init(aya.gfx.Vertex, vertices[0..], indices[0..]);
+    mesh = aya.gfx.Mesh.init(aya.gfx.Vertex, vertices[0..], u16, indices[0..]);
 
-    tex = aya.gfx.Texture.initCheckerboard();
-    mesh.bindings.fs_images[0] = tex.img;
+    tex = aya.gfx.Texture.initCheckerTexture();
+    mesh.bindImage(tex.img, 0);
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     mesh.deinit();
     tex.deinit();
 }
 
-fn update() void {}
+fn update() !void {}
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginNullPass();
     aya.gfx.beginPass(.{ .color = aya.math.Color.gold });
     mesh.draw();

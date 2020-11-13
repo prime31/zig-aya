@@ -1,22 +1,31 @@
 const std = @import("std");
+const aya = @import("../../aya.zig");
 const renderkit = @import("renderkit");
 const renderer = renderkit.renderer;
-const fs = @import("../gamekit.zig").utils.fs;
+const fs = aya.fs;
 
 pub const Shader = struct {
     shader: renderkit.ShaderProgram,
 
-    pub fn initFromFile(allocator: *std.mem.Allocator, vert_path: []const u8, frag_path: []const u8) !Shader {
-        var vert = try fs.readZ(allocator, vert_path);
-        errdefer allocator.free(vert);
-        var frag = try fs.readZ(allocator, frag_path);
-        errdefer allocator.free(frag);
-
+    pub fn initFromFile(vert_path: []const u8, frag_path: []const u8) !Shader {
+        var vert = try fs.readZ(aya.mem.tmp_allocator, vert_path);
+        var frag = try fs.readZ(aya.mem.tmp_allocator, frag_path);
         return try Shader.init(vert, frag);
     }
 
     pub fn init(vert: [:0]const u8, frag: [:0]const u8) !Shader {
         return Shader{ .shader = renderer.createShaderProgram(.{.vs = vert, .fs = frag}) };
+    }
+
+    pub fn initWithFrag(frag: [:0]const u8) !Shader {
+        const vert = @embedFile("assets/default.vs");
+
+        // TODO: this is a bit hacky. come up with a better way
+        const default_frag = @embedFile("assets/default.fs");
+        const default_frag_pre = default_frag[0 .. std.mem.indexOfScalar(u8, default_frag, '}').? + 2];
+        const final_frag = try std.mem.concat(aya.mem.allocator, u8, &[_][]const u8{ default_frag_pre, frag, "\x00" });
+
+        return Shader{ .shader = renderer.createShaderProgram(.{.vs = vert, .fs = final_frag[0..final_frag.len - 1 :0]}) };
     }
 
     pub fn deinit(self: Shader) void {
