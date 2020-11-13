@@ -4,7 +4,7 @@ pub const WindowConfig = @import("src/window.zig").WindowConfig;
 
 // libs
 const renderkit = @import("renderkit");
-const sdl = @import("sdl");
+pub const sdl = @import("sdl");
 pub const imgui = @import("imgui");
 const imgui_gl = @import("imgui_gl");
 
@@ -85,7 +85,7 @@ pub fn run(config: Config) !void {
 
     try config.init();
 
-    while (!pollEvents()) {
+    while (!pollEvents(config.onFileDropped)) {
         time.tick();
         if (config.update) |update| try update();
         try config.render();
@@ -109,7 +109,7 @@ pub fn run(config: Config) !void {
     sdl.SDL_Quit();
 }
 
-fn pollEvents() bool {
+fn pollEvents(onFileDropped: ?fn ([]const u8) void) bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         if (enable_imgui and imguiHandleEvent(&event)) continue;
@@ -121,6 +121,10 @@ fn pollEvents() bool {
                     if (event.window.event == sdl.SDL_WINDOWEVENT_CLOSE) return true;
                     window.handleEvent(&event.window);
                 }
+            },
+            sdl.SDL_DROPFILE => {
+                if (onFileDropped) |fileDropped| fileDropped(std.mem.spanZ(event.drop.file));
+                sdl.SDL_free(event.drop.file);
             },
             else => input.handleEvent(&event),
         }
