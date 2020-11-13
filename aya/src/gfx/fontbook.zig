@@ -23,6 +23,7 @@ pub const FontBook = struct {
         var params = fons.Params{
             .width = width,
             .height = height,
+            .flags = fons.Flags.top_left,
             .user_ptr = book,
             .renderCreate = renderCreate,
             .renderResize = renderResize,
@@ -45,6 +46,7 @@ pub const FontBook = struct {
         self.allocator.destroy(self);
     }
 
+    // add fonts
     pub fn addFont(self: *FontBook, file: []const u8) c_int {
         const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, file) catch unreachable;
         const data = aya.fs.read(self.allocator, file) catch unreachable;
@@ -58,7 +60,7 @@ pub const FontBook = struct {
         return fons.fonsAddFontMem(self.stash, name, @ptrCast([*c]const u8, data), @intCast(i32, data.len), free);
     }
 
-    // rendering and layout
+    // state setting
     pub fn setAlign(self: *FontBook, alignment: Align) void {
         fons.fonsSetAlign(self.stash, alignment);
     }
@@ -79,7 +81,7 @@ pub const FontBook = struct {
         fons.fonsSetBlur(self.stash, blur);
     }
 
-    // state management
+    // state handling
     pub fn pushState(self: *FontBook) void {
         fons.fonsPushState(self.stash);
     }
@@ -92,7 +94,29 @@ pub const FontBook = struct {
         fons.fonsClearState(self.stash);
     }
 
-    // drawing
+    // measure text
+    pub fn getTextBounds(self: *FontBook, x: f32, y: f32, str: []const u8) struct { width: f32, bounds: f32 } {
+        var bounds: f32 = undefined;
+        const width = fons.fonsTextBounds(self.stash, x, y, str.ptr, null, &bounds);
+        return .{ .width = width, .bounds = bounds };
+    }
+
+    pub fn getLineBounds(self: *FontBook, y: f32) struct { min_y: f32, max_y: f32 } {
+        var min_y: f32 = undefined;
+        var max_y: f32 = undefined;
+        fons.fonsLineBounds(self.stash, y, &min_y, &max_y);
+        return .{ .min_y = min_y, .max_y = max_y };
+    }
+
+    pub fn getVertMetrics(self: *FontBook) struct { ascender: f32, descender: f32, line_h: f32 } {
+        var ascender: f32 = undefined;
+        var descender: f32 = undefined;
+        var line_h: f32 = undefined;
+        fons.fonsVertMetrics(self.stash, &ascender, &descender, &line_h);
+        return .{ .ascender = ascender, .descender = descender, .line_h = line_h };
+    }
+
+    // text iter
     pub fn getTextIterator(self: *FontBook, str: []const u8) fons.TextIter {
         var iter = std.mem.zeroes(fons.TextIter);
         const res = fons.fonsTextIterInit(self.stash, &iter, 0, 0, str.ptr, @intCast(c_int, str.len));
