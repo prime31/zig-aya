@@ -24,8 +24,8 @@ pub const draw = struct {
         white_tex.deinit();
     }
 
-    /// binds a Texture to the Bindings in the Batchers DynamicMesh
-    pub fn bindTexture(texture: Texture, slot: c_uint) void {
+    /// binds a Texture to the BufferBindings in the Batchers DynamicMesh
+    pub fn bindTexture(texture: gfx.Texture, slot: c_uint) void {
         batcher.mesh.bindImage(texture.img, slot);
     }
 

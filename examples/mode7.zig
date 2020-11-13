@@ -1,15 +1,17 @@
 const std = @import("std");
 const aya = @import("aya");
-const shaders = @import("shaders");
-const Pipeline = aya.gfx.Pipeline;
+const gfx = aya.gfx;
+const math = aya.math;
 
-var rt: aya.gfx.Texture = undefined;
-var map: aya.gfx.Texture = undefined;
-var block: aya.gfx.Texture = undefined;
-var mode7_pip: Pipeline = undefined;
-var mode7_uniform = aya.gfx.effects.Mode7.Params{};
+const Texture = aya.gfx.Texture;
+const Color = aya.math.Color;
+
+var map: Texture = undefined;
+var block: Texture = undefined;
+var mode7_shader: gfx.Shader = undefined;
 var camera: Camera = undefined;
-var blocks: std.ArrayList(aya.math.Vec2) = undefined;
+var blocks: std.ArrayList(math.Vec2) = undefined;
+var wrap: f32 = 0;
 
 const Block = struct {
     tex: aya.gfx.Texture,
@@ -80,11 +82,7 @@ const Camera = struct {
 
     pub fn placeSprite(self: *Camera, tex: aya.gfx.Texture, pos: aya.math.Vec2, scale: f32) void {
         const dim = self.toScreen(pos);
-
-        const width = @intToFloat(f32, tex.width);
-        const height = @intToFloat(f32, tex.height);
-
-        const sx2 = (dim.size * scale) / width;
+        const sx2 = (dim.size * scale) / tex.width;
 
         if (sx2 < 0) return;
 
@@ -102,9 +100,7 @@ const Camera = struct {
         }
 
         for (self.sprites.items) |sprite| {
-            const width = @intToFloat(f32, sprite.tex.width);
-            const height = @intToFloat(f32, sprite.tex.height);
-            aya.draw.texScaleOrigin(sprite.tex, sprite.pos.x, sprite.pos.y, sprite.scale, width / 2, height);
+            aya.draw.texScaleOrigin(sprite.tex, sprite.pos.x, sprite.pos.y, sprite.scale, sprite.tex.width / 2, sprite.tex.height);
         }
         self.sprites.items.len = 0;
     }
@@ -123,20 +119,20 @@ pub fn main() !void {
         .window = .{
             .width = 800,
             .height = 600,
-        },
-        .gfx = .{
-            .batcher_max_sprites = 10000,
+            .resizable = false,
         },
     });
 }
 
-fn init() void {
+fn init() !void {
     camera = Camera.init(@intToFloat(f32, aya.window.width()), @intToFloat(f32, aya.window.height()));
 
-    rt = aya.gfx.Texture.init(800, 600, .nearest);
-    map = aya.gfx.Texture.initFromFile("assets/mario_kart.png", .nearest) catch unreachable;
-    block = aya.gfx.Texture.initFromFile("assets/block.png", .nearest) catch unreachable;
-    mode7_pip = aya.gfx.effects.Mode7.init();
+    map = Texture.initFromFile("assets/mario_kart.png", .nearest) catch unreachable;
+    block = Texture.initFromFile("assets/block.png", .nearest) catch unreachable;
+    mode7_shader = try gfx.Shader.init(@embedFile("../assets/shaders/vert.vs"), @embedFile("../assets/shaders/mode7.fs"));
+    mode7_shader.bind();
+    mode7_shader.setUniformName(i32, "MainTex", 0);
+    mode7_shader.setUniformName(i32, "map_tex", 1);
 
     blocks = std.ArrayList(aya.math.Vec2).init(aya.mem.allocator);
     _ = blocks.append(.{ .x = 0, .y = 0 }) catch unreachable;
@@ -151,102 +147,117 @@ fn init() void {
     // }
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     map.deinit();
     block.deinit();
-    mode7_pip.deinit();
+    mode7_shader.deinit();
     blocks.deinit();
     camera.deinit();
 }
 
-fn update() void {
+fn update() !void {
     const move_speed = 140.0;
-    if (aya.input.keyDown(.SAPP_KEYCODE_W)) {
+    if (aya.input.keyDown(.w)) {
         camera.x += std.math.cos(camera.r) * move_speed * aya.time.dt();
         camera.y += std.math.sin(camera.r) * move_speed * aya.time.dt();
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_S)) {
+    } else if (aya.input.keyDown(.s)) {
         camera.x = camera.x - std.math.cos(camera.r) * move_speed * aya.time.dt();
         camera.y = camera.y - std.math.sin(camera.r) * move_speed * aya.time.dt();
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_A)) {
+    if (aya.input.keyDown(.a)) {
         camera.x += std.math.cos(camera.r - std.math.pi / 2.0) * move_speed * aya.time.dt();
         camera.y += std.math.sin(camera.r - std.math.pi / 2.0) * move_speed * aya.time.dt();
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_D)) {
+    } else if (aya.input.keyDown(.d)) {
         camera.x += std.math.cos(camera.r + std.math.pi / 2.0) * move_speed * aya.time.dt();
         camera.y += std.math.sin(camera.r + std.math.pi / 2.0) * move_speed * aya.time.dt();
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_I)) {
+    if (aya.input.keyDown(.i)) {
         camera.f += aya.time.dt();
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_O)) {
+    } else if (aya.input.keyDown(.o)) {
         camera.f -= aya.time.dt();
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_K)) {
+    if (aya.input.keyDown(.k)) {
         camera.o += aya.time.dt();
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_L)) {
+    } else if (aya.input.keyDown(.l)) {
         camera.o -= aya.time.dt();
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_MINUS)) {
+    if (aya.input.keyDown(.minus)) {
         camera.z += aya.time.dt() * 10;
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_EQUAL)) {
+    } else if (aya.input.keyDown(.equals)) {
         camera.z -= aya.time.dt() * 10;
     }
 
-    if (aya.input.keyDown(.SAPP_KEYCODE_Q)) {
+    if (aya.input.keyDown(.q)) {
         camera.setRotation(@mod(camera.r, std.math.tau) - aya.time.dt());
-    } else if (aya.input.keyDown(.SAPP_KEYCODE_E)) {
+    } else if (aya.input.keyDown(.e)) {
         camera.setRotation(@mod(camera.r, std.math.tau) + aya.time.dt());
     }
 
     if (aya.input.mousePressed(.left)) {
-        var pos = camera.toWorld(aya.input.mousePosVec());
+        var pos = camera.toWorld(aya.input.mousePos());
         _ = blocks.append(pos) catch unreachable;
+    }
+
+    if (aya.input.mousePressed(.right)) {
+        wrap = if (wrap == 0) 1 else 0;
+    }
+
+    if (aya.input.keyDown(.z)) {
+        map.deinit();
+        map = Texture.initFromFile("assets/zelda_map.png", .nearest) catch unreachable;
     }
 }
 
-fn render() void {
-    aya.gfx.beginPass(.{});
+fn render() !void {
+    gfx.beginPass(.{});
     drawPlane();
 
-    var pos = camera.toScreen(camera.toWorld(aya.input.mousePosVec()));
+    var pos = camera.toScreen(camera.toWorld(aya.input.mousePos()));
     aya.draw.circle(.{ .x = pos.x, .y = pos.y }, pos.size, 2, 8, aya.math.Color.white);
-    const width = @intToFloat(f32, block.width);
-    const height = @intToFloat(f32, block.height);
-    aya.draw.texScaleOrigin(block, pos.x, pos.y, pos.size, width / 2, height);
-    //draw(spriteimg,x,y,0,s/spriteimg:getWidth(),s/spriteimg:getHeight(),spriteimg:getWidth()/2,spriteimg:getHeight())
-    // aya.draw.texScale(block, pos.x - (@intToFloat(f32, block.width) * pos.size / 2), pos.y - @intToFloat(f32, block.height) * pos.size, pos.size);
+    aya.draw.texScaleOrigin(block, pos.x, pos.y, pos.size, block.width / 2, block.height);
 
     for (blocks.items) |b| {
         camera.placeSprite(block, b, 8);
     }
     camera.renderSprites();
 
-    aya.gfx.endPass();
+    aya.draw.text("WASD to move", 5, 20, null);
+    aya.draw.text("i/o to change fov", 5, 40, null);
+    aya.draw.text("k/l to change offset", 5, 60, null);
+    aya.draw.text("-/= to change z pos", 5, 80, null);
+    aya.draw.text("q/e to rotate cam", 5, 100, null);
+    aya.draw.text("left click to place block", 5, 120, null);
+    aya.draw.text("right click to toggle wrap", 5, 140, null);
+    aya.draw.text("z to load zelda map", 5, 160, null);
+    gfx.endPass();
 }
 
 fn drawPlane() void {
-    mode7_uniform.mapw = @intToFloat(f32, map.width);
-    mode7_uniform.maph = @intToFloat(f32, map.height);
+    gfx.setShader(mode7_shader);
 
-    mode7_uniform.x = camera.x;
-    mode7_uniform.y = camera.y;
-    mode7_uniform.zoom = camera.z;
-    mode7_uniform.fov = camera.f;
-    mode7_uniform.offset = camera.o;
-    mode7_uniform.wrap = 0;
+    mode7_shader.setUniformName(f32, "mapw", map.width);
+    mode7_shader.setUniformName(f32, "maph", map.height);
 
-    mode7_uniform.x1 = camera.x1;
-    mode7_uniform.y1 = camera.y1;
-    mode7_uniform.x2 = camera.x2;
-    mode7_uniform.y2 = camera.y2;
-    mode7_pip.setFragUniform(0, &mode7_uniform);
-    aya.draw.bindTexture(map, 1);
+    mode7_shader.setUniformName(f32, "x", camera.x);
+    mode7_shader.setUniformName(f32, "y", camera.y);
+    mode7_shader.setUniformName(f32, "zoom", camera.z);
+    mode7_shader.setUniformName(f32, "fov", camera.f);
+    mode7_shader.setUniformName(f32, "offset", camera.o);
+    mode7_shader.setUniformName(f32, "wrap", wrap);
 
-    aya.gfx.setPipeline(mode7_pip);
-    aya.draw.tex(rt, 0, 0);
-    aya.gfx.setPipeline(null);
-    aya.draw.unbindTexture(1);
+    mode7_shader.setUniformName(f32, "x1", camera.x1);
+    mode7_shader.setUniformName(f32, "y1", camera.y1);
+    mode7_shader.setUniformName(f32, "x2", camera.x2);
+    mode7_shader.setUniformName(f32, "y2", camera.y2);
+
+    // bind out map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
+    gfx.draw.bindTexture(map, 1);
+    const drawable_size = aya.window.drawableSize();
+    gfx.draw.rect(.{}, @intToFloat(f32, drawable_size.w), @intToFloat(f32, drawable_size.h), math.Color.white);
+    gfx.setShader(null);
+    gfx.draw.unbindTexture(1);
 }
