@@ -57,9 +57,9 @@ pub const TilemapLayer = struct {
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
         if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;
 
-        if (ogKeyUp(aya.sokol.SAPP_KEYCODE_H)) self.tileset.selected.flipH();
-        if (ogKeyUp(aya.sokol.SAPP_KEYCODE_V)) self.tileset.selected.flipV();
-        if (ogKeyUp(aya.sokol.SAPP_KEYCODE_R)) self.tileset.selected.flipD();
+        if (ogKeyUp(aya.sdl.SDL_SCANCODE_H)) self.tileset.selected.flipH();
+        if (ogKeyUp(aya.sdl.SDL_SCANCODE_V)) self.tileset.selected.flipV();
+        if (ogKeyUp(aya.sdl.SDL_SCANCODE_R)) self.tileset.selected.flipD();
 
         if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };

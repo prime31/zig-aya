@@ -12,7 +12,7 @@ pub const windows = @import("windows/windows.zig");
 
 pub const Camera = @import("camera.zig").Camera;
 
-pub const imgui = true;
+pub const enable_imgui = true;
 
 // global state
 pub var state: AppState = undefined;
@@ -36,7 +36,7 @@ pub fn main() !void {
     });
 }
 
-fn init() void {
+fn init() !void {
     colors.init();
     state = AppState.initWithTestData();
     scene = windows.Scene.init();
@@ -49,12 +49,12 @@ fn init() void {
     igGetStyle().WindowRounding = 0;
 }
 
-fn shutdown() void {
+fn shutdown() !void {
     scene.deinit();
     state.deinit();
 }
 
-fn update() void {
+fn update() !void {
     beginDock();
 
     menu.draw(&state);
@@ -79,7 +79,7 @@ fn update() void {
     igEnd();
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginNullPass();
 }
 

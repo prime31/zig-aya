@@ -84,7 +84,7 @@ pub const Tileset = struct {
             }
         }
 
-        return aya.gfx.Texture.initWithColorData(&pixels, 16 * 4, 16 * 4, .nearest);
+        return aya.gfx.Texture.initWithData(u32, 16 * 4, 16 * 4, &pixels);
     }
 
     pub fn setTexture(self: *Tileset, tex: aya.gfx.Texture) void {
@@ -97,7 +97,7 @@ pub const Tileset = struct {
         while (true) {
             self.tiles_per_row += 1;
             accum += self.tile_size + self.spacing;
-            if (accum >= self.tex.width) {
+            if (accum >= @floatToInt(usize, self.tex.width)) {
                 break;
             }
         }
@@ -106,7 +106,7 @@ pub const Tileset = struct {
         while (true) {
             self.tiles_per_col += 1;
             accum += self.tile_size + 2 * self.spacing;
-            if (accum >= self.tex.height) {
+            if (accum >= @floatToInt(usize, self.tex.height)) {
                 break;
             }
         }
@@ -115,8 +115,8 @@ pub const Tileset = struct {
     pub fn draw(self: *Tileset) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
         const first_pos = igGetIO().DisplaySize.subtract(.{
-            .x = 150 + @intToFloat(f32, self.tex.width) * @intToFloat(f32, zoom),
-            .y = 150 + @intToFloat(f32, self.tex.height) * @intToFloat(f32, zoom),
+            .x = 150 + self.tex.width * @intToFloat(f32, zoom),
+            .y = 150 + self.tex.height * @intToFloat(f32, zoom),
         });
         igSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
 
@@ -124,7 +124,7 @@ pub const Tileset = struct {
         if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) return;
 
         var origin = ogGetCursorScreenPos();
-        ogImage(self.tex.imTextureID(), self.tex.width * @intCast(i32, zoom), self.tex.height * @intCast(i32, zoom));
+        ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
 
         // draw selected tile
         addTileToDrawList(self.tile_size * zoom, origin, self.selected.comps.tile_index, self.tiles_per_row, self.spacing * zoom);
