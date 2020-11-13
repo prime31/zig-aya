@@ -1,9 +1,9 @@
 #version 330
 uniform mat3x2 TransformMatrix;
 
-layout (location=0) in vec2 VertPosition;
-layout (location=1) in vec2 VertTexCoord;
-layout (location=2) in vec4 VertColor;
+layout (location = 0) in vec2 VertPosition;
+layout (location = 1) in vec2 VertTexCoord;
+layout (location = 2) in vec4 VertColor;
 
 out vec2 VaryingTexCoord;
 out vec4 VaryingColor;

@@ -1,9 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-usingnamespace @import("sokol");
 
-pub const imgui = true;
+pub const enable_imgui = true;
 var demo_open: bool = true;
 
 pub fn main() !void {
@@ -18,13 +17,13 @@ pub fn main() !void {
     });
 }
 
-fn init() void {}
+fn init() !void {}
 
-fn update() void {
+fn update() !void {
     igShowDemoWindow(&demo_open);
 }
 
-fn render() void {
+fn render() !void {
     aya.gfx.beginPass(.{});
     aya.gfx.endPass();
 }
