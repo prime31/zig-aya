@@ -11,7 +11,7 @@ var tex: aya.gfx.Texture = undefined;
 var clouds_tex: aya.gfx.Texture = undefined;
 var lines_shader: Shader = undefined;
 var noise_shader: Shader = undefined;
-var dissolve_pip: Shader = undefined;
+var dissolve_shader: Shader = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 
 var noise = aya.gfx.effects.Noise.Params{
@@ -69,6 +69,28 @@ const lines_frag: [:0]const u8 =
     \\}
 ;
 
+const dissolve_frag: [:0]const u8 =
+    \\uniform float progress; // 0 - 1 where 0 is no change to s0 and 1 will discard all of s0 where dissolve_tex.r < value
+    \\uniform float threshold; // 0.04
+    \\uniform vec4 threshold_color; // the color that will be used when dissolve_tex is between progress +- threshold
+    \\uniform sampler2D dissolve_tex;
+    \\
+    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    \\  float _progress = progress + threshold;
+    \\  vec4 color = texture(tex, tex_coord);
+    \\  // get dissolve from 0 - 1 where 0 is pure white and 1 is pure black
+    \\  float dissolve_amount = 1 - texture(dissolve_tex, tex_coord).r;
+    \\  // when our dissolve.r (dissolve_amount) is less than progress we discard
+    \\  if(dissolve_amount < _progress - threshold)
+    \\  	discard;
+    \\  float tmp = abs(_progress - threshold - dissolve_amount) / threshold;
+    \\  float colorAmount = mix(1, 0, 1 - clamp(tmp, 0.0, 1.0));
+    \\  vec4 thresholdColor = mix(vec4(0, 0, 0, 1), threshold_color, colorAmount);
+    \\  float b = dissolve_amount < _progress ? 1.0 : 0.0;
+    \\  return mix(color, color * thresholdColor, b);
+    \\}
+;
+
 pub fn main() !void {
     try aya.run(.{
         .init = init,
@@ -87,7 +109,9 @@ fn init() !void {
     clouds_tex = aya.gfx.Texture.initFromFile("assets/clouds.png", .linear) catch unreachable;
     lines_shader = try Shader.initWithFrag(lines_frag);
     noise_shader = try Shader.initWithFrag(noise_frag);
-    // dissolve_pip = aya.gfx.effects.Dissolve.init();
+    dissolve_shader = try Shader.initWithFrag(dissolve_frag);
+    dissolve_shader.bind();
+    dissolve_shader.setUniformName(i32, "dissolve_tex", 1);
 
     stack = aya.gfx.createPostProcessStack();
     // _ = stack.add(aya.gfx.PixelGlitch, {});
@@ -101,7 +125,7 @@ fn shutdown() !void {
 
     lines_shader.deinit();
     noise_shader.deinit();
-    // dissolve_pip.deinit();
+    dissolve_shader.deinit();
     stack.deinit();
 }
 
@@ -129,7 +153,7 @@ fn render() !void {
     if (!aya.input.keyDown(.space)) {
         aya.gfx.setShader(lines_shader);
         lines_shader.setUniformName(f32, "line_size", 4);
-        lines_shader.setUniformName(aya.math.Vec4, "line_color", .{.x = 1, .y = 0.8, .z = 0.6, .w = 1});
+        lines_shader.setUniformName(aya.math.Vec4, "line_color", .{ .x = 1, .y = 0.8, .z = 0.6, .w = 1 });
     }
     aya.draw.texScale(tex, 230, 230, 3);
 
@@ -142,7 +166,10 @@ fn render() !void {
     aya.gfx.flush();
 
     if (!aya.input.keyDown(.d)) {
-        // aya.gfx.setPipeline(dissolve_pip);
+        aya.gfx.setShader(dissolve_shader);
+        dissolve_shader.setUniformName(f32, "progress", aya.math.pingpong(aya.time.seconds(), 1));
+        dissolve_shader.setUniformName(f32, "threshold", 0.4);
+        dissolve_shader.setUniformName(aya.math.Vec4, "threshold_color", aya.math.Color.orange.asVec4());
         aya.draw.bindTexture(clouds_tex, 1);
     }
     aya.draw.texScale(tex, 330, 30, 3);
