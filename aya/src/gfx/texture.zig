@@ -119,6 +119,17 @@ pub const Texture = struct {
         return load_res[0 .. width.* * height.* * 4];
     }
 
+    /// returns true if the image was loaded successfully
+    pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
+        const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
+        var comp: c_int = undefined;
+        if (stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+            return true;
+        }
+
+        return false;
+    }
+
     pub fn deinit(self: *const Texture) void {
         renderer.destroyImage(self.img);
     }
@@ -134,6 +145,6 @@ pub const Texture = struct {
     }
 
     pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
-        return @intToPtr(*c_void, self.img);
+        return @intToPtr(*c_void, renderer.getImageNativeId(self.img));
     }
 };
