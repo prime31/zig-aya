@@ -2,9 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
-pub const imgui = true;
+pub const enable_imgui = true;
 
-var tex: aya.gfx.Texture = undefined;
 // 10 x 37
 const map = [_]u8{
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -66,16 +65,15 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    tex = aya.gfx.Texture.initFromFile("/Users/desaro/Desktop/input.png", .nearest) catch unreachable;
     generateMap();
 }
 
 fn update() !void {
-    if (ogButton("Regen")) {
-        generateMap();
-    }
+    if (ogButton("Regen")) generateMap();
 
     _ = ogDrag(usize, "Minimum # Rows", &minimum_rows, 0.5, 5, 100);
+
+    if (ogButton("Extract From Image and Dump to Console")) extractImage();
 }
 
 fn generateMap() void {
@@ -118,7 +116,7 @@ fn drawMap(data: []const u8, w: usize, h: usize, x_pos: f32, y_pos: f32, scale: 
 fn extractImage() void {
     var w: usize = 0;
     var h: usize = 0;
-    const data = aya.gfx.Texture.dataFromFile("/Users/desaro/Desktop/input.png", .nearest, &w, &h) catch unreachable;
+    const data = aya.gfx.Texture.dataFromFile("assets/markov.png", &w, &h) catch unreachable;
 
     var i: usize = 0;
     while (i < h) : (i += 1) {
