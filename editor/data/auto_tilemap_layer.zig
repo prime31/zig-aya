@@ -442,7 +442,7 @@ pub const AutoTilemapLayer = struct {
             self.rulesHamburgerPopup(rule);
 
             // quick brush selector
-            if (ogKeyPressed(aya.sokol.SAPP_KEYCODE_B)) {
+            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_B)) {
                 if (igIsPopupOpenID(igGetIDStr("##brushes"), ImGuiPopupFlags_None)) {
                     igClosePopupToLevel(1, true);
                 } else {
@@ -580,7 +580,7 @@ pub const AutoTilemapLayer = struct {
         const tile_spacing = self.tileset.spacing * zoom;
         const tile_size = self.tileset.tile_size * zoom;
 
-        ogImage(self.tileset.tex.imTextureID(), self.tileset.tex.width * @intCast(i32, zoom), self.tileset.tex.height * @intCast(i32, zoom));
+        ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tileset.tex.height) * @intCast(i32, zoom));
 
         const draw_list = igGetWindowDrawList();
 
@@ -611,7 +611,7 @@ pub const AutoTilemapLayer = struct {
 
     /// TODO: duplicated almost exactly in TilemapLayer
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        if ((igGetIO().KeyCtrl or igGetIO().KeySuper) and ogKeyPressed(aya.sokol.SAPP_KEYCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
+        if ((igGetIO().KeyCtrl or igGetIO().KeySuper) and ogKeyPressed(aya.sdl.SDL_SCANCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
         // TODO: this needs to be in some screen-space renderer in Scene so that it isnt scaled with the camera transform matrix
         const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
@@ -857,7 +857,7 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
     igSameLine(0, 5);
 
     var content_start_pos = ogGetCursorScreenPos();
-    ogImage(self.tileset.tex.imTextureID(), self.tileset.tex.width, self.tileset.tex.height);
+    ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width), @floatToInt(i32, self.tileset.tex.height));
 
     const draw_list = igGetWindowDrawList();
 

@@ -38,14 +38,14 @@ pub const Scene = struct {
         // handle initial creation and resizing of the OffscreenPass
         var content_region = ogGetContentRegionAvail();
         if (self.pass) |pass| {
-            if (pass.color_tex.width != @floatToInt(i32, content_region.x) or pass.color_tex.height != @floatToInt(i32, content_region.y)) {
+            if (pass.color_texture.width != content_region.x or pass.color_texture.height != content_region.y) {
                 self.pass.?.deinit();
                 self.pass = null;
             }
         }
 
         if (self.pass == null) {
-            self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y), .nearest);
+            self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y));
             if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
                 // TODO: center cam at startup? seems we get odd imgui content sizes first 2 frames so here is a hack
                 self.cam.pos = .{ .x = content_region.x / 3, .y = content_region.y / 2.1 };
@@ -53,7 +53,7 @@ pub const Scene = struct {
         }
 
         const tmp = ogGetCursorScreenPos();
-        ogImage(self.pass.?.color_tex.imTextureID(), self.pass.?.color_tex.width, self.pass.?.color_tex.height);
+        ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
         igSetCursorScreenPos(tmp);
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
