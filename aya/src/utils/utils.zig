@@ -46,6 +46,9 @@ pub fn inspect(comptime label: []const u8, comptime value: anytype) bool {
     std.debug.assert(child_type_info == .Struct);
 
     if (igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, ImGuiTreeNodeFlags_DefaultOpen)) {
+        igIndent(10);
+        defer igUnindent(10);
+
         const info = child_type_info.Struct;
         igPushIDPtr(value);
         var changed = false;

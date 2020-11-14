@@ -28,6 +28,7 @@ pub const PostProcessStack = struct {
     pub fn add(self: *PostProcessStack, comptime T: type, data: anytype) *T {
         std.debug.assert(@hasDecl(T, "initialize"));
         std.debug.assert(@hasDecl(T, "deinit"));
+        std.debug.assert(@hasDecl(T, "process"));
         std.debug.assert(@hasField(T, "postprocessor"));
 
         var processor = self.allocator.create(T) catch unreachable;
@@ -61,8 +62,8 @@ pub const PostProcessStack = struct {
     }
 };
 
-/// implmentors must have initialize, deinit and process methods defined. The initialize method is where default values
-/// should be set since this will be a heap allocated object.
+/// implementors must have initialize, deinit and process methods defined and a postprocessor: *PostProcessor field.
+/// The initialize method is where default values should be set since this will be a heap allocated object.
 pub const PostProcessor = struct {
     process: fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
     deinit: fn (self: *PostProcessor, allocator: *std.mem.Allocator) void = undefined,
@@ -74,111 +75,164 @@ pub const PostProcessor = struct {
 
     // helper method for taking the final texture from a postprocessor and blitting it. Simple postprocessors
     // can get away with just calling this method directly.
-    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, pipeline: aya.gfx.Pipeline) void {
-        aya.gfx.beginPass(.{ .color_action = .SG_ACTION_DONTCARE, .pass = pass, .pipeline = pipeline });
+    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: aya.gfx.Shader) void {
+        aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass, .shader = shader });
         aya.draw.tex(tex, 0, 0);
         aya.gfx.endPass();
     }
 };
 
+const sepia_frag: [:0]const u8 =
+    \\uniform vec3 sepia_tone = vec3(1.2, 1.0, 0.8);
+    \\
+    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    \\  vec4 color = texture(tex, tex_coord);
+    \\
+    \\  // convert to greyscale then tint
+    \\  float gray_scale = dot(color.rgb, vec3(0.3, 0.59, 0.11));
+    \\  color.rgb = mix(color.rgb, gray_scale * sepia_tone, 0.75);
+    \\
+    \\  return color;
+    \\}
+;
+
+const vignette_frag: [:0]const u8 =
+    \\uniform float radius = 1.25;
+    \\uniform float power = 1.0;
+    \\
+    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    \\  vec4 color = texture(tex, tex_coord);
+    \\
+    \\  vec2 dist = (tex_coord - 0.5f) * radius;
+    \\  dist.x = 1 - dot(dist, dist) * power;
+    \\  color.rgb *= dist.x;
+    \\
+    \\  return color;
+    \\}
+;
+
+const pixel_glitch_frag: [:0]const u8 =
+    \\uniform float vertical_size = 5.0; // vertical size in pixels or each row
+    \\uniform float horizontal_offset = 10.0; // horizontal shift in pixels
+    \\uniform vec2 screen_size = vec2(1024, 768); // screen width/height
+    \\
+    \\float hash11(float p) {
+    \\	  vec3 p3  = fract(vec3(p, p, p) * 0.1031);
+    \\    p3 += dot(p3, p3.yzx + 19.19);
+    \\    return fract((p3.x + p3.y) * p3.z);
+    \\}
+    \\
+    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    \\  // convert vertical_size and horizontal_offset from pixels
+    \\  float pixels = screen_size.x / vertical_size;
+    \\  float offset = horizontal_offset / screen_size.y;
+    \\
+    \\  // get a number between -1 and 1 to offset the row of pixels by that is dependent on the y position
+    \\  float r = hash11(floor(tex_coord.y * pixels)) * 2.0 - 1.0;
+    \\  return texture(tex, vec2(tex_coord.x + r * offset, tex_coord.y));
+    \\}
+;
+
 pub const Sepia = struct {
     postprocessor: PostProcessor,
-    pipeline: aya.gfx.Pipeline,
+    shader: aya.gfx.Shader,
     sepia_tone: aya.math.Vec3,
 
     pub fn deinit(self: @This()) void {
-        self.pipeline.deinit();
+        self.shader.deinit();
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.pipeline = aya.gfx.Pipeline.init(shaders.sepia_shader_desc());
+        self.shader = aya.gfx.Shader.initWithFrag(sepia_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
-
         self.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
-        self.pipeline.setFragUniform(0, &self.sepia_tone);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(pass, tex, self.pipeline);
+        processor.blit(pass, tex, self.shader);
     }
 
     pub fn setTone(self: *@This(), tone: aya.math.Vec3) void {
         self.sepia_tone = tone;
-        self.pipeline.setFragUniform(0, &self.sepia_tone);
+        // TODO: dont bind just to set uniforms...
+        self.shader.bind();
+        self.shader.setUniformName(aya.math.Vec3, "sepia_tone", self.sepia_tone);
     }
 };
 
 pub const Vignette = struct {
     postprocessor: PostProcessor,
-    pipeline: aya.gfx.Pipeline,
+    shader: aya.gfx.Shader,
     params: struct { radius: f32, power: f32 },
 
     pub fn deinit(self: @This()) void {
-        self.pipeline.deinit();
+        self.shader.deinit();
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.pipeline = aya.gfx.Pipeline.init(shaders.vignette_shader_desc());
+        self.shader = aya.gfx.Shader.initWithFrag(vignette_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
-
         self.params = .{ .radius = 1.2, .power = 1 };
-        self.pipeline.setFragUniform(0, &self.params);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(pass, tex, self.pipeline);
+        processor.blit(pass, tex, self.shader);
     }
 
-    pub fn setUniforms(self: *@This(), radius: f32, power: 32) void {
+    pub fn setUniforms(self: *@This(), radius: f32, power: f32) void {
         self.params.radius = radius;
         self.params.power = power;
-        self.pipeline.setFragUniform(0, &self.params);
+
+        self.shader.bind();
+        self.shader.setUniformName(f32, "radius", radius);
+        self.shader.setUniformName(f32, "power", power);
     }
 };
 
 pub const PixelGlitch = struct {
     postprocessor: PostProcessor,
-    pipeline: aya.gfx.Pipeline,
+    shader: aya.gfx.Shader,
     params: Params,
 
     pub const Params = struct {
         pub const inspect = .{
-            .vertical_size = .{ .min = 1.0, .max = 100.0 },
+            .vertical_size = .{ .min = 0.1, .max = 100.0 },
+            .horizontal_offset = .{ .min = -100.0, .max = 100.0 },
         };
 
-        vertical_size: f32,
-        horizontal_offset: f32,
-        screen_size: aya.math.Vec2,
+        vertical_size: f32 = 5,
+        horizontal_offset: f32 = 10,
     };
 
     pub fn deinit(self: @This()) void {
-        self.pipeline.deinit();
+        self.shader.deinit();
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.pipeline = aya.gfx.Pipeline.init(shaders.pixel_glitch_shader_desc());
+        self.shader = aya.gfx.Shader.initWithFrag(pixel_glitch_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
 
-        self.params = .{ .vertical_size = 0.5, .horizontal_offset = 10, .screen_size = aya.window.sizeVec2() };
-        self.pipeline.setFragUniform(0, &self.params);
+        const size = aya.window.size();
+        self.params = .{ .vertical_size = 0.5, .horizontal_offset = 10 };
+        self.setUniforms(self.params.vertical_size, self.params.horizontal_offset);
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(pass, tex, self.pipeline);
+        processor.blit(pass, tex, self.shader);
     }
 
-    pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32, screen_size: aya.math.Vec2) void {
+    pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32) void {
         self.params.vertical_size = vertical_size;
         self.params.horizontal_offset = horizontal_offset;
-        self.params.screen_size = screen_size;
-        self.pipeline.setFragUniform(0, &self.params);
-    }
 
-    pub fn setParams(self: *@This(), params: Params) void {
-        self.params = params;
-        self.pipeline.setFragUniform(0, &self.params);
+        // TODO: dont bind just to set uniforms...
+        self.shader.bind();
+        self.shader.setUniformName(f32, "vertical_size", vertical_size);
+        self.shader.setUniformName(f32, "horizontal_offset", horizontal_offset);
+        const size = aya.window.size();
+        self.shader.setUniformName(aya.math.Vec2, "screen_size", .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) });
     }
 };
