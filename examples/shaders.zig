@@ -80,8 +80,10 @@ const dissolve_frag: [:0]const u8 =
     \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
     \\  float _progress = progress + threshold;
     \\  vec4 color = texture(tex, tex_coord);
+    \\
     \\  // get dissolve from 0 - 1 where 0 is pure white and 1 is pure black
     \\  float dissolve_amount = 1 - texture(dissolve_tex, tex_coord).r;
+    \\
     \\  // when our dissolve.r (dissolve_amount) is less than progress we discard
     \\  if(dissolve_amount < _progress - threshold)
     \\  	discard;
@@ -168,7 +170,7 @@ fn update() !void {
 
 fn render() !void {
     aya.gfx.beginPass(.{});
-    aya.draw.text("Hold space to disable noise effects", 0, 30, null);
+    aya.draw.text("Hold space to disable noise/lines effects", 0, 30, null);
     aya.draw.text("Hold d to disable dissolve effect", 00, 50, null);
     aya.draw.texScale(tex, 30, 30, 3);
 
