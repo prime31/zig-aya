@@ -14,19 +14,21 @@ var noise_shader: Shader = undefined;
 var dissolve_shader: Shader = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 
-var lines = struct {
+const Lines = struct {
     line_size: f32 = 4,
     line_color: aya.math.Vec4 = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
-}{};
+};
+var lines = Lines{};
 
 var noise = struct {
     power: f32 = 100,
 }{};
 
-var dissolve = struct {
+const Dissolve = struct {
     threshold: f32 = 0.04,
     threshold_color: aya.math.Vec4 = aya.math.Color.orange.asVec4(),
-}{};
+};
+var dissolve = Dissolve{};
 
 var sepia = struct {
     sepia_tone: aya.math.Vec3 = .{ .x = 1.2, .y = 1.0, .z = 0.8 },
@@ -112,9 +114,9 @@ fn init() !void {
     tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
     clouds_tex = aya.gfx.Texture.initFromFile("assets/clouds.png", .linear) catch unreachable;
 
-    lines_shader = try Shader.initWithFrag(lines_frag);
-    noise_shader = try Shader.initWithFrag(noise_frag);
-    dissolve_shader = try Shader.initWithFrag(dissolve_frag);
+    lines_shader = try Shader.initWithFrag(Lines, lines_frag);
+    noise_shader = try Shader.initWithFrag(void, noise_frag);
+    dissolve_shader = try Shader.initWithFrag(Dissolve, dissolve_frag);
     dissolve_shader.bind();
     dissolve_shader.setUniformName(i32, "dissolve_tex", 1);
 
@@ -139,8 +141,7 @@ fn update() !void {
 
     if (aya.utils.inspect("lines", &lines)) {
         lines_shader.bind();
-        lines_shader.setUniformName(f32, "line_size", lines.line_size);
-        lines_shader.setUniformName(aya.math.Vec4, "line_color", lines.line_color);
+        lines_shader.setFragUniform(Lines, lines);
     }
     if (aya.utils.inspect("noise", &noise)) {
         noise_shader.bind();
@@ -148,8 +149,7 @@ fn update() !void {
     }
     if (aya.utils.inspect("dissolve", &dissolve)) {
         dissolve_shader.bind();
-        dissolve_shader.setUniformName(f32, "threshold", dissolve.threshold);
-        dissolve_shader.setUniformName(aya.math.Vec4, "threshold_color", dissolve.threshold_color);
+        dissolve_shader.setFragUniform(Dissolve, dissolve);
     }
     if (aya.utils.inspect("pixel glitch", &glitch)) {
         stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setUniforms(glitch.vertical_size, glitch.horizontal_offset);

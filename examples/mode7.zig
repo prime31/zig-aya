@@ -6,6 +6,23 @@ const math = aya.math;
 const Texture = aya.gfx.Texture;
 const Color = aya.math.Color;
 
+const Mode7Uniform = struct {
+    mapw: f32 = 0,
+    maph: f32 = 0,
+    x: f32 = 0,
+    y: f32 = 0,
+    zoom: f32 = 0,
+    fov: f32 = 0,
+    offset: f32 = 0,
+    wrap: f32 = 0,
+    x1: f32 = 0,
+    x2: f32 = 0,
+    y1: f32 = 0,
+    y2: f32 = 0,
+    mat: math.Mat32 = undefined,
+};
+var uniform: Mode7Uniform = .{};
+
 var map: Texture = undefined;
 var block: Texture = undefined;
 var mode7_shader: gfx.Shader = undefined;
@@ -129,7 +146,7 @@ fn init() !void {
 
     map = Texture.initFromFile("assets/mario_kart.png", .nearest) catch unreachable;
     block = Texture.initFromFile("assets/block.png", .nearest) catch unreachable;
-    mode7_shader = try gfx.Shader.init(@embedFile("../assets/shaders/vert.vs"), @embedFile("../assets/shaders/mode7.fs"));
+    mode7_shader = try gfx.Shader.initWithFragUniform(Mode7Uniform, @embedFile("../assets/shaders/vert.vs"), @embedFile("../assets/shaders/mode7.fs"));
     mode7_shader.bind();
     mode7_shader.setUniformName(i32, "MainTex", 0);
     mode7_shader.setUniformName(i32, "map_tex", 1);
@@ -239,22 +256,21 @@ fn render() !void {
 fn drawPlane() void {
     gfx.setShader(mode7_shader);
 
-    mode7_shader.setUniformName(f32, "mapw", map.width);
-    mode7_shader.setUniformName(f32, "maph", map.height);
+    uniform.mapw = map.width;
+    uniform.maph = map.height;
+    uniform.x = camera.x;
+    uniform.y = camera.y;
+    uniform.zoom = camera.z;
+    uniform.fov = camera.f;
+    uniform.offset = camera.o;
+    uniform.wrap = wrap;
+    uniform.x1 = camera.x1;
+    uniform.y1 = camera.y1;
+    uniform.x2 = camera.x2;
+    uniform.y2 = camera.y2;
+    mode7_shader.setFragUniform(Mode7Uniform, uniform);
 
-    mode7_shader.setUniformName(f32, "x", camera.x);
-    mode7_shader.setUniformName(f32, "y", camera.y);
-    mode7_shader.setUniformName(f32, "zoom", camera.z);
-    mode7_shader.setUniformName(f32, "fov", camera.f);
-    mode7_shader.setUniformName(f32, "offset", camera.o);
-    mode7_shader.setUniformName(f32, "wrap", wrap);
-
-    mode7_shader.setUniformName(f32, "x1", camera.x1);
-    mode7_shader.setUniformName(f32, "y1", camera.y1);
-    mode7_shader.setUniformName(f32, "x2", camera.x2);
-    mode7_shader.setUniformName(f32, "y2", camera.y2);
-
-    // bind out map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
+    // bind our map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
     gfx.draw.bindTexture(map, 1);
     const drawable_size = aya.window.drawableSize();
     gfx.draw.rect(.{}, @intToFloat(f32, drawable_size.w), @intToFloat(f32, drawable_size.h), math.Color.white);
