@@ -150,20 +150,6 @@ pub fn beginPass(config: PassConfig) void {
         }
     }
 
-    // if (config.pass) |pass| {
-    //     renderkit.renderer.beginPass(pass.pass, clear_command);
-    //     // inverted for OpenGL offscreen passes
-    //     if (renderkit.current_renderer == .opengl) {
-    //         proj_mat = math.Mat32.initOrthoInverted(pass.color_texture.width, pass.color_texture.height);
-    //     } else {
-    //         proj_mat = math.Mat32.initOrtho(pass.color_texture.width, pass.color_texture.height);
-    //     }
-    // } else {
-    //     const size = aya.window.drawableSize();
-    //     renderkit.renderer.beginDefaultPass(clear_command, size.w, size.h);
-    //     proj_mat = math.Mat32.initOrtho(@intToFloat(f32, size.w), @intToFloat(f32, size.h));
-    // }
-
     // if we were given a transform matrix multiply it here
     if (config.trans_mat) |trans_mat| {
         proj_mat = proj_mat.mul(trans_mat);
@@ -178,6 +164,7 @@ pub fn beginPass(config: PassConfig) void {
 pub fn endPass() void {
     // setting the shader will flush the batch
     setShader(null);
+    aya.debug.render(state.debug_render_enabled);
     renderkit.renderer.endPass();
 }
 

@@ -14,7 +14,7 @@ pub const Shader = struct {
     }
 
     pub fn init(vert: [:0]const u8, frag: [:0]const u8) !Shader {
-        return Shader{ .shader = renderer.createShaderProgram(.{.vs = vert, .fs = frag}) };
+        return Shader{ .shader = renderer.createShaderProgram(.{ .vs = vert, .fs = frag }) };
     }
 
     pub fn initWithFrag(frag: [:0]const u8) !Shader {
@@ -25,7 +25,7 @@ pub const Shader = struct {
         const default_frag_pre = default_frag[0 .. std.mem.indexOfScalar(u8, default_frag, '}').? + 2];
         const final_frag = try std.mem.concat(aya.mem.allocator, u8, &[_][]const u8{ default_frag_pre, frag, "\x00" });
 
-        return Shader{ .shader = renderer.createShaderProgram(.{.vs = vert, .fs = final_frag[0..final_frag.len - 1 :0]}) };
+        return Shader{ .shader = renderer.createShaderProgram(.{ .vs = vert, .fs = final_frag[0 .. final_frag.len - 1 :0] }) };
     }
 
     pub fn deinit(self: Shader) void {
