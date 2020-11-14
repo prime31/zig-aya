@@ -148,7 +148,7 @@ pub const Sepia = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.shader = aya.gfx.Shader.initWithFrag(sepia_frag) catch unreachable;
+        self.shader = aya.gfx.Shader.initWithFrag(void, sepia_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
         self.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
     }
@@ -176,7 +176,7 @@ pub const Vignette = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.shader = aya.gfx.Shader.initWithFrag(vignette_frag) catch unreachable;
+        self.shader = aya.gfx.Shader.initWithFrag(void, vignette_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
         self.params = .{ .radius = 1.2, .power = 1 };
     }
@@ -210,6 +210,7 @@ pub const PixelGlitch = struct {
 
         vertical_size: f32 = 5,
         horizontal_offset: f32 = 10,
+        screen_size: aya.math.Vec2 = .{},
     };
 
     pub fn deinit(self: @This()) void {
@@ -217,7 +218,7 @@ pub const PixelGlitch = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.shader = aya.gfx.Shader.initWithFrag(pixel_glitch_frag) catch unreachable;
+        self.shader = aya.gfx.Shader.initWithFrag(Params, pixel_glitch_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
 
         // TODO: dont bind just to set uniforms...
@@ -232,14 +233,13 @@ pub const PixelGlitch = struct {
     }
 
     pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32) void {
+        const size = aya.window.size();
+        self.params.screen_size = .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) };
         self.params.vertical_size = vertical_size;
         self.params.horizontal_offset = horizontal_offset;
 
         // TODO: dont bind just to set uniforms...
         self.shader.bind();
-        self.shader.setUniformName(f32, "vertical_size", vertical_size);
-        self.shader.setUniformName(f32, "horizontal_offset", horizontal_offset);
-        const size = aya.window.size();
-        self.shader.setUniformName(aya.math.Vec2, "screen_size", .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) });
+        self.shader.setFragUniform(Params, self.params);
     }
 };
