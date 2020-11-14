@@ -41,7 +41,7 @@ pub const Shader = struct {
     }
 
     pub fn setFragUniform(self: Shader, comptime FragUniformT: type, value: FragUniformT) void {
-        renderer.setShaderProgramFragmentUniform(FragUniformT, self.shader, value);
+        renderer.setShaderProgramUniformBlock(FragUniformT, self.shader, .fs, value);
     }
 
     pub fn setUniformName(self: Shader, comptime T: type, name: [:0]const u8, value: T) void {
