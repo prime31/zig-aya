@@ -14,7 +14,7 @@ pub fn main() !void {
         .render = render,
         .shutdown = shutdown,
         .gfx = .{
-            .resolution_policy = .show_all_pixel_perfect,
+            .resolution_policy = .default,
         },
     });
 }
@@ -25,7 +25,7 @@ fn init() !void {
     pass = aya.gfx.OffscreenPass.init(52, 52);
 
     stack = aya.gfx.createPostProcessStack();
-    // _ = stack.add(aya.gfx.Sepia, {});
+    _ = stack.add(aya.gfx.Sepia, {});
 }
 
 fn shutdown() !void {
@@ -70,8 +70,8 @@ fn render() !void {
     aya.gfx.blitToScreen(aya.math.Color.black);
 
     // now render directly to the backbuffer
-    aya.gfx.beginPass(.{ .color_action = .dont_care });
-    aya.debug.drawPoint(.{ .x = 30, .y = 400 }, 60, aya.math.Color.yellow);
-    aya.draw.texScale(pass.color_texture, 0, 200, 2);
-    aya.gfx.endPass();
+    // aya.gfx.beginPass(.{ .color_action = .dont_care });
+    // aya.debug.drawPoint(.{ .x = 40, .y = 400 }, 60, aya.math.Color.yellow);
+    // aya.draw.texScale(pass.color_texture, 20, 200, 2);
+    // aya.gfx.endPass();
 }

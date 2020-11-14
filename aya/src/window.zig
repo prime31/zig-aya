@@ -80,7 +80,7 @@ pub const Window = struct {
     pub fn handleEvent(self: *Window, event: *sdl.SDL_WindowEvent) void {
         switch (event.event) {
             sdl.SDL_WINDOWEVENT_SIZE_CHANGED => {
-                std.debug.warn("resize: {}x{}\n", .{ event.data1, event.data2 });
+                std.debug.warn("window resize: {}x{}\n", .{ event.data1, event.data2 });
                 // TODO: make a resized event
             },
             sdl.SDL_WINDOWEVENT_FOCUS_GAINED => self.focused = true,

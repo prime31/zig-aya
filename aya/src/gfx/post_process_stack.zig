@@ -47,6 +47,11 @@ pub const PostProcessStack = struct {
     }
 
     pub fn process(self: *PostProcessStack, pass: OffscreenPass) void {
+        // keep our OffscreenPass size in sync with the default pass
+        if (pass.color_texture.width != self.pass.color_texture.width or pass.color_texture.height != self.pass.color_texture.height) {
+            self.pass.resize(@floatToInt(i32, pass.color_texture.width), @floatToInt(i32, pass.color_texture.height));
+        }
+
         for (self.processors.items) |p, i| {
             const offscreen_pass = if (!aya.math.isEven(i)) pass else self.pass;
             const tex = if (aya.math.isEven(i)) pass.color_texture else self.pass.color_texture;
@@ -185,6 +190,7 @@ pub const Vignette = struct {
         self.params.radius = radius;
         self.params.power = power;
 
+        // TODO: dont bind just to set uniforms...
         self.shader.bind();
         self.shader.setUniformName(f32, "radius", radius);
         self.shader.setUniformName(f32, "power", power);
@@ -214,6 +220,7 @@ pub const PixelGlitch = struct {
         self.shader = aya.gfx.Shader.initWithFrag(pixel_glitch_frag) catch unreachable;
         self.postprocessor = .{ .process = process };
 
+        // TODO: dont bind just to set uniforms...
         const size = aya.window.size();
         self.params = .{ .vertical_size = 0.5, .horizontal_offset = 10 };
         self.setUniforms(self.params.vertical_size, self.params.horizontal_offset);

@@ -67,8 +67,7 @@ pub const DefaultOffscreenPass = struct {
             .design_h = h,
         };
 
-        // TODO: we have to update our scaler when the window resizes
-        // TODO: remove the hack from gfx.blitToScreen when this works
+        // TODO: remove the hack from gfx.blitToScreen that calls onWindowResizedCallback when this works
         //aya.window.subscribe(.resize, onWindowResizedCallback, pass, false);
 
         return pass;
@@ -82,13 +81,11 @@ pub const DefaultOffscreenPass = struct {
     }
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass) void {
-        var w: i32 = 0;
-        var h: i32 = 0;
         const size = aya.window.drawableSize();
-        if (w != 0 and h != 0 and self.policy == .default and (w != self.design_w or h != self.design_h)) {
-            self.pass.resize(w, h);
-            self.design_w = w;
-            self.design_h = h;
+        if (size.w != 0 and size.h != 0 and self.policy == .default and (size.w != self.design_w or size.h != self.design_h)) {
+            self.pass.resize(size.w, size.h);
+            self.design_w = size.w;
+            self.design_h = size.h;
         }
         self.scaler = self.policy.getScaler(self.design_w, self.design_h);
     }
