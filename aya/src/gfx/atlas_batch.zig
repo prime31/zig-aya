@@ -7,7 +7,7 @@ const DynamicMesh = @import("mesh.zig").DynamicMesh;
 // TODO: who should own and deinit the Texture?
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers
 pub const AtlasBatch = struct {
-    mesh: DynamicMesh(Vertex, u16),
+    mesh: DynamicMesh(u16, Vertex),
     max_sprites: usize,
     sprite_count: usize = 0,
     texture: aya.gfx.Texture,
@@ -19,7 +19,7 @@ pub const AtlasBatch = struct {
         const alloc = allocator orelse aya.mem.allocator;
 
         return AtlasBatch{
-            .mesh = try DynamicMesh(Vertex, u16).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),
+            .mesh = try DynamicMesh(u16, Vertex).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),
             .max_sprites = max_sprites,
             .texture = texture,
             .dirty_range = .{ .start = 0, .end = 0 },
