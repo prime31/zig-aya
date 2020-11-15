@@ -10,7 +10,7 @@ const Vertex = gfx.Vertex;
 const Texture = gfx.Texture;
 
 pub const Batcher = struct {
-    mesh: gfx.DynamicMesh(Vertex, u16),
+    mesh: gfx.DynamicMesh(u16, Vertex),
     vert_index: usize = 0, // current index into the vertex array
     current_image: renderkit.Image = std.math.maxInt(renderkit.Image),
 
@@ -30,7 +30,7 @@ pub const Batcher = struct {
         }
 
         return Batcher{
-            .mesh = try gfx.DynamicMesh(Vertex, u16).init(alloc, max_sprites * 4, indices),
+            .mesh = try gfx.DynamicMesh(u16, Vertex).init(alloc, max_sprites * 4, indices),
         };
     }
 

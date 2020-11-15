@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 
-var mesh: aya.gfx.DynamicMesh(aya.gfx.Vertex, u16) = undefined;
+var mesh: aya.gfx.DynamicMesh(u16, aya.gfx.Vertex) = undefined;
 var tex: aya.gfx.Texture = undefined;
 var rng = std.rand.DefaultPrng.init(0);
 
@@ -18,7 +18,7 @@ fn init() !void {
     var indices = [_]u16{
         0, 1, 2, 2, 3, 0,
     }; //0, 1, 2, 0, 2, 3,
-    mesh = aya.gfx.DynamicMesh(aya.gfx.Vertex, u16).init(null, 4, indices[0..]) catch unreachable;
+    mesh = aya.gfx.DynamicMesh(u16, aya.gfx.Vertex).init(null, 4, indices[0..]) catch unreachable;
 
     mesh.verts[0] = .{ .pos = .{ .x = 220, .y = 20 }, .uv = .{ .x = 1, .y = 0 }, .col = 0xFFFF0FFF };
     mesh.verts[1] = .{ .pos = .{ .x = 20, .y = 20 }, .uv = .{ .x = 0, .y = 0 }, .col = 0xFF00FFFF };

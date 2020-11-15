@@ -20,6 +20,7 @@ pub const Shader = @import("shader.zig").Shader;
 // even higher level wrappers for 2D game dev
 pub const Mesh = @import("mesh.zig").Mesh;
 pub const DynamicMesh = @import("mesh.zig").DynamicMesh;
+pub const InstancedMesh = @import("mesh.zig").InstancedMesh;
 
 pub const Batcher = @import("batcher.zig").Batcher;
 pub const MultiBatcher = @import("multi_batcher.zig").MultiBatcher;
