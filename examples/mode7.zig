@@ -19,13 +19,12 @@ const Mode7Uniform = struct {
     x2: f32 = 0,
     y1: f32 = 0,
     y2: f32 = 0,
-    mat: math.Mat32 = undefined,
 };
-var uniform: Mode7Uniform = .{};
 
 var map: Texture = undefined;
 var block: Texture = undefined;
 var mode7_shader: gfx.Shader = undefined;
+var uniform: Mode7Uniform = .{};
 var camera: Camera = undefined;
 var blocks: std.ArrayList(math.Vec2) = undefined;
 var wrap: f32 = 0;
