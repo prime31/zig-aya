@@ -84,8 +84,6 @@ pub fn init(config: Config) void {
     draw.init(config) catch unreachable;
 
     state.shader = Shader.init(@embedFile("assets/default.vs"), @embedFile("assets/default.fs")) catch unreachable;
-    state.shader.bind();
-    state.shader.setUniformName(i32, "MainTex", 0);
 
     // if we were passed 0's for design size default to the window/backbuffer size
     var design_w = config.design_width;
