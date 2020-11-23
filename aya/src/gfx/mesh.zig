@@ -25,7 +25,8 @@ pub const Mesh = struct {
     }
 
     pub fn deinit(self: Mesh) void {
-        renderer.destroyBufferBindings(self.bindings);
+        renderer.destroyBuffer(self.bindings.index_buffer);
+        renderer.destroyBuffer(self.bindings.vert_buffers[0]);
     }
 
     pub fn bindImage(self: Mesh, image: renderkit.Image, slot: c_uint) void {
@@ -33,7 +34,7 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: Mesh) void {
-        renderer.drawBufferBindings(self.bindings, 0, self.element_count, 0);
+        renderer.drawBufferBindings(self.bindings, 0, self.element_count, 1);
     }
 };
 
@@ -45,7 +46,6 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         const Self = @This();
 
         bindings: renderkit.BufferBindings,
-        vertex_buffer: renderkit.Buffer,
         verts: []VertT,
         element_count: c_int,
         allocator: *std.mem.Allocator,
@@ -65,7 +65,6 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
 
             return Self{
                 .bindings = bindings,
-                .vertex_buffer = vertex_buffer,
                 .verts = try alloc.alloc(VertT, vertex_count),
                 .element_count = @intCast(c_int, indices.len),
                 .allocator = alloc,
@@ -73,28 +72,38 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            // vertex_buffer is owned by BufferBindings so we dont deinit it here
-            renderer.destroyBufferBindings(self.bindings);
+            renderer.destroyBuffer(self.bindings.index_buffer);
+            renderer.destroyBuffer(self.bindings.vert_buffers[0]);
             self.allocator.free(self.verts);
         }
 
         pub fn updateAllVerts(self: *Self) void {
-            renderer.updateBuffer(VertT, self.vertex_buffer, self.verts);
+            renderer.updateBuffer(VertT, self.bindings.vert_buffers[0], self.verts);
         }
 
         /// uploads to the GPU the slice from start_index with num_verts
-        pub fn updateVertSlice(self: *Self, start_index: usize, num_verts: usize) void {
+        pub fn updateVertSlice(self: *Self, num_verts: usize) void {
+            std.debug.assert(num_verts <= self.verts.len);
+            const vert_slice = self.verts[0..num_verts];
+            renderer.updateBuffer(VertT, self.bindings.vert_buffers[0], vert_slice);
+        }
+
+        /// uploads to the GPU the slice from start with num_verts. Records the offset in the BufferBindings allowing you
+        /// to interleave appendVertSlice and draw calls. When calling draw after appendVertSlice
+        /// the base_element is reset to the start of the newly updated data so you would pass in 0 for base_element.
+        pub fn appendVertSlice(self: *Self, start_index: usize, num_verts: usize) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
-            const vert_slice = self.verts[start_index .. start_index + num_verts];
-            renderer.updateBuffer(VertT, self.vertex_buffer, vert_slice);
+            const vert_slice = self.verts[start_index..start_index + num_verts];
+            self.bindings.vertex_buffer_offsets[0] = renderer.appendBuffer(VertT, self.bindings.vert_buffers[0], vert_slice);
         }
 
-        pub fn bindImage(self: Self, image: renderkit.Image, slot: c_uint) void {
-            renderer.bindImageToBufferBindings(self.bindings, image, slot);
+        pub fn bindImage(self: *Self, image: renderkit.Image, slot: c_uint) void {
+            self.bindings.bindImage(image, slot);
         }
 
-        pub fn draw(self: Self, element_count: c_int) void {
-            renderer.drawBufferBindings(self.bindings, 0, element_count, 0);
+        pub fn draw(self: Self, base_element: c_int, element_count: c_int) void {
+            renderer.applyBindings(self.bindings);
+            renderer.draw(base_element, element_count, 1);
         }
 
         pub fn drawAllVerts(self: Self) void {
@@ -143,8 +152,8 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         }
 
         pub fn deinit(self: *Self) void {
-            // Buffers are owned by BufferBindings so we dont deinit it here
-            renderer.destroyBufferBindings(self.bindings);
+            renderer.destroyBuffer(self.bindings.index_buffer);
+            renderer.destroyBuffer(self.bindings.vert_buffers[0]);
             self.allocator.free(self.instance_data);
         }
 
