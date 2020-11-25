@@ -99,11 +99,11 @@ pub const AtlasBatch = struct {
 
     pub fn draw(self: *AtlasBatch) void {
         if (self.buffer_dirty) {
-            self.mesh.updateVertSlice(0, self.sprite_count * 4);
+            self.mesh.updateVertSlice(self.sprite_count * 4);
             self.buffer_dirty = false;
         }
 
         self.mesh.bindImage(self.texture.img, 0);
-        self.mesh.draw(@intCast(i32, self.sprite_count * 6));
+        self.mesh.draw(0, @intCast(i32, self.sprite_count * 6));
     }
 };

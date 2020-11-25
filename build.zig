@@ -6,6 +6,9 @@ const Builder = std.build.Builder;
 const Target = std.build.Target;
 const Pkg = std.build.Pkg;
 
+const renderkit_build = @import("aya/deps/renderkit/build.zig");
+const ShaderCompileStep = renderkit_build.ShaderCompileStep;
+
 var enable_imgui: ?bool = null;
 
 pub fn build(b: *Builder) void {
@@ -40,10 +43,25 @@ pub fn build(b: *Builder) void {
         examples_step.dependOn(&exe.step);
 
         // first element in the list is added as "run" so "zig build run" works
-        if (i == 0) {
-            _ = createExe(b, target, "run", example[1]);
-        }
+        if (i == 0) _ = createExe(b, target, "run", example[1]);
     }
+
+    // shader compiler, run with `zig build compile-shaders`
+    const res = ShaderCompileStep.init(b, "aya/deps/renderkit/shader_compiler/", .{
+        .shader = "examples/assets/shaders/shader_src.glsl",
+        .shader_output_path = "examples/assets/shaders",
+        .package_output_path = "examples/assets",
+        .additional_imports = &[_][]const u8{
+            "const gk = @import(\"gamekit\");",
+            "const gfx = gk.gfx;",
+            "const math = gk.math;",
+            "const renderkit = gk.renderkit;",
+        },
+    });
+
+    const comple_shaders_step = b.step("compile-shaders", "compiles all shaders");
+    b.default_step.dependOn(comple_shaders_step);
+    comple_shaders_step.dependOn(&res.step);
 
     addTests(b, target, "");
 }
@@ -88,7 +106,6 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
     const imgui_gl_pkg = imgui_build.getImGuiGlPackage(prefix_path);
 
     // RenderKit
-    const renderkit_build = @import("aya/deps/renderkit/build.zig");
     renderkit_build.addRenderKitToArtifact(b, artifact, target, prefix_path ++ "aya/deps/renderkit/");
     const renderkit_pkg = renderkit_build.getRenderKitPackage(prefix_path ++ "aya/deps/renderkit/");
 

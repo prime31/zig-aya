@@ -8,18 +8,16 @@ pub const Mesh = struct {
     element_count: c_int,
 
     pub fn init(comptime IndexT: type, indices: []IndexT, comptime VertT: type, verts: []VertT) Mesh {
-        std.debug.assert(IndexT == u16 or IndexT == u32);
-        var vbuffer = renderer.createBuffer(VertT, .{
-            .content = verts,
-        });
         var ibuffer = renderer.createBuffer(IndexT, .{
             .type = .index,
             .content = indices,
         });
-        var bindings = renderer.createBufferBindings(ibuffer, &[_]renderkit.Buffer{vbuffer});
+        var vbuffer = renderer.createBuffer(VertT, .{
+            .content = verts,
+        });
 
         return .{
-            .bindings = bindings,
+            .bindings = renderer.BufferBindings.init(ibuffer, &[_]renderer.Buffer{vbuffer}),
             .element_count = @intCast(c_int, indices.len),
         };
     }
@@ -29,12 +27,13 @@ pub const Mesh = struct {
         renderer.destroyBuffer(self.bindings.vert_buffers[0]);
     }
 
-    pub fn bindImage(self: Mesh, image: renderkit.Image, slot: c_uint) void {
-        renderer.bindImageToBufferBindings(self.bindings, image, slot);
+    pub fn bindImage(self: *Mesh, image: renderkit.Image, slot: c_uint) void {
+        self.bindings.bindImage(image, slot);
     }
 
     pub fn draw(self: Mesh) void {
-        renderer.drawBufferBindings(self.bindings, 0, self.element_count, 1);
+        renderer.applyBindings(self.bindings);
+        renderer.draw(0, self.element_count, 1);
     }
 };
 
@@ -61,10 +60,9 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
                 .usage = .stream,
                 .size = @intCast(c_long, vertex_count * @sizeOf(VertT)),
             });
-            var bindings = renderer.createBufferBindings(ibuffer, &[_]renderkit.Buffer{vertex_buffer});
 
             return Self{
-                .bindings = bindings,
+                .bindings = renderer.BufferBindings.init(ibuffer, &[_]renderer.Buffer{vertex_buffer}),
                 .verts = try alloc.alloc(VertT, vertex_count),
                 .element_count = @intCast(c_int, indices.len),
                 .allocator = alloc,
@@ -79,6 +77,8 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
 
         pub fn updateAllVerts(self: *Self) void {
             renderer.updateBuffer(VertT, self.bindings.vert_buffers[0], self.verts);
+            // updateBuffer gives us a fresh buffer so make sure we reset our append offset
+            self.bindings.vertex_buffer_offsets[0] = 0;
         }
 
         /// uploads to the GPU the slice from start_index with num_verts
@@ -107,7 +107,7 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         }
 
         pub fn drawAllVerts(self: Self) void {
-            self.draw(@intCast(c_int, self.element_count));
+            self.draw(0, @intCast(c_int, self.element_count));
         }
     };
 }
@@ -120,7 +120,6 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         const Self = @This();
 
         bindings: renderkit.BufferBindings,
-        instance_buffer: renderkit.Buffer,
         instance_data: []InstanceT,
         element_count: c_int,
         allocator: *std.mem.Allocator,
@@ -141,10 +140,8 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
                 .step_func = .per_instance,
             });
 
-            var bindings = renderer.createBufferBindings(ibuffer, &[_]renderkit.Buffer{ vertex_buffer, instance_buffer });
             return Self{
-                .bindings = bindings,
-                .instance_buffer = instance_buffer,
+                .bindings = renderer.BufferBindings.init(ibuffer, &[_]renderer.Buffer{vertex_buffer, instance_buffer}),
                 .instance_data = try alloc.alloc(InstanceT, instance_count),
                 .element_count = @intCast(c_int, indices.len),
                 .allocator = alloc,
@@ -154,30 +151,34 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         pub fn deinit(self: *Self) void {
             renderer.destroyBuffer(self.bindings.index_buffer);
             renderer.destroyBuffer(self.bindings.vert_buffers[0]);
+            renderer.destroyBuffer(self.bindings.vert_buffers[1]);
             self.allocator.free(self.instance_data);
         }
 
         pub fn updateInstanceData(self: *Self) void {
-            renderer.updateBuffer(InstanceT, self.instance_buffer, self.instance_data);
+            renderer.updateBuffer(InstanceT, self.bindings.vert_buffers[1], self.instance_data);
+            // updateBuffer gives us a fresh buffer so make sure we reset our append offset
+            self.bindings.vertex_buffer_offsets[1] = 0;
         }
 
-        /// uploads to the GPU the slice from start_index with num_verts
-        pub fn updateInstanceDataSlice(self: *Self, start_index: usize, num_verts: usize) void {
-            std.debug.assert(start_index + num_verts <= self.verts.len);
-            const slice = self.instance_data[start_index .. start_index + num_verts];
-            renderer.updateBuffer(InstanceT, self.instance_buffer, slice);
+        /// uploads to the GPU the slice up to num_elements
+        pub fn updateInstanceDataSlice(self: *Self, num_elements: usize) void {
+            std.debug.assert(num_elements <= self.instance_data.len);
+            const slice = self.instance_data[0..num_elements];
+            renderer.updateBuffer(InstanceT, self.bindings.vert_buffers[1], slice);
         }
 
-        pub fn bindImage(self: Self, image: renderkit.Image, slot: c_uint) void {
-            renderer.bindImageToBufferBindings(self.bindings, image, slot);
+        pub fn bindImage(self: *Self, image: renderkit.Image, slot: c_uint) void {
+            self.bindings.bindImage(image, slot);
         }
 
-        pub fn draw(self: Self, instance_count: c_int) void {
-            renderer.drawBufferBindings(self.bindings, 0, self.element_count, instance_count);
+        pub fn draw(self: Self, base_element: c_int, element_count: c_int, instance_count: c_int) void {
+            renderer.applyBindings(self.bindings);
+            renderer.draw(base_element, element_count, instance_count);
         }
 
         pub fn drawAll(self: Self) void {
-            self.draw(@intCast(c_int, self.instance_data.len));
+            self.draw(0, @intCast(c_int, self.element_count), @intCast(c_int, self.instance_data.len));
         }
     };
 }

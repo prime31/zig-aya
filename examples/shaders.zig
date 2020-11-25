@@ -111,8 +111,8 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
-    clouds_tex = aya.gfx.Texture.initFromFile("assets/clouds.png", .linear) catch unreachable;
+    tex = aya.gfx.Texture.initFromFile("examples/assets/sword_dude.png", .nearest) catch unreachable;
+    clouds_tex = aya.gfx.Texture.initFromFile("examples/assets/clouds.png", .linear) catch unreachable;
 
     lines_shader = try Shader.initWithFrag(Lines, lines_frag);
     noise_shader = try Shader.initWithFrag(void, noise_frag);

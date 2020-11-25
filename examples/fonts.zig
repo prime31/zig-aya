@@ -17,7 +17,7 @@ pub fn main() anyerror!void {
 
 fn init() !void {
     book = aya.gfx.FontBook.init(null, 128, 128, .nearest) catch unreachable;
-    font = book.addFont("assets/ProggyTiny.ttf");
+    font = book.addFont("examples/assets/ProggyTiny.ttf");
     book.setSize(10);
 }
 

@@ -12,7 +12,7 @@ const InstancedVert = struct {
 
 const instanced_vert: [:0]const u8 =
     \\#version 330
-    \\uniform mat3x2 TransformMatrix;
+    \\uniform vec4 VertexParams[2];
     \\
     \\layout (location=0) in vec2 VertPosition;
     \\layout (location=1) in vec2 VertTexCoord;
@@ -27,7 +27,7 @@ const instanced_vert: [:0]const u8 =
     \\void main() {
     \\	VaryingTexCoord = VertTexCoord;
     \\	VaryingColor = VertColor;
-    \\	gl_Position = position(TransformMatrix, VertPosition + InstancePos);
+    \\	gl_Position = position(mat3x2(vec2(VertexParams[0].x, VertexParams[0].y), vec2(VertexParams[0].z, VertexParams[0].w), vec2(VertexParams[1].x, VertexParams[1].y)), VertPosition + InstancePos);
     \\}
     \\
     \\vec4 position(mat3x2 transMat, vec2 localPosition) {
@@ -37,7 +37,7 @@ const instanced_vert: [:0]const u8 =
 
 const instanced_frag: [:0]const u8 =
     \\#version 330
-    \\uniform sampler2D MainTex;
+    \\uniform sampler2D main_tex;
     \\
     \\in vec2 VaryingTexCoord;
     \\in vec4 VaryingColor;
@@ -47,7 +47,7 @@ const instanced_frag: [:0]const u8 =
     \\layout (location = 0) out vec4 frag_color;
     \\
     \\void main() {
-    \\	frag_color = texture(MainTex, VaryingTexCoord.st) * VaryingColor;
+    \\	frag_color = texture(main_tex, VaryingTexCoord.st) * VaryingColor;
     \\}
 ;
 
@@ -72,9 +72,7 @@ fn init() !void {
         .{ .pos = .{ .x = 110, .y = 10 }, .uv = .{ .x = 0, .y = 1 }, .col = 0xFFFF0000 }, // tr
         .{ .pos = .{ .x = 10, .y = 10 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFF000000 }, // tl
     };
-    var indices = [_]u16{
-        0, 1, 2, 0, 2, 3,
-    };
+    var indices = [_]u16{ 0, 1, 2, 0, 2, 3 };
 
     mesh = aya.gfx.Mesh.init(u16, indices[0..], aya.gfx.Vertex, vertices[0..]);
     mesh.bindImage(tex.img, 0);
@@ -102,8 +100,9 @@ fn init() !void {
         }
     }
     instanced_mesh.updateInstanceData();
+    instanced_mesh.bindImage(tex.img, 0);
 
-    shader = try aya.gfx.Shader.init(instanced_vert, instanced_frag);
+    shader = try aya.gfx.Shader.init(.{ .vert = instanced_vert, .frag = instanced_frag });
 }
 
 fn shutdown() !void {
@@ -119,7 +118,7 @@ fn render() !void {
     aya.gfx.beginPass(.{ .color = aya.math.Color.gold });
     mesh.draw();
 
-    aya.gfx.setShader(shader);
+    aya.gfx.setShader(&shader);
     instanced_mesh.drawAll();
     aya.gfx.endPass();
 }

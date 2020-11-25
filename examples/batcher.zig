@@ -17,7 +17,7 @@ pub fn main() !void {
 
 fn init() !void {
     checker_tex = aya.gfx.Texture.initCheckerTexture();
-    font_tex = aya.gfx.Texture.initFromFile("assets/font.png", .linear) catch unreachable;
+    font_tex = aya.gfx.Texture.initFromFile("examples/assets/font.png", .linear) catch unreachable;
 
     checker_quad = aya.math.Quad.init(0, 0, checker_tex.width, checker_tex.height, checker_tex.width, checker_tex.height);
     font_quad = aya.math.Quad.init(0, 0, font_tex.width, font_tex.height, font_tex.width, font_tex.height);

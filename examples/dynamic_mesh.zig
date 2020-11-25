@@ -26,7 +26,7 @@ fn init() !void {
     mesh.verts[3] = .{ .pos = .{ .x = 220, .y = 220 }, .uv = .{ .x = 1, .y = 1 }, .col = 0xFFFFFFFF };
     mesh.updateAllVerts();
 
-    tex = aya.gfx.Texture.initFromFile("assets/sword_dude.png", .nearest) catch unreachable;
+    tex = aya.gfx.Texture.initFromFile("examples/assets/sword_dude.png", .nearest) catch unreachable;
     mesh.bindImage(tex.img, 0);
 }
 

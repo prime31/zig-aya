@@ -3,7 +3,7 @@ const std = @import("std");
 pub const WindowConfig = @import("src/window.zig").WindowConfig;
 
 // libs
-const renderkit = @import("renderkit");
+pub const renderkit = @import("renderkit");
 pub const sdl = @import("sdl");
 pub const imgui = @import("imgui");
 const imgui_gl = @import("imgui_gl");
@@ -87,6 +87,8 @@ pub fn run(config: Config) !void {
 
     while (!pollEvents(config.onFileDropped)) {
         time.tick();
+        gfx.beginFrame();
+
         if (config.update) |update| try update();
         try config.render();
 

@@ -23,11 +23,11 @@ pub fn main() anyerror!void {
 }
 
 fn init() !void {
-    var bytes = aya.fs.read(aya.mem.tmp_allocator, "assets/platformer.json") catch unreachable;
+    var bytes = aya.fs.read(aya.mem.tmp_allocator, "examples/assets/platformer.json") catch unreachable;
     var tokens = std.json.TokenStream.init(bytes);
 
-    map = Map.initFromFile("assets/platformer.json");
-    texture = map.loadTexture("assets", .nearest);
+    map = Map.initFromFile("examples/assets/platformer.json");
+    texture = map.loadTexture("examples/assets", .nearest);
     batch = aya.tilemap.renderer.renderTileLayerIntoAtlasBatch(map, map.tile_layers[0], texture);
 
     const spawn = map.object_layers[0].getObject("spawn");
