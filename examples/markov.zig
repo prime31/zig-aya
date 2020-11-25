@@ -116,7 +116,7 @@ fn drawMap(data: []const u8, w: usize, h: usize, x_pos: f32, y_pos: f32, scale: 
 fn extractImage() void {
     var w: usize = 0;
     var h: usize = 0;
-    const data = aya.gfx.Texture.dataFromFile("assets/markov.png", &w, &h) catch unreachable;
+    const data = aya.gfx.Texture.dataFromFile("examples/assets/markov.png", &w, &h) catch unreachable;
 
     var i: usize = 0;
     while (i < h) : (i += 1) {
@@ -145,20 +145,17 @@ pub const Markov = struct {
     rows: std.StringHashMap(std.StringHashMap(u8)),
     firsts: std.StringHashMap(u8),
     final: []u8 = undefined,
-    arena: std.heap.ArenaAllocator,
+    allocator: *std.mem.Allocator,
 
     pub fn init() Markov {
-        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         return .{
-            .rows = std.StringHashMap(std.StringHashMap(u8)).init(&arena.allocator),
-            .firsts = std.StringHashMap(u8).init(&arena.allocator),
-            .arena = arena,
+            .rows = std.StringHashMap(std.StringHashMap(u8)).init(aya.mem.allocator),
+            .firsts = std.StringHashMap(u8).init(aya.mem.allocator),
+            .allocator = aya.mem.allocator,
         };
     }
 
-    pub fn deinit(self: *Markov) void {
-        self.arena.deinit();
-    }
+    pub fn deinit(self: *Markov) void {}
 
     fn choose(hashmap: std.StringHashMap(u8)) []const u8 {
         var n: i32 = 0;
@@ -190,14 +187,14 @@ pub const Markov = struct {
 
         markov.addSourceMap(data, width, height);
 
-        var res = std.ArrayList([]const u8).init(&markov.arena.allocator);
+        var res = std.ArrayList([]const u8).init(self.allocator);
         var item = choose(markov.firsts);
         while (!std.mem.eql(u8, item, markov.final)) {
             res.append(item) catch unreachable;
             item = choose(markov.rows.get(item).?);
         }
 
-        var new_map = markov.arena.allocator.alloc(u8, res.items.len * width) catch unreachable;
+        var new_map = self.allocator.alloc(u8, res.items.len * width) catch unreachable;
         var i: usize = 0;
         for (res.items) |row| {
             for (row) |tile| {
@@ -210,7 +207,7 @@ pub const Markov = struct {
     }
 
     pub fn generate(self: *Markov, min_rows: usize) []const u8 {
-        var res = std.ArrayList([]const u8).init(&self.arena.allocator);
+        var res = std.ArrayList([]const u8).init(self.allocator);
 
         var item = choose(self.firsts);
         while (res.items.len < min_rows) {
@@ -244,11 +241,11 @@ pub const Markov = struct {
     }
 
     pub fn addSourceMap(self: *Markov, data: []const u8, width: usize, height: usize) void {
-        var all_rows = self.arena.allocator.alloc([]u8, height) catch unreachable;
+        var all_rows = self.allocator.alloc([]u8, height) catch unreachable;
 
         var y: usize = 0;
         while (y < height) : (y += 1) {
-            var current_row = self.arena.allocator.alloc(u8, width) catch unreachable;
+            var current_row = self.allocator.alloc(u8, width) catch unreachable;
             var x: usize = 0;
             while (x < width) : (x += 1) {
                 current_row[x] = data[x + y * width];
@@ -278,7 +275,7 @@ pub const Markov = struct {
     fn updateItem(self: *Markov, item: []u8, next: []u8) void {
         var entry = self.rows.getOrPut(item) catch unreachable;
         if (!entry.found_existing) {
-            entry.entry.value = std.StringHashMap(u8).init(&self.arena.allocator);
+            entry.entry.value = std.StringHashMap(u8).init(self.allocator);
         }
         incrementItemCount(&entry.entry.value, next);
     }

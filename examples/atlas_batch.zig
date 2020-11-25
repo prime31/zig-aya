@@ -15,7 +15,7 @@ pub fn main() anyerror!void {
 }
 
 fn init() !void {
-    font_tex = aya.gfx.Texture.initFromFile("assets/font.png", .linear) catch unreachable;
+    font_tex = aya.gfx.Texture.initFromFile("examples/assets/font.png", .linear) catch unreachable;
     batch = aya.gfx.AtlasBatch.init(null, font_tex, 200) catch unreachable;
     quad = aya.math.Quad.init(0, 0, font_tex.width, font_tex.height, font_tex.width, font_tex.height);
 

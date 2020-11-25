@@ -16,6 +16,7 @@ pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
 pub const Texture = @import("texture.zig").Texture;
 pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 pub const Shader = @import("shader.zig").Shader;
+pub const ShaderState = @import("shader.zig").ShaderState;
 
 // even higher level wrappers for 2D game dev
 pub const Mesh = @import("mesh.zig").Mesh;
@@ -40,7 +41,7 @@ pub const Config = struct {
     design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
     resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
-    batcher_max_sprites: usize = 1000, // defines the size of the vertex/index buffers based on the number of sprites/quads
+    batcher_max_sprites: u16 = 1000, // defines the size of the vertex/index buffers based on the number of sprites/quads
     texture_filter: renderkit.TextureFilter = .nearest,
 };
 
@@ -53,7 +54,7 @@ pub const PassConfig = struct {
     depth: f64 = 0,
 
     trans_mat: ?math.Mat32 = null,
-    shader: ?Shader = null,
+    shader: ?*Shader = null,
     pass: ?OffscreenPass = null,
 
     pub fn asClearCommand(self: PassConfig) renderkit.ClearCommand {
@@ -83,7 +84,7 @@ pub fn init(config: Config) void {
     state.debug_render_enabled = !config.disable_debug_render;
     draw.init(config) catch unreachable;
 
-    state.shader = Shader.init(@embedFile("assets/default.vs"), @embedFile("assets/default.fs")) catch unreachable;
+    state.shader = Shader.initDefaultSpriteShader() catch unreachable;
 
     // if we were passed 0's for design size default to the window/backbuffer size
     var design_w = config.design_width;
@@ -113,12 +114,16 @@ pub fn createPostProcessStack() PostProcessStack {
     return PostProcessStack.init(null, state.default_pass.design_w, state.default_pass.design_h);
 }
 
-pub fn setShader(shader: ?Shader) void {
-    const new_shader = shader orelse state.shader;
+pub fn setShader(shader: ?*Shader) void {
+    const new_shader = shader orelse &state.shader;
 
     draw.batcher.flush();
     new_shader.bind();
-    new_shader.setUniformName(math.Mat32, "TransformMatrix", state.transform_mat);
+    new_shader.setTransformMatrix(&state.transform_mat);
+}
+
+pub fn beginFrame() void {
+    draw.batcher.begin();
 }
 
 /// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default pipeline
@@ -192,9 +197,7 @@ pub fn blitToScreen(letterbox_color: math.Color) void {
 
 /// if we havent yet blitted to the screen do so now
 pub fn commitFrame() void {
-    if (!state.blitted_to_screen) {
-        blitToScreen(math.Color.black);
-    }
+    if (!state.blitted_to_screen) blitToScreen(math.Color.black);
 
     draw.batcher.end();
     state.blitted_to_screen = false;

@@ -2,28 +2,16 @@ const std = @import("std");
 const aya = @import("aya");
 const gfx = aya.gfx;
 const math = aya.math;
+const shaders = @import("assets/shaders/shaders.zig");
+
+pub const renderer: aya.renderkit.Renderer = .opengl;
 
 const Texture = aya.gfx.Texture;
 const Color = aya.math.Color;
 
-const Mode7Uniform = struct {
-    mapw: f32 = 0,
-    maph: f32 = 0,
-    x: f32 = 0,
-    y: f32 = 0,
-    zoom: f32 = 0,
-    fov: f32 = 0,
-    offset: f32 = 0,
-    wrap: f32 = 0,
-    x1: f32 = 0,
-    x2: f32 = 0,
-    y1: f32 = 0,
-    y2: f32 = 0,
-};
-
 var map: Texture = undefined;
 var block: Texture = undefined;
-var mode7_shader: gfx.Shader = undefined;
+var mode7_shader: shaders.Mode7Shader = undefined;
 var uniform: Mode7Uniform = .{};
 var camera: Camera = undefined;
 var blocks: std.ArrayList(math.Vec2) = undefined;
@@ -143,12 +131,9 @@ pub fn main() !void {
 fn init() !void {
     camera = Camera.init(@intToFloat(f32, aya.window.width()), @intToFloat(f32, aya.window.height()));
 
-    map = Texture.initFromFile("assets/mario_kart.png", .nearest) catch unreachable;
-    block = Texture.initFromFile("assets/block.png", .nearest) catch unreachable;
-    mode7_shader = try gfx.Shader.initWithFragUniform(Mode7Uniform, @embedFile("../assets/shaders/vert.vs"), @embedFile("../assets/shaders/mode7.fs"));
-    mode7_shader.bind();
-    mode7_shader.setUniformName(i32, "MainTex", 0);
-    mode7_shader.setUniformName(i32, "map_tex", 1);
+    map = Texture.initFromFile("examples/assets/mario_kart.png", .nearest) catch unreachable;
+    block = Texture.initFromFile("examples/assets/block.png", .nearest) catch unreachable;
+    mode7_shader = shaders.createMode7Shader();
 
     blocks = std.ArrayList(aya.math.Vec2).init(aya.mem.allocator);
     _ = blocks.append(.{ .x = 0, .y = 0 }) catch unreachable;
@@ -224,12 +209,14 @@ fn update() !void {
 
     if (aya.input.keyDown(.z)) {
         map.deinit();
-        map = Texture.initFromFile("assets/zelda_map.png", .nearest) catch unreachable;
+        map = Texture.initFromFile("examples/assets/zelda_map.png", .nearest) catch unreachable;
     }
 }
 
 fn render() !void {
-    gfx.beginPass(.{});
+    // bind our mode7 shader, draw the plane which will then unset the shader for regular sprite drawing
+    updateMode7Uniforms();
+    gfx.beginPass(.{ .shader = &mode7_shader.shader });
     drawPlane();
 
     var pos = camera.toScreen(camera.toWorld(aya.input.mousePos()));
@@ -252,27 +239,25 @@ fn render() !void {
     gfx.endPass();
 }
 
+fn updateMode7Uniforms() void {
+    mode7_shader.frag_uniform.mapw = map.width;
+    mode7_shader.frag_uniform.maph = map.height;
+    mode7_shader.frag_uniform.x = camera.x;
+    mode7_shader.frag_uniform.y = camera.y;
+    mode7_shader.frag_uniform.zoom = camera.z;
+    mode7_shader.frag_uniform.fov = camera.f;
+    mode7_shader.frag_uniform.offset = camera.o;
+    mode7_shader.frag_uniform.wrap = wrap;
+    mode7_shader.frag_uniform.x1 = camera.x1;
+    mode7_shader.frag_uniform.y1 = camera.y1;
+    mode7_shader.frag_uniform.x2 = camera.x2;
+    mode7_shader.frag_uniform.y2 = camera.y2;
+}
+
 fn drawPlane() void {
-    gfx.setShader(mode7_shader);
-
-    uniform.mapw = map.width;
-    uniform.maph = map.height;
-    uniform.x = camera.x;
-    uniform.y = camera.y;
-    uniform.zoom = camera.z;
-    uniform.fov = camera.f;
-    uniform.offset = camera.o;
-    uniform.wrap = wrap;
-    uniform.x1 = camera.x1;
-    uniform.y1 = camera.y1;
-    uniform.x2 = camera.x2;
-    uniform.y2 = camera.y2;
-    mode7_shader.setFragUniform(Mode7Uniform, uniform);
-
-    // bind our map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
+    // bind out map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
     gfx.draw.bindTexture(map, 1);
-    const drawable_size = aya.window.drawableSize();
+    const drawable_size = aya.window.size();
     gfx.draw.rect(.{}, @intToFloat(f32, drawable_size.w), @intToFloat(f32, drawable_size.h), math.Color.white);
     gfx.setShader(null);
-    gfx.draw.unbindTexture(1);
 }

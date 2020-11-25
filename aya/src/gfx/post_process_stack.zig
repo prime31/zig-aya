@@ -80,7 +80,7 @@ pub const PostProcessor = struct {
 
     // helper method for taking the final texture from a postprocessor and blitting it. Simple postprocessors
     // can get away with just calling this method directly.
-    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: aya.gfx.Shader) void {
+    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: *aya.gfx.Shader) void {
         aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass, .shader = shader });
         aya.draw.tex(tex, 0, 0);
         aya.gfx.endPass();
@@ -148,14 +148,14 @@ pub const Sepia = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
-        self.shader = aya.gfx.Shader.initWithFrag(void, sepia_frag) catch unreachable;
+        self.shader = aya.gfx.Shader.initWithFrag(aya.math.Vec3, .{ .frag = sepia_frag }) catch unreachable;
         self.postprocessor = .{ .process = process };
         self.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
     }
 
     pub fn process(processor: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture) void {
         const self = processor.getParent(@This());
-        processor.blit(pass, tex, self.shader);
+        processor.blit(pass, tex, &self.shader);
     }
 
     pub fn setTone(self: *@This(), tone: aya.math.Vec3) void {

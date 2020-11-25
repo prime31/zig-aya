@@ -12,7 +12,7 @@ pub const draw = struct {
     pub fn init(config: gfx.Config) !void {
         white_tex = gfx.Texture.initSingleColor(0xFFFFFFFF);
 
-        batcher = try gfx.Batcher.init(null, config.batcher_max_sprites);
+        batcher = gfx.Batcher.init(null, config.batcher_max_sprites);
 
         fontbook = try gfx.FontBook.init(null, 128, 128, .nearest);
         _ = fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
