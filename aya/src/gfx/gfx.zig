@@ -3,14 +3,10 @@ const aya = @import("../../aya.zig");
 const renderkit = @import("renderkit");
 const math = aya.math;
 
-// TODO: remove these
-pub const Sepia = @import("post_process_stack.zig").Sepia;
-pub const Vignette = @import("post_process_stack.zig").Vignette;
-pub const PixelGlitch = @import("post_process_stack.zig").PixelGlitch;
-
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
+pub const PostProcessor = @import("post_process_stack.zig").PostProcessor;
 
 // high level wrapper objects that use the low-level backend api
 pub const Texture = @import("texture.zig").Texture;
