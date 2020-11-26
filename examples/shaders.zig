@@ -1,45 +1,22 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
+const shaders = @import("assets/shaders/shaders.zig");
+
+pub const renderer: aya.renderkit.Renderer = .opengl;
 
 const Shader = aya.gfx.Shader;
+const effects = @import("assets/effects.zig");
 
-pub const enable_imgui = true;
+pub const enable_imgui = renderer == .opengl;
 
-var post_process = true;
+var post_process = false;
 var tex: aya.gfx.Texture = undefined;
 var clouds_tex: aya.gfx.Texture = undefined;
-var lines_shader: Shader = undefined;
-var noise_shader: Shader = undefined;
-var dissolve_shader: Shader = undefined;
+var lines_shader: shaders.LinesShader = undefined;
+var noise_shader: shaders.NoiseShader = undefined;
+var dissolve_shader: shaders.DissolveShader = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
-
-const Lines = struct {
-    line_size: f32 = 4,
-    line_color: aya.math.Vec4 = .{ .x = 0.9, .y = 0.8, .z = 0.6, .w = 1.0 },
-};
-var lines = Lines{};
-
-var noise = struct {
-    power: f32 = 100,
-}{};
-
-const Dissolve = struct {
-    threshold: f32 = 0.04,
-    threshold_color: aya.math.Vec4 = aya.math.Color.orange.asVec4(),
-};
-var dissolve = Dissolve{};
-
-var sepia = struct {
-    sepia_tone: aya.math.Vec3 = .{ .x = 1.2, .y = 1.0, .z = 0.8 },
-}{};
-
-var vignette_param = struct {
-    radius: f32 = 1.25,
-    power: f32 = 1,
-}{};
-
-var glitch = aya.gfx.PixelGlitch.Params{};
 
 const noise_frag: [:0]const u8 =
     \\uniform float time;
@@ -111,19 +88,24 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    tex = aya.gfx.Texture.initFromFile("examples/assets/sword_dude.png", .nearest) catch unreachable;
-    clouds_tex = aya.gfx.Texture.initFromFile("examples/assets/clouds.png", .linear) catch unreachable;
+    tex = aya.gfx.Texture.initFromFile("examples/assets/textures/sword_dude.png", .nearest) catch unreachable;
+    clouds_tex = aya.gfx.Texture.initFromFile("examples/assets/textures/clouds.png", .linear) catch unreachable;
 
-    lines_shader = try Shader.initWithFrag(Lines, lines_frag);
-    noise_shader = try Shader.initWithFrag(void, noise_frag);
-    dissolve_shader = try Shader.initWithFrag(Dissolve, dissolve_frag);
-    dissolve_shader.bind();
-    dissolve_shader.setUniformName(i32, "dissolve_tex", 1);
+    lines_shader = shaders.createLinesShader();
+    lines_shader.frag_uniform.line_color = [_]f32 {0.9, 0.8, 0.2, 1};
+    lines_shader.frag_uniform.line_size = 4;
+
+    noise_shader = shaders.createNoiseShader();
+    noise_shader.frag_uniform.power = 100;
+
+    dissolve_shader = shaders.createDissolveShader();
+    dissolve_shader.frag_uniform.threshold = 0.04;
+    dissolve_shader.frag_uniform.threshold_color = [_]f32 {1, 0.6, 0, 1};
 
     stack = aya.gfx.createPostProcessStack();
-    _ = stack.add(aya.gfx.PixelGlitch, {});
-    _ = stack.add(aya.gfx.Sepia, {});
-    _ = stack.add(aya.gfx.Vignette, {});
+    _ = stack.add(effects.PixelGlitch, {});
+    _ = stack.add(effects.Sepia, {});
+    _ = stack.add(effects.Vignette, {});
 }
 
 fn shutdown() !void {
@@ -137,66 +119,54 @@ fn shutdown() !void {
 }
 
 fn update() !void {
+    if (aya.renderkit.current_renderer != .opengl) return;
+
     _ = igCheckbox("Enable PostProcessing", &post_process);
 
-    if (aya.utils.inspect("lines", &lines)) {
-        lines_shader.bind();
-        lines_shader.setFragUniform(Lines, lines);
-    }
-    if (aya.utils.inspect("noise", &noise)) {
-        noise_shader.bind();
-        noise_shader.setUniformName(f32, "power", 100);
-    }
-    if (aya.utils.inspect("dissolve", &dissolve)) {
-        dissolve_shader.bind();
-        dissolve_shader.setFragUniform(Dissolve, dissolve);
-    }
-    if (aya.utils.inspect("pixel glitch", &glitch)) {
-        stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setUniforms(glitch.vertical_size, glitch.horizontal_offset);
-    }
-    if (aya.utils.inspect("sepia", &sepia)) {
-        stack.processors.items[1].getParent(aya.gfx.Sepia).setTone(sepia.sepia_tone);
-    }
-    if (aya.utils.inspect("vignette", &vignette_param)) {
-        stack.processors.items[2].getParent(aya.gfx.Vignette).setUniforms(vignette_param.radius, vignette_param.power);
-    }
+    var pixel_glitch = stack.processors.items[0].getParent(effects.PixelGlitch);
+    var sepia = stack.processors.items[1].getParent(effects.Sepia);
+    var vignette = stack.processors.items[1].getParent(effects.Vignette);
+
+    // _ = aya.utils.inspect("lines", &lines_shader.frag_uniform);
+    // _ = aya.utils.inspect("noise", &noise_shader.frag_uniform);
+    // _ = aya.utils.inspect("dissolve", &dissolve_shader.frag_uniform);
+    // _ = aya.utils.inspect("pixel glitch", &pixel_glitch.shader.frag_uniform);
+    // _ = aya.utils.inspect("sepia", &sepia.shader.frag_uniform);
+    // _ = aya.utils.inspect("sepia", &vignette.shader.frag_uniform);
 
     if (@mod(aya.time.frames(), 5) == 0) {
-         glitch.vertical_size = aya.math.rand.range(f32, 1, 5);
-         glitch.horizontal_offset = aya.math.rand.range(f32, -20, 20);
+         pixel_glitch.shader.frag_uniform.vertical_size = aya.math.rand.range(f32, 1, 5);
+         pixel_glitch.shader.frag_uniform.horizontal_offset = aya.math.rand.range(f32, -20, 20);
     }
-    stack.processors.items[0].getParent(aya.gfx.PixelGlitch).setUniforms(glitch.vertical_size, glitch.horizontal_offset);
 }
 
 fn render() !void {
     aya.gfx.beginPass(.{});
-    aya.draw.text("Hold space to disable noise/lines effects", 0, 30, null);
-    aya.draw.text("Hold d to disable dissolve effect", 00, 50, null);
+    aya.draw.text("Hold space to disable noise/lines effects", 10, 30, null);
+    aya.draw.text("Hold d to disable dissolve effect", 10, 50, null);
     aya.draw.texScale(tex, 30, 30, 3);
 
     if (!aya.input.keyDown(.space)) {
-        aya.gfx.setShader(lines_shader);
+        aya.gfx.setShader(&lines_shader.shader);
     }
     aya.draw.texScale(tex, 230, 230, 3);
 
     if (!aya.input.keyDown(.space)) {
-        aya.gfx.setShader(noise_shader);
-        noise_shader.setUniformName(f32, "time", aya.time.seconds());
+        noise_shader.frag_uniform.time = aya.time.seconds();
+        aya.gfx.setShader(&noise_shader.shader);
     }
     aya.draw.texScale(tex, 100, 230, 3);
     aya.gfx.flush();
 
     if (!aya.input.keyDown(.d)) {
-        aya.gfx.setShader(dissolve_shader);
+        dissolve_shader.frag_uniform.progress = aya.math.pingpong(aya.time.seconds(), 1);
+        aya.gfx.setShader(&dissolve_shader.shader);
         aya.draw.bindTexture(clouds_tex, 1);
-        dissolve_shader.setUniformName(f32, "progress", aya.math.pingpong(aya.time.seconds(), 1));
     }
     aya.draw.texScale(tex, 330, 30, 3);
 
     aya.gfx.endPass();
     aya.draw.unbindTexture(1);
 
-    if (post_process) {
-        aya.gfx.postProcess(&stack);
-    }
+    if (post_process) aya.gfx.postProcess(&stack);
 }

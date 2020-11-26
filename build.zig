@@ -16,17 +16,17 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
-        [_][]const u8{ "editor", "editor/main.zig" },
-        [_][]const u8{ "mode7", "examples/mode7.zig" },
-        [_][]const u8{ "markov", "examples/markov.zig" },
-        [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
-        [_][]const u8{ "primitives", "examples/primitives.zig" },
-        [_][]const u8{ "entities", "examples/entities.zig" },
+        // [_][]const u8{ "editor", "editor/main.zig" },
+        // [_][]const u8{ "mode7", "examples/mode7.zig" },
+        // [_][]const u8{ "markov", "examples/markov.zig" },
+        // [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
+        // [_][]const u8{ "primitives", "examples/primitives.zig" },
+        // [_][]const u8{ "entities", "examples/entities.zig" },
         [_][]const u8{ "shaders", "examples/shaders.zig" },
-        [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
-        [_][]const u8{ "tilemap", "examples/tilemap.zig" },
-        [_][]const u8{ "fonts", "examples/fonts.zig" },
-        [_][]const u8{ "batcher", "examples/batcher.zig" },
+        // [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
+        // [_][]const u8{ "tilemap", "examples/tilemap.zig" },
+        // [_][]const u8{ "fonts", "examples/fonts.zig" },
+        // [_][]const u8{ "batcher", "examples/batcher.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "dynamic_mesh", "examples/dynamic_mesh.zig" },
         [_][]const u8{ "instanced_mesh", "examples/instanced_mesh.zig" },
@@ -50,12 +50,12 @@ pub fn build(b: *Builder) void {
     const res = ShaderCompileStep.init(b, "aya/deps/renderkit/shader_compiler/", .{
         .shader = "examples/assets/shaders/shader_src.glsl",
         .shader_output_path = "examples/assets/shaders",
-        .package_output_path = "examples/assets",
+        .package_output_path = "examples/assets/shaders",
         .additional_imports = &[_][]const u8{
-            "const gk = @import(\"gamekit\");",
-            "const gfx = gk.gfx;",
-            "const math = gk.math;",
-            "const renderkit = gk.renderkit;",
+            "const aya = @import(\"aya\");",
+            "const gfx = aya.gfx;",
+            "const math = aya.math;",
+            "const renderkit = aya.renderkit;",
         },
     });
 
