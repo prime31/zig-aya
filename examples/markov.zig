@@ -116,7 +116,7 @@ fn drawMap(data: []const u8, w: usize, h: usize, x_pos: f32, y_pos: f32, scale: 
 fn extractImage() void {
     var w: usize = 0;
     var h: usize = 0;
-    const data = aya.gfx.Texture.dataFromFile("examples/assets/markov.png", &w, &h) catch unreachable;
+    const data = aya.gfx.Texture.dataFromFile("examples/assets/textures/markov.png", &w, &h) catch unreachable;
 
     var i: usize = 0;
     while (i < h) : (i += 1) {
