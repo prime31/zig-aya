@@ -22,8 +22,8 @@ pub fn main() !void {
 
 fn init() !void {
     tri_batch = aya.gfx.TriangleBatcher.init(null, 1000) catch unreachable;
-    tex = aya.gfx.Texture.initFromFile("examples/assets/sword_dude.png", .nearest) catch unreachable;
-    TexturePolygon.generateMesh("examples/assets/sword_dude.png", 2, 0);
+    tex = aya.gfx.Texture.initFromFile("examples/assets/textures/sword_dude.png", .nearest) catch unreachable;
+    TexturePolygon.generateMesh("examples/assets/textures/sword_dude.png", 2, 0);
 }
 
 fn update() !void {
@@ -31,7 +31,7 @@ fn update() !void {
     _ = aya.utils.inspect("Trans2", &trans2);
 
     if (ogButton("go " ++ icons.inbox)) {
-        var poly = TexturePolygon.generateMesh2("examples/assets/sword_dude.png", 2, 0);
+        var poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
         for (poly) |pt| {
             std.debug.print("{d}\n", .{pt});
         }
@@ -42,13 +42,13 @@ fn render() !void {
     aya.gfx.beginPass(.{});
     tri_batch.begin();
 
-    // var poly = TexturePolygon.generateMesh2("examples/assets/sword_dude.png", 2, 0);
+    // var poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
     // var mat = math.Mat32.initTransform(.{ .x = 200, .y = 200, .sx = 1, .sy = -1 });
     // mat.transformVec2Slice(math.Vec2, poly, poly);
 
     // aya.draw.hollowPolygon(poly[0..], 1, math.Color.gold);
 
-    // poly = TexturePolygon.generateMesh2("examples/assets/sword_dude.png", 2, 0);
+    // poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
     // // mat = math.Mat32.initTransform(.{ .sx = 1, .sy = -1, .ox = 0, .oy = 64 });
     // mat = math.Mat32.initTransform(trans);
     // mat.transformVec2Slice(math.Vec2, poly, poly);

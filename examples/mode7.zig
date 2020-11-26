@@ -131,8 +131,8 @@ pub fn main() !void {
 fn init() !void {
     camera = Camera.init(@intToFloat(f32, aya.window.width()), @intToFloat(f32, aya.window.height()));
 
-    map = Texture.initFromFile("examples/assets/mario_kart.png", .nearest) catch unreachable;
-    block = Texture.initFromFile("examples/assets/block.png", .nearest) catch unreachable;
+    map = Texture.initFromFile("examples/assets/textures/mario_kart.png", .nearest) catch unreachable;
+    block = Texture.initFromFile("examples/assets/textures/block.png", .nearest) catch unreachable;
     mode7_shader = shaders.createMode7Shader();
 
     blocks = std.ArrayList(aya.math.Vec2).init(aya.mem.allocator);
@@ -209,7 +209,7 @@ fn update() !void {
 
     if (aya.input.keyDown(.z)) {
         map.deinit();
-        map = Texture.initFromFile("examples/assets/zelda_map.png", .nearest) catch unreachable;
+        map = Texture.initFromFile("examples/assets/textures/zelda_map.png", .nearest) catch unreachable;
     }
 }
 

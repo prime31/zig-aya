@@ -2,6 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 
+const Sepia = @import("assets/effects.zig").Sepia;
+
 var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
 var pass: aya.gfx.OffscreenPass = undefined;
@@ -21,11 +23,11 @@ pub fn main() !void {
 
 fn init() !void {
     checker_tex = aya.gfx.Texture.initCheckerTexture();
-    font_tex = aya.gfx.Texture.initFromFile("examples/assets/font.png", .linear) catch unreachable;
+    font_tex = aya.gfx.Texture.initFromFile("examples/assets/textures/font.png", .linear) catch unreachable;
     pass = aya.gfx.OffscreenPass.init(52, 52);
 
     stack = aya.gfx.createPostProcessStack();
-    _ = stack.add(aya.gfx.Sepia, {});
+    _ = stack.add(Sepia, {});
 }
 
 fn shutdown() !void {
