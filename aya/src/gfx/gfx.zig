@@ -127,8 +127,10 @@ pub fn setRenderState(state: renderkit.RenderState) void {
     renderkit.renderer.setRenderState(state);
 }
 
-/// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default pipeline
-/// will not be set and no render texture will be set. This is useful when making a full ImGui application.
+/// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
+/// will not be set and no render texture will be set. This is useful when making a full ImGui application. Call this at the
+/// beginning of render then do all your normal rendering passes. This is the only pass that does not require an endPass call.
+/// Note that you will need to do a pass to clear the screen!
 pub fn beginNullPass() void {
     state.blitted_to_screen = true;
 }
