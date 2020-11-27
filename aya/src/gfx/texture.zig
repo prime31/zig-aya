@@ -163,6 +163,6 @@ pub const Texture = struct {
     }
 
     pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
-        return @intToPtr(*c_void, renderer.getImageNativeId(self.img));
+        return @intToPtr(*c_void, self.img);
     }
 };

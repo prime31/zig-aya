@@ -2,6 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 
+pub const renderer: aya.renderkit.Renderer = .opengl;
+
 const Sepia = @import("assets/effects.zig").Sepia;
 
 var checker_tex: aya.gfx.Texture = undefined;
@@ -72,7 +74,7 @@ fn render() !void {
     aya.gfx.blitToScreen(aya.math.Color.black);
 
     // now render directly to the backbuffer
-    aya.gfx.beginPass(.{ .color_action = .dont_care });
+    aya.gfx.beginPass(.{ .color_action = .load });
     aya.debug.drawPoint(.{ .x = 40, .y = 400 }, 60, aya.math.Color.yellow);
     aya.draw.texScale(pass.color_texture, 20, 200, 2);
     aya.gfx.endPass();

@@ -6,7 +6,7 @@ pub const WindowConfig = @import("src/window.zig").WindowConfig;
 pub const renderkit = @import("renderkit");
 pub const sdl = @import("sdl");
 pub const imgui = @import("imgui");
-const imgui_gl = @import("imgui_gl");
+const imgui_impl = @import("src/imgui/implementation.zig");
 
 // aya namespaces
 pub const gfx = @import("src/gfx/gfx.zig");
@@ -50,7 +50,8 @@ pub const Config = struct {
     window: WindowConfig = WindowConfig{},
 
     update_rate: f64 = 60, // desired fps
-    imgui_viewports: bool = true, // whether imgui viewports should be enabled
+    imgui_icon_font: bool = true,
+    imgui_viewports: bool = false, // whether imgui viewports should be enabled
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
 
@@ -72,6 +73,7 @@ pub fn run(config: Config) !void {
     renderkit.renderer.setup(.{
         .allocator = std.testing.allocator,
         .gl_loader = sdl.SDL_GL_GetProcAddress,
+        .disable_vsync = config.window.disable_vsync,
         .metal = metal_setup,
     });
 
@@ -81,7 +83,7 @@ pub fn run(config: Config) !void {
     debug = try Debug.init();
     defer debug.deinit();
 
-    if (enable_imgui) initializeImGui(config);
+    if (enable_imgui) imgui_impl.init(window.sdl_window, config.imgui_docking, config.imgui_viewports, config.imgui_icon_font);
 
     try config.init();
 
@@ -93,8 +95,11 @@ pub fn run(config: Config) !void {
         try config.render();
 
         if (enable_imgui) {
-            imgui_gl.render();
-            _ = sdl.SDL_GL_MakeCurrent(window.sdl_window, window.gl_ctx);
+            gfx.blitToScreen(math.Color.black);
+            gfx.beginPass(.{ .color_action = .load });
+            imgui_impl.render();
+            gfx.endPass();
+            if (renderkit.current_renderer == .opengl) _ = sdl.SDL_GL_MakeCurrent(window.sdl_window, window.gl_ctx);
         }
 
         if (renderkit.current_renderer == .opengl) sdl.SDL_GL_SwapWindow(window.sdl_window);
@@ -104,7 +109,7 @@ pub fn run(config: Config) !void {
 
     if (config.shutdown) |shutdown| try shutdown();
 
-    if (enable_imgui) imgui_gl.shutdown();
+    if (enable_imgui) imgui_impl.deinit();
     gfx.deinit();
     renderkit.renderer.shutdown();
     window.deinit();
@@ -114,7 +119,7 @@ pub fn run(config: Config) !void {
 fn pollEvents(onFileDropped: ?fn ([]const u8) void) bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
-        if (enable_imgui and imguiHandleEvent(&event)) continue;
+        if (enable_imgui and imgui_impl.handleEvent(&event)) continue;
 
         switch (event.type) {
             sdl.SDL_QUIT => return true,
@@ -132,61 +137,12 @@ fn pollEvents(onFileDropped: ?fn ([]const u8) void) bool {
         }
     }
 
-    if (enable_imgui) imgui_gl.newFrame(window.sdl_window);
-
-    return false;
-}
-
-fn initializeImGui(config: Config) void {
-    if (renderkit.current_renderer != .opengl) @panic("ImGui only works with OpenGL so far!");
-
-    _ = imgui.igCreateContext(null);
-    var io = imgui.igGetIO();
-    io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
-    if (config.imgui_docking) io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
-    if (config.imgui_viewports) io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
-    imgui_gl.initForGl(null, window.sdl_window, window.gl_ctx);
-
-    if (config.imgui_docking or config.imgui_viewports) imgui.igGetStyle().WindowRounding = 0;
-    loadDefaultImGuiFont();
-}
-
-fn loadDefaultImGuiFont() void {
-    var io = imgui.igGetIO();
-    _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
-
-    // add FontAwesome
-    const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ imgui.icons.icon_range_min, imgui.icons.icon_range_max, 0 };
-
-    var icons_config = imgui.ImFontConfig_ImFontConfig();
-    icons_config[0].MergeMode = true;
-    icons_config[0].PixelSnapH = true;
-    icons_config[0].FontDataOwnedByAtlas = false;
-
-    // optionally, override default font
-    // io.FontDefault = imgui.ImFontAtlas_AddFontFromFileTTF(io.Fonts, "/System/Library/Fonts/SFNSDisplayCondensed-Regular.otf", 18, null, null);
-    var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
-    _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 13, icons_config, &font_awesome_range[0]);
-
-    var w: i32 = undefined;
-    var h: i32 = undefined;
-    var bytes_per_pixel: i32 = undefined;
-    var pixels: [*c]u8 = undefined;
-    imgui.ImFontAtlas_GetTexDataAsRGBA32(io.Fonts, &pixels, &w, &h, &bytes_per_pixel);
-
-    var tex = gfx.Texture.initWithDataOptions(u8, w, h, pixels[0..@intCast(usize, w * h * bytes_per_pixel)], .nearest, .clamp);
-    imgui.ImFontAtlas_SetTexID(io.Fonts, tex.imTextureID());
-}
-
-/// returns true if the event is handled by imgui and should be ignored by aya
-fn imguiHandleEvent(evt: *sdl.SDL_Event) bool {
-    if (imgui_gl.ImGui_ImplSDL2_ProcessEvent(evt)) {
-        return switch (evt.type) {
-            sdl.SDL_MOUSEWHEEL, sdl.SDL_MOUSEBUTTONDOWN => return imgui.igGetIO().WantCaptureMouse,
-            sdl.SDL_KEYDOWN, sdl.SDL_KEYUP, sdl.SDL_TEXTINPUT => return imgui.igGetIO().WantCaptureKeyboard,
-            sdl.SDL_WINDOWEVENT => return true,
-            else => return false,
-        };
+    // if ImGui is running we force a timer resync every frame. This ensures we get exactly one update call and one render call
+    // each frame which prevents ImGui from flickering due to skipped/doubled update calls.
+    if (enable_imgui) {
+        imgui_impl.newFrame();
+        time.resync();
     }
+
     return false;
 }

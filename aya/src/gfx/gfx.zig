@@ -122,6 +122,11 @@ pub fn beginFrame() void {
     draw.batcher.begin();
 }
 
+pub fn setRenderState(state: renderkit.RenderState) void {
+    draw.batcher.flush();
+    renderkit.renderer.setRenderState(state);
+}
+
 /// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default pipeline
 /// will not be set and no render texture will be set. This is useful when making a full ImGui application.
 pub fn beginNullPass() void {
