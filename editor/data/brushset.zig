@@ -67,7 +67,7 @@ pub const Brushset = struct {
             .x = 150 + self.tex.width * @intToFloat(f32, zoom),
             .y = 150 + self.tex.height * @intToFloat(f32, zoom),
         });
-        igSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
+        ogSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
 
         if (igBegin("Brushes", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) {
             self.drawWithoutWindow();
