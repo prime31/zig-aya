@@ -19,17 +19,17 @@ pub fn build(b: *Builder) void {
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
-        // [_][]const u8{ "editor", "editor/main.zig" },
-        // [_][]const u8{ "mode7", "examples/mode7.zig" },
-        // [_][]const u8{ "markov", "examples/markov.zig" },
-        // [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
-        // [_][]const u8{ "primitives", "examples/primitives.zig" },
-        // [_][]const u8{ "entities", "examples/entities.zig" },
+        [_][]const u8{ "editor", "editor/main.zig" },
+        [_][]const u8{ "mode7", "examples/mode7.zig" },
+        [_][]const u8{ "markov", "examples/markov.zig" },
+        [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
+        [_][]const u8{ "primitives", "examples/primitives.zig" },
+        [_][]const u8{ "entities", "examples/entities.zig" },
         [_][]const u8{ "shaders", "examples/shaders.zig" },
-        // [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
-        // [_][]const u8{ "tilemap", "examples/tilemap.zig" },
-        // [_][]const u8{ "fonts", "examples/fonts.zig" },
-        // [_][]const u8{ "batcher", "examples/batcher.zig" },
+        [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
+        [_][]const u8{ "tilemap", "examples/tilemap.zig" },
+        [_][]const u8{ "fonts", "examples/fonts.zig" },
+        [_][]const u8{ "batcher", "examples/batcher.zig" },
         [_][]const u8{ "offscreen", "examples/offscreen.zig" },
         [_][]const u8{ "dynamic_mesh", "examples/dynamic_mesh.zig" },
         [_][]const u8{ "instanced_mesh", "examples/instanced_mesh.zig" },
@@ -86,6 +86,8 @@ fn createExe(b: *Builder, target: Target, name: []const u8, source: []const u8) 
 
 /// adds Aya and all dependencies to artifact
 pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+
     // only add the build option once!
     if (enable_imgui == null)
         enable_imgui = b.option(bool, "imgui", "enable imgui") orelse false;
@@ -130,6 +132,8 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
 
 // add tests.zig file runnable via "zig build test"
 pub fn addTests(b: *Builder, target: Target, comptime prefix_path: []const u8) void {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+
     var tst = b.addTest(prefix_path ++ "aya/tests.zig");
     addAyaToArtifact(b, tst, target, prefix_path);
     const test_step = b.step("test", "Run tests in tests.zig");
