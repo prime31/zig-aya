@@ -214,7 +214,7 @@ pub const AutoTilemapLayer = struct {
         }
         self.brushset.draw();
 
-        igPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
+        ogPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
         defer igPopStyleVar(1);
 
         defer igEnd();
@@ -240,11 +240,11 @@ pub const AutoTilemapLayer = struct {
                     std.mem.copy(u8, &rename_group_buf, self.getGroupName(group));
                 }
 
-                igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+                ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
                 if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
                     _ = ogInputText("##name", &rename_group_buf, rename_group_buf.len);
 
-                    if (igButton("Rename Group", .{ .x = -1, .y = 0 })) {
+                    if (ogButtonEx("Rename Group", .{ .x = -1, .y = 0 })) {
                         igCloseCurrentPopup();
                         const label_sentinel_index = std.mem.indexOfScalar(u8, &rename_group_buf, 0).?;
                         self.renameGroup(group, rename_group_buf[0..label_sentinel_index]);
@@ -296,7 +296,7 @@ pub const AutoTilemapLayer = struct {
             drag_drop_state.handle(&self.ruleset.rules);
         }
 
-        igDummy(.{ .y = 5 });
+        ogDummy(.{ .y = 5 });
 
         if (ogButton("Add Rule")) {
             self.ruleset.addRule();
@@ -323,7 +323,7 @@ pub const AutoTilemapLayer = struct {
             ogOpenPopup("random-seed");
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.8 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.8 });
         if (igBeginPopup("random-seed", ImGuiWindowFlags_None)) {
             if (ogDrag(usize, "", &self.ruleset.seed, 1, 0, 1000)) {
                 self.generateRandomData();
@@ -332,13 +332,13 @@ pub const AutoTilemapLayer = struct {
             igEndPopup();
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
             nineSlicePopup(self, 3);
             igEndPopup();
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
             nineSlicePopup(self, 2);
             igEndPopup();
@@ -359,7 +359,7 @@ pub const AutoTilemapLayer = struct {
                 std.mem.set(u8, &name_buf, 0);
             }
 
-            igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+            ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
             if (igBeginPopup("##group-name", ImGuiWindowFlags_None)) {
                 defer igEndPopup();
 
@@ -372,7 +372,7 @@ pub const AutoTilemapLayer = struct {
                     igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
                 }
 
-                if (igButton("Add to New Group", .{ .x = -1, .y = 0 })) {
+                if (ogButtonEx("Add to New Group", .{ .x = -1, .y = 0 })) {
                     igCloseCurrentPopup();
 
                     // get the next available group
@@ -424,18 +424,18 @@ pub const AutoTilemapLayer = struct {
         }
 
         // display the popup a bit to the left to center it under the mouse
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##pattern_popup", ImGuiWindowFlags_None)) {
             self.patternPopup(rule);
 
             var size = ogGetContentRegionAvail();
-            if (igButton("Clear", ImVec2{ .x = (size.x - 4) / 1.7 })) {
+            if (ogButtonEx("Clear", .{ .x = (size.x - 4) / 1.7 })) {
                 rule.clearPatternData();
                 self.map_dirty = true;
             }
             igSameLine(0, 4);
 
-            if (igButton("...", .{ .x = -1, .y = 0 })) {
+            if (ogButtonEx("...", .{ .x = -1, .y = 0 })) {
                 ogOpenPopup("rules_hamburger");
             }
 
@@ -451,7 +451,7 @@ pub const AutoTilemapLayer = struct {
             }
 
             // nested popup
-            igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+            ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
             if (igBeginPopup("##brushes", ImGuiWindowFlags_NoTitleBar)) {
                 self.brushset.drawWithoutWindow();
                 igEndPopup();
@@ -460,7 +460,7 @@ pub const AutoTilemapLayer = struct {
             igEndPopup();
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
             self.resultPopup(rule);
             igEndPopup();
@@ -484,7 +484,7 @@ pub const AutoTilemapLayer = struct {
 
         var pos = ImVec2{};
         igGetCursorScreenPos(&pos);
-        _ = igInvisibleButton("##pattern_button", .{ .x = canvas_size, .y = canvas_size }, ImGuiButtonFlags_None);
+        _ = ogInvisibleButton("##pattern_button", .{ .x = canvas_size, .y = canvas_size }, ImGuiButtonFlags_None);
         const mouse_pos = igGetIO().MousePos;
         const hovered = igIsItemHovered(ImGuiHoveredFlags_None);
 
@@ -546,7 +546,7 @@ pub const AutoTilemapLayer = struct {
     }
 
     fn rulesHamburgerPopup(self: *@This(), rule: *Rule) void {
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
             defer igEndPopup();
             self.map_dirty = true;
@@ -708,11 +708,11 @@ fn groupDropTarget(group: u8, index: usize) void {
         var cursor = ogGetCursorPos();
         const old_pos = cursor;
         cursor.y -= 5;
-        igSetCursorPos(cursor);
+        ogSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
-        _ = igInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+        _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
         igPopStyleColor(1);
-        igSetCursorPos(old_pos);
+        ogSetCursorPos(old_pos);
     }
 
     if (igBeginDragDropTarget()) {
@@ -733,7 +733,7 @@ fn groupDragDrop(group: u8, index: usize) void {
         drag_drop_state.from = index;
         drag_drop_state.source = .{ .group = group };
         _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
-        _ = igButton("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+        _ = ogButtonEx("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
         igEndDragDropSource();
     }
 }
@@ -752,7 +752,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
             _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
             drag_drop_state.from = index;
             drag_drop_state.source = .{ .rule = rule };
-            _ = igButton(&rule.name, .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+            _ = ogButtonEx(&rule.name, .{ .x = ogGetContentRegionAvail().x, .y = 20 });
             igEndDragDropSource();
         }
     }
@@ -761,11 +761,11 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     if (drag_drop_state.active and !(drag_drop_state.isGroup() and rule.group > 0)) {
         const old_pos = ogGetCursorPos();
         cursor.y -= 5;
-        igSetCursorPos(cursor);
+        ogSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
-        _ = igInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+        _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
         igPopStyleColor(1);
-        igSetCursorPos(old_pos);
+        ogSetCursorPos(old_pos);
 
         if (igBeginDragDropTarget()) {
             if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {

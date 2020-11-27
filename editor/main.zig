@@ -57,7 +57,6 @@ fn shutdown() !void {
 
 fn update() !void {
     beginDock();
-
     menu.draw(&state);
 
     windows.layers.draw(&state);
@@ -105,15 +104,15 @@ fn beginDock() void {
     ImGuiViewport_GetWorkPos(&work_pos, vp);
     ImGuiViewport_GetWorkSize(&work_size, vp);
 
-    igSetNextWindowPos(work_pos, ImGuiCond_Always, .{});
-    igSetNextWindowSize(work_size, ImGuiCond_Always);
+    ogSetNextWindowPos(work_pos, ImGuiCond_Always, .{});
+    ogSetNextWindowSize(work_size, ImGuiCond_Always);
     igSetNextWindowViewport(vp.ID);
 
     var window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_MenuBar;
     window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
     window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-    igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
+    ogPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
     _ = igBegin("Dockspace", null, window_flags);
     igPopStyleVar(1);
 
@@ -122,11 +121,11 @@ fn beginDock() void {
     // igDockBuilderRemoveNode(dockspace_id); // uncomment for testing initial layout setup code
     if (igDockBuilderGetNode(dockspace_id) == null) {
         var dock_main_id = igDockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace | ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton);
-        igDockBuilderSetNodeSize(dockspace_id, work_size);
+        ogDockBuilderSetNodeSize(dockspace_id, work_size);
         setupDockLayout(dock_main_id);
     }
 
-    igDockSpace(dockspace_id, .{}, ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton, null);
+    ogDockSpace(dockspace_id, .{}, ImGuiDockNodeFlags_NoCloseButton | ImGuiDockNodeFlags_NoWindowMenuButton, null);
 }
 
 fn setupDockLayout(id: ImGuiID) void {

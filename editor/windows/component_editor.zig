@@ -12,7 +12,7 @@ pub fn draw(state: *root.AppState) void {
     igPushStyleColorU32(ImGuiCol_ModalWindowDimBg, root.colors.rgbaToU32(20, 20, 20, 200));
     defer igPopStyleColor(1);
 
-    igSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
+    ogSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
     var open: bool = true;
     if (igBeginPopupModal("Component Editor", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
@@ -25,7 +25,7 @@ pub fn draw(state: *root.AppState) void {
             defer igListBoxFooter();
 
             for (state.components.items) |*comp, i| {
-                if (igSelectableBool(&comp.name, selected_comp == i, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                if (ogSelectableBool(&comp.name, selected_comp == i, ImGuiSelectableFlags_DontClosePopups, .{})) {
                     selected_comp = i;
                 }
             }
@@ -44,7 +44,7 @@ pub fn draw(state: *root.AppState) void {
             std.mem.set(u8, &name_buf, 0);
         }
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##new-component", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
@@ -118,7 +118,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         prop.deinit();
     }
 
-    igDummy(.{ .y = 5 });
+    ogDummy(.{ .y = 5 });
 
     if (igButton("Add Field", .{})) {
         ogOpenPopup("##add-field");
@@ -128,24 +128,24 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 }
 
 fn addFieldPopup(state: *root.AppState, component: *Component) void {
-    igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+    ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##add-field", ImGuiWindowFlags_None)) {
         igText("Field Type");
         igSeparator();
 
-        if (igSelectableBool("bool", false, ImGuiSelectableFlags_None, .{})) {
+        if (ogSelectableBool("bool", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .bool = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (igSelectableBool("string", false, ImGuiSelectableFlags_None, .{})) {
+        if (ogSelectableBool("string", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .string = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (igSelectableBool("float", false, ImGuiSelectableFlags_None, .{})) {
+        if (ogSelectableBool("float", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .float = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (igSelectableBool("int", false, ImGuiSelectableFlags_None, .{})) {
+        if (ogSelectableBool("int", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .int = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }

@@ -71,7 +71,7 @@ pub const EntityLayer = struct {
             ogUnformattedTooltip(-1, "Click and drag to reorder");
             igSameLine(0, 10);
 
-            if (igSelectableBool(&entity.name, self.selected_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 30 })) {
+            if (ogSelectableBool(&entity.name, self.selected_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 30 })) {
                 self.selected_index = i;
             }
 
@@ -105,7 +105,7 @@ pub const EntityLayer = struct {
             entity.deinit();
         }
 
-        if (self.entities.items.len > 0) igDummy(.{ .y = 5 });
+        if (self.entities.items.len > 0) ogDummy(.{ .y = 5 });
 
         // right-align the button
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
@@ -125,7 +125,7 @@ pub const EntityLayer = struct {
         if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
 
         inspectors.inspectString("Name", &entity.name, entity.name.len, null);
-        igDummy(.{ .y = 5 });
+        ogDummy(.{ .y = 5 });
 
         // componnent editor
         var delete_index: ?usize = null;
@@ -161,7 +161,7 @@ pub const EntityLayer = struct {
 
             if (!is_open) delete_index = i;
 
-            igDummy(.{ .y = 5 });
+            ogDummy(.{ .y = 5 });
         }
 
         if (delete_index) |index| entity.components.orderedRemove(index).deinit();
@@ -182,7 +182,7 @@ pub const EntityLayer = struct {
     }
 
     fn addEntityPopup(self: *@This()) void {
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##add-entity", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
@@ -196,7 +196,7 @@ pub const EntityLayer = struct {
             }
 
             igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
-            if (igButton("Add Entity", .{ .x = -1, .y = 0 })) {
+            if (ogButtonEx("Add Entity", .{ .x = -1, .y = 0 })) {
                 igCloseCurrentPopup();
 
                 // get the next available group
@@ -216,7 +216,7 @@ pub const EntityLayer = struct {
             _ = ogInputText("", &name_buf, name_buf.len);
 
             const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
-            if (igButton("Rename Entity", .{ .x = -1, .y = 0 }) and name.len > 0) {
+            if (ogButtonEx("Rename Entity", .{ .x = -1, .y = 0 }) and name.len > 0) {
                 aya.mem.copyZ(u8, &entity.name, name);
                 igCloseCurrentPopup();
             }

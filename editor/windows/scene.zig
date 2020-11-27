@@ -26,7 +26,7 @@ pub const Scene = struct {
     }
 
     pub fn draw(self: *@This(), state: *root.AppState) void {
-        igPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
+        ogPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
         _ = igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar);
         igPopStyleVar(1);
 
