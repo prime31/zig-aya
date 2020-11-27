@@ -108,7 +108,6 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
     const imgui_build = @import("aya/deps/imgui/build.zig");
     imgui_build.linkArtifact(b, artifact, target, prefix_path);
     const imgui_pkg = imgui_build.getImGuiPackage(prefix_path);
-    const imgui_gl_pkg = imgui_build.getImGuiGlPackage(prefix_path);
 
     // RenderKit
     renderkit_build.addRenderKitToArtifact(b, artifact, target, prefix_path ++ "aya/deps/renderkit/");
@@ -123,7 +122,7 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
     const aya = Pkg{
         .name = "aya",
         .path = "aya/aya.zig",
-        .dependencies = &[_]Pkg{ renderkit_pkg, sdl_pkg, stb_pkg, fontstash_pkg, imgui_pkg, imgui_gl_pkg },
+        .dependencies = &[_]Pkg{ renderkit_pkg, sdl_pkg, stb_pkg, fontstash_pkg, imgui_pkg },
     };
 
     // export aya to userland
