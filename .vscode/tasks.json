@@ -86,10 +86,13 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": "none",
-            "presentation": {
-                "clear": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
             },
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "Build and Run Tests in Current File",
@@ -101,7 +104,7 @@
             "presentation": {
                 "clear": true
             },
-            "group": "none",
+            "group": "none"
         },
         {
             "label": "Compile Shaders",
@@ -110,10 +113,13 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": "none",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "presentation": {
                 "clear": true
             }
-        },
+        }
     ]
 }
