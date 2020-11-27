@@ -603,7 +603,7 @@ pub const AutoTilemapLayer = struct {
             }
         }
 
-        if (igButton("Clear", ImVec2{ .x = -1 })) {
+        if (ogButtonEx("Clear", ImVec2{ .x = -1 })) {
             ruleset.result_tiles.clear();
             self.map_dirty = true;
         }
@@ -896,7 +896,7 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
         igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
     }
 
-    if (igButton("Create", ImVec2{ .x = -1, .y = 0 })) {
+    if (ogButtonEx("Create", ImVec2{ .x = -1, .y = 0 })) {
         if (selection_size == 3) {
             self.ruleset.addNinceSliceRules(self, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         } else {

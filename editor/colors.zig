@@ -89,11 +89,11 @@ pub fn hsvShiftColor(color: ImVec4, h_shift: f32, s_shift: f32, v_shift: f32) Im
 }
 
 pub fn rgbToU32(r: i32, g: i32, b: i32) ImU32 {
-    return igGetColorU32Vec4(.{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = 1 });
+    return aya.math.Color.fromI32(r, g, b, 255).value;
 }
 
 pub fn rgbaToU32(r: i32, g: i32, b: i32, a: i32) ImU32 {
-    return igGetColorU32Vec4(.{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) / 255 });
+    return aya.math.Color.fromI32(r, g, b, a).value;
 }
 
 pub fn rgbToVec4(r: i32, g: i32, b: i32) ImVec4 {

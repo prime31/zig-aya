@@ -21,7 +21,7 @@ pub fn draw(state: *root.AppState) void {
         igSetColumnWidth(0, 150);
 
         igPushItemWidth(-1);
-        if (igListBoxHeaderVec2("", .{})) {
+        if (ogListBoxHeaderVec2("", .{})) {
             defer igListBoxFooter();
 
             for (state.components.items) |*comp, i| {
@@ -120,7 +120,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 
     ogDummy(.{ .y = 5 });
 
-    if (igButton("Add Field", .{})) {
+    if (ogButton("Add Field")) {
         ogOpenPopup("##add-field");
     }
 
