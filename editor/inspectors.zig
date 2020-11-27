@@ -18,7 +18,7 @@ pub fn inspectBool(label: [:0]const u8, value: *bool, reset_value: bool) void {
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-    if (igButton(icons.redo, button_size)) value.* = reset_value;
+    if (ogButtonEx(icons.redo, button_size)) value.* = reset_value;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -43,7 +43,7 @@ pub fn inspectInt(label: [:0]const u8, value: *i32, reset_value: i32) void {
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-    if (igButton(icons.redo, button_size)) value.* = reset_value;
+    if (ogButtonEx(icons.redo, button_size)) value.* = reset_value;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -68,7 +68,7 @@ pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-    if (igButton(icons.redo, button_size)) value.* = reset_value;
+    if (ogButtonEx(icons.redo, button_size)) value.* = reset_value;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -93,7 +93,7 @@ pub fn inspectVec2(label: [:0]const u8, vec: *aya.math.Vec2, reset_value: aya.ma
     const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(204, 26, 38));
-    if (igButton("X", button_size)) vec.*.x = reset_value.x;
+    if (ogButtonEx("X", button_size)) vec.*.x = reset_value.x;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -102,7 +102,7 @@ pub fn inspectVec2(label: [:0]const u8, vec: *aya.math.Vec2, reset_value: aya.ma
 
     igSameLine(0, 0);
     igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(51, 178, 51));
-    if (igButton("Y", button_size)) vec.*.y = reset_value.y;
+    if (ogButtonEx("Y", button_size)) vec.*.y = reset_value.y;
     igPopStyleColor(1);
 
     igSameLine(0, 0);
@@ -128,7 +128,7 @@ pub fn inspectString(label: [:0]const u8, buf: [*c]u8, buf_size: usize, reset_va
         const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
 
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
-        if (igButton(icons.redo, button_size)) aya.mem.copyZ(u8, buf[0..buf_size], res_value);
+        if (ogButtonEx(icons.redo, button_size)) aya.mem.copyZ(u8, buf[0..buf_size], res_value);
         igPopStyleColor(1);
 
         igSameLine(0, 0);

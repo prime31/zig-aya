@@ -1,8 +1,9 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-
 usingnamespace @import("data/data.zig");
+
+pub const renderer: aya.renderkit.Renderer = .opengl;
 
 pub const utils = @import("utils.zig");
 pub const menu = @import("menu.zig");
@@ -57,9 +58,10 @@ fn shutdown() !void {
 
 fn update() !void {
     beginDock();
-    menu.draw(&state);
 
+    menu.draw(&state);
     windows.layers.draw(&state);
+
     scene.draw(&state); // AFTER layers, in case any layers were removed
 
     // ensure our windows are always present so they can be arranged sanely and dont jump into and out of existence
@@ -81,6 +83,8 @@ fn update() !void {
 
 fn render() !void {
     aya.gfx.beginNullPass();
+    aya.gfx.beginPass(.{ .color = aya.math.Color.black });
+    aya.gfx.endPass();
 
     // stall whenever we dont have events so that we render as little as possible. each event causes a 5s no-stall time.
     if (aya.time.seconds() > next_stall_time) {

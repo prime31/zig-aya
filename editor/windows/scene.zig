@@ -54,7 +54,7 @@ pub const Scene = struct {
 
         const tmp = ogGetCursorScreenPos();
         ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
-        igSetCursorScreenPos(tmp);
+        ogSetCursorScreenPos(tmp);
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
