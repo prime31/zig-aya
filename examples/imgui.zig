@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
 
+pub const renderer: aya.renderkit.Renderer = .opengl;
 pub const enable_imgui = true;
 var demo_open: bool = true;
 

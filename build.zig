@@ -14,6 +14,9 @@ var enable_imgui: ?bool = null;
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
 
+    // use a different cache folder for macos arm builds
+    b.cache_root = if (std.builtin.os.tag == .macos and std.builtin.arch == std.builtin.Arch.aarch64) "zig-arm-cache/bin" else "zig-cache/bin";
+
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
         // [_][]const u8{ "editor", "editor/main.zig" },
@@ -70,7 +73,7 @@ pub fn build(b: *Builder) void {
 fn createExe(b: *Builder, target: Target, name: []const u8, source: []const u8) *std.build.LibExeObjStep {
     var exe = b.addExecutable(name, source);
     exe.setBuildMode(b.standardReleaseOptions());
-    exe.setOutputDir("zig-cache/bin");
+    exe.setOutputDir(std.fs.path.joinPosix(b.allocator, &[_][]const u8{ b.cache_root, "bin" }) catch unreachable);
 
     addAyaToArtifact(b, exe, target, "");
 

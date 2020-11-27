@@ -1,6 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 
+pub const renderer: aya.renderkit.Renderer = .opengl;
+
 var mesh: aya.gfx.Mesh = undefined;
 var tex: aya.gfx.Texture = undefined;
 var instanced_mesh: aya.gfx.InstancedMesh(u16, aya.gfx.Vertex, InstancedVert) = undefined;

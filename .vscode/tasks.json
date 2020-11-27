@@ -20,6 +20,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
+            "group": "none"
         },
         {
             "label": "Build and Run Project",
@@ -32,6 +33,18 @@
                 "kind": "build",
                 "isDefault": true
             },
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "Build and Run Project (x64 on arm)",
+            "type": "shell",
+            "command": "~/zig/zig-x64/zig build run",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
             "presentation": {
                 "clear": true
             }
@@ -73,10 +86,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "none",
             "presentation": {
                 "clear": true,
             },
@@ -91,10 +101,7 @@
             "presentation": {
                 "clear": true
             },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "group": "none",
         },
         {
             "label": "Compile Shaders",
@@ -103,10 +110,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "none",
             "presentation": {
                 "clear": true
             }
