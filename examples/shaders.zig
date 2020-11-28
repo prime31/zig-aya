@@ -18,62 +18,6 @@ var noise_shader: shaders.NoiseShader = undefined;
 var dissolve_shader: shaders.DissolveShader = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 
-const noise_frag: [:0]const u8 =
-    \\uniform float time;
-    \\uniform float power = 100;
-    \\
-    \\float rand(vec2 co){
-    \\  return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-    \\}
-    \\
-    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
-    \\  vec4 color = texture(tex, tex_coord);
-    \\  float x = (tex_coord.x + 4) * (tex_coord.y + 4) * (sin(time) * 10);
-    \\  vec3 grain = vec3(mod((mod(x, 13) + 1) * (mod(x, 123) + 1), 0.01) - 0.005) * power;
-    \\  color.rgb += grain;
-    \\  return color;
-    \\}
-;
-
-const lines_frag: [:0]const u8 =
-    \\uniform float line_size = 4.0;
-    \\uniform vec4 line_color = vec4(0.9, 0.8, 0.6, 1.0);
-    \\
-    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
-    \\  float alpha = texture(tex, tex_coord).a;
-    \\  vec2 screen_pos = gl_FragCoord.xy;
-    \\
-    \\  float flooredAlternate = mod(floor(screen_pos.y / line_size), 2.0);
-    \\
-    \\  vec4 finalColor = mix(vec4(0, 0, 0, 0), line_color, flooredAlternate);
-    \\  return finalColor *= alpha;
-    \\}
-;
-
-const dissolve_frag: [:0]const u8 =
-    \\uniform float progress; // 0 - 1 where 0 is no change to s0 and 1 will discard all of s0 where dissolve_tex.r < value
-    \\uniform float threshold; // 0.04
-    \\uniform vec4 threshold_color; // the color that will be used when dissolve_tex is between progress +- threshold
-    \\uniform sampler2D dissolve_tex;
-    \\
-    \\vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
-    \\  float _progress = progress + threshold;
-    \\  vec4 color = texture(tex, tex_coord);
-    \\
-    \\  // get dissolve from 0 - 1 where 0 is pure white and 1 is pure black
-    \\  float dissolve_amount = 1 - texture(dissolve_tex, tex_coord).r;
-    \\
-    \\  // when our dissolve.r (dissolve_amount) is less than progress we discard
-    \\  if(dissolve_amount < _progress - threshold)
-    \\  	discard;
-    \\  float tmp = abs(_progress - threshold - dissolve_amount) / threshold;
-    \\  float colorAmount = mix(1, 0, 1 - clamp(tmp, 0.0, 1.0));
-    \\  vec4 thresholdColor = mix(vec4(0, 0, 0, 1), threshold_color, colorAmount);
-    \\  float b = dissolve_amount < _progress ? 1.0 : 0.0;
-    \\  return mix(color, color * thresholdColor, b);
-    \\}
-;
-
 pub fn main() !void {
     try aya.run(.{
         .init = init,

@@ -267,3 +267,102 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program mode7 sprite_vs mode7_fs
+
+
+// source: https://blog.seans.site/post/154285665406/a-hot-shader
+@fs meta_flames_fs
+@include_block sprite_fs_main
+uniform MetaFlamesParams {
+	float tear_sharpness; // 7
+	float tear_wave_length; // 5
+	float tear_wave_speed; // 500
+	float tear_wave_amplitude; // 10
+	float iTime;
+	vec2 iResolution;
+};
+
+vec2 dither_amount = vec2(20.0, 40.0);
+
+vec2 metaball_pos[20];
+float metaball_radius[20];
+float metaball_influence[20];
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+    for (int i = 0; i < 20; i += 1) {
+        float f = float(i);
+ 		metaball_pos[i].x = (sin(iTime * 1000.0 / (500.0 + f * 200.0 + mod(f, 6.0) * 500.0)) / (3.14) + 0.5) * iResolution.x,
+		metaball_pos[i].y = (cos(iTime * 1000.0 / (500.0 + f * 200.0 - mod(f, 5.0) * 500.0)) / (3.14) + 0.5) * iResolution.y,
+		metaball_radius[i] = 150.0;
+		metaball_influence[i] = 0.5;
+	}
+
+    metaball_pos[1].x = (sin(iTime) / 3.14 + 0.5) * iResolution.x;
+    metaball_pos[1].y = (cos(iTime / 4.0) / 3.14 + 0.5) * iResolution.y;
+    metaball_radius[1] = 400.0;
+    metaball_influence[1] = 1.0;
+    metaball_pos[2].x = (sin(iTime / 2.0) / 3.14 + 0.5) * iResolution.x;
+    metaball_pos[2].y = (cos(iTime / 3.0) / 3.14 + 0.5) * iResolution.y;
+    metaball_radius[2] = 400.0;
+    metaball_influence[2] = 1.0;
+
+	float influence = 0.0;
+
+	// get current pixel
+	vec4 fg = texture(tex, tex_coord);
+
+    // calculate total influence
+	for (int i = 0; i < 20; ++i) {
+		// convert UVs to pixel coordinates
+		float x = gl_FragCoord.x;
+		float y = iResolution.y - gl_FragCoord.y;
+
+		// flame wave
+		x += sin(y / dither_amount.x + cos(iTime) * 4.0);
+		y += cos(x / dither_amount.y + sin(iTime) * 4.0);
+
+ 		// start off with distance between pixel and metaball
+		float d = distance(vec2(x, y), metaball_pos[i].xy);
+
+		// pick a point above metaball
+		float tear_offset = metaball_pos[i].y - metaball_radius[i];
+
+		// animate tear offset
+		tear_offset -= (sin(x / tear_wave_length + iTime * tear_wave_speed / metaball_radius[i]) * tear_wave_amplitude);
+
+        // apply tear shape
+		d += pow(distance(metaball_pos[i].x, x) * tear_sharpness / distance(y, tear_offset), 2.0);
+
+		// dither
+		d += sin(y * 3.14 + iTime) * metaball_radius[i] / dither_amount.y;
+		d += cos(x * 3.14 + iTime) * metaball_radius[i] / dither_amount.x;
+
+		// diffuse
+		float depth = 0.9;
+		d /= pow(fg.r * depth + (1.0 - depth), 2.0);
+
+		// divide by radius and keep within range (0.0, 1.0)
+		d = min(1.0, d / metaball_radius[i]);
+
+		// smooth falloff
+		d = (1.0 - d * d);
+		d *= d;
+
+        // add to total (with multiplier)
+		influence += d * metaball_influence[i];
+	}
+
+	// ambient
+	influence += fg.g;
+	influence -= fg.b;
+
+	// convert influence to RGB
+	fg.r = step(0.01, influence);
+	fg.g = step(0.3, influence);
+	fg.b = step(0.75, influence);
+	fg.a = 1.0;
+
+	return fg;
+}
+@end
+
+@program meta_flames sprite_vs meta_flames_fs

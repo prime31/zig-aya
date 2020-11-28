@@ -6,6 +6,7 @@ const renderkit = aya.renderkit;
 
 pub const DissolveShader = gfx.ShaderState(DissolveParams);
 pub const LinesShader = gfx.ShaderState(LinesParams);
+pub const MetaFlamesShader = gfx.ShaderState(MetaFlamesParams);
 pub const Mode7Shader = gfx.ShaderState(Mode7Params);
 pub const NoiseShader = gfx.ShaderState(NoiseParams);
 pub const PixelGlitchShader = gfx.ShaderState(pixelGlitchParams);
@@ -21,6 +22,11 @@ pub fn createDissolveShader() DissolveShader {
 pub fn createLinesShader() LinesShader {
     const frag = if (renderkit.current_renderer == .opengl) @embedFile("lines_fs.glsl") else @embedFile("lines_fs.metal");
     return LinesShader.init(.{ .frag = frag, .onPostBind = LinesShader.onPostBind });
+}
+
+pub fn createMetaFlamesShader() MetaFlamesShader {
+    const frag = if (renderkit.current_renderer == .opengl) @embedFile("meta_flames_fs.glsl") else @embedFile("meta_flames_fs.metal");
+    return MetaFlamesShader.init(.{ .frag = frag, .onPostBind = MetaFlamesShader.onPostBind });
 }
 
 pub fn createMode7Shader() Mode7Shader {
@@ -146,6 +152,21 @@ pub const RgbShiftParams = extern struct {
     shift: f32 = 0,
     alpha: f32 = 0,
     screen_size: math.Vec2 = .{},
+};
+
+pub const MetaFlamesParams = extern struct {
+    pub const metadata = .{
+        .images = .{ "main_tex" },
+        .uniforms = .{ .MetaFlamesParams = .{ .type = .float4, .array_count = 2 } },
+    };
+
+    tear_sharpness: f32 = 0,
+    tear_wave_length: f32 = 0,
+    tear_wave_speed: f32 = 0,
+    tear_wave_amplitude: f32 = 0,
+    iTime: f32 = 0,
+    _pad4_: [4]u8 = [_]u8{0} ** 4,
+    iResolution: math.Vec2 = .{},
 };
 
 pub const VignetteParams = extern struct {
