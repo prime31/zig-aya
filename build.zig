@@ -26,6 +26,7 @@ pub fn build(b: *Builder) void {
         [_][]const u8{ "primitives", "examples/primitives.zig" },
         [_][]const u8{ "entities", "examples/entities.zig" },
         [_][]const u8{ "shaders", "examples/shaders.zig" },
+        [_][]const u8{ "flames", "examples/flames.zig" },
         [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
         [_][]const u8{ "tilemap", "examples/tilemap.zig" },
         [_][]const u8{ "fonts", "examples/fonts.zig" },

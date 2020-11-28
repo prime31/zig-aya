@@ -35,21 +35,14 @@ fn getMinMax(comptime T: type, comptime P: type, comptime name: []const u8) stru
     }
 }
 
-pub fn inspect(comptime label: []const u8, comptime value: anytype) bool {
+pub fn inspect(comptime T: type, comptime label: []const u8, comptime value: *T) bool {
     if (!aya.enable_imgui) return false;
-
-    const T = comptime @TypeOf(value);
-    std.debug.assert(std.meta.trait.isSingleItemPtr(T));
-
-    const C = comptime std.meta.Child(T);
-    const child_type_info = @typeInfo(C);
-    std.debug.assert(child_type_info == .Struct);
 
     if (igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, ImGuiTreeNodeFlags_DefaultOpen)) {
         igIndent(10);
         defer igUnindent(10);
 
-        const info = child_type_info.Struct;
+        const info = @typeInfo(T).Struct;
         igPushIDPtr(value);
         var changed = false;
         inline for (info.fields) |*field_info| {
@@ -73,14 +66,14 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
     const T = comptime @TypeOf(value);
     std.debug.assert(std.meta.trait.isSingleItemPtr(T));
 
-    if (comptime std.meta.trait.isSlice(T) or comptime std.meta.trait.isPtrTo(.Array)(T)) {
-        var modified = false;
-        for (value) |*v| {
-            if (inspectValue(label, value, v))
-                modified = true;
-        }
-        return modified;
-    }
+    // if (comptime std.meta.trait.isSlice(T) or comptime std.meta.trait.isPtrTo(.Array)(T)) {
+    //     var modified = false;
+    //     for (value) |*v| {
+    //         if (inspectValue(label, value, v))
+    //             modified = true;
+    //     }
+    //     return modified;
+    // }
 
     const C = comptime std.meta.Child(T);
 
