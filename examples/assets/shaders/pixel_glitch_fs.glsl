@@ -1,6 +1,6 @@
 #version 330
 
-uniform vec4 pixelGlitchParams[1];
+uniform vec4 PixelGlitchParams[1];
 uniform sampler2D main_tex;
 
 layout(location = 0) out vec4 frag_color;
@@ -16,8 +16,8 @@ float hash11(float p)
 
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color)
 {
-    float param = floor(tex_coord.y * (pixelGlitchParams[0].z / pixelGlitchParams[0].x));
-    return texture(tex, vec2(tex_coord.x + (((hash11(param) * 2.0) - 1.0) * (pixelGlitchParams[0].y / pixelGlitchParams[0].w)), tex_coord.y));
+    float param = floor(tex_coord.y * (PixelGlitchParams[0].z / PixelGlitchParams[0].x));
+    return texture(tex, vec2(tex_coord.x + (((hash11(param) * 2.0) - 1.0) * (PixelGlitchParams[0].y / PixelGlitchParams[0].w)), tex_coord.y));
 }
 
 void main()

@@ -9,7 +9,7 @@ pub const LinesShader = gfx.ShaderState(LinesParams);
 pub const MetaFlamesShader = gfx.ShaderState(MetaFlamesParams);
 pub const Mode7Shader = gfx.ShaderState(Mode7Params);
 pub const NoiseShader = gfx.ShaderState(NoiseParams);
-pub const PixelGlitchShader = gfx.ShaderState(pixelGlitchParams);
+pub const PixelGlitchShader = gfx.ShaderState(PixelGlitchParams);
 pub const RgbShiftShader = gfx.ShaderState(RgbShiftParams);
 pub const SepiaShader = gfx.ShaderState(SepiaParams);
 pub const VignetteShader = gfx.ShaderState(VignetteParams);
@@ -17,6 +17,12 @@ pub const VignetteShader = gfx.ShaderState(VignetteParams);
 pub fn createDissolveShader() DissolveShader {
     const frag = if (renderkit.current_renderer == .opengl) @embedFile("dissolve_fs.glsl") else @embedFile("dissolve_fs.metal");
     return DissolveShader.init(.{ .frag = frag, .onPostBind = DissolveShader.onPostBind });
+}
+
+pub fn createInstancedShader() !gfx.Shader {
+    const vert = if (renderkit.current_renderer == .opengl) @embedFile("instanced_vs.glsl") else @embedFile("instanced_vs.metal");
+    const frag = if (renderkit.current_renderer == .opengl) @embedFile("instanced_fs.glsl") else @embedFile("instanced_fs.metal");
+    return try gfx.Shader.initWithVertFrag(InstancedVertParams, struct {}, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createLinesShader() LinesShader {
@@ -60,6 +66,14 @@ pub fn createVignetteShader() VignetteShader {
 }
 
 
+pub const InstancedVertParams = extern struct {
+    pub const metadata = .{
+        .uniforms = .{ .InstancedVertParams = .{ .type = .float4, .array_count = 2 } },
+    };
+
+    transform_matrix: [8]f32 = [_]f32{0} ** 8,
+};
+
 pub const NoiseParams = extern struct {
     pub const metadata = .{
         .images = .{ "main_tex" },
@@ -79,17 +93,6 @@ pub const SepiaParams = extern struct {
 
     sepia_tone: math.Vec3 = .{},
     _pad12_: [4]u8 = [_]u8{0} ** 4,
-};
-
-pub const LinesParams = extern struct {
-    pub const metadata = .{
-        .images = .{ "main_tex" },
-        .uniforms = .{ .LinesParams = .{ .type = .float4, .array_count = 2 } },
-    };
-
-    line_color: [4]f32 = [_]f32{0} ** 4,
-    line_size: f32 = 0,
-    _pad20_: [12]u8 = [_]u8{0} ** 12,
 };
 
 pub const DissolveParams = extern struct {
@@ -124,10 +127,10 @@ pub const Mode7Params = extern struct {
     y2: f32 = 0,
 };
 
-pub const pixelGlitchParams = extern struct {
+pub const PixelGlitchParams = extern struct {
     pub const metadata = .{
         .images = .{ "main_tex" },
-        .uniforms = .{ .pixelGlitchParams = .{ .type = .float4, .array_count = 1 } },
+        .uniforms = .{ .PixelGlitchParams = .{ .type = .float4, .array_count = 1 } },
     };
 
     vertical_size: f32 = 0,
@@ -178,5 +181,16 @@ pub const VignetteParams = extern struct {
     radius: f32 = 0,
     power: f32 = 0,
     _pad8_: [8]u8 = [_]u8{0} ** 8,
+};
+
+pub const LinesParams = extern struct {
+    pub const metadata = .{
+        .images = .{ "main_tex" },
+        .uniforms = .{ .LinesParams = .{ .type = .float4, .array_count = 2 } },
+    };
+
+    line_color: [4]f32 = [_]f32{0} ** 4,
+    line_size: f32 = 0,
+    _pad20_: [12]u8 = [_]u8{0} ** 12,
 };
 

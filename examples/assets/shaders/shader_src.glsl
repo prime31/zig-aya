@@ -24,9 +24,9 @@ out vec4 color_out;
 void main() {
 	uv_out = uv_in;
 	color_out = color_in;
-	mat3x2 transMat = mat3x2(transform_matrix[0].x, transform_matrix[0].y, transform_matrix[0].z, transform_matrix[0].w, transform_matrix[1].x, transform_matrix[1].y);
+	mat3x2 trans_mat = mat3x2(transform_matrix[0].x, transform_matrix[0].y, transform_matrix[0].z, transform_matrix[0].w, transform_matrix[1].x, transform_matrix[1].y);
 
-	gl_Position = vec4(transMat * vec3(pos_in, 1), 0, 1);
+	gl_Position = vec4(trans_mat * vec3(pos_in, 1), 0, 1);
 }
 @end
 
@@ -148,7 +148,7 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 
 @fs pixel_glitch_fs
 @include_block sprite_fs_main
-uniform pixelGlitchParams {
+uniform PixelGlitchParams {
 	float vertical_size; // vertical size in pixels or each row. default 5.0
 	float horizontal_offset; // horizontal shift in pixels. default 10.0
 	vec2 screen_size; // screen width/height
@@ -366,3 +366,36 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program meta_flames sprite_vs meta_flames_fs
+
+
+
+@vs instanced_vs
+uniform InstancedVertParams {
+	vec4 transform_matrix[2];
+};
+
+layout(location = 0) in vec2 pos_in;
+layout(location = 1) in vec2 uv_in;
+layout(location = 2) in vec4 color_in;
+layout(location = 3) in vec2 instance_pos_in;
+
+out vec2 uv_out;
+out vec4 color_out;
+
+void main() {
+	uv_out = uv_in;
+	color_out = color_in;
+
+	mat3x2 trans_mat = mat3x2(transform_matrix[0].x, transform_matrix[0].y, transform_matrix[0].z, transform_matrix[0].w, transform_matrix[1].x, transform_matrix[1].y);
+	gl_Position = vec4(trans_mat * vec3(pos_in + instance_pos_in, 1), 0, 1);
+}
+@end
+
+@fs instanced_fs
+@include_block sprite_fs_main
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	return texture(tex, tex_coord) * vert_color;
+}
+@end
+
+@program instanced instanced_vs instanced_fs
