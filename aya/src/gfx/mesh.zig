@@ -136,7 +136,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
             });
             var instance_buffer = renderer.createBuffer(InstanceT, .{
                 .usage = .stream,
-                .size = @intCast(c_long, 100 * @sizeOf(InstanceT)),
+                .size = @intCast(c_long, instance_count * @sizeOf(InstanceT)),
                 .step_func = .per_instance,
             });
 

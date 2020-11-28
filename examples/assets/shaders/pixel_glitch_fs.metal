@@ -5,7 +5,7 @@
 
 using namespace metal;
 
-struct pixelGlitchParams
+struct PixelGlitchParams
 {
     float vertical_size;
     float horizontal_offset;
@@ -35,7 +35,7 @@ float hash11(thread const float& p)
 
 #line 31 ""
 static inline __attribute__((always_inline))
-float4 effect(thread const texture2d<float> tex, thread const sampler texSmplr, thread const float2& tex_coord, thread const float4& vert_color, constant pixelGlitchParams& v_76)
+float4 effect(thread const texture2d<float> tex, thread const sampler texSmplr, thread const float2& tex_coord, thread const float4& vert_color, constant PixelGlitchParams& v_76)
 {
 #line 31 ""
 #line 32 ""
@@ -46,7 +46,7 @@ float4 effect(thread const texture2d<float> tex, thread const sampler texSmplr, 
 }
 
 #line 15 ""
-fragment main0_out main0(main0_in in [[stage_in]], constant pixelGlitchParams& v_76 [[buffer(0)]], texture2d<float> main_tex [[texture(0)]], sampler main_texSmplr [[sampler(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant PixelGlitchParams& v_76 [[buffer(0)]], texture2d<float> main_tex [[texture(0)]], sampler main_texSmplr [[sampler(0)]])
 {
     main0_out out = {};
 #line 15 ""

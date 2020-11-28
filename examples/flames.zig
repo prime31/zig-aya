@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
-usingnamespace @import("imgui");
 const shaders = @import("assets/shaders/shaders.zig");
+usingnamespace @import("imgui");
 
 pub const renderer: aya.renderkit.Renderer = .opengl;
 
