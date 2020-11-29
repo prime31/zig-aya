@@ -82,7 +82,7 @@ pub const NoiseParams = extern struct {
 
     time: f32 = 0,
     power: f32 = 0,
-    _pad8_: [8]u8 = [_]u8{0} ** 8,
+    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
 };
 
 pub const SepiaParams = extern struct {
@@ -92,7 +92,7 @@ pub const SepiaParams = extern struct {
     };
 
     sepia_tone: math.Vec3 = .{},
-    _pad12_: [4]u8 = [_]u8{0} ** 4,
+    _pad12_0_: [4]u8 = [_]u8{0} ** 4,
 };
 
 pub const DissolveParams = extern struct {
@@ -103,7 +103,7 @@ pub const DissolveParams = extern struct {
 
     progress: f32 = 0,
     threshold: f32 = 0,
-    _pad8_: [8]u8 = [_]u8{0} ** 8,
+    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
     threshold_color: [4]f32 = [_]f32{0} ** 4,
 };
 
@@ -167,9 +167,9 @@ pub const MetaFlamesParams = extern struct {
     tear_wave_length: f32 = 0,
     tear_wave_speed: f32 = 0,
     tear_wave_amplitude: f32 = 0,
-    iTime: f32 = 0,
-    _pad4_: [4]u8 = [_]u8{0} ** 4,
-    iResolution: math.Vec2 = .{},
+    time: f32 = 0,
+    _pad4_0_: [4]u8 = [_]u8{0} ** 4,
+    screen_size: math.Vec2 = .{},
 };
 
 pub const VignetteParams = extern struct {
@@ -180,7 +180,7 @@ pub const VignetteParams = extern struct {
 
     radius: f32 = 0,
     power: f32 = 0,
-    _pad8_: [8]u8 = [_]u8{0} ** 8,
+    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
 };
 
 pub const LinesParams = extern struct {
@@ -191,6 +191,6 @@ pub const LinesParams = extern struct {
 
     line_color: [4]f32 = [_]f32{0} ** 4,
     line_size: f32 = 0,
-    _pad20_: [12]u8 = [_]u8{0} ** 12,
+    _pad20_0_: [12]u8 = [_]u8{0} ** 12,
 };
 

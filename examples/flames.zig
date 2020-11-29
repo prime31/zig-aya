@@ -3,12 +3,11 @@ const aya = @import("aya");
 const shaders = @import("assets/shaders/shaders.zig");
 usingnamespace @import("imgui");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 const Shader = aya.gfx.Shader;
 const effects = @import("assets/effects.zig");
 
-pub const enable_imgui = renderer == .opengl;
+pub const renderer: aya.renderkit.Renderer = .opengl;
+pub const enable_imgui = true;
 
 pub const Flames = struct {
     postprocessor: aya.gfx.PostProcessor,
@@ -25,7 +24,7 @@ pub const Flames = struct {
         self.shader.frag_uniform.tear_wave_length = 5;
         self.shader.frag_uniform.tear_wave_speed = 500;
         self.shader.frag_uniform.tear_wave_amplitude = 10;
-        self.shader.frag_uniform.iResolution = .{ .x = 785, .y = 577 };
+        self.shader.frag_uniform.screen_size = .{ .x = 785, .y = 577 };
     }
 
     pub fn process(processor: *aya.gfx.PostProcessor, pass: aya.gfx.OffscreenPass, texture: aya.gfx.Texture) void {
@@ -38,7 +37,6 @@ pub const Flames = struct {
     }
 };
 
-var post_process = true;
 var tex: aya.gfx.Texture = undefined;
 var stack: aya.gfx.PostProcessStack = undefined;
 var flames_params: shaders.MetaFlamesParams = undefined;
@@ -70,12 +68,8 @@ fn shutdown() !void {
 }
 
 fn update() !void {
-    if (aya.renderkit.current_renderer != .opengl) return;
-
-    _ = igCheckbox("Enable PostProcessing", &post_process);
-
     var flames = stack.processors.items[1].getParent(Flames);
-    flames.shader.frag_uniform.iTime = aya.time.seconds();
+    flames.shader.frag_uniform.time = aya.time.seconds();
 
     flames_params = flames.shader.frag_uniform;
     if (aya.utils.inspect(shaders.MetaFlamesParams, "Flames", &flames_params)) {
@@ -88,5 +82,5 @@ fn render() !void {
     aya.draw.texScale(tex, 0, 0, 1);
     aya.gfx.endPass();
 
-    if (post_process) aya.gfx.postProcess(&stack);
+    aya.gfx.postProcess(&stack);
 }
