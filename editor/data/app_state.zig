@@ -55,9 +55,9 @@ pub const AppState = struct {
         var entities = Layer.init(.entity, "Entities", state.map_size, state.tile_size);
         state.layers.append(entities) catch unreachable;
         var entity_layer = &state.layers.items[state.layers.items.len - 1].entity;
-        entity_layer.addEntity("First");
-        entity_layer.addEntity("Second");
-        entity_layer.addEntity("Black Wall");
+        entity_layer.addEntity("First", .{ .x = 10, .y = 10 });
+        entity_layer.addEntity("Second", .{ .x = 50, .y = 50 });
+        entity_layer.addEntity("Black Wall", .{ .x = 90, .y = 20 });
         entity_layer.entities.items[0].addComponent(comp1.spawnInstance());
 
         return state;

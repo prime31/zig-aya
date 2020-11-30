@@ -14,7 +14,10 @@ pub const Rule = @import("rules.zig").Rule;
 pub const RuleSet = @import("rules.zig").RuleSet;
 pub const RuleTile = @import("rules.zig").RuleTile;
 
+// entity and built-in components
 pub const Entity = @import("entity.zig").Entity;
+pub const Transform = @import("entity.zig").Transform;
+pub const Sprite = @import("entity.zig").Sprite;
 pub const Collider = @import("entity.zig").Collider;
 pub const BoxCollider = @import("entity.zig").BoxCollider;
 pub const CircleCollider = @import("entity.zig").CircleCollider;
