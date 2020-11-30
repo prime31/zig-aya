@@ -14,6 +14,11 @@ pub const Rule = @import("rules.zig").Rule;
 pub const RuleSet = @import("rules.zig").RuleSet;
 pub const RuleTile = @import("rules.zig").RuleTile;
 
+pub const Entity = @import("entity.zig").Entity;
+pub const Collider = @import("entity.zig").Collider;
+pub const BoxCollider = @import("entity.zig").BoxCollider;
+pub const CircleCollider = @import("entity.zig").CircleCollider;
+
 pub const Component = @import("components.zig").Component;
 pub const ComponentInstance = @import("components.zig").ComponentInstance;
 
@@ -117,26 +122,3 @@ pub const TileRenderInfo = struct {
     }
 };
 
-pub const Entity = struct {
-    id: u8 = 0,
-    name: [25:0]u8 = undefined,
-    components: std.ArrayList(ComponentInstance),
-
-    pub fn init(id: u8, name: []const u8) Entity {
-        var entity = Entity{
-            .id = id,
-            .components = std.ArrayList(ComponentInstance).init(aya.mem.allocator),
-        };
-        aya.mem.copyZ(u8, &entity.name, name);
-        return entity;
-    }
-
-    pub fn deinit(self: @This()) void {
-        for (self.components.items) |*comp| comp.deinit();
-        self.components.deinit();
-    }
-
-    pub fn addComponent(self: *@This(), component: ComponentInstance) void {
-        self.components.append(component) catch unreachable;
-    }
-};

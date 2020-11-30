@@ -42,7 +42,10 @@ pub const AppState = struct {
         comp1.addProperty(.{ .int = 55 });
         aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "an_int");
 
-        var comp2 = state.createComponent("Box");
+        comp1.addProperty(.{ .vec2 = .{ .x = 5, .y = 10 } });
+        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "a_vec2");
+
+        var comp2 = state.createComponent("Thingy");
         comp2.addProperty(.{ .float = 55 });
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "width");
         comp2.addProperty(.{ .float = 55 });

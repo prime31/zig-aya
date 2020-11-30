@@ -1,5 +1,4 @@
 const std = @import("std");
-const upaya = @import("upaya");
 const root = @import("../main.zig");
 usingnamespace @import("imgui");
 
@@ -91,6 +90,9 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
             .bool => |*b| {
                 _ = igCheckbox("##bool", b);
             },
+            .vec2 => |*v2| {
+                _ = igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", ImGuiSliderFlags_None);
+            },
         }
         igSameLine(0, 5);
 
@@ -147,6 +149,10 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
         }
         if (ogSelectableBool("int", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .int = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
+        }
+        if (ogSelectableBool("Vec2", false, ImGuiSelectableFlags_None, .{})) {
+            component.addProperty(.{ .vec2 = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
 

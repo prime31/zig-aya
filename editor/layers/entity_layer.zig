@@ -54,6 +54,7 @@ pub const EntityLayer = struct {
         aya.draw.text(&self.name, 100, 0, null);
     }
 
+    /// draws all the entities in the scene allowing one to be selected which will be displayed in a separate inspector
     fn drawEntitiesWindow(self: *@This()) void {
         defer igEnd();
         var win_name: [50:0]u8 = undefined;
@@ -126,7 +127,23 @@ pub const EntityLayer = struct {
         inspectors.inspectString("Name", &entity.name, entity.name.len, null);
         ogDummy(.{ .y = 5 });
 
-        // componnent editor
+        if (entity.sprite) |*sprite| {
+            var is_open = true;
+            if (igCollapsingHeaderBoolPtr("Sprite", &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {}
+
+            if (!is_open) entity.sprite = null;
+        }
+        if (entity.collider) |*collider| {
+            var is_open = true;
+            const collider_name = if (collider.* == .box) "Box Collider" else "Circle Collider";
+            if (igCollapsingHeaderBoolPtr(collider_name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
+                inspectors.inspectCollider(collider);
+            }
+
+            if (!is_open) entity.collider = null;
+        }
+
+        // component editor
         var delete_index: ?usize = null;
         for (entity.components.items) |*comp, i| {
             igPushIDPtr(comp);
@@ -154,6 +171,9 @@ pub const EntityLayer = struct {
                         .bool => |*b| {
                             inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool);
                         },
+                        .vec2 => |*v2| {
+                            inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2);
+                        },
                     }
                 }
             }
@@ -166,15 +186,45 @@ pub const EntityLayer = struct {
         if (delete_index) |index| entity.components.orderedRemove(index).deinit();
 
         // add component
-        if (ogButton("Add Component")) {
-            ogOpenPopup("AddComponent");
-        }
+        var show_add_collider_popup = false;
+        if (ogButton("Add Component"))
+            ogOpenPopup("add-component");
 
-        if (igBeginPopup("AddComponent", ImGuiWindowFlags_None)) {
-            for (state.components.items) |comp| {
+        if (igBeginPopup("add-component", ImGuiWindowFlags_None)) {
+            if (entity.sprite == null and igMenuItemBool("Sprite", null, false, true)) {
+                entity.sprite = .{};
+            }
+
+            if (entity.collider == null and igMenuItemBool("Collider", null, false, true)) {
+                show_add_collider_popup = true;
+            }
+            igSeparator();
+
+            // only show components that havent already been added
+            for (state.components.items) |comp| blk: {
+                for (entity.components.items) |comp_instance| {
+                    if (comp_instance.component_id == comp.id) break :blk;
+                }
+
                 if (igMenuItemBool(&comp.name, null, false, true)) {
                     entity.addComponent(comp.spawnInstance());
                 }
+            }
+
+            igEndPopup();
+        }
+
+        // TODO: why dont nested popups work properly? this block should be in the previous popup
+        if (show_add_collider_popup) ogOpenPopup("add-collider");
+
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("add-collider", ImGuiWindowFlags_None)) {
+            // TODO: size the initial colliders if we have a Sprite to get the size from
+            if (igMenuItemBool("Box Collider", null, false, true)) {
+                entity.collider = .{ .box = .{ .pos = .{}, .w = 10, .h = 10 } };
+            }
+            if (igMenuItemBool("Circle Collider", null, false, true)) {
+                entity.collider = .{ .circle = .{ .pos = .{}, .r = 10 } };
             }
             igEndPopup();
         }
