@@ -53,10 +53,11 @@ pub const PropertyValue = union(enum) {
     int: i32,
     float: f32,
     bool: bool,
+    vec2: math.Vec2,
 };
 
-/// *Instances represent the components data on an Entity. Only the actual values are stored along with the Component.id
-/// so that the field names can be looked up, property add/delete can be identified and synced.
+/// ComponentInstances represent the component's data on an Entity. Only the actual values are stored along with the Component.id
+/// so that the field names can be looked up and property add/delete can be identified and synced.
 pub const ComponentInstance = struct {
     component_id: u8,
     props: std.ArrayList(PropertyInstance),

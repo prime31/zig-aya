@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-const root = @import("main.zig");
+const root = @import("root");
 usingnamespace @import("imgui");
 
 pub fn inspectBool(label: [:0]const u8, value: *bool, reset_value: bool) void {
@@ -79,7 +79,7 @@ pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
 }
 
 pub fn inspectVec2(label: [:0]const u8, vec: *aya.math.Vec2, reset_value: aya.math.Vec2) void {
-    igPushIDPtr(value);
+    igPushIDPtr(vec);
     defer igPopID();
 
     igColumns(2, null, false);
@@ -138,4 +138,18 @@ pub fn inspectString(label: [:0]const u8, buf: [*c]u8, buf_size: usize, reset_va
     igPopItemWidth();
 
     igColumns(1, null, false);
+}
+
+pub fn inspectCollider(collider: *root.data.Collider) void {
+    switch (collider.*) {
+        .box => |*box| {
+            inspectVec2("Position", &box.pos, .{});
+            inspectFloat("Width", &box.w, 25);
+            inspectFloat("Height", &box.h, 25);
+        },
+        .circle => |*circle| {
+            inspectVec2("Position", &circle.pos, .{});
+            inspectFloat("Radius", &circle.r, 25);
+        },
+    }
 }
