@@ -51,9 +51,10 @@ pub const Renderer = struct {
             icons_config[0].MergeMode = true;
             icons_config[0].PixelSnapH = true;
             icons_config[0].FontDataOwnedByAtlas = false;
+            icons_config[0].GlyphOffset = .{ .x = 0, .y = 2 };
 
             var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
-            _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 13, icons_config, &font_awesome_range[0]);
+            _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 14, icons_config, &font_awesome_range[0]);
         }
 
         var w: i32 = undefined;
