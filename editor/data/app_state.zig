@@ -2,7 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 
 const Size = @import("data.zig").Size;
-const Layer = @import("data.zig").Layer;
+const Layer = @import("root").layers.Layer;
 const Component = @import("data.zig").Component;
 
 pub const AppState = struct {

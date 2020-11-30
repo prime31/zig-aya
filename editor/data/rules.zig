@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 
-const AutoTilemapLayer = @import("data.zig").AutoTilemapLayer;
+const AutoTilemapLayer = @import("root").layers.AutoTilemapLayer;
 
 pub const RuleSet = struct {
     seed: u64 = 0,

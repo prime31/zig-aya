@@ -3,12 +3,12 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const editor = @import("../editor.zig");
-const data = @import("data.zig");
+const root = @import("root");
+const data = root.data;
 const AppState = data.AppState;
-pub const TilemapLayer = data.TilemapLayer;
-pub const AutoTilemapLayer = data.AutoTilemapLayer;
-pub const EntityLayer = data.EntityLayer;
+pub const TilemapLayer = root.layers.TilemapLayer;
+pub const AutoTilemapLayer = root.layers.AutoTilemapLayer;
+pub const EntityLayer = root.layers.EntityLayer;
 const Size = data.Size;
 const Camera = @import("../camera.zig").Camera;
 

@@ -4,8 +4,7 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const editor = @import("../editor.zig");
-const data = @import("data.zig");
+const data = root.data;
 const inspectors = @import("../inspectors.zig");
 
 const AppState = data.AppState;

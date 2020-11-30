@@ -3,10 +3,10 @@ const aya = @import("aya");
 const root = @import("../main.zig");
 usingnamespace @import("imgui");
 
-const Layer = root.data.Layer;
+const Layer = root.layers.Layer;
 
 var name_buf: [25:0]u8 = undefined;
-var new_layer_type: root.LayerType = .tilemap;
+var new_layer_type: root.layers.LayerType = .tilemap;
 
 pub fn draw(state: *root.AppState) void {
     if (igBegin("Layers", null, ImGuiWindowFlags_None)) {
@@ -94,11 +94,11 @@ fn addLayerPopup(state: *root.AppState) void {
 
         igText("Layer Type");
         _ = ogBeginChildFrame(666, .{ .y = 55 }, ImGuiWindowFlags_None);
-        inline for (@typeInfo(root.LayerType).Enum.fields) |field| {
+        inline for (@typeInfo(root.layers.LayerType).Enum.fields) |field| {
             var buf: [15]u8 = undefined;
             _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-            if (ogSelectableBool(&buf[0], new_layer_type == @intToEnum(root.LayerType, field.value), ImGuiSelectableFlags_DontClosePopups, .{})) {
-                new_layer_type = @intToEnum(root.LayerType, field.value);
+            if (ogSelectableBool(&buf[0], new_layer_type == @intToEnum(root.layers.LayerType, field.value), ImGuiSelectableFlags_DontClosePopups, .{})) {
+                new_layer_type = @intToEnum(root.layers.LayerType, field.value);
             }
         }
         igEndChild();
@@ -129,7 +129,7 @@ fn addLayerPopup(state: *root.AppState) void {
 
         if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
-            state.layers.append(root.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
+            state.layers.append(root.layers.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
             state.selected_layer_index = state.layers.items.len - 1;
         }
 

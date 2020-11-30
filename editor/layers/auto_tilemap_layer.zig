@@ -4,13 +4,13 @@ const math = aya.math;
 usingnamespace @import("imgui");
 
 const root = @import("root");
-const data = @import("data.zig");
+const data = root.data;
 
 const AppState = data.AppState;
 const Tilemap = data.Tilemap;
 const Tileset = data.Tileset;
 const TileRenderInfo = data.TileRenderInfo;
-const Brushset = @import("brushset.zig").Brushset;
+const Brushset = data.Brushset;
 const Size = data.Size;
 const RuleSet = data.RuleSet;
 const Rule = data.Rule;
@@ -589,7 +589,7 @@ pub const AutoTilemapLayer = struct {
         while (iter.next()) |index| {
             const per_row = self.tileset.tiles_per_row;
             // TODO: HACK!
-            const ts = @import("tileset.zig");
+            const ts = @import("../data/tileset.zig");
             ts.addTileToDrawList(tile_size, content_start_pos, index, self.tileset.tiles_per_row, tile_spacing);
         }
 
