@@ -18,6 +18,7 @@ pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
     entities: std.ArrayList(Entity),
     selected_index: usize = 0,
+    id_counter: u8 = 0,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
         var layer = EntityLayer{
@@ -31,8 +32,10 @@ pub const EntityLayer = struct {
         self.entities.deinit();
     }
 
-    pub fn addEntity(self: *@This(), name: []const u8) void {
-        self.entities.append(Entity.init(66, name)) catch unreachable;
+    pub fn addEntity(self: *@This(), name: []const u8, position: math.Vec2) void {
+        self.id_counter += 1;
+        self.entities.append(Entity.init(self.id_counter, name, position)) catch unreachable;
+        self.selected_index = self.entities.items.len - 1;
     }
 
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
@@ -42,16 +45,12 @@ pub const EntityLayer = struct {
             if (self.entities.items.len > 0)
                 self.drawInspectorWindow(state, &self.entities.items[self.selected_index]);
         }
-
-        // igText("saldkfjklasdfjkdlsjf");
-        // ogColoredText(1, 0, 0, "red text");
-        // ogColoredText(0, 1, 0, "green text");
-        // ogColoredText(0, 0, 1, "blue text");
-        // _ = ogColoredButton(root.colors.rgbToU32(135, 55, 123), "i have a color");
     }
 
     pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        aya.draw.text(&self.name, 100, 0, null);
+        for (self.entities.items) |entity| {
+            aya.draw.point(entity.transform.pos, 15, math.Color.blue);
+        }
     }
 
     /// draws all the entities in the scene allowing one to be selected which will be displayed in a separate inspector
@@ -127,20 +126,35 @@ pub const EntityLayer = struct {
         inspectors.inspectString("Name", &entity.name, entity.name.len, null);
         ogDummy(.{ .y = 5 });
 
+        if (igCollapsingHeaderBoolPtr("Transform", null, ImGuiTreeNodeFlags_DefaultOpen)) {
+            igIndent(10);
+            inspectors.inspectTransform(&entity.transform);
+            igUnindent(10);
+        }
+        ogDummy(.{ .y = 5 });
+
         if (entity.sprite) |*sprite| {
             var is_open = true;
-            if (igCollapsingHeaderBoolPtr("Sprite", &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {}
+            if (igCollapsingHeaderBoolPtr("Sprite", &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
+                igIndent(10);
+                inspectors.inspectSprite(sprite);
+                igUnindent(10);
+            }
 
             if (!is_open) entity.sprite = null;
+            ogDummy(.{ .y = 5 });
         }
         if (entity.collider) |*collider| {
             var is_open = true;
             const collider_name = if (collider.* == .box) "Box Collider" else "Circle Collider";
             if (igCollapsingHeaderBoolPtr(collider_name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
+                igIndent(10);
                 inspectors.inspectCollider(collider);
+                igUnindent(10);
             }
 
             if (!is_open) entity.collider = null;
+            ogDummy(.{ .y = 5 });
         }
 
         // component editor
@@ -249,7 +263,7 @@ pub const EntityLayer = struct {
                 igCloseCurrentPopup();
 
                 // get the next available group
-                self.addEntity(name_buf[0..label_sentinel_index]);
+                self.addEntity(name_buf[0..label_sentinel_index], root.scene.cam.screenToWorld(.{ .x = 200, .y = 100 }));
             }
             igPopStyleColor(1);
 

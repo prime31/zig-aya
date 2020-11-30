@@ -140,6 +140,10 @@ pub fn inspectString(label: [:0]const u8, buf: [*c]u8, buf_size: usize, reset_va
     igColumns(1, null, false);
 }
 
+pub fn inspectSprite(sprite: *root.data.Sprite) void {
+    igText("Sprite");
+}
+
 pub fn inspectCollider(collider: *root.data.Collider) void {
     switch (collider.*) {
         .box => |*box| {
@@ -152,4 +156,10 @@ pub fn inspectCollider(collider: *root.data.Collider) void {
             inspectFloat("Radius", &circle.r, 25);
         },
     }
+}
+
+pub fn inspectTransform(transform: *root.data.Transform) void {
+    inspectVec2("Position", &transform.pos, .{});
+    inspectFloat("Rotation", &transform.rot, 0);
+    inspectVec2("Scale", &transform.scale, .{ .x = 1, .y = 1 });
 }

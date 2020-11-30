@@ -8,13 +8,15 @@ pub const Entity = struct {
     id: u8 = 0,
     name: [25:0]u8 = undefined,
     components: std.ArrayList(ComponentInstance),
+    transform: Transform,
     sprite: ?Sprite = null,
     collider: ?Collider = null,
 
-    pub fn init(id: u8, name: []const u8) Entity {
+    pub fn init(id: u8, name: []const u8, position: aya.math.Vec2) Entity {
         var entity = Entity{
             .id = id,
             .components = std.ArrayList(ComponentInstance).init(aya.mem.allocator),
+            .transform = .{ .pos = position },
         };
         aya.mem.copyZ(u8, &entity.name, name);
         return entity;
@@ -30,9 +32,13 @@ pub const Entity = struct {
     }
 };
 
-pub const Sprite = struct {
-
+pub const Transform = struct {
+    pos: aya.math.Vec2 = .{},
+    rot: f32 = 0,
+    scale: aya.math.Vec2 = .{ .x = 1, .y = 1 },
 };
+
+pub const Sprite = struct {};
 
 pub const Collider = union(enum) {
     box: BoxCollider,
