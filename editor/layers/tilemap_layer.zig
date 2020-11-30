@@ -4,7 +4,7 @@ const math = aya.math;
 usingnamespace @import("imgui");
 
 const root = @import("root");
-const data = @import("data.zig");
+const data = root.data;
 
 const AppState = data.AppState;
 const Tilemap = data.Tilemap;

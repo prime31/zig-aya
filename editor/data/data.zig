@@ -8,11 +8,7 @@ const editor = @import("../editor.zig");
 pub const AppState = @import("app_state.zig").AppState;
 pub const Tilemap = @import("tilemap.zig").Tilemap;
 pub const Tileset = @import("tileset.zig").Tileset;
-pub const Layer = @import("layer.zig").Layer;
-pub const LayerType = @import("layer.zig").LayerType;
-pub const TilemapLayer = @import("tilemap_layer.zig").TilemapLayer;
-pub const AutoTilemapLayer = @import("auto_tilemap_layer.zig").AutoTilemapLayer;
-pub const EntityLayer = @import("entity_layer.zig").EntityLayer;
+pub const Brushset = @import("brushset.zig").Brushset;
 
 pub const Rule = @import("rules.zig").Rule;
 pub const RuleSet = @import("rules.zig").RuleSet;
