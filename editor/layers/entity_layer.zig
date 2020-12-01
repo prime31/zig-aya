@@ -32,6 +32,21 @@ pub const EntityLayer = struct {
         self.entities.deinit();
     }
 
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+        if (std.mem.endsWith(u8, file, ".png")) {
+            if (self.entities.items.len == 0) return;
+
+            var texture = aya.gfx.Texture.initFromFile(file, .nearest) catch |err| {
+                std.debug.print("EntityLayer failed to load image: {}\n", .{err});
+                return;
+            };
+
+            var selected_entity = &self.entities.items[self.selected_index];
+            if (selected_entity.sprite == null) selected_entity.sprite = .{};
+            selected_entity.sprite.?.tex = texture;
+        }
+    }
+
     pub fn addEntity(self: *@This(), name: []const u8, position: math.Vec2) void {
         self.id_counter += 1;
         self.entities.append(Entity.init(self.id_counter, name, position)) catch unreachable;
@@ -49,7 +64,18 @@ pub const EntityLayer = struct {
 
     pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         for (self.entities.items) |entity| {
-            aya.draw.point(entity.transform.pos, 15, math.Color.blue);
+            if (entity.sprite) |sprite| {
+                aya.draw.texViewport(sprite.tex, .{ .w = @floatToInt(i32, sprite.tex.width), .h = @floatToInt(i32, sprite.tex.height) }, entity.transformMatrix());
+            } else {
+                aya.draw.rect(entity.transform.pos, 15 * entity.transform.scale.x, 15 * entity.transform.scale.y, math.Color.blue);
+            }
+
+            if (entity.collider) |collider| {
+                switch (collider) {
+                    .box => |box| aya.draw.hollowRect(entity.transform.pos.add(box.offset), box.w, box.h, 1, math.Color.yellow),
+                    .circle => |circle| aya.draw.circle(entity.transform.pos.add(circle.offset), circle.r, 1, 6, math.Color.yellow),
+                }
+            }
         }
     }
 
@@ -173,21 +199,11 @@ pub const EntityLayer = struct {
                     var src_prop = src_comp.propertyWithId(prop.property_id);
 
                     switch (prop.value) {
-                        .string => |*str| {
-                            inspectors.inspectString(&src_prop.name, str, str.len, &src_prop.value.string);
-                        },
-                        .float => |*flt| {
-                            inspectors.inspectFloat(&src_prop.name, flt, src_prop.value.float);
-                        },
-                        .int => |*int| {
-                            inspectors.inspectInt(&src_prop.name, int, src_prop.value.int);
-                        },
-                        .bool => |*b| {
-                            inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool);
-                        },
-                        .vec2 => |*v2| {
-                            inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2);
-                        },
+                        .string => |*str| inspectors.inspectString(&src_prop.name, str, str.len, &src_prop.value.string),
+                        .float => |*flt| inspectors.inspectFloat(&src_prop.name, flt, src_prop.value.float),
+                        .int => |*int| inspectors.inspectInt(&src_prop.name, int, src_prop.value.int),
+                        .bool => |*b| inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool),
+                        .vec2 => |*v2| inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2),
                     }
                 }
             }
@@ -200,7 +216,6 @@ pub const EntityLayer = struct {
         if (delete_index) |index| entity.components.orderedRemove(index).deinit();
 
         // add component
-        var show_add_collider_popup = false;
         if (ogButton("Add Component"))
             ogOpenPopup("add-component");
 
@@ -209,8 +224,14 @@ pub const EntityLayer = struct {
                 entity.sprite = .{};
             }
 
-            if (entity.collider == null and igMenuItemBool("Collider", null, false, true)) {
-                show_add_collider_popup = true;
+            if (entity.collider == null) {
+                // TODO: size the initial colliders if we have a Sprite to get the size from
+                if (igMenuItemBool("Box Collider", null, false, true)) {
+                    entity.collider = .{ .box = .{ .w = 10, .h = 10 } };
+                }
+                if (igMenuItemBool("Circle Collider", null, false, true)) {
+                    entity.collider = .{ .circle = .{ .r = 10 } };
+                }
             }
             igSeparator();
 
@@ -225,21 +246,6 @@ pub const EntityLayer = struct {
                 }
             }
 
-            igEndPopup();
-        }
-
-        // TODO: why dont nested popups work properly? this block should be in the previous popup
-        if (show_add_collider_popup) ogOpenPopup("add-collider");
-
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("add-collider", ImGuiWindowFlags_None)) {
-            // TODO: size the initial colliders if we have a Sprite to get the size from
-            if (igMenuItemBool("Box Collider", null, false, true)) {
-                entity.collider = .{ .box = .{ .pos = .{}, .w = 10, .h = 10 } };
-            }
-            if (igMenuItemBool("Circle Collider", null, false, true)) {
-                entity.collider = .{ .circle = .{ .pos = .{}, .r = 10 } };
-            }
             igEndPopup();
         }
     }

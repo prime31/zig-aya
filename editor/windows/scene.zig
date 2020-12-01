@@ -17,7 +17,7 @@ pub const Scene = struct {
     }
 
     pub fn onFileDropped(self: @This(), state: *root.AppState, file: []const u8) void {
-        // swallow up any project files
+        // swallow up any project files and load them
         if (std.mem.endsWith(u8, file, ".editor_extension")) {
             std.debug.print("Scene got an editor extension\n", .{});
         } else if (state.layers.items.len > 0) {

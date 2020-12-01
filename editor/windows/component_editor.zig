@@ -55,7 +55,6 @@ pub fn draw(state: *root.AppState) void {
 
             if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Create Component", .{ .x = -1, .y = 0 })) {
                 _ = state.createComponent(name);
-                std.debug.print("new comp: {}\n", .{name});
                 selected_comp = state.components.items.len - 1;
                 igCloseCurrentPopup();
             }
@@ -78,21 +77,11 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         igSameLine(0, 5);
 
         switch (prop.value) {
-            .string => |*str| {
-                _ = ogInputText("##str", str, str.len);
-            },
-            .float => |*flt| {
-                _ = ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32));
-            },
-            .int => |*int| {
-                _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32));
-            },
-            .bool => |*b| {
-                _ = igCheckbox("##bool", b);
-            },
-            .vec2 => |*v2| {
-                _ = igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", ImGuiSliderFlags_None);
-            },
+            .string => |*str| _ = ogInputText("##str", str, str.len),
+            .float => |*flt| _ = ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32)),
+            .int => |*int| _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32)),
+            .bool => |*b| _ = igCheckbox("##bool", b),
+            .vec2 => |*v2| _ = igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", ImGuiSliderFlags_None),
         }
         igSameLine(0, 5);
 
@@ -103,7 +92,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     if (delete_index) |index| {
         var prop = component.props.orderedRemove(index);
 
-        // remove from any Entities that have this component
+        // remove the component from any Entities that have this component
         for (state.layers.items) |*layer| {
             if (layer.* == .entity) {
                 for (layer.entity.entities.items) |*entity| {

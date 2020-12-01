@@ -27,15 +27,15 @@ extern fn _ogListBoxHeaderVec2(label: [*c]const u8, size: *const ImVec2) bool;
 pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
     const white = ImVec4{ .x = 1, .y = 1, .z = 1, .w = 1 };
     var size = ImVec2{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
-    // TODO: remove when windows can handle passing ImVec4s and arm can handle ImVec2s
-    // igImage(texture, size, ImVec2{}, ImVec2{ .x = 1, .y = 1 }, white, .{});
     _ogImage(texture, &size, &ImVec2{}, &ImVec2{ .x = 1, .y = 1 });
 }
 
-pub fn ogImageButton(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int, bg_col: ImVec4, tint_col: ImVec4) bool {
-    // TODO: remove when windows can handle passing ImVec4s
-    // return igImageButton(texture, size, uv0, uv1, frame_padding, bg_col, tint_col);
-    return _ogImageButton(texture, size, uv0, uv1, frame_padding);
+pub fn ogImageButton(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int) bool {
+    return ogImageButtonEx(texture, size, uv0, uv1, frame_padding, .{}, .{ .x = 1, .y = 1, .z = 1, .w = 1 });
+}
+
+pub fn ogImageButtonEx(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int, bg_col: ImVec4, tint_col: ImVec4) bool {
+    return _ogImageButton(texture, &size, &uv0, &uv1, frame_padding);
 }
 
 pub fn ogColoredText(r: f32, g: f32, b: f32, text: [:0]const u8) void {
@@ -110,7 +110,6 @@ pub fn ogSetCursorScreenPos(pos: ImVec2) void {
 pub fn ogListBoxHeaderVec2(label: [*c]const u8, size: ImVec2) bool {
     return _ogListBoxHeaderVec2(label, &size);
 }
-
 
 // just plain helper methods
 pub fn ogOpenPopup(str_id: [*c]const u8) void {
