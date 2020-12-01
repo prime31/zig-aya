@@ -65,7 +65,7 @@ pub const Layer = union(LayerType) {
         switch (self.*) {
             .tilemap => |*layer| layer.onFileDropped(state, file),
             .auto_tilemap => |*layer| layer.onFileDropped(state, file),
-            else => std.debug.print("EntityLayer active. Ignoring dropped file\n", .{}),
+            .entity => |*layer| layer.onFileDropped(state, file),
         }
     }
 
