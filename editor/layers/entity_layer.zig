@@ -17,7 +17,7 @@ var name_buf: [25:0]u8 = undefined;
 pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
     entities: std.ArrayList(Entity),
-    selected_index: usize = 0,
+    selected_index: ?usize = null,
     id_counter: u8 = 0,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
@@ -34,16 +34,16 @@ pub const EntityLayer = struct {
 
     pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
-            if (self.entities.items.len == 0) return;
+            if (self.selected_index) |selected_index| {
+                var texture = aya.gfx.Texture.initFromFile(file, .nearest) catch |err| {
+                    std.debug.print("EntityLayer failed to load image: {}\n", .{err});
+                    return;
+                };
 
-            var texture = aya.gfx.Texture.initFromFile(file, .nearest) catch |err| {
-                std.debug.print("EntityLayer failed to load image: {}\n", .{err});
-                return;
-            };
-
-            var selected_entity = &self.entities.items[self.selected_index];
-            if (selected_entity.sprite == null) selected_entity.sprite = .{};
-            selected_entity.sprite.?.tex = texture;
+                var selected_entity = &self.entities.items[selected_index];
+                if (selected_entity.sprite == null) selected_entity.sprite = .{};
+                selected_entity.sprite.?.tex = texture;
+            }
         }
     }
 
@@ -57,13 +57,13 @@ pub const EntityLayer = struct {
         if (is_selected) {
             self.drawEntitiesWindow();
 
-            if (self.entities.items.len > 0)
-                self.drawInspectorWindow(state, &self.entities.items[self.selected_index]);
+            if (self.selected_index) |selected_index|
+                self.drawInspectorWindow(state, &self.entities.items[selected_index]);
         }
     }
 
-    pub fn handleSceneInput(self: @This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        for (self.entities.items) |entity| {
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+        for (self.entities.items) |entity, i| {
             if (entity.sprite) |sprite| {
                 aya.draw.texViewport(sprite.tex, .{ .w = @floatToInt(i32, sprite.tex.width), .h = @floatToInt(i32, sprite.tex.height) }, entity.transformMatrix());
             } else {
@@ -72,10 +72,29 @@ pub const EntityLayer = struct {
 
             if (entity.collider) |collider| {
                 switch (collider) {
-                    .box => |box| aya.draw.hollowRect(entity.transform.pos.add(box.offset), box.w, box.h, 1, math.Color.yellow),
+                    .box => |box| {
+                        const bounds = box.bounds(entity.transform.pos);
+                        aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 1, math.Color.white);
+                    },
                     .circle => |circle| aya.draw.circle(entity.transform.pos.add(circle.offset), circle.r, 1, 6, math.Color.yellow),
                 }
             }
+
+            if (self.selected_index == i) {
+                const bounds = entity.bounds();
+                aya.draw.rect(.{.x = bounds.x, .y = bounds.y}, bounds.w, bounds.h, math.Color.parse("#FFFFFF33") catch unreachable);
+            }
+        }
+
+        // object picking
+        if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+            // get a world-space rect for object picking with a fudge-factor size of 6 pixels
+            var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
+            self.selected_index = for (self.entities.items) |entity, i| {
+                if (entity.intersects(rect)) {
+                    break i;
+                }
+            } else null;
         }
     }
 
@@ -121,11 +140,14 @@ pub const EntityLayer = struct {
         }
 
         if (delete_index) |index| {
-            if (self.entities.items.len == 1 or index == self.selected_index) {
-                self.selected_index = 0;
-            } else if (index < self.selected_index) {
-                self.selected_index -= 1;
+            if (self.selected_index) |selected_index| {
+                if (self.entities.items.len == 1 or index == selected_index) {
+                    self.selected_index = null;
+                } else if (index < selected_index) {
+                    self.selected_index = selected_index - 1;
+                }
             }
+
             var entity = self.entities.orderedRemove(index);
             entity.deinit();
         }

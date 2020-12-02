@@ -27,6 +27,11 @@ pub const Rect = struct {
         return self.x <= x and x < self.right() and self.y <= y and y < self.bottom();
     }
 
+    pub fn intersects(self: Rect, other: Rect) bool {
+        return other.left() < self.right() and self.left() < other.right() and
+            other.top() < self.bottom() and self.top() < other.bottom();
+    }
+
     pub fn contract(self: Rect, horiz: f32, vert: f32) Rect {
         var rect = self;
         rect.x += horiz;
@@ -38,6 +43,15 @@ pub const Rect = struct {
 
     pub fn expand(self: Rect, horiz: f32, vert: f32) Rect {
         return self.contract(-horiz, -vert);
+    }
+
+    pub fn unionRect(self: Rect, r2: Rect) Rect {
+        var res = Rect{};
+        res.x = std.math.min(self.x, r2.x);
+        res.y = std.math.min(self.y, r2.y);
+        res.w = std.math.max(self.right(), r2.right()) - res.x;
+        res.h = std.math.max(self.bottom(), r2.bottom()) - res.y;
+        return res;
     }
 };
 
