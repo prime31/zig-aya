@@ -1,8 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
 usingnamespace @import("imgui");
-
 const root = @import("root");
+
+pub const Image = @import("utils/image.zig").Image;
+pub const TexturePacker = @import("utils/texture_package.zig").TexturePacker;
 
 const AppState = root.data.AppState;
 const Point = root.data.Point;
