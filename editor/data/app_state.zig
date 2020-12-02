@@ -8,6 +8,7 @@ const Component = @import("data.zig").Component;
 pub const AppState = struct {
     map_size: Size = .{ .w = 64, .h = 64 },
     tile_size: usize = 16,
+    snap_size: u8 = 0,
     layers: std.ArrayList(Layer),
     components: std.ArrayList(Component),
     next_component_id: u8 = 0,
@@ -52,13 +53,16 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "height");
 
         // entities
-        var entities = Layer.init(.entity, "Entities", state.map_size, state.tile_size);
-        state.layers.append(entities) catch unreachable;
+        state.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
+
         var entity_layer = &state.layers.items[state.layers.items.len - 1].entity;
         entity_layer.addEntity("First", .{ .x = 10, .y = 10 });
         entity_layer.addEntity("Second", .{ .x = 50, .y = 50 });
         entity_layer.addEntity("Black Wall", .{ .x = 90, .y = 20 });
+
         entity_layer.entities.items[0].addComponent(comp1.spawnInstance());
+        entity_layer.entities.items[1].collider = .{ .box = .{ .w = 25, .h = 25 } };
+        entity_layer.entities.items[2].collider = .{ .circle = .{ .r = 25 } };
 
         return state;
     }

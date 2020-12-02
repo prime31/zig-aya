@@ -55,6 +55,14 @@ pub const Scene = struct {
         const tmp = ogGetCursorScreenPos();
         ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
         ogSetCursorScreenPos(tmp);
+
+        self.drawToolBar(state);
+
+        // full window button lets us capture any clicks that didnt get used in the toolbar above
+        _ = ogInvisibleButton("##scene_button", ogGetContentRegionAvail(), ImGuiButtonFlags_None);
+        ogSetCursorScreenPos(tmp);
+
+
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
@@ -87,11 +95,22 @@ pub const Scene = struct {
         if (state.layers.items.len > 0) {
             state.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
         }
+    }
 
-        // aya.draw.rect(.{}, 16, 16, math.Color.white);
-        // aya.draw.rect(.{ .x = 16, .y = 16 }, 16, 16, math.Color.sky_blue);
-        // aya.draw.text("wtf", mouse_world.x, mouse_world.y, null);
-        // aya.draw.text("origin", 0, 0, null);
+    fn drawToolBar(self: @This(), state: *root.AppState) void {
+        // create a toolbar over the scene view
+        igPushStyleColorU32(ImGuiCol_Button, math.Color.aya.value);
+        // reset position to the start of where we want our button bar
+        igSetCursorPosY(igGetCursorPosY() + 5);
+        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 30);
+        if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
+        igPopStyleColor(1);
+
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("##snap-settings", ImGuiPopupFlags_None)) {
+            _ = ogDrag(u8, "Snap", &state.snap_size, 0.2, 0, 32);
+            igEndPopup();
+        }
     }
 
     fn drawGridLines(self: @This()) void {
