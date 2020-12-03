@@ -17,6 +17,7 @@ extern fn _ogInvisibleButton(str_id: [*c]const u8, w: f32, h: f32, flags: ImGuiB
 extern fn _ogSelectableBool(label: [*c]const u8, selected: bool, flags: ImGuiSelectableFlags, w: f32, h: f32) bool;
 extern fn _ogDummy(w: f32, h: f32) void;
 extern fn _ogBeginChildFrame(id: ImGuiID, w: f32, h: f32, flags: ImGuiWindowFlags) bool;
+extern fn _ogBeginChildEx(name: [*c]const u8, id: ImGuiID, size_arg: *const ImVec2, border: bool, flags: ImGuiWindowFlags) bool;
 extern fn _ogDockSpace(id: ImGuiID, w: f32, h: f32, flags: ImGuiDockNodeFlags, window_class: [*c]const ImGuiWindowClass) void;
 extern fn _ogImDrawList_AddQuad(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, p3: *const ImVec2, p4: *const ImVec2, col: ImU32, thickness: f32) void;
 extern fn _ogImDrawList_AddQuadFilled(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, p3: *const ImVec2, p4: *const ImVec2, col: ImU32) void;
@@ -89,6 +90,10 @@ pub fn ogSetCursorPos(cursor: ImVec2) void {
 
 pub fn ogBeginChildFrame(id: ImGuiID, size: ImVec2, flags: ImGuiWindowFlags) bool {
     return _ogBeginChildFrame(id, size.x, size.y, flags);
+}
+
+pub fn ogBeginChildEx(name: [*c]const u8, id: ImGuiID, size_arg: ImVec2, border: bool, flags: ImGuiWindowFlags) bool {
+    return _ogBeginChildEx(name, id, &size_arg, border, flags);
 }
 
 pub fn ogDockSpace(id: ImGuiID, size: ImVec2, flags: ImGuiDockNodeFlags, window_class: [*c]const ImGuiWindowClass) void {

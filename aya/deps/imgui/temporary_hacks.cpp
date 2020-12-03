@@ -88,6 +88,10 @@ CIMGUI_API bool _ogBeginChildFrame(ImGuiID id, const float w, const float h, ImG
     return ImGui::BeginChildFrame(id, size, flags);
 }
 
+CIMGUI_API bool _ogBeginChildEx(const char* name, ImGuiID id, const ImVec2* size_arg, bool border, ImGuiWindowFlags flags) {
+    return ImGui::BeginChildEx(name, id, *size_arg, border, flags);
+}
+
 CIMGUI_API void _ogDockSpace(ImGuiID id, const float w, const float h, ImGuiDockNodeFlags flags, const ImGuiWindowClass* window_class) {
     ImVec2 size;
     size.x = w;
