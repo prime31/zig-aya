@@ -1,9 +1,11 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-const root = @import("root");
+const root = @import("../main.zig");
 const Color = aya.math.Color;
 usingnamespace @import("imgui");
+
+const tilset_animations = @import("tileset_animations.zig");
 
 pub const AppState = @import("app_state.zig").AppState;
 pub const Tile = @import("data.zig").Tile;
@@ -15,12 +17,14 @@ pub const Tileset = struct {
     tiles_per_row: usize = 0,
     tiles_per_col: usize = 0,
     tile_definitions: TileDefinitions = .{},
+    animations: std.ArrayList(Animation),
     selected: Tile = Tile.init(0),
 
     pub fn init(tile_size: usize) Tileset {
         var ts = Tileset{
             .tile_size = tile_size,
             .spacing = 0,
+            .animations = std.ArrayList(Animation).init(aya.mem.allocator),
         };
         ts.setTexture(generateTexture());
         return ts;
@@ -28,6 +32,7 @@ pub const Tileset = struct {
 
     pub fn deinit(self: Tileset) void {
         self.tex.deinit();
+        self.animations.deinit();
     }
 
     pub fn loadTexture(self: *Tileset, file: []const u8) !void {
@@ -125,8 +130,10 @@ pub const Tileset = struct {
         if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) return;
 
         igSetCursorPosY(igGetCursorPosY() - 8);
-        igSetCursorPosX(igGetWindowContentRegionWidth() - 15);
-        if (ogButton(icons.adjust)) igOpenPopup("##tile-definitions", ImGuiPopupFlags_None);
+        igSetCursorPosX(igGetWindowContentRegionWidth() - 40);
+        if (ogButton(icons.adjust)) igOpenPopup("##tileset-definitions", ImGuiPopupFlags_None);
+        igSameLine(0, 2);
+        if (ogButton(icons.universal_access)) igOpenPopup("##tileset-animations", ImGuiPopupFlags_None);
 
         var origin = ogGetCursorScreenPos();
         ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
@@ -143,6 +150,7 @@ pub const Tileset = struct {
         }
 
         self.tile_definitions.drawPopup(self);
+        tilset_animations.draw(self);
     }
 
     pub fn viewportForTile(self: Tileset, tile: usize) aya.math.RectI {
@@ -154,6 +162,31 @@ pub const Tileset = struct {
             .y = @intCast(i32, (y * self.tile_size + self.spacing) + self.spacing),
             .w = @intCast(i32, self.tile_size),
             .h = @intCast(i32, self.tile_size),
+        };
+    }
+
+    /// helper to draw an image button with an image from the tileset
+    pub fn tileImageButton(self: Tileset, size: f32, tile: usize) bool {
+        const rect = uvsForTile(self, tile);
+        const uv0 = ImVec2{ .x = rect.x, .y = rect.y };
+        const uv1 = ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
+
+        const tint = root.colors.rgbToVec4(255, 255, 255);
+        return ogImageButton(self.tex.imTextureID(), .{ .x = size, .y = size }, uv0, uv1, 2);
+    }
+
+    pub fn uvsForTile(self: Tileset, tile: usize) math.Rect {
+        const x = @intToFloat(f32, @mod(tile, self.tiles_per_row));
+        const y = @intToFloat(f32, @divTrunc(tile, self.tiles_per_row));
+
+        const inv_w = 1.0 / self.tex.width;
+        const inv_h = 1.0 / self.tex.height;
+
+        return .{
+            .x = (x * @intToFloat(f32, self.tile_size + self.spacing) + @intToFloat(f32, self.spacing)) * inv_w,
+            .y = (y * @intToFloat(f32, self.tile_size + self.spacing) + @intToFloat(f32, self.spacing)) * inv_h,
+            .w = @intToFloat(f32, self.tile_size) * inv_w,
+            .h = @intToFloat(f32, self.tile_size) * inv_h,
         };
     }
 };
@@ -177,7 +210,7 @@ const TileDefinitions = struct {
     pub fn drawPopup(self: *@This(), tileset: *Tileset) void {
         igSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
         igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##tile-definitions", ImGuiWindowFlags_None)) {
+        if (igBeginPopup("##tileset-definitions", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
             inline for (@typeInfo(TileDefinitions).Struct.fields) |field, i| {
@@ -263,6 +296,26 @@ const TileDefinitions = struct {
         }
 
         if (igButton("Clear", .{ .x = -1 })) list.clear();
+    }
+};
+
+pub const Animation = struct {
+    tile: u8,
+    rate: u16 = 500,
+    tiles: aya.utils.FixedList(u16, 10) = aya.utils.FixedList(u16, 10).init(),
+
+    pub fn init(tile: u8) Animation {
+        var anim = Animation{ .tile = tile };
+        anim.toggleSelected(tile);
+        return anim;
+    }
+
+    pub fn toggleSelected(self: *Animation, index: u8) void {
+        if (self.tiles.indexOf(index)) |slice_index| {
+            _ = self.tiles.swapRemove(slice_index);
+        } else {
+            self.tiles.append(index);
+        }
     }
 };
 

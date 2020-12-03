@@ -154,10 +154,17 @@ pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
     const max_dim = std.math.max(tex.width, tex.height);
     const multiplier = 50 / max_dim;
 
-    _ = ogImageButton(tex.imTextureID(), .{ .x = tex.width * multiplier, .y = tex.height * multiplier }, .{}, .{ .x = 1, .y = 1 }, 5);
+    if (ogImageButton(tex.imTextureID(), .{ .x = tex.width * multiplier, .y = tex.height * multiplier }, .{}, .{ .x = 1, .y = 1 }, 5))
+        igOpenPopup("##texture-chooser", ImGuiPopupFlags_None);
     igPopItemWidth();
 
     igColumns(1, null, false);
+
+    // texture chooser popup
+    if (igBeginPopup("##texture-chooser", ImGuiWindowFlags_None)) {
+        defer igEndPopup();
+        igText("texture chooser");
+    }
 }
 
 pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.math.Vec2) void {
