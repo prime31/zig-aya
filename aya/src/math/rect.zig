@@ -1,5 +1,6 @@
 const std = @import("std");
 const Edge = @import("edge.zig").Edge;
+const math = @import("math.zig");
 
 pub const Rect = struct {
     x: f32 = 0,
@@ -21,6 +22,10 @@ pub const Rect = struct {
 
     pub fn bottom(self: Rect) f32 {
         return self.y + self.h;
+    }
+
+    pub fn center(self: Rect) math.Vec2 {
+        return .{ .x = self.x + self.w / 2, .y = self.y + self.h / 2 };
     }
 
     pub fn contains(self: Rect, x: f32, y: f32) bool {

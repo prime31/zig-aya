@@ -603,7 +603,7 @@ pub const AutoTilemapLayer = struct {
             }
         }
 
-        if (ogButtonEx("Clear", ImVec2{ .x = -1 })) {
+        if (ogButtonEx("Clear", .{ .x = -1 })) {
             ruleset.result_tiles.clear();
             self.map_dirty = true;
         }

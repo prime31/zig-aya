@@ -40,7 +40,7 @@ pub const Entity = struct {
 
     pub fn intersects(self: @This(), rect: math.Rect) bool {
         // we need to have either a collider or a sprite to be picked
-        if (self.collider) |collider| return collider.bounds(self.transform.pos).intersects(rect);
+        if (self.collider) |collider| if (collider.bounds(self.transform.pos).intersects(rect)) return true;
         if (self.sprite) |sprite| return sprite.bounds(self.transform).intersects(rect);
 
         return false;
@@ -56,6 +56,25 @@ pub const Entity = struct {
         if (self.sprite != null) return self.sprite.?.bounds(self.transform);
         return self.collider.?.bounds(self.transform.pos);
     }
+
+    pub fn autoFitCollider(self: *@This()) void {
+        if (self.sprite == null) return;
+
+        // we definitely have a collider if this is called so its safe to access it
+        const spr_bounds = self.sprite.?.bounds(self.transform);
+        switch (self.collider.?) {
+            .box => |*box| {
+                box.w = spr_bounds.w;
+                box.h = spr_bounds.h;
+                const bound_pos = math.Vec2.init(spr_bounds.x, spr_bounds.y);
+                box.offset = bound_pos.subtract(self.transform.pos);
+            },
+            .circle => |*circle| {
+                circle.r = std.math.max(spr_bounds.w, spr_bounds.h) * 0.5;
+                circle.offset = spr_bounds.center().subtract(self.transform.pos);
+            },
+        }
+    }
 };
 
 pub const Transform = struct {
@@ -65,13 +84,20 @@ pub const Transform = struct {
 };
 
 pub const Sprite = struct {
-    tex: aya.gfx.Texture = undefined,
+    tex: aya.gfx.Texture,
     origin: aya.math.Vec2 = .{},
+
+    pub fn init(tex: aya.gfx.Texture) Sprite {
+        return .{
+            .tex = tex,
+            .origin = .{ .x = tex.width * 0.5, .y = tex.height * 0.5 },
+        };
+    }
 
     pub fn bounds(self: Sprite, transform: Transform) math.Rect {
         // TODO: take rotation into account when calculating the bounds of the sprite texture
-        const tl = transform.pos.subtract(self.origin);
-        return .{ .x = tl.x * transform.scale.x, .y = tl.y * transform.scale.y, .w = self.tex.width * transform.scale.x, .h = self.tex.height * transform.scale.y };
+        const tl = transform.pos.subtract(self.origin.mul(transform.scale));
+        return .{ .x = tl.x, .y = tl.y, .w = self.tex.width * transform.scale.x, .h = self.tex.height * transform.scale.y };
     }
 };
 
