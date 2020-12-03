@@ -13,6 +13,8 @@ pub var pattern_center: ImU32 = 0;
 pub var rule_result_selected_outline: ImU32 = 0;
 pub var rule_result_selected_fill: ImU32 = 0;
 
+pub var scene_toolbar_btn: ImU32 = aya.math.Color.aya.value;
+
 // TODO: these are duplicated in Tileset
 pub var brushes = [_]ImU32{
     Color.fromRgbBytes(189, 63, 110).value,  Color.fromRgbBytes(242, 165, 59).value,  Color.fromRgbBytes(252, 234, 87).value,
