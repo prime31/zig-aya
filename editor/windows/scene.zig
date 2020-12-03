@@ -49,6 +49,7 @@ pub const Scene = struct {
             if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
                 // TODO: center cam at startup? seems we get odd imgui content sizes first 2 frames so here is a hack
                 self.cam.pos = .{ .x = content_region.x / 3, .y = content_region.y / 2.1 };
+                self.cam.window_size = .{ .x = content_region.x, .y = content_region.y };
             }
         }
 
@@ -96,7 +97,7 @@ pub const Scene = struct {
         }
     }
 
-    fn drawToolBar(self: @This(), state: *root.AppState) void {
+    fn drawToolBar(self: *@This(), state: *root.AppState) void {
         const cursor_start = ogGetCursorPos();
 
         // create a toolbar over the scene view
@@ -104,7 +105,10 @@ pub const Scene = struct {
 
         // reset position to the start of where we want our button bar
         igSetCursorPosY(igGetCursorPosY() + 5);
-        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 30);
+        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 60);
+
+        if (ogButton(icons.search)) igOpenPopup("##zoom-settings", ImGuiPopupFlags_None);
+        igSameLine(0, 10);
         if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
 
         ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
@@ -123,6 +127,18 @@ pub const Scene = struct {
         ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##snap-settings", ImGuiPopupFlags_None)) {
             _ = ogDrag(u8, "Snap", &state.snap_size, 0.2, 0, 32);
+            igEndPopup();
+        }
+
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("##zoom-settings", ImGuiPopupFlags_None)) {
+            var zoom = @log2(self.cam.zoom);
+            if (ogDrag(f32, "Zoom", &zoom, 0.1, -1, 2)) {
+                self.cam.zoom = std.math.pow(f32, 2, zoom);
+                self.cam.clampZoom();
+                self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
+            }
+            if (ogButtonEx("Reset Zoom", .{ .x = -1 })) self.cam.zoom = 1;
             igEndPopup();
         }
     }

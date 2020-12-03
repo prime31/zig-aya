@@ -46,9 +46,7 @@ pub const TilemapLayer = struct {
 
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
         self.tilemap.draw(self.tileset, null);
-        if (is_selected) {
-            self.tileset.draw();
-        }
+        if (is_selected) self.tileset.draw(state);
     }
 
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
