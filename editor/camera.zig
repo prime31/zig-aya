@@ -5,6 +5,7 @@ usingnamespace @import("imgui");
 
 pub const Camera = struct {
     pos: math.Vec2 = .{},
+    window_size: math.Vec2 = .{},
     zoom: f32 = 1,
 
     pub fn init() Camera {
@@ -12,8 +13,7 @@ pub const Camera = struct {
     }
 
     pub fn transMat(self: Camera) math.Mat32 {
-        var window_half_size = ogGetContentRegionAvail().scale(0.5);
-
+        var window_half_size = self.window_size.mul(.{ .x = 0.5, .y = 0.5 });
         var transform = math.Mat32.identity;
 
         var tmp = math.Mat32.identity;
@@ -47,9 +47,8 @@ pub const Camera = struct {
     }
 
     pub fn bounds(self: Camera) math.Rect {
-        var window_size = ogGetContentRegionAvail();
         var tl = self.screenToWorld(.{});
-        var br = self.screenToWorld(math.Vec2{ .x = window_size.x, .y = window_size.y });
+        var br = self.screenToWorld(math.Vec2{ .x = self.window_size.x, .y = self.window_size.y });
 
         return math.Rect{ .x = tl.x, .y = tl.y, .w = br.x - tl.x, .h = br.y - tl.y };
     }
@@ -59,7 +58,7 @@ pub const Camera = struct {
         const bnds = self.bounds();
         var half_screen = math.Vec2{ .x = bnds.w, .y = bnds.h };
         half_screen.scale(0.5);
-        half_screen = half_screen.subtract(.{.x = padding, .y = padding});
+        half_screen = half_screen.subtract(.{ .x = padding, .y = padding });
 
         const max = math.Vec2{ .x = @intToFloat(f32, width) - half_screen.x, .y = @intToFloat(f32, height) - half_screen.y };
         // ensure we dont zoom out so far that our clamp becomes pointless

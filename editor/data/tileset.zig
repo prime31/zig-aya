@@ -14,6 +14,7 @@ pub const Tileset = struct {
     tex: aya.gfx.Texture = undefined,
     tiles_per_row: usize = 0,
     tiles_per_col: usize = 0,
+    tile_definitions: TileDefinitions = .{},
     selected: Tile = Tile.init(0),
 
     pub fn init(tile_size: usize) Tileset {
@@ -112,7 +113,7 @@ pub const Tileset = struct {
         }
     }
 
-    pub fn draw(self: *Tileset) void {
+    pub fn draw(self: *Tileset, state: *AppState) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
         const first_pos = igGetIO().DisplaySize.subtract(.{
             .x = 150 + self.tex.width * @intToFloat(f32, zoom),
@@ -122,6 +123,10 @@ pub const Tileset = struct {
 
         defer igEnd();
         if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) return;
+
+        igSetCursorPosY(igGetCursorPosY() - 8);
+        igSetCursorPosX(igGetWindowContentRegionWidth() - 15);
+        if (ogButton(icons.adjust)) igOpenPopup("##tile-definitions", ImGuiPopupFlags_None);
 
         var origin = ogGetCursorScreenPos();
         ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
@@ -136,6 +141,8 @@ pub const Tileset = struct {
                 self.selected.value = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
             }
         }
+
+        self.tile_definitions.drawPopup(self);
     }
 
     pub fn viewportForTile(self: Tileset, tile: usize) aya.math.RectI {
@@ -148,6 +155,114 @@ pub const Tileset = struct {
             .w = @intCast(i32, self.tile_size),
             .h = @intCast(i32, self.tile_size),
         };
+    }
+};
+
+/// each tile can be assigned to a type (solid, various slopes, etc). This data does nothing in the editor and is only used for export
+const TileDefinitions = struct {
+    solid: aya.utils.FixedList(u16, 20) = aya.utils.FixedList(u16, 20).init(),
+    slope_down: aya.utils.FixedList(u16, 10) = aya.utils.FixedList(u16, 10).init(),
+    slope_down_steep: aya.utils.FixedList(u16, 10) = aya.utils.FixedList(u16, 10).init(),
+    slope_up: aya.utils.FixedList(u16, 10) = aya.utils.FixedList(u16, 10).init(),
+    slope_up_steep: aya.utils.FixedList(u16, 10) = aya.utils.FixedList(u16, 10).init(),
+
+    pub fn toggleSelected(tiles: anytype, index: u16) void {
+        if (tiles.indexOf(index)) |slice_index| {
+            _ = tiles.swapRemove(slice_index);
+        } else {
+            tiles.append(index);
+        }
+    }
+
+    pub fn drawPopup(self: *@This(), tileset: *Tileset) void {
+        igSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
+        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("##tile-definitions", ImGuiWindowFlags_None)) {
+            defer igEndPopup();
+
+            inline for (@typeInfo(TileDefinitions).Struct.fields) |field, i| {
+                igPushIDInt(@intCast(c_int, i));
+                defer igPopID();
+
+                drawTileIcon(field.name);
+
+                igDummy(.{});
+                igSameLine(0, igGetFrameHeight() + 7);
+
+                // replace underscores with spaces
+                var buffer = aya.mem.tmp_allocator.alloc(u8, field.name.len) catch unreachable;
+                for (field.name) |char, j| buffer[j] = if (char == '_') ' ' else char;
+
+                igAlignTextToFramePadding();
+                igText(buffer.ptr);
+
+                igSameLine(0, 0);
+                igSetCursorPosX(igGetWindowContentRegionWidth() - 35);
+
+                if (ogButton("Tiles"))
+                    igOpenPopup("tag-tiles", ImGuiWindowFlags_None);
+
+                // igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 1 });
+                if (igBeginPopup("tag-tiles", ImGuiWindowFlags_None)) {
+                    defer igEndPopup();
+                    var list = &@field(self, field.name);
+                    tileSelectorPopup(tileset, list);
+                }
+            }
+        }
+    }
+
+    fn drawTileIcon(comptime name: []const u8) void {
+        var tl = ogGetCursorScreenPos();
+        var tr = tl;
+        tr.x += igGetFrameHeight();
+        var bl = tl;
+        bl.y += igGetFrameHeight();
+        var br = bl;
+        br.x += igGetFrameHeight();
+
+        var color = root.colors.rgbToU32(252, 186, 3);
+
+        if (std.mem.eql(u8, name, "solid")) {
+            ImDrawList_AddQuadFilled(igGetWindowDrawList(), tl, tr, br, bl, color);
+        } else if (std.mem.eql(u8, name, "slope_down")) {
+            tl.y += igGetFrameHeight() / 2;
+            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+        } else if (std.mem.eql(u8, name, "slope_down_steep")) {
+            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+        } else if (std.mem.eql(u8, name, "slope_up")) {
+            tr.y += igGetFrameHeight() / 2;
+            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+        } else if (std.mem.eql(u8, name, "slope_up_steep")) {
+            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+        }
+    }
+
+    fn tileSelectorPopup(tileset: *Tileset, list: anytype) void {
+        var content_start_pos = ogGetCursorScreenPos();
+        const zoom: usize = if (tileset.tex.width < 200 and tileset.tex.height < 200) 2 else 1;
+        const tile_spacing = tileset.spacing * zoom;
+        const tile_size = tileset.tile_size * zoom;
+
+        ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width * @intToFloat(f32, zoom)), @floatToInt(i32, tileset.tex.height * @intToFloat(f32, zoom)));
+
+        const draw_list = igGetWindowDrawList();
+
+        // draw selected tiles
+        var iter = list.iter();
+        while (iter.next()) |value| {
+            addTileToDrawList(tile_size, content_start_pos, value, tileset.tiles_per_row, tile_spacing);
+        }
+
+        // check input for toggling state
+        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+            if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, tile_size + tile_spacing), content_start_pos);
+                TileDefinitions.toggleSelected(list, @intCast(u16, tile.x + tile.y * tileset.tiles_per_row));
+            }
+        }
+
+        if (igButton("Clear", .{ .x = -1 })) list.clear();
     }
 };
 
