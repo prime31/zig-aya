@@ -18,6 +18,8 @@ pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
     entities: std.ArrayList(Entity),
     selected_index: ?usize = null,
+    dragged_index: ?usize = null,
+    dragged_start_pos: math.Vec2 = .{},
     id_counter: u8 = 0,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
@@ -41,8 +43,9 @@ pub const EntityLayer = struct {
                 };
 
                 var selected_entity = &self.entities.items[selected_index];
-                if (selected_entity.sprite == null) selected_entity.sprite = .{};
-                selected_entity.sprite.?.tex = texture;
+                // TODO: dont leak the sprite texture if we already have a sprite here
+                selected_entity.sprite = root.data.Sprite.init(texture);
+                if (selected_entity.collider != null) selected_entity.autoFitCollider();
             }
         }
     }
@@ -80,21 +83,36 @@ pub const EntityLayer = struct {
                 }
             }
 
+            // highlight the selected entity
             if (self.selected_index == i) {
                 const bounds = entity.bounds();
-                aya.draw.rect(.{.x = bounds.x, .y = bounds.y}, bounds.w, bounds.h, math.Color.parse("#FFFFFF33") catch unreachable);
+                aya.draw.rect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, math.Color.parse("#FFFFFF33") catch unreachable);
+                aya.draw.point(entity.transform.pos, 2, math.Color.gray);
             }
         }
 
-        // object picking
-        if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Left, false)) {
-            // get a world-space rect for object picking with a fudge-factor size of 6 pixels
-            var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
-            self.selected_index = for (self.entities.items) |entity, i| {
-                if (entity.intersects(rect)) {
-                    break i;
-                }
-            } else null;
+        // object picking and dragging
+        if (!igIsMouseDown(ImGuiMouseButton_Left)) self.dragged_index = null;
+
+        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+            if (self.dragged_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 2)) {
+                // if we are dragging an entity, move it taking into account the snap set
+                const drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
+                const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
+                const max_pos = math.Vec2.init(@intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size));
+                self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@intToFloat(f32, state.snap_size));
+            } else if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                // get a world-space rect for object picking with a fudge-factor size of 6 pixels
+                var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
+                self.selected_index = for (self.entities.items) |entity, i| {
+                    if (entity.intersects(rect)) {
+                        // store off our dragged_index and the position so we can snap it as its dragged around
+                        self.dragged_index = i;
+                        self.dragged_start_pos = entity.transform.pos;
+                        break i;
+                    }
+                } else null;
+            }
         }
     }
 
@@ -192,12 +210,19 @@ pub const EntityLayer = struct {
             if (!is_open) entity.sprite = null;
             ogDummy(.{ .y = 5 });
         }
+
         if (entity.collider) |*collider| {
             var is_open = true;
             const collider_name = if (collider.* == .box) "Box Collider" else "Circle Collider";
             if (igCollapsingHeaderBoolPtr(collider_name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
                 igIndent(10);
                 inspectors.inspectCollider(collider);
+
+                if (entity.sprite != null) {
+                    igSetCursorPosX(igGetCursorPosX() + 100);
+                    if (ogButtonEx("Autofit Collider " ++ icons.arrows_alt, .{ .x = -1 }))
+                        entity.autoFitCollider();
+                }
                 igUnindent(10);
             }
 
@@ -243,16 +268,17 @@ pub const EntityLayer = struct {
 
         if (igBeginPopup("add-component", ImGuiWindowFlags_None)) {
             if (entity.sprite == null and igMenuItemBool("Sprite", null, false, true)) {
-                entity.sprite = .{};
+                entity.sprite = root.data.Sprite.init(aya.gfx.Texture.initCheckerTexture());
             }
 
             if (entity.collider == null) {
-                // TODO: size the initial colliders if we have a Sprite to get the size from
                 if (igMenuItemBool("Box Collider", null, false, true)) {
                     entity.collider = .{ .box = .{ .w = 10, .h = 10 } };
+                    entity.autoFitCollider();
                 }
                 if (igMenuItemBool("Circle Collider", null, false, true)) {
                     entity.collider = .{ .circle = .{ .r = 10 } };
+                    entity.autoFitCollider();
                 }
             }
             igSeparator();

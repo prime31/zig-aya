@@ -162,7 +162,7 @@ pub const Scene = struct {
 
     fn handleInput(self: *@This(), state: *root.AppState) void {
         // scrolling via drag with alt or super key down
-        if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
+        if (igIsMouseDragging(ImGuiMouseButton_Left, 2) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
             var scroll_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);
 
             self.cam.pos.x -= scroll_delta.x * 1 / self.cam.zoom;
@@ -175,7 +175,7 @@ pub const Scene = struct {
         }
 
         if (igGetIO().MouseWheel != 0) {
-            self.cam.zoom += igGetIO().MouseWheel * 0.03;
+            self.cam.zoom += igGetIO().MouseWheel * 0.1;
             self.cam.clampZoom();
             igGetIO().MouseWheel = 0;
             self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);

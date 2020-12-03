@@ -33,6 +33,10 @@ pub const Vec2 = extern struct {
         return .{ .x = self.x - other.x, .y = self.y - other.y };
     }
 
+    pub fn mul(self: Vec2, other: Vec2) Vec2 {
+        return .{ .x = self.x * other.x, .y = self.y * other.y };
+    }
+
     pub fn scale(self: *Vec2, s: f32) void {
         self.x *= s;
         self.y *= s;
@@ -40,6 +44,12 @@ pub const Vec2 = extern struct {
 
     pub fn clamp(self: Vec2, min: Vec2, max: Vec2) Vec2 {
         return .{ .x = math.clamp(self.x, min.x, max.x), .y = math.clamp(self.y, min.y, max.y) };
+    }
+
+    /// snaps the Vec2 parts to the nearest snap value. ex: 53 snapTo 5 would be 55.
+    pub fn snapTo(self: Vec2, snap: f32) Vec2 {
+        if (snap <= 0) return self;
+        return .{ .x = @round(self.x / snap) * snap, .y = @round(self.y / snap) * snap };
     }
 
     pub fn angleBetween(self: Vec2, to: Vec2) f32 {

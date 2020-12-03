@@ -211,7 +211,7 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
         if (ogButton(icons.arrow_left ++ "##ml")) vec.* = .{ .x = 0, .y = image_size.y / 2 }; // ml
 
         igSameLine(0, 7);
-        if (ogButton(icons.bullseye ++ "##mc")) vec.* = .{ .x = image_size.x / 2, .y = image_size.y / 2 }; // mc
+        if (ogButton(icons.bullseye ++ "##mc")) vec.* = .{ .x = image_size.x / 2, .y = image_size.y / 2 }; // c
 
         igSameLine(0, 7);
         if (ogButton(icons.arrow_right ++ "##mr")) vec.* = .{ .x = image_size.x, .y = image_size.y / 2 }; // mr
