@@ -62,7 +62,6 @@ pub const Scene = struct {
         _ = ogInvisibleButton("##scene_button", ogGetContentRegionAvail(), ImGuiButtonFlags_None);
         ogSetCursorScreenPos(tmp);
 
-
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
@@ -98,12 +97,27 @@ pub const Scene = struct {
     }
 
     fn drawToolBar(self: @This(), state: *root.AppState) void {
+        const cursor_start = ogGetCursorPos();
+
         // create a toolbar over the scene view
-        igPushStyleColorU32(ImGuiCol_Button, math.Color.aya.value);
+        igPushStyleColorU32(ImGuiCol_Button, root.colors.scene_toolbar_btn);
+
         // reset position to the start of where we want our button bar
         igSetCursorPosY(igGetCursorPosY() + 5);
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 30);
         if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
+
+        ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
+        if (state.layers.items.len > 0) {
+            switch (state.layers.items[state.selected_layer_index]) {
+                .auto_tilemap => |*map| {
+                    const label = if (map.draw_raw_pre_map) "Input Map" else "Final Map";
+                    if (ogButton(label)) map.draw_raw_pre_map = !map.draw_raw_pre_map;
+                },
+                else => {},
+            }
+        }
+
         igPopStyleColor(1);
 
         ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });

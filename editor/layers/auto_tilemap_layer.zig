@@ -613,10 +613,6 @@ pub const AutoTilemapLayer = struct {
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         if ((igGetIO().KeyCtrl or igGetIO().KeySuper) and ogKeyPressed(aya.sdl.SDL_SCANCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
-        // TODO: this needs to be in some screen-space renderer in Scene so that it isnt scaled with the camera transform matrix
-        const text_pos = camera.screenToWorld(.{ .x = 2, .y = 18 });
-        aya.draw.text(if (self.draw_raw_pre_map) "Input Map" else "Final Map", text_pos.x, text_pos.y, null);
-
         if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
 
         // shortcuts for pressing 1-9 to set the brush, only works when hovering the scene view
