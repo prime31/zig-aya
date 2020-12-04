@@ -6,6 +6,9 @@ const root = @import("root");
 pub const Image = @import("utils/image.zig").Image;
 pub const TexturePacker = @import("utils/texture_package.zig").TexturePacker;
 
+pub const known_folders = @import("utils/known_-olders.zig");
+pub const file_picker = @import("utils/file_picker.zig");
+
 const AppState = root.data.AppState;
 const Point = root.data.Point;
 const Tilemap = root.data.Tilemap;

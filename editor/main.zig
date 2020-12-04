@@ -71,6 +71,24 @@ fn update() !void {
         igEnd();
     }
 
+
+
+    var open_picker = false;
+    if (igBegin("debug", null, ImGuiWindowFlags_None)) {
+        if (ogButton("Open Sesame")) {
+            utils.file_picker.setup(true, false);
+            open_picker = true;
+        }
+    }
+    igEnd();
+
+    if (open_picker) ogOpenPopup("File Picker");
+
+    if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer igEndPopup();
+        if (utils.file_picker.draw()) std.debug.print("done with true\n", .{});
+    }
+
     // igShowDemoWindow(null);
 
     // _ = igBegin("sadfasdf", null, ImGuiWindowFlags_None);
