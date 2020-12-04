@@ -26,9 +26,7 @@ pub fn draw(state: *root.AppState) void {
     }
 
     // handle popup toggles
-    if (show_component_editor_popup) {
-        ogOpenPopup("Component Editor");
-    }
+    if (show_component_editor_popup) ogOpenPopup("Component Editor");
 
     // we always need to call our popup code
     root.windows.component_editor.draw(state);

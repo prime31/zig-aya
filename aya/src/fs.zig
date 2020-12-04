@@ -1,4 +1,5 @@
 const std = @import("std");
+const fs = std.fs;
 const aya = @import("../aya.zig");
 
 /// reads the contents of a file. Returned value is owned by the caller and must be freed!
@@ -80,6 +81,36 @@ pub fn readPrefsJson(comptime T: type, app: []const u8, filename: []const u8) !T
 pub fn freePrefsJson(data: anytype) void {
     const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
     std.json.parseFree(@TypeOf(data), data, options);
+}
+
+/// returns a slice of all the files with extension. The caller owns the slice AND each path in the slice.
+pub fn getAllFilesOfType(allocator: *std.mem.Allocator, dir: fs.Dir, extension: []const u8, recurse: bool) [][]const u8 {
+    var list = std.ArrayList([]const u8).init(allocator);
+
+    var recursor = struct {
+        fn search(alloc: *std.mem.Allocator, directory: fs.Dir, recursive: bool, filelist: *std.ArrayList([]const u8), ext: []const u8) void {
+            directory.setAsCwd() catch unreachable;
+            var buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+            const dir_string = std.os.getcwd(&buffer) catch unreachable;
+
+            var iter = directory.iterate();
+            while (iter.next() catch unreachable) |entry| {
+                if (entry.kind == .File) {
+                    if (std.mem.endsWith(u8, entry.name, ext)) {
+                        const abs_path = fs.path.join(alloc, &[_][]const u8{ dir_string, entry.name }) catch unreachable;
+                        filelist.append(abs_path) catch unreachable;
+                    }
+                } else if (entry.kind == .Directory) {
+                    const abs_path = fs.path.join(alloc, &[_][]const u8{ dir_string, entry.name }) catch unreachable;
+                    search(alloc, directory.openDir(entry.name, .{ .iterate = true }) catch unreachable, recursive, filelist, ext);
+                }
+            }
+        }
+    }.search;
+
+    recursor(allocator, dir, recurse, &list, extension);
+
+    return list.toOwnedSlice();
 }
 
 test "test fs read" {

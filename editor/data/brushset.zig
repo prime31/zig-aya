@@ -1,7 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-const root = @import("root");
+const root = @import("../main.zig");
+const utils = root.utils;
 usingnamespace @import("imgui");
 
 const Color = aya.math.Color;
