@@ -82,6 +82,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
             .int => |*int| _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32)),
             .bool => |*b| _ = igCheckbox("##bool", b),
             .vec2 => |*v2| _ = igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", ImGuiSliderFlags_None),
+            .entity_link => igText("No default value"),
         }
         igSameLine(0, 5);
 
@@ -121,9 +122,6 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 fn addFieldPopup(state: *root.AppState, component: *Component) void {
     ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##add-field", ImGuiWindowFlags_None)) {
-        igText("Field Type");
-        igSeparator();
-
         if (ogSelectableBool("bool", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .bool = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
@@ -142,6 +140,10 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
         }
         if (ogSelectableBool("Vec2", false, ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .vec2 = undefined });
+            addLastPropertyToEntitiesContainingComponent(state, component);
+        }
+        if (ogSelectableBool("Entity Link", false, ImGuiSelectableFlags_None, .{})) {
+            component.addProperty(.{ .entity_link = 0 });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
 

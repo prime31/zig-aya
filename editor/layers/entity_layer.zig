@@ -56,6 +56,13 @@ pub const EntityLayer = struct {
         self.selected_index = self.entities.items.len - 1;
     }
 
+    pub fn getEntityWithId(self: @This(), id: u8) ?Entity {
+        for (self.entities.items) |entity| {
+            if (entity.id == id) return entity;
+        }
+        return null;
+    }
+
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
         if (is_selected) {
             self.drawEntitiesWindow();
@@ -80,6 +87,15 @@ pub const EntityLayer = struct {
                         aya.draw.hollowRect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, 1, math.Color.white);
                     },
                     .circle => |circle| aya.draw.circle(entity.transform.pos.add(circle.offset), circle.r, 1, 6, math.Color.yellow),
+                }
+            }
+
+            for (entity.components.items) |comp| {
+                for (comp.props.items) |prop| {
+                    if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link > 0) {
+                        const linked_entity = self.getEntityWithId(prop.value.entity_link).?;
+                        aya.draw.line(entity.transform.pos, linked_entity.transform.pos, 1, math.Color.sky_blue);
+                    }
                 }
             }
 
@@ -168,6 +184,16 @@ pub const EntityLayer = struct {
 
             var entity = self.entities.orderedRemove(index);
             entity.deinit();
+
+            // reset any components with a link to the deleted entity
+            for (self.entities.items) |*e| {
+                for (e.components.items) |*comp| {
+                    for (comp.props.items) |*prop| {
+                        if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link == entity.id)
+                            prop.value.entity_link = 0;
+                    }
+                }
+            }
         }
 
         if (self.entities.items.len > 0) ogDummy(.{ .y = 5 });
@@ -251,6 +277,7 @@ pub const EntityLayer = struct {
                         .int => |*int| inspectors.inspectInt(&src_prop.name, int, src_prop.value.int),
                         .bool => |*b| inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool),
                         .vec2 => |*v2| inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2),
+                        .entity_link => |*entity_link| inspectors.inspectEntityLink(&src_prop.name, entity.id, entity_link, self.entities),
                     }
                 }
             }

@@ -3,14 +3,27 @@ const aya = @import("aya");
 const root = @import("root");
 usingnamespace @import("imgui");
 
-pub fn inspectBool(label: [:0]const u8, value: *bool, reset_value: bool) void {
-    igPushIDPtr(value);
-    defer igPopID();
+// entity link state
+var filter_buffer: [25]u8 = undefined;
+var filter_entities = false;
+
+fn beginColumns(label: [:0]const u8, ptr_id: ?*const c_void) void {
+    igPushIDPtr(ptr_id);
 
     igColumns(2, null, false);
     igSetColumnWidth(0, 100);
     igText(label);
     igNextColumn();
+}
+
+fn endColumns() void {
+    igColumns(1, null, false);
+    igPopID();
+}
+
+pub fn inspectBool(label: [:0]const u8, value: *bool, reset_value: bool) void {
+    beginColumns(label, value);
+    defer endColumns();
 
     igPushItemWidth(-1);
 
@@ -24,18 +37,11 @@ pub fn inspectBool(label: [:0]const u8, value: *bool, reset_value: bool) void {
     igSameLine(0, 0);
     _ = igCheckbox("##bool", value);
     igPopItemWidth();
-
-    igColumns(1, null, false);
 }
 
 pub fn inspectInt(label: [:0]const u8, value: *i32, reset_value: i32) void {
-    igPushIDPtr(value);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, value);
+    defer endColumns();
 
     igPushItemWidth(-1);
 
@@ -49,18 +55,11 @@ pub fn inspectInt(label: [:0]const u8, value: *i32, reset_value: i32) void {
     igSameLine(0, 0);
     _ = ogDragSignedFormat(i32, "##int", value, 0.1, 0, 0, null);
     igPopItemWidth();
-
-    igColumns(1, null, false);
 }
 
 pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
-    igPushIDPtr(value);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, value);
+    defer endColumns();
 
     igPushItemWidth(-1);
 
@@ -74,18 +73,11 @@ pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
     igSameLine(0, 0);
     _ = ogDragSignedFormat(f32, "##x", value, 0.1, 0, 0, "%.2f");
     igPopItemWidth();
-
-    igColumns(1, null, false);
 }
 
 pub fn inspectVec2(label: [:0]const u8, vec: *aya.math.Vec2, reset_value: aya.math.Vec2) void {
-    igPushIDPtr(vec);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, vec);
+    defer endColumns();
 
     igPushMultiItemsWidths(2, (ogGetContentRegionAvail().x - 40));
 
@@ -108,18 +100,11 @@ pub fn inspectVec2(label: [:0]const u8, vec: *aya.math.Vec2, reset_value: aya.ma
     igSameLine(0, 0);
     _ = ogDragSignedFormat(f32, "##y", &vec.y, 0.1, 0, 0, "%.2f");
     igPopItemWidth();
-
-    igColumns(1, null, false);
 }
 
 pub fn inspectString(label: [:0]const u8, buf: [*c]u8, buf_size: usize, reset_value: ?[:0]const u8) void {
-    igPushIDPtr(buf);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, buf);
+    defer endColumns();
 
     igPushItemWidth(-1);
 
@@ -136,18 +121,73 @@ pub fn inspectString(label: [:0]const u8, buf: [*c]u8, buf_size: usize, reset_va
 
     _ = ogInputText("##", buf, buf_size);
     igPopItemWidth();
+}
 
-    igColumns(1, null, false);
+pub fn inspectEntityLink(label: [:0]const u8, entity_id: u8, link: *u8, entities: std.ArrayList(root.data.Entity)) void {
+    beginColumns(label, link);
+    defer endColumns();
+
+    igPushItemWidth(-1);
+
+    const line_height = GImGui.*.FontSize + igGetStyle().FramePadding.y * 2;
+    const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
+
+    igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
+    if (ogButtonEx(icons.redo, button_size)) link.* = 0;
+    igPopStyleColor(1);
+
+    igSameLine(0, 0);
+
+    // figure out our label text
+    var name: [25:0]u8 = undefined;
+    if (link.* > 0) {
+        for (entities.items) |entity| {
+            if (entity.id == link.*) {
+                name = entity.name;
+                break;
+            }
+        }
+    } else {
+        _ = std.fmt.bufPrint(&name, "Choose...", .{}) catch unreachable;
+    }
+
+    if (ogButtonEx(&name, .{ .x = -1 })) igOpenPopup("##entity-chooser", ImGuiPopupFlags_None);
+    igPopItemWidth();
+
+    // entity chooser popup
+    if (igBeginPopup("##entity-chooser", ImGuiWindowFlags_None)) {
+        defer igEndPopup();
+
+        igPushItemWidth(igGetWindowContentRegionWidth());
+        if (ogInputText("##obj-filter", &filter_buffer, filter_buffer.len)) {
+            const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+            filter_entities = null_index > 0;
+        }
+        igPopItemWidth();
+
+        for (entities.items) |entity| {
+            if (filter_entities) {
+                const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+                if (std.mem.indexOf(u8, &entity.name, filter_buffer[0..null_index]) == null)
+                    continue;
+            }
+
+            // dont allow linking to self
+            if (entity.id == entity_id) continue;
+
+            if (igSelectableBool(&entity.name, entity.id == link.*, ImGuiSelectableFlags_None, .{})) {
+                link.* = entity.id;
+                std.mem.set(u8, &filter_buffer, 0);
+                filter_entities = false;
+                igCloseCurrentPopup();
+            }
+        }
+    }
 }
 
 pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
-    igPushIDPtr(tex);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, tex);
+    defer endColumns();
 
     igPushItemWidth(-1);
 
@@ -158,9 +198,8 @@ pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
         igOpenPopup("##texture-chooser", ImGuiPopupFlags_None);
     igPopItemWidth();
 
-    igColumns(1, null, false);
-
     // texture chooser popup
+    ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##texture-chooser", ImGuiWindowFlags_None)) {
         defer igEndPopup();
         igText("texture chooser");
@@ -168,13 +207,8 @@ pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
 }
 
 pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.math.Vec2) void {
-    igPushIDPtr(vec);
-    defer igPopID();
-
-    igColumns(2, null, false);
-    igSetColumnWidth(0, 100);
-    igText(label);
-    igNextColumn();
+    beginColumns(label, vec);
+    defer endColumns();
 
     igPushMultiItemsWidths(2, (ogGetContentRegionAvail().x - 65));
 
@@ -201,7 +235,7 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
     igSameLine(0, 5);
     if (ogButton(icons.bullseye)) igOpenPopup("##origin-selector", ImGuiPopupFlags_None);
 
-    igColumns(1, null, false);
+
 
     if (igBeginPopup("##origin-selector", ImGuiWindowFlags_None)) {
         igText("Origin:");
@@ -212,7 +246,7 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
         if (ogButton(icons.arrow_up ++ "##tc")) vec.* = .{ .x = image_size.x / 2 }; // tc
 
         igSameLine(0, 7);
-        if (ogButton(icons.circle ++ "##tr")) vec.* = .{ .x = image_size.x}; // tr
+        if (ogButton(icons.circle ++ "##tr")) vec.* = .{ .x = image_size.x }; // tr
 
         // middle row
         if (ogButton(icons.arrow_left ++ "##ml")) vec.* = .{ .x = 0, .y = image_size.y / 2 }; // ml
