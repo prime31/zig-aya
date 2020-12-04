@@ -51,6 +51,8 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "width");
         comp2.addProperty(.{ .float = 55 });
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "height");
+        comp2.addProperty(.{ .entity_link = 0 });
+        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "link");
 
         // entities
         state.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
@@ -63,6 +65,7 @@ pub const AppState = struct {
         entity_layer.entities.items[0].addComponent(comp1.spawnInstance());
         entity_layer.entities.items[1].collider = .{ .box = .{ .w = 25, .h = 25 } };
         entity_layer.entities.items[2].collider = .{ .circle = .{ .r = 25 } };
+        entity_layer.entities.items[2].addComponent(comp2.spawnInstance());
 
         return state;
     }

@@ -54,6 +54,7 @@ pub const PropertyValue = union(enum) {
     float: f32,
     bool: bool,
     vec2: math.Vec2,
+    entity_link: u8,
 };
 
 /// ComponentInstances represent the component's data on an Entity. Only the actual values are stored along with the Component.id
