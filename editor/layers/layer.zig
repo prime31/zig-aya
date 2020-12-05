@@ -61,6 +61,22 @@ pub const Layer = union(LayerType) {
         }
     }
 
+    pub fn visible(self: @This()) bool {
+        return switch (self) {
+            .tilemap => |layer| layer.visible,
+            .auto_tilemap => |layer| layer.visible,
+            .entity => |layer| layer.visible,
+        };
+    }
+
+    pub fn setVisible(self: *@This(), is_visible: bool) void {
+        switch (self.*) {
+            .tilemap => |*layer| layer.visible = is_visible,
+            .auto_tilemap => |*layer| layer.visible = is_visible,
+            .entity => |*layer| layer.visible = is_visible,
+        }
+    }
+
     pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
         switch (self.*) {
             .tilemap => |*layer| layer.onFileDropped(state, file),

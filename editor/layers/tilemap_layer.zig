@@ -16,6 +16,7 @@ const Camera = @import("../camera.zig").Camera;
 
 pub const TilemapLayer = struct {
     name: [25:0]u8 = undefined,
+    visible: bool = true,
     tilemap: Tilemap,
     tileset: Tileset,
     shift_dragged: bool = false,
@@ -45,7 +46,7 @@ pub const TilemapLayer = struct {
     }
 
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
-        self.tilemap.draw(self.tileset, null);
+        if (is_selected or self.visible) self.tilemap.draw(self.tileset, null);
         if (is_selected) self.tileset.draw(state);
     }
 

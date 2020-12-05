@@ -48,7 +48,7 @@ pub const Camera = struct {
 
     pub fn bounds(self: Camera) math.Rect {
         var tl = self.screenToWorld(.{});
-        var br = self.screenToWorld(math.Vec2{ .x = self.window_size.x, .y = self.window_size.y });
+        var br = self.screenToWorld(.{ .x = self.window_size.x, .y = self.window_size.y });
 
         return math.Rect{ .x = tl.x, .y = tl.y, .w = br.x - tl.x, .h = br.y - tl.y };
     }

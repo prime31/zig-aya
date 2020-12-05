@@ -16,6 +16,7 @@ var name_buf: [25:0]u8 = undefined;
 
 pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
+    visible: bool = true,
     entities: std.ArrayList(Entity),
     selected_index: ?usize = null,
     dragged_index: ?usize = null,
@@ -50,10 +51,11 @@ pub const EntityLayer = struct {
         }
     }
 
-    pub fn addEntity(self: *@This(), name: []const u8, position: math.Vec2) void {
+    pub fn addEntity(self: *@This(), name: []const u8, position: math.Vec2) *Entity {
         self.id_counter += 1;
         self.entities.append(Entity.init(self.id_counter, name, position)) catch unreachable;
         self.selected_index = self.entities.items.len - 1;
+        return &self.entities.items[self.entities.items.len - 1];
     }
 
     pub fn getEntityWithId(self: @This(), id: u8) ?Entity {
@@ -63,7 +65,9 @@ pub const EntityLayer = struct {
         return null;
     }
 
+    /// draws the entities window and optionally the inspector window
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
+        // TODO: draw entity sprites if we are not selected and self.visible
         if (is_selected) {
             self.drawEntitiesWindow();
 
@@ -72,6 +76,7 @@ pub const EntityLayer = struct {
         }
     }
 
+    /// handles input from the Scene view and does aya rendering of entities
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         for (self.entities.items) |entity, i| {
             if (entity.sprite) |sprite| {
@@ -338,14 +343,12 @@ pub const EntityLayer = struct {
 
             igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
             if (ogButtonEx("Add Entity", .{ .x = -1, .y = 0 })) {
+                _ = self.addEntity(name_buf[0..label_sentinel_index], root.scene.cam.pos);
                 igCloseCurrentPopup();
-
-                // get the next available group
-                self.addEntity(name_buf[0..label_sentinel_index], root.scene.cam.screenToWorld(.{ .x = 200, .y = 100 }));
             }
             igPopStyleColor(1);
 
-            ogPushDisabled(disabled);
+            ogPopDisabled(disabled);
         }
     }
 

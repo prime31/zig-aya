@@ -76,9 +76,9 @@ pub const AppState = struct {
         state.level.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
 
         var entity_layer = &state.level.layers.items[state.level.layers.items.len - 1].entity;
-        entity_layer.addEntity("First", .{ .x = 100, .y = 50 });
-        entity_layer.addEntity("Second", .{ .x = 350, .y = 250 });
-        entity_layer.addEntity("Black Wall", .{ .x = 290, .y = 30 });
+        _ = entity_layer.addEntity("First", .{ .x = 100, .y = 50 });
+        _ = entity_layer.addEntity("Second", .{ .x = 350, .y = 250 });
+        _ = entity_layer.addEntity("Black Wall", .{ .x = 290, .y = 30 });
 
         entity_layer.entities.items[0].addComponent(comp1.spawnInstance());
         entity_layer.entities.items[1].collider = .{ .box = .{ .w = 25, .h = 25 } };
