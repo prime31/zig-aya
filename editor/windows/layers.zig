@@ -8,6 +8,7 @@ const Layer = root.layers.Layer;
 var name_buf: [25:0]u8 = undefined;
 var new_layer_type: root.layers.LayerType = .tilemap;
 
+/// draws the Layers window
 pub fn draw(state: *root.AppState) void {
     if (igBegin("Layers", null, ImGuiWindowFlags_None)) {
         var delete_index: usize = std.math.maxInt(usize);
@@ -18,12 +19,26 @@ pub fn draw(state: *root.AppState) void {
             defer igPopID();
 
             _ = ogButton(icons.grip_horizontal);
+            if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+                defer igEndDragDropSource();
+
+                _ = igSetDragDropPayload("LAYER_DRAG", null, 0, ImGuiCond_Once);
+                _ = ogButtonEx("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+            }
+
             const drag_grip_w = ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
             ogUnformattedTooltip(-1, "Click and drag to reorder");
             igSameLine(0, 10);
 
-            if (ogSelectableBool(std.mem.spanZ(&layer.name()), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 30 })) {
+            if (ogSelectableBool(std.mem.spanZ(&layer.name()), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
                 state.selected_layer_index = i;
+            }
+            if (igBeginDragDropTarget()) {
+                defer igEndDragDropTarget();
+
+                if (igAcceptDragDropPayload("LAYER_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                    std.debug.print("hi drop: {}\n", .{payload});
+                }
             }
 
             if (igBeginPopupContextItem("##layer-context-menu", ImGuiMouseButton_Right)) {
@@ -31,11 +46,14 @@ pub fn draw(state: *root.AppState) void {
                 igEndPopup();
             }
 
-            // make some room for the delete button
+            // line up our buttons on the right of the selectable
+            igSameLine(igGetWindowContentRegionWidth() - 35, 0);
+            if (ogButtonEx(if (layer.visible()) icons.eye else icons.eye_slash, .{ .x = 23 }))
+                layer.setVisible(!layer.visible());
+
             igSameLine(igGetWindowContentRegionWidth() - 8, 0);
-            if (ogButton(icons.trash)) {
+            if (ogButton(icons.trash))
                 delete_index = i;
-            }
 
             if (rename_index != null) {
                 aya.mem.copyZ(u8, &name_buf, std.mem.spanZ(&layer.name()));

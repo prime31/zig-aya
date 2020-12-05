@@ -3,14 +3,16 @@ const root = @import("../main.zig");
 usingnamespace @import("imgui");
 
 var selected_comp: usize = 0;
-var asset_types = [_][:0]const u8{ "Tilesets", "Textures", "Atlases", "Levels" };
+var asset_types = [_][:0]const u8{ icons.th_list ++ " Tilesets", icons.image ++ " Textures", icons.atlas ++ " Atlases", icons.dungeon ++ " Levels" };
 
 pub fn draw(state: *root.AppState) void {
     defer igEnd();
     if (igBegin("Assets", null, ImGuiWindowFlags_None)) {
         igColumns(2, "assets", true);
-        igSetColumnWidth(0, 85);
+        igSetColumnWidth(0, 115);
 
+        ogPushStyleVarVec2(ImGuiStyleVar_ItemSpacing, .{ .x = 9, .y = 14 });
+        ogPushStyleVarVec2(ImGuiStyleVar_FramePadding, .{ .x = 4, .y = 8 });
         igPushItemWidth(-1);
         if (ogListBoxHeaderVec2("", .{})) {
             defer igListBoxFooter();
@@ -21,6 +23,7 @@ pub fn draw(state: *root.AppState) void {
             }
         }
         igPopItemWidth();
+        igPopStyleVar(2);
 
         igNextColumn();
         switch (selected_comp) {
@@ -45,10 +48,17 @@ fn drawTextures(state: *root.AppState) void {
 
     var i: usize = 0;
     while (i < num) : (i += 1) {
-        igPushIDInt(num);
+        igPushIDInt(@intCast(c_int, i));
         defer igPopID();
 
-        _ = ogButtonEx("Box", .{.x = 50, .y = 50});
+        _ = ogButtonEx("Box", .{ .x = 50, .y = 50 });
+
+        if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+            defer igEndDragDropSource();
+            _ = igSetDragDropPayload("TEXTURE_ASSET_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
+            _ = ogButtonEx("Texy", .{ .x = 50, .y = 50 });
+        }
+
         if (igIsItemActive())
             ogImDrawList_AddLine(igGetForegroundDrawListNil(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, igGetColorU32Col(ImGuiCol_Button, 1), 2);
 

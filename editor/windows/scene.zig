@@ -46,16 +46,34 @@ pub const Scene = struct {
 
         if (self.pass == null) {
             self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y));
+            self.cam.window_size = .{ .x = content_region.x, .y = content_region.y };
             if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
                 // TODO: center cam at startup? seems we get odd imgui content sizes first 2 frames so here is a hack
                 self.cam.pos = .{ .x = content_region.x / 3, .y = content_region.y / 2.1 };
-                self.cam.window_size = .{ .x = content_region.x, .y = content_region.y };
             }
         }
 
         const tmp = ogGetCursorScreenPos();
         ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
         ogSetCursorScreenPos(tmp);
+
+        // allow dragging a texture from Assets if an EntityLayer is selected
+        if (state.level.layers.items[state.selected_layer_index] == .entity and igBeginDragDropTarget()) {
+            defer igEndDragDropTarget();
+
+            if (igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                std.debug.assert(payload.DataSize == @sizeOf(usize));
+                const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+
+                const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
+                const mouse_world = self.cam.igScreenToWorld(mouse_screen);
+
+                var entity_layer = &state.level.layers.items[state.selected_layer_index].entity;
+                var entity = entity_layer.addEntity("Dropped Payload", .{ .x = mouse_world.x, .y = mouse_world.y });
+                entity.transform.scale = .{.x = 5, .y = 5};
+                entity.sprite = root.data.Sprite.init(aya.gfx.Texture.initCheckerTexture());
+            }
+        }
 
         self.drawToolBar(state);
 
@@ -92,9 +110,8 @@ pub const Scene = struct {
         }
 
         // the selected layer now handles input and gets to draw on top of all the other layers
-        if (state.level.layers.items.len > 0) {
+        if (state.level.layers.items.len > 0)
             state.level.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
-        }
     }
 
     fn drawToolBar(self: *@This(), state: *root.AppState) void {

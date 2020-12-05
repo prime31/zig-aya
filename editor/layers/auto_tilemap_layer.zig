@@ -3,7 +3,7 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const root = @import("root");
+const root = @import("../main.zig");
 const data = root.data;
 
 const AppState = data.AppState;
@@ -58,6 +58,7 @@ var drag_drop_state = struct {
 /// drawing of the pre-map data (raw, pre-rules) the Tilemap is used. Final rule-processed map is stored n AutoTilemapLayer.
 pub const AutoTilemapLayer = struct {
     name: [25:0]u8 = undefined,
+    visible: bool = true,
     tilemap: Tilemap,
     final_map: []u16,
     random_map_data: []Randoms,
@@ -200,9 +201,9 @@ pub const AutoTilemapLayer = struct {
             self.map_dirty = false;
         }
 
-        // If not selected, always draw the final map.
+        // If not selected, always draw the final map when visible
         if (!is_selected) {
-            self.tilemap.draw(self.tileset, self.final_map);
+            if (self.visible) self.tilemap.draw(self.tileset, self.final_map);
             return;
         }
 

@@ -3055,7 +3055,7 @@ pub extern fn igBeginDragDropSource(flags: ImGuiDragDropFlags) bool;
 pub extern fn igSetDragDropPayload(type: [*c]const u8, data: ?*const c_void, sz: usize, cond: ImGuiCond) bool;
 pub extern fn igEndDragDropSource() void;
 pub extern fn igBeginDragDropTarget() bool;
-pub extern fn igAcceptDragDropPayload(type: [*c]const u8, flags: ImGuiDragDropFlags) [*c]const ImGuiPayload;
+pub extern fn igAcceptDragDropPayload(type: [*c]const u8, flags: ImGuiDragDropFlags) ?*const ImGuiPayload;
 pub extern fn igEndDragDropTarget() void;
 pub extern fn igGetDragDropPayload() [*c]const ImGuiPayload;
 pub extern fn igPushClipRect(clip_rect_min: ImVec2, clip_rect_max: ImVec2, intersect_with_current_clip_rect: bool) void;
