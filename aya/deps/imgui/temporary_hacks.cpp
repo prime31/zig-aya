@@ -107,6 +107,10 @@ CIMGUI_API void _ogImDrawList_AddQuadFilled(ImDrawList* self, const ImVec2* p1, 
     return self->AddQuadFilled(*p1, *p2, *p3, *p4, col);
 }
 
+CIMGUI_API void _ogImDrawList_AddLine(ImDrawList* self, const ImVec2* p1, const ImVec2* p2, ImU32 col, float thickness) {
+    return self->AddLine(*p1, *p2, col, thickness);
+}
+
 CIMGUI_API void _ogSetCursorScreenPos(const ImVec2* pos) {
     return ImGui::SetCursorScreenPos(*pos);
 }
