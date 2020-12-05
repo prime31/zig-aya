@@ -62,6 +62,7 @@ fn update() !void {
 
     menu.draw(&state);
     windows.layers.draw(&state);
+    windows.assets.draw(&state);
 
     scene.draw(&state); // AFTER layers, in case any layers were removed
 

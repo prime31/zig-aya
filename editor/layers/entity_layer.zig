@@ -334,10 +334,7 @@ pub const EntityLayer = struct {
 
             const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
             const disabled = label_sentinel_index == 0;
-            if (disabled) {
-                igPushItemFlag(ImGuiItemFlags_Disabled, true);
-                igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
-            }
+            ogPushDisabled(disabled);
 
             igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
             if (ogButtonEx("Add Entity", .{ .x = -1, .y = 0 })) {
@@ -348,10 +345,7 @@ pub const EntityLayer = struct {
             }
             igPopStyleColor(1);
 
-            if (disabled) {
-                igPopItemFlag();
-                igPopStyleVar(1);
-            }
+            ogPushDisabled(disabled);
         }
     }
 

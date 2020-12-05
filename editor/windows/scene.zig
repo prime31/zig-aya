@@ -20,8 +20,8 @@ pub const Scene = struct {
         // swallow up any project files and load them
         if (std.mem.endsWith(u8, file, ".editor_extension")) {
             std.debug.print("Scene got an editor extension\n", .{});
-        } else if (state.layers.items.len > 0) {
-            state.layers.items[state.selected_layer_index].onFileDropped(state, file);
+        } else if (state.level.layers.items.len > 0) {
+            state.level.layers.items[state.selected_layer_index].onFileDropped(state, file);
         }
     }
 
@@ -87,13 +87,13 @@ pub const Scene = struct {
 
         // self.drawGridLines();
 
-        for (state.layers.items) |*layer, i| {
+        for (state.level.layers.items) |*layer, i| {
             layer.draw(state, state.selected_layer_index == i);
         }
 
         // the selected layer now handles input and gets to draw on top of all the other layers
-        if (state.layers.items.len > 0) {
-            state.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
+        if (state.level.layers.items.len > 0) {
+            state.level.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
         }
     }
 
@@ -112,8 +112,8 @@ pub const Scene = struct {
         if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
 
         ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
-        if (state.layers.items.len > 0) {
-            switch (state.layers.items[state.selected_layer_index]) {
+        if (state.level.layers.items.len > 0) {
+            switch (state.level.layers.items[state.selected_layer_index]) {
                 .auto_tilemap => |*map| {
                     const label = if (map.draw_raw_pre_map) "Input Map" else "Final Map";
                     if (ogButton(label)) map.draw_raw_pre_map = !map.draw_raw_pre_map;

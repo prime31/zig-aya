@@ -33,9 +33,8 @@ pub fn draw(state: *root.AppState) void {
 
         igNextColumn();
 
-        if (state.components.items.len > 0) {
+        if (state.components.items.len > 0)
             drawDetailsPane(state, &state.components.items[selected_comp]);
-        }
 
         igColumns(1, "id", false);
         if (ogButton("Add Component")) {
@@ -94,7 +93,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         var prop = component.props.orderedRemove(index);
 
         // remove the component from any Entities that have this component
-        for (state.layers.items) |*layer| {
+        for (state.level.layers.items) |*layer| {
             if (layer.* == .entity) {
                 for (layer.entity.entities.items) |*entity| {
                     for (entity.components.items) |*comp| {
@@ -112,9 +111,8 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 
     ogDummy(.{ .y = 5 });
 
-    if (ogButton("Add Field")) {
+    if (ogButton("Add Field"))
         ogOpenPopup("##add-field");
-    }
 
     addFieldPopup(state, component);
 }
@@ -153,7 +151,7 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
 
 fn addLastPropertyToEntitiesContainingComponent(state: *root.AppState, component: *Component) void {
     // remove from any Entities that have this component
-    for (state.layers.items) |*layer| {
+    for (state.level.layers.items) |*layer| {
         if (layer.* == .entity) {
             for (layer.entity.entities.items) |*entity| {
                 for (entity.components.items) |*comp| {

@@ -5,18 +5,36 @@ const Size = @import("data.zig").Size;
 const Layer = @import("root").layers.Layer;
 const Component = @import("data.zig").Component;
 
+pub const Level = struct {
+    name: []const u8 = "",
+    layers: std.ArrayList(Layer),
+
+    pub fn init() Level {
+        return .{ .layers = std.ArrayList(Layer).init(aya.mem.allocator) };
+    }
+
+    pub fn deinit(self: @This()) void {
+        for (self.layers.items) |*layer| layer.deinit();
+        self.layers.deinit();
+    }
+
+    pub fn save(self: @This()) void {
+
+    }
+};
+
 pub const AppState = struct {
     map_size: Size = .{ .w = 64, .h = 64 },
     tile_size: usize = 16,
     snap_size: u8 = 0,
-    layers: std.ArrayList(Layer),
+    level: Level,
     components: std.ArrayList(Component),
     next_component_id: u8 = 0,
     selected_layer_index: usize = 0,
 
     pub fn init() AppState {
         return .{
-            .layers = std.ArrayList(Layer).init(aya.mem.allocator),
+            .level = Level.init(),
             .components = std.ArrayList(Component).init(aya.mem.allocator),
         };
     }
@@ -24,10 +42,10 @@ pub const AppState = struct {
     pub fn initWithTestData() AppState {
         var state = init();
 
-        state.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
-        state.layers.append(Layer.init(.tilemap, "Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
-        state.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
-        state.layers.append(Layer.init(.tilemap, "Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
+        state.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
+        state.level.layers.append(Layer.init(.tilemap, "Tilemap 1", state.map_size, state.tile_size)) catch unreachable;
+        state.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
+        state.level.layers.append(Layer.init(.tilemap, "Tilemap 2", state.map_size, state.tile_size)) catch unreachable;
 
         // components
         var comp1 = state.createComponent("SomeComponent");
@@ -55,9 +73,9 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "link");
 
         // entities
-        state.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
+        state.level.layers.append(Layer.init(.entity, "Entities", state.map_size, state.tile_size)) catch unreachable;
 
-        var entity_layer = &state.layers.items[state.layers.items.len - 1].entity;
+        var entity_layer = &state.level.layers.items[state.level.layers.items.len - 1].entity;
         entity_layer.addEntity("First", .{ .x = 100, .y = 50 });
         entity_layer.addEntity("Second", .{ .x = 350, .y = 250 });
         entity_layer.addEntity("Black Wall", .{ .x = 290, .y = 30 });
@@ -71,9 +89,7 @@ pub const AppState = struct {
     }
 
     pub fn deinit(self: AppState) void {
-        for (self.layers.items) |*layer| layer.deinit();
-        self.layers.deinit();
-
+        self.level.deinit();
         for (self.components.items) |*comp| comp.deinit();
         self.components.deinit();
     }
