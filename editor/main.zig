@@ -173,7 +173,7 @@ fn setupDockLayout(id: ImGuiID) void {
     igDockBuilderDockWindow("###Inspector", top_right_id);
 
     // dock_main_id is the bottom node after this
-    const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.75, null, &dock_main_id);
+    const tl_id = igDockBuilderSplitNode(dock_main_id, ImGuiDir_Up, 0.8, null, &dock_main_id);
     igDockBuilderDockWindow("Scene", tl_id);
     igDockBuilderDockWindow("Assets", dock_main_id);
 

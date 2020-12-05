@@ -98,7 +98,7 @@ pub fn draw() bool {
     ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
     if (igBeginPopup("##create-directory", ImGuiWindowFlags_None)) {
         defer igEndPopup();
-        _ = ogInputText("", &buffer, buffer.len);
+        _ = igInputText("", &buffer, buffer.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
         if (ogButton("Cancel")) igCloseCurrentPopup();
         igSameLine(igGetWindowContentRegionWidth() - 45, 0);
 

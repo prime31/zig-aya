@@ -21,6 +21,7 @@ extern fn _ogBeginChildEx(name: [*c]const u8, id: ImGuiID, size_arg: *const ImVe
 extern fn _ogDockSpace(id: ImGuiID, w: f32, h: f32, flags: ImGuiDockNodeFlags, window_class: [*c]const ImGuiWindowClass) void;
 extern fn _ogImDrawList_AddQuad(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, p3: *const ImVec2, p4: *const ImVec2, col: ImU32, thickness: f32) void;
 extern fn _ogImDrawList_AddQuadFilled(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, p3: *const ImVec2, p4: *const ImVec2, col: ImU32) void;
+extern fn _ogImDrawList_AddLine(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, col: ImU32, thickness: f32) void;
 extern fn _ogSetCursorScreenPos(pos: *const ImVec2) void;
 extern fn _ogListBoxHeaderVec2(label: [*c]const u8, size: *const ImVec2) bool;
 
@@ -108,6 +109,10 @@ pub fn ogImDrawList_AddQuadFilled(draw_list: [*c]ImDrawList, p1: *ImVec2, p2: *I
     _ogImDrawList_AddQuadFilled(draw_list, p1, p2, p3, p4, col);
 }
 
+pub fn ogImDrawList_AddLine(draw_list: [*c]ImDrawList, p1: ImVec2, p2: ImVec2, col: ImU32, thickness: f32) void {
+    _ogImDrawList_AddLine(draw_list, &p1, &p2, col, thickness);
+}
+
 pub fn ogSetCursorScreenPos(pos: ImVec2) void {
     _ogSetCursorScreenPos(&pos);
 }
@@ -183,9 +188,21 @@ pub fn ogGetWindowSize() ImVec2 {
     return pos;
 }
 
+pub fn ogGetWindowPos() ImVec2 {
+    var pos = ImVec2{};
+    igGetWindowPos(&pos);
+    return pos;
+}
+
 pub fn ogGetItemRectSize() ImVec2 {
     var size = ImVec2{};
     igGetItemRectSize(&size);
+    return size;
+}
+
+pub fn ogGetItemRectMax() ImVec2 {
+    var size = ImVec2{};
+    igGetItemRectMax(&size);
     return size;
 }
 
