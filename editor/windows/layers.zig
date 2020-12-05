@@ -12,7 +12,7 @@ pub fn draw(state: *root.AppState) void {
     if (igBegin("Layers", null, ImGuiWindowFlags_None)) {
         var delete_index: usize = std.math.maxInt(usize);
 
-        for (state.layers.items) |*layer, i| {
+        for (state.level.layers.items) |*layer, i| {
             var rename_index: ?usize = null;
             ogPushIDUsize(i);
             defer igPopID();
@@ -46,16 +46,16 @@ pub fn draw(state: *root.AppState) void {
         }
 
         if (delete_index < std.math.maxInt(usize)) {
-            if (state.layers.items.len == 1 or delete_index == state.selected_layer_index) {
+            if (state.level.layers.items.len == 1 or delete_index == state.selected_layer_index) {
                 state.selected_layer_index = 0;
             } else if (delete_index < state.selected_layer_index) {
                 state.selected_layer_index -= 1;
             }
-            var layer = state.layers.orderedRemove(delete_index);
+            var layer = state.level.layers.orderedRemove(delete_index);
             layer.deinit();
         }
 
-        if (state.layers.items.len > 0) ogDummy(.{ .y = 5 });
+        if (state.level.layers.items.len > 0) ogDummy(.{ .y = 5 });
 
         // right-align the button
         igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
@@ -129,8 +129,8 @@ fn addLayerPopup(state: *root.AppState) void {
 
         if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
-            state.layers.append(root.layers.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
-            state.selected_layer_index = state.layers.items.len - 1;
+            state.level.layers.append(root.layers.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
+            state.selected_layer_index = state.level.layers.items.len - 1;
         }
 
         if (disabled) {
