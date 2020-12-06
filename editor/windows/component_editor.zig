@@ -46,7 +46,7 @@ pub fn draw(state: *root.AppState) void {
         if (igBeginPopup("##new-component", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
-            _ = ogInputText("##new-component-name", &name_buf, name_buf.len);
+            _ = igInputText("", &name_buf, name_buf.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
 
             const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
             ogPushDisabled(name.len == 0);
@@ -72,7 +72,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         defer igPopID();
 
         igPushItemWidth(igGetColumnWidth(1) / 2 - 20);
-        _ = ogInputText("##name", &prop.name, prop.name.len);
+        _ = igInputText("##name", &prop.name, prop.name.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
         igSameLine(0, 5);
 
         switch (prop.value) {

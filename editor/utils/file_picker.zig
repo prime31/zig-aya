@@ -8,11 +8,10 @@ usingnamespace @import("imgui");
 var only_dirs = false;
 var hide_hidden_dirs = true;
 
-var root_dir: ?[]const u8 = undefined;
-var dir: fs.Dir = undefined;
-var current_dir: ?[]const u8 = undefined;
-var selected_file: ?[]const u8 = undefined;
+pub var selected_dir: ?[]const u8 = undefined;
+pub var selected_file: ?[]const u8 = undefined;
 
+var dir: fs.Dir = undefined;
 var buffer: [25:0]u8 = undefined;
 
 var files = std.ArrayList([]const u8).init(aya.mem.allocator);
@@ -26,10 +25,30 @@ var directories = std.ArrayList([]const u8).init(aya.mem.allocator);
 //     if (utils.file_picker.draw()) std.debug.print("done with true\n", .{});
 // }
 
-/// when draw returns true selected_file and current_dir are valid and should be copied if needed
+pub fn setup(dont_show_hidden_dirs: bool, only_display_directories: bool) void {
+    hide_hidden_dirs = dont_show_hidden_dirs;
+    only_dirs = only_display_directories;
+
+    if (selected_dir) |directory| aya.mem.allocator.free(directory);
+    selected_dir = null;
+    selected_file = null;
+}
+
+pub fn cleanup() void {
+    if (selected_dir) |directory| aya.mem.allocator.free(directory);
+    selected_dir = null;
+    selected_file = null;
+}
+
+/// when draw returns true selected_file and selected_dir are valid and should be copied if needed
 pub fn draw() bool {
-    if (current_dir == null)
-        changeDir(fs.cwd().openDir(".", .{ .iterate = true }) catch unreachable);
+    // if we dont have a selected_dir, get one started
+    if (selected_dir == null) {
+        const tmp_dir = std.process.getCwdAlloc(aya.mem.tmp_allocator) catch unreachable;
+        selected_dir = aya.mem.allocator.dupeZ(u8, tmp_dir) catch unreachable;
+        dir = fs.cwd().openDir(selected_dir.?, .{ .iterate = true }) catch unreachable;
+        changeDir(".");
+    }
 
     if (ogButton("Home")) changeDirToKnownFolder(.home);
     igSameLine(0, 15);
@@ -39,19 +58,15 @@ pub fn draw() bool {
     igSameLine(igGetWindowContentRegionWidth() - 120, 0);
     if (ogButton("Create Directory")) ogOpenPopup("##create-directory");
 
-    igText(current_dir.?.ptr);
+    igText(selected_dir.?.ptr);
 
     if (ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, ImGuiWindowFlags_None)) {
         defer igEndChildFrame();
 
-        if (dir.access("../", .{})) {
+        if (dir.access("..", .{})) {
             igPushStyleColorU32(ImGuiCol_Text, aya.math.Color.yellow.value);
-            if (ogSelectableBool("../", false, ImGuiSelectableFlags_DontClosePopups, .{})) {
-                if (fs.cwd().openDir("../", .{ .iterate = true })) |new_dir| {
-                    changeDir(new_dir);
-                } else |err| {
-                    std.debug.print("couldnt open dir ../: {}\n", .{err});
-                }
+            if (ogSelectableBool("..", false, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                changeDir("..");
             }
             igPopStyleColor(1);
         } else |err| {}
@@ -59,7 +74,7 @@ pub fn draw() bool {
         igPushStyleColorU32(ImGuiCol_Text, aya.math.Color.yellow.value);
         for (directories.items) |entry_name| {
             if (ogSelectableBool(entry_name.ptr, false, ImGuiSelectableFlags_DontClosePopups, .{}))
-                changeDir(fs.cwd().openDir(entry_name, .{ .iterate = true }) catch unreachable);
+                changeDir(entry_name);
         }
         igPopStyleColor(1);
 
@@ -80,7 +95,6 @@ pub fn draw() bool {
     if (only_dirs) {
         igSameLine(igGetWindowContentRegionWidth() - 30, 0);
         if (ogButton("Open")) {
-            std.debug.print("current_dir: {}, selected_file: {}\n", .{ current_dir, selected_file });
             igCloseCurrentPopup();
             return true;
         }
@@ -89,7 +103,6 @@ pub fn draw() bool {
     if (selected_file != null) {
         igSameLine(igGetWindowContentRegionWidth() - 30, 0);
         if (ogButton("Open")) {
-            std.debug.print("current_dir: {}, selected_file: {}\n", .{ current_dir, selected_file });
             igCloseCurrentPopup();
             return true;
         }
@@ -107,7 +120,7 @@ pub fn draw() bool {
         ogPushDisabled(disabled);
         if (ogButtonEx("Create", .{})) {
             if (dir.makeDir(buffer[0..label_sentinel_index])) {
-                changeDir(fs.cwd().openDir(buffer[0..label_sentinel_index], .{ .iterate = true }) catch unreachable);
+                changeDir(buffer[0..label_sentinel_index]);
                 igCloseCurrentPopup();
             } else |err| {
                 std.debug.print("error creating dir: {}\n", .{err});
@@ -119,33 +132,30 @@ pub fn draw() bool {
     return false;
 }
 
-pub fn setup(dont_show_hidden_dirs: bool, only_display_directories: bool) void {
-    hide_hidden_dirs = dont_show_hidden_dirs;
-    only_dirs = only_display_directories;
-
-    current_dir = null;
-    selected_file = null;
-}
-
 fn changeDirToKnownFolder(known: known_folders.KnownFolder) void {
     if (known_folders.getPath(aya.mem.tmp_allocator, known)) |maybe_folder| {
         if (maybe_folder) |folder| {
-            changeDir(fs.cwd().openDir(folder, .{ .iterate = true }) catch unreachable);
+            changeDir(folder);
         }
     } else |err| {
         std.debug.print("couldnt get folder {}: {}\n", .{ known, err });
     }
 }
 
-fn changeDir(new_dir: fs.Dir) void {
-    selected_file = null;
-    dir = new_dir;
-    dir.setAsCwd() catch unreachable;
+fn changeDir(new_dir: []const u8) void {
+    dir.close();
 
-    if (current_dir) |directory| aya.mem.allocator.free(directory);
+    const tmp_dir = path.resolve(aya.mem.allocator, &[_][]const u8{ selected_dir.?, new_dir }) catch unreachable;
 
-    const tmp_dir = std.process.getCwdAlloc(aya.mem.tmp_allocator) catch unreachable;
-    current_dir = aya.mem.allocator.dupeZ(u8, tmp_dir) catch unreachable;
+    aya.mem.allocator.free(selected_dir.?);
+    selected_dir = tmp_dir;
+
+    if (fs.cwd().openDir(selected_dir.?, .{ .iterate = true })) |next_dir| {
+        dir = next_dir;
+    } else |err| {
+        std.debug.print("couldnt open dir ../: {}\n", .{err});
+        return;
+    }
 
     for (files.items) |file| aya.mem.allocator.free(file);
     for (directories.items) |file| aya.mem.allocator.free(file);

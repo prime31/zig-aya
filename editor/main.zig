@@ -72,7 +72,6 @@ fn update() !void {
         igEnd();
     }
 
-
     // file picker tester
     var open_picker = false;
     if (igBegin("debug", null, ImGuiWindowFlags_None)) {
@@ -87,7 +86,7 @@ fn update() !void {
 
     if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
-        if (utils.file_picker.draw()) std.debug.print("done with true\n", .{});
+        if (utils.file_picker.draw()) std.debug.print("done with picker: {}, {}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
     }
 
     // igShowDemoWindow(null);
