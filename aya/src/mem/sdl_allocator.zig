@@ -24,10 +24,8 @@ fn sdlResize(self: *std.mem.Allocator, old_mem: []u8, buf_align: u29, new_len: u
         return 0;
     }
 
-    if (new_len <= old_mem.len) {
-        _ = sdl.SDL_realloc(old_mem.ptr, new_len) orelse return error.OutOfMemory;
+    if (new_len <= old_mem.len)
         return std.mem.alignAllocLen(old_mem.len, new_len, len_align);
-    }
 
     return error.OutOfMemory;
 }

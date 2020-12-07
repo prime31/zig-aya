@@ -80,6 +80,8 @@ pub const Image = struct {
 
     /// extremely lossy image resizing, really useful only for quicky thumbnail creation
     pub fn resize(self: *Image, w: usize, h: usize) void {
+        if (self.w == w and self.h == h) return;
+
         var img = init(w, h);
         const scale_w = @intToFloat(f32, self.w) / @intToFloat(f32, w);
         const scale_h = @intToFloat(f32, self.h) / @intToFloat(f32, h);
@@ -108,11 +110,14 @@ pub const Image = struct {
     }
 
     /// returns true if the image was loaded successfully
-    pub fn getTextureSize(file: [:0]const u8, w: *c_int, h: *c_int) bool {
-        const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
-        var comp: c_int = undefined;
-        if (stb.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
-            return true;
+    pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
+        if (aya.fs.read(aya.mem.tmp_allocator, file)) |image_contents| {
+            var comp: c_int = undefined;
+            if (stb.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+                return true;
+            }
+        } else |err| {
+            std.debug.print("fs.read failed: {}\n", .{err});
         }
 
         return false;

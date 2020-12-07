@@ -4,9 +4,9 @@ usingnamespace @import("imgui");
 const root = @import("root");
 
 pub const Image = @import("utils/image.zig").Image;
-pub const TexturePacker = @import("utils/texture_package.zig").TexturePacker;
 
-pub const known_folders = @import("utils/known_-olders.zig");
+pub const known_folders = @import("utils/known-folders.zig");
+pub const texture_packer = @import("utils/texture_packer.zig");
 pub const file_picker = @import("utils/file_picker.zig");
 
 const AppState = root.data.AppState;
@@ -24,8 +24,8 @@ pub fn tileIndexUnderMouse(state: *AppState, position: ImVec2, tile_size: usize,
 /// given a world-space position returns the tile under it or null if position is out of bounds
 pub fn tileIndexUnderPos(state: *AppState, position: ImVec2, tile_size: usize) ?Point {
     if (position.x < 0 or position.y < 0) return null;
-    if (position.x > @intToFloat(f32, state.map_size.w * state.tile_size)) return null;
-    if (position.y > @intToFloat(f32, state.map_size.h * state.tile_size)) return null;
+    if (position.x > @intToFloat(f32, state.level.map_size.w * state.tile_size)) return null;
+    if (position.y > @intToFloat(f32, state.level.map_size.h * state.tile_size)) return null;
 
     return Point{ .x = @divTrunc(@floatToInt(usize, position.x), tile_size), .y = @divTrunc(@floatToInt(usize, position.y), tile_size) };
 }

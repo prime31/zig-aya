@@ -58,7 +58,7 @@ pub const Scene = struct {
         ogSetCursorScreenPos(tmp);
 
         // allow dragging a texture from Assets if an EntityLayer is selected
-        if (state.level.layers.items[state.selected_layer_index] == .entity and igBeginDragDropTarget()) {
+        if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity and igBeginDragDropTarget()) {
             defer igEndDragDropTarget();
 
             if (igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", ImGuiDragDropFlags_None)) |payload| {
@@ -85,14 +85,14 @@ pub const Scene = struct {
 
         aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
         // the map area and some decorations
-        aya.draw.rect(.{}, @intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size), math.Color.black);
-        aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
+        aya.draw.rect(.{}, @intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size), math.Color.black);
+        aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.level.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.level.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
 
         // outer decorations
         aya.draw.point(.{ .x = -40, .y = -40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = -40, .y = @intToFloat(f32, state.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) + 40, .y = -40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = @intToFloat(f32, state.map_size.w * state.tile_size) + 40, .y = @intToFloat(f32, state.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = -40, .y = @intToFloat(f32, state.level.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = @intToFloat(f32, state.level.map_size.w * state.tile_size) + 40, .y = -40 }, 20, math.Color.light_gray);
+        aya.draw.point(.{ .x = @intToFloat(f32, state.level.map_size.w * state.tile_size) + 40, .y = @intToFloat(f32, state.level.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
 
         self.render(state);
         aya.gfx.endPass();
@@ -153,7 +153,7 @@ pub const Scene = struct {
             if (ogDrag(f32, "Zoom", &zoom, 0.1, -1, 2)) {
                 self.cam.zoom = std.math.pow(f32, 2, zoom);
                 self.cam.clampZoom();
-                self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
+                self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
             }
             if (ogButtonEx("Reset Zoom", .{ .x = -1 })) self.cam.zoom = 1;
             igEndPopup();
@@ -203,7 +203,7 @@ pub const Scene = struct {
             igResetMouseDragDelta(ImGuiMouseButton_Left);
 
             // dont allow camera to move outside of map bounds
-            self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
+            self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
             return;
         }
 
@@ -211,7 +211,7 @@ pub const Scene = struct {
             self.cam.zoom += igGetIO().MouseWheel * 0.1;
             self.cam.clampZoom();
             igGetIO().MouseWheel = 0;
-            self.cam.clampToMap(state.map_size.w * state.tile_size, state.map_size.h * state.tile_size, 80);
+            self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
         }
     }
 };
