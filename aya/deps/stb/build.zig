@@ -16,7 +16,7 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
     exe.addIncludeDir(prefix_path ++ "aya/deps/stb/src");
 
     const lib_cflags = &[_][]const u8{ "-std=c99", "-O3" };
-    exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_image_impl.c", lib_cflags);
+    exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_impl.c", lib_cflags);
 }
 
 pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {

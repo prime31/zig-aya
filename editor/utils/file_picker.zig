@@ -7,6 +7,7 @@ usingnamespace @import("imgui");
 
 var only_dirs = false;
 var hide_hidden_dirs = true;
+var picker_description: [:0]const u8 = undefined;
 
 pub var selected_dir: ?[]const u8 = undefined;
 pub var selected_file: ?[]const u8 = undefined;
@@ -18,14 +19,15 @@ var files = std.ArrayList([]const u8).init(aya.mem.allocator);
 var directories = std.ArrayList([]const u8).init(aya.mem.allocator);
 
 // usage:
-//  if (open_picker) ogOpenPopup("File Picker");
+//  if (open_picker) { utils.file_picker.setup(..); ogOpenPopup("File Picker");
 
 // if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
 //     defer igEndPopup();
 //     if (utils.file_picker.draw()) std.debug.print("done with true\n", .{});
 // }
 
-pub fn setup(dont_show_hidden_dirs: bool, only_display_directories: bool) void {
+pub fn setup(description: [:0]const u8, dont_show_hidden_dirs: bool, only_display_directories: bool) void {
+    picker_description = description;
     hide_hidden_dirs = dont_show_hidden_dirs;
     only_dirs = only_display_directories;
 
@@ -49,6 +51,9 @@ pub fn draw() bool {
         dir = fs.cwd().openDir(selected_dir.?, .{ .iterate = true }) catch unreachable;
         changeDir(".");
     }
+
+    ogColoredText(0.2, 0.8, 0.2, picker_description);
+    ogDummy(.{ .y = 5 });
 
     if (ogButton("Home")) changeDirToKnownFolder(.home);
     igSameLine(0, 15);

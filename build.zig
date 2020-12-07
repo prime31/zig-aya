@@ -74,7 +74,7 @@ pub fn build(b: *Builder) void {
 fn createExe(b: *Builder, target: Target, name: []const u8, source: []const u8) *std.build.LibExeObjStep {
     var exe = b.addExecutable(name, source);
     exe.setBuildMode(b.standardReleaseOptions());
-    exe.setOutputDir(std.fs.path.joinPosix(b.allocator, &[_][]const u8{ b.cache_root, "bin" }) catch unreachable);
+    exe.setOutputDir(std.fs.path.join(b.allocator, &[_][]const u8{ b.cache_root, "bin" }) catch unreachable);
 
     addAyaToArtifact(b, exe, target, "");
 

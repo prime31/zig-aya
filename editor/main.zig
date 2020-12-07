@@ -13,6 +13,7 @@ pub const windows = @import("windows/windows.zig");
 pub const layers = @import("layers/layers.zig");
 
 pub const Camera = @import("camera.zig").Camera;
+pub const AssetManager = @import("asset_manager.zig").AssetManager;
 
 pub const enable_imgui = true;
 var next_stall_time: f32 = 10;
@@ -20,6 +21,7 @@ var next_stall_time: f32 = 10;
 // global state
 pub var state: AppState = undefined;
 pub var scene: windows.Scene = undefined;
+pub var asset_man: AssetManager = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -43,6 +45,7 @@ fn init() !void {
     colors.init();
     state = AppState.initWithTestData();
     scene = windows.Scene.init();
+    asset_man = AssetManager.init();
 
     var io = igGetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -55,6 +58,7 @@ fn init() !void {
 fn shutdown() !void {
     scene.deinit();
     state.deinit();
+    asset_man.deinit();
 }
 
 fn update() !void {
@@ -76,7 +80,7 @@ fn update() !void {
     var open_picker = false;
     if (igBegin("debug", null, ImGuiWindowFlags_None)) {
         if (ogButton("Open Sesame")) {
-            utils.file_picker.setup(true, false);
+            utils.file_picker.setup("Farty", true, false);
             open_picker = true;
         }
     }

@@ -147,7 +147,7 @@ fn addLayerPopup(state: *root.AppState) void {
 
         if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
-            state.level.layers.append(root.layers.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.map_size, state.tile_size)) catch unreachable;
+            state.level.layers.append(root.layers.Layer.init(new_layer_type, name_buf[0..label_sentinel_index], state.level.map_size, state.tile_size)) catch unreachable;
             state.selected_layer_index = state.level.layers.items.len - 1;
         }
 

@@ -120,7 +120,7 @@ pub const EntityLayer = struct {
                 // if we are dragging an entity, move it taking into account the snap set
                 const drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
                 const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
-                const max_pos = math.Vec2.init(@intToFloat(f32, state.map_size.w * state.tile_size), @intToFloat(f32, state.map_size.h * state.tile_size));
+                const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
                 self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@intToFloat(f32, state.snap_size));
             } else if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels

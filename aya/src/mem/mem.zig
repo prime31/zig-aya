@@ -9,6 +9,10 @@ var tmp_allocator_instance: ScratchAllocator = undefined;
 
 pub const allocator = @import("sdl_allocator.zig").sdl_allocator;
 
+// optionally use the GPA
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// pub const allocator = &gpa.allocator;
+
 pub fn initTmpAllocator() void {
     tmp_allocator_instance = ScratchAllocator.init(allocator);
     tmp_allocator = &tmp_allocator_instance.allocator;

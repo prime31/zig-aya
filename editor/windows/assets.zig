@@ -14,7 +14,7 @@ pub fn draw(state: *root.AppState) void {
         ogPushStyleVarVec2(ImGuiStyleVar_ItemSpacing, .{ .x = 9, .y = 14 });
         ogPushStyleVarVec2(ImGuiStyleVar_FramePadding, .{ .x = 4, .y = 8 });
         igPushItemWidth(-1);
-        if (ogListBoxHeaderVec2("", .{})) {
+        if (ogListBoxHeaderVec2("", .{ .y = 110 })) {
             defer igListBoxFooter();
 
             for (asset_types) |asset_type, i| {
