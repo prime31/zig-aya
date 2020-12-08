@@ -104,9 +104,10 @@ pub const Image = struct {
         return Texture.initWithData(u32, @intCast(i32, self.w), @intCast(i32, self.h), self.pixels);
     }
 
-    pub fn save(self: Image, file: [:0]const u8) void {
+    pub fn save(self: Image, file: []const u8) void {
         var bytes = std.mem.sliceAsBytes(self.pixels);
-        _ = stb.stbi_write_png(file.ptr, @intCast(c_int, self.w), @intCast(c_int, self.h), 4, bytes.ptr, @intCast(c_int, self.w * 4));
+        const file_posix = std.os.toPosixPath(file) catch unreachable;
+        _ = stb.stbi_write_png(&file_posix, @intCast(c_int, self.w), @intCast(c_int, self.h), 4, bytes.ptr, @intCast(c_int, self.w * 4));
     }
 
     /// returns true if the image was loaded successfully

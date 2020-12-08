@@ -49,7 +49,7 @@ pub const Scene = struct {
             self.cam.window_size = .{ .x = content_region.x, .y = content_region.y };
             if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
                 // TODO: center cam at startup? seems we get odd imgui content sizes first 2 frames so here is a hack
-                self.cam.pos = .{ .x = content_region.x / 3, .y = content_region.y / 2.1 };
+                self.cam.pos = .{ .x = 260, .y = 245 };
             }
         }
 
