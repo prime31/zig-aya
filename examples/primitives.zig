@@ -3,6 +3,7 @@ const aya = @import("aya");
 const math = aya.math;
 const Color = math.Color;
 
+pub const renderer: aya.renderkit.Renderer = .opengl;
 var tri_batch: aya.gfx.TriangleBatcher = undefined;
 
 pub fn main() !void {
