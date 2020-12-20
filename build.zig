@@ -63,9 +63,9 @@ pub fn build(b: *Builder) void {
         },
     });
 
-    const comple_shaders_step = b.step("compile-shaders", "compiles all shaders");
-    b.default_step.dependOn(comple_shaders_step);
-    comple_shaders_step.dependOn(&res.step);
+    const compile_shaders_step = b.step("compile-shaders", "compiles all shaders");
+    b.default_step.dependOn(compile_shaders_step);
+    compile_shaders_step.dependOn(&res.step);
 
     addTests(b, target, "");
 }
@@ -118,7 +118,6 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
     const sdl_build = @import("aya/deps/sdl/build.zig");
     sdl_build.linkArtifact(b, artifact, target, prefix_path);
     const sdl_pkg = sdl_build.getPackage(prefix_path);
-
 
     const aya = Pkg{
         .name = "aya",
