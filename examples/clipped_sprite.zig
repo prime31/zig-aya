@@ -27,9 +27,8 @@ fn init() !void {
 }
 
 fn update() !void {
-    _ = aya.utils.inspect("Trans", &trans);
-    _ = aya.utils.inspect("Trans2", &trans2);
-
+    // _ = aya.utils.inspect("Trans", &trans);
+    // _ = aya.utils.inspect("Trans2", &trans2);
     if (ogButton("go " ++ icons.inbox)) {
         var poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
         for (poly) |pt| {
