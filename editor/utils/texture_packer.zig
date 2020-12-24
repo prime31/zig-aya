@@ -42,6 +42,10 @@ pub const Atlas = struct {
         for (files) |file, i| {
             var sub_image = Image.initFromFile(file);
             defer sub_image.deinit();
+
+            // if the frame is smaller we are working with thumbnails so resize the image
+            if (sub_image.w > frames[i].w or sub_image.h > frames[i].h)
+                sub_image.resize(frames[i].w, frames[i].h);
             image.blit(sub_image, frames[i].x, frames[i].y);
         }
 
