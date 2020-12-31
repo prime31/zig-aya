@@ -3,7 +3,7 @@ const Vec4 = @import("vec4.zig").Vec4;
 
 pub const Color = extern union {
     value: u32,
-    comps: packed struct {
+    comps: extern struct {
         r: u8,
         g: u8,
         b: u8,
