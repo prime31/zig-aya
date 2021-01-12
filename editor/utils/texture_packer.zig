@@ -132,6 +132,8 @@ fn getFramesForPngs(pngs: [][]const u8) []stb.stbrp_rect {
 }
 
 fn runRectPacker(frames: []stb.stbrp_rect) ?Size {
+    if (frames.len == 0) return Size{ .width = 0, .height = 0 };
+
     var ctx: stb.stbrp_context = undefined;
     const rects_size = @sizeOf(stb.stbrp_rect) * frames.len;
     const node_count = 4096 * 2;
