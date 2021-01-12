@@ -140,7 +140,7 @@ pub const EntityLayer = struct {
     /// draws all the entities in the scene allowing one to be selected which will be displayed in a separate inspector
     fn drawEntitiesWindow(self: *@This()) void {
         defer igEnd();
-        var win_name: [50:0]u8 = undefined;
+        var win_name: [150:0]u8 = undefined;
         const tmp_name = std.fmt.bufPrintZ(&win_name, "{}###Entities", .{std.mem.spanZ(&self.name)}) catch unreachable;
         if (!igBegin(tmp_name, null, ImGuiWindowFlags_None)) return;
 
