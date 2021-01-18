@@ -26,6 +26,5 @@ pub const AssetManager = struct {
         defer aya.mem.allocator.free(tex_folder);
         const atlas = root.utils.texture_packer.packThumbnails(tex_folder, 50) catch unreachable;
         // const atlas = root.utils.texture_packer.pack(tex_folder) catch unreachable;
-        std.debug.print("atlas: {}\n", .{atlas});
     }
 };
