@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
+const data = @import("data.zig");
 
 pub const Component = struct {
     id: u8,
@@ -77,6 +78,13 @@ pub const ComponentInstance = struct {
     pub fn deinit(self: ComponentInstance) void {
         for (self.props.items) |*prop| prop.deinit();
         self.props.deinit();
+    }
+
+    pub fn clone(self: ComponentInstance, state: *data.AppState) ComponentInstance {
+        var src_component = state.componentWithId(self.component_id);
+        var comp = init(src_component.*);
+        for (self.props.items) |prop, i| comp.props.items[i] = prop;
+        return comp;
     }
 
     pub fn removeProperty(self: *@This(), property_id: u8) void {

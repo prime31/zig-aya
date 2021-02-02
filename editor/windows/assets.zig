@@ -51,6 +51,7 @@ fn drawTextures(state: *root.AppState) void {
         igPushIDInt(@intCast(c_int, i));
         defer igPopID();
 
+        igBeginGroup();
         _ = ogButtonEx("Box", .{ .x = 50, .y = 50 });
 
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -62,10 +63,16 @@ fn drawTextures(state: *root.AppState) void {
         if (igIsItemActive())
             ogImDrawList_AddLine(igGetForegroundDrawListNil(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, igGetColorU32Col(ImGuiCol_Button, 1), 2);
 
+        igText("Word up");
+        igEndGroup();
+
         // Expected position if next button was on same line
         const next_x = ogGetItemRectMax().x + x_spacing + 50;
-        if (i + 1 < num and next_x < win_visible_width)
+        if (i + 1 < num and next_x < win_visible_width) {
             igSameLine(0, x_spacing);
+        } else {
+            ogDummy(.{ .y = 10 });
+        }
     }
 }
 
