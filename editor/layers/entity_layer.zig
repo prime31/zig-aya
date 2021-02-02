@@ -21,6 +21,7 @@ pub const EntityLayer = struct {
     selected_index: ?usize = null,
     dragged_index: ?usize = null,
     dragged_start_pos: math.Vec2 = .{},
+    showing_entity_ctx_menu: bool = false,
     id_counter: u8 = 0,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
@@ -52,10 +53,20 @@ pub const EntityLayer = struct {
     }
 
     pub fn addEntity(self: *@This(), name: []const u8, position: math.Vec2) *Entity {
-        self.id_counter += 1;
-        self.entities.append(Entity.init(self.id_counter, name, position)) catch unreachable;
+        self.entities.append(Entity.init(self.getNextEntityId(), name, position)) catch unreachable;
         self.selected_index = self.entities.items.len - 1;
         return &self.entities.items[self.entities.items.len - 1];
+    }
+
+    fn cloneEntity(self: *@This(), entity: Entity, state: *AppState) *Entity {
+        self.entities.append(entity.clone(self.getNextEntityId(), state)) catch unreachable;
+        self.selected_index = self.entities.items.len - 1;
+        return &self.entities.items[self.entities.items.len - 1];
+    }
+
+    fn getNextEntityId(self: *@This()) u8 {
+        self.id_counter += 1;
+        return self.id_counter;
     }
 
     pub fn getEntityWithId(self: @This(), id: u8) ?Entity {
@@ -69,7 +80,7 @@ pub const EntityLayer = struct {
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
         // TODO: draw entity sprites if we are not selected and self.visible
         if (is_selected) {
-            self.drawEntitiesWindow();
+            self.drawEntitiesWindow(state);
 
             if (self.selected_index) |selected_index|
                 self.drawInspectorWindow(state, &self.entities.items[selected_index]);
@@ -122,7 +133,7 @@ pub const EntityLayer = struct {
                 const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
                 const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
                 self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@intToFloat(f32, state.snap_size));
-            } else if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+            } else if (igIsMouseClicked(ImGuiMouseButton_Left, false) or igIsMouseClicked(ImGuiMouseButton_Right, false)) {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels
                 var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
                 self.selected_index = for (self.entities.items) |entity, i| {
@@ -135,13 +146,19 @@ pub const EntityLayer = struct {
                 } else null;
             }
         }
+
+        // context menu for entity commands
+        if (self.selected_index != null and igBeginPopupContextItem("##entity-scene-context-menu", ImGuiMouseButton_Right)) {
+            if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(self.entities.items[self.selected_index.?], state); 
+            igEndPopup();
+        }
     }
 
     /// draws all the entities in the scene allowing one to be selected which will be displayed in a separate inspector
-    fn drawEntitiesWindow(self: *@This()) void {
+    fn drawEntitiesWindow(self: *@This(), state: *AppState) void {
         defer igEnd();
         var win_name: [150:0]u8 = undefined;
-        const tmp_name = std.fmt.bufPrintZ(&win_name, "{}###Entities", .{std.mem.spanZ(&self.name)}) catch unreachable;
+        const tmp_name = std.fmt.bufPrintZ(&win_name, "{s}###Entities", .{std.mem.spanZ(&self.name)}) catch unreachable;
         if (!igBegin(tmp_name, null, ImGuiWindowFlags_None)) return;
 
         var delete_index: ?usize = null;
@@ -160,6 +177,7 @@ pub const EntityLayer = struct {
 
             if (igBeginPopupContextItem("##entity-context-menu", ImGuiMouseButton_Right)) {
                 if (igMenuItemBool("Rename", null, false, true)) rename_index = i;
+                if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(entity.*, state);
                 igEndPopup();
             }
 

@@ -28,6 +28,30 @@ pub const Entity = struct {
         self.components.deinit();
     }
 
+    pub fn clone(self: @This(), id: u8, state: *data.AppState) Entity {
+        // get the last index of name to use. If this is already a clone, dont append a second "(c)" else limit length so that the "(c)" fits.
+        const name_sentinel_index = blk: {
+            var c_index = std.mem.indexOf(u8, &self.name, " (c)");
+            if (c_index != null) break :blk c_index.?;
+
+            var tmp = std.mem.indexOfScalar(u8, &self.name, 0).?;
+            if (tmp > 20) break :blk 20; 
+            break :blk tmp;
+        };
+
+        var buf: [25]u8 = undefined;
+        var name = std.fmt.bufPrint(&buf, "{s} (c)", .{self.name[0 ..name_sentinel_index]}) catch unreachable;
+
+        var entity = init(id, name, self.transform.pos.add(.{ .x = 16, .y = 16 }));
+        entity.transform.rot = self.transform.rot;
+        entity.transform.scale = self.transform.scale;
+        entity.sprite = self.sprite;
+        entity.collider = self.collider;
+
+        for (self.components.items) |comp| entity.components.append(comp.clone(state)) catch unreachable;
+        return entity;
+    }
+
     pub fn addComponent(self: *@This(), component: ComponentInstance) void {
         self.components.append(component) catch unreachable;
     }
