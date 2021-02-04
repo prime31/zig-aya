@@ -300,6 +300,7 @@ pub const EntityLayer = struct {
                         .int => |*int| inspectors.inspectInt(&src_prop.name, int, src_prop.value.int),
                         .bool => |*b| inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool),
                         .vec2 => |*v2| inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2),
+                        .enum_values => |*enums| unreachable,
                         .entity_link => |*entity_link| inspectors.inspectEntityLink(&src_prop.name, entity.id, entity_link, self.entities),
                     }
                 }
