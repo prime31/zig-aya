@@ -128,6 +128,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
                 for (prop_value.enum_values[i..newlen]) |*b, j| std.mem.copy(u8, b, &prop_value.enum_values[i + 1 + j]);
 
             prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len - 1) catch unreachable;
+            ensureLiveEnumValueIsValid(state, component, prop_value.enum_values.len);
         }
 
         if (!open) enum_editor_index = null;
@@ -136,7 +137,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     if (delete_index) |index| {
         var prop = component.props.orderedRemove(index);
 
-        // remove the component from any Entities that have this component
+        // remove the property from any Entities that have this component
         for (state.level.layers.items) |*layer| {
             if (layer.* == .entity) {
                 for (layer.entity.entities.items) |*entity| {
@@ -185,7 +186,9 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (ogSelectableBool("enum", false, ImGuiSelectableFlags_None, .{})) {
-            component.addProperty(.{ .enum_values = &[_][25:0]u8{} });
+            var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
+            std.mem.copy(u8, &enums[0], "default_value");
+            component.addProperty(.{ .enum_values = enums });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (ogSelectableBool("Entity Link", false, ImGuiSelectableFlags_None, .{})) {
@@ -198,13 +201,32 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
 }
 
 fn addLastPropertyToEntitiesContainingComponent(state: *root.AppState, component: *Component) void {
-    // remove from any Entities that have this component
+    // add the new property to any Entities that have this component
     for (state.level.layers.items) |*layer| {
         if (layer.* == .entity) {
             for (layer.entity.entities.items) |*entity| {
                 for (entity.components.items) |*comp| {
                     if (comp.component_id == component.id) {
                         comp.addProperty(component.props.items[component.props.items.len - 1]);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn ensureLiveEnumValueIsValid(state: *root.AppState, component: *Component, enum_len: usize) void {
+    // add the new property to any Entities that have this component
+    for (state.level.layers.items) |*layer| {
+        if (layer.* == .entity) {
+            for (layer.entity.entities.items) |*entity| {
+                for (entity.components.items) |*comp| {
+                    if (comp.component_id == component.id) {
+                        for (comp.props.items) |*prop| {
+                            if (prop.value == .enum_value and prop.value.enum_value > 0 and prop.value.enum_value == enum_len)
+                                prop.value.enum_value -= 1;
+                        }
                         break;
                     }
                 }

@@ -74,6 +74,13 @@ pub const AppState = struct {
         comp2.addProperty(.{ .entity_link = 0 });
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "link");
 
+        // var t = [_][25:0]u8{ ("Value1" ++ [_]u8{0} ** 19).* }; 
+        var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
+        std.mem.copy(u8, &enums[0], "default_value");
+        std.mem.copy(u8, &enums[1], "second_value");
+        comp2.addProperty(.{ .enum_values = enums });
+        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "super_enum");
+
         // entities
         state.level.layers.append(Layer.init(.entity, "Entities", state.level.map_size, state.tile_size)) catch unreachable;
 
