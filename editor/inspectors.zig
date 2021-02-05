@@ -235,8 +235,6 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
     igSameLine(0, 5);
     if (ogButton(icons.bullseye)) igOpenPopup("##origin-selector", ImGuiPopupFlags_None);
 
-
-
     if (igBeginPopup("##origin-selector", ImGuiWindowFlags_None)) {
         igText("Origin:");
 
@@ -294,3 +292,31 @@ pub fn inspectTransform(transform: *root.data.Transform) void {
     inspectFloat("Rotation", &transform.rot, 0);
     inspectVec2("Scale", &transform.scale, .{ .x = 1, .y = 1 });
 }
+
+pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25:0]u8) void {
+    beginColumns(label, value);
+    defer endColumns();
+
+    igPushItemWidth(-1);
+
+    const line_height = GImGui.*.FontSize + igGetStyle().FramePadding.y * 2;
+    const button_size = ImVec2{ .x = line_height + 3, .y = line_height };
+
+    igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(104, 26, 38));
+    if (ogButtonEx(icons.redo, button_size)) value.* = 0;
+    igPopStyleColor(1);
+
+    igSameLine(0, 0);
+
+    if (enum_values.len == 0) {
+        igText("No enum values set");
+    } else if (igBeginCombo("##enum", &enum_values[value.*], ImGuiComboFlags_None)) {
+        defer igEndCombo();
+
+        for (enum_values) |enum_label, i| {
+            if (igSelectableBool(&enum_label, value.* == i, ImGuiSelectableFlags_None, .{ .y = line_height }))
+                value.* = @intCast(u8, i);
+        }
+    }
+}
+

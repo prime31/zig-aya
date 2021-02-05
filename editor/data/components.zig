@@ -46,7 +46,11 @@ pub const Property = struct {
         return .{ .id = id, .name = [_:0]u8{0} ** 25, .value = value };
     }
 
-    pub fn deinit(self: Property) void {}
+    pub fn deinit(self: Property) void {
+        // if we have allocated memory clean it up
+        if (self.value == .enum_values)
+            aya.mem.allocator.free(self.value.enum_values);
+    }
 };
 
 pub const PropertyValue = union(enum) {
@@ -56,6 +60,28 @@ pub const PropertyValue = union(enum) {
     bool: bool,
     vec2: math.Vec2,
     enum_values: [][25:0]u8,
+    entity_link: u8,
+
+    pub fn propertyInstanceValue(self: @This()) PropertyInstanceValue {
+        return switch (self) {
+            .string => |str| .{ .string = str },
+            .int => |i| .{ .int = i },
+            .float => |f| .{ .float = f },
+            .bool => |b| .{ .bool = b },
+            .vec2 => |v| .{ .vec2 = v },
+            .enum_values => .{ .enum_value = 0 },
+            .entity_link => |link| .{ .entity_link = link },
+        };
+    }
+};
+
+pub const PropertyInstanceValue = union(enum) {
+    string: [25:0]u8,
+    int: i32,
+    float: f32,
+    bool: bool,
+    vec2: math.Vec2,
+    enum_value: u8,
     entity_link: u8,
 };
 
@@ -98,15 +124,15 @@ pub const ComponentInstance = struct {
     }
 
     pub fn addProperty(self: *@This(), prop: Property) void {
-        self.props.append(PropertyInstance.init(prop.id, prop.value)) catch unreachable;
+        self.props.append(PropertyInstance.init(prop.id, prop.value.propertyInstanceValue())) catch unreachable;
     }
 };
 
 pub const PropertyInstance = struct {
     property_id: u8,
-    value: PropertyValue,
+    value: PropertyInstanceValue,
 
-    pub fn init(id: u8, value: PropertyValue) PropertyInstance {
+    pub fn init(id: u8, value: PropertyInstanceValue) PropertyInstance {
         return .{ .property_id = id, .value = value };
     }
 
