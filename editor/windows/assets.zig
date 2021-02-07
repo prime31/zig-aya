@@ -38,7 +38,9 @@ pub fn draw(state: *root.AppState) void {
 }
 
 fn drawTilesets(state: *root.AppState) void {
-    igText("tilesets");
+    for (root.asset_man.tilesets) |tileset| {
+        igText(tileset.ptr);
+    }
 }
 
 fn drawTextures(state: *root.AppState) void {

@@ -43,9 +43,9 @@ pub fn main() !void {
 
 fn init() !void {
     colors.init();
+    asset_man = AssetManager.init();
     state = AppState.initWithTestData();
     scene = windows.Scene.init();
-    asset_man = AssetManager.init();
 
     var io = igGetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
