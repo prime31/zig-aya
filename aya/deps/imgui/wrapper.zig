@@ -4,6 +4,7 @@ pub const icons = @import("font_awesome.zig");
 
 extern fn _ogImage(user_texture_id: ImTextureID, size: *const ImVec2, uv0: *const ImVec2, uv1: *const ImVec2) void;
 extern fn _ogImageButton(user_texture_id: ImTextureID, size: *const ImVec2, uv0: *const ImVec2, uv1: *const ImVec2, frame_padding: c_int) bool;
+extern fn _ogImageButtonEx(user_texture_id: ImTextureID, size: *const ImVec2, uv0: *const ImVec2, uv1: *const ImVec2, frame_padding: c_int, bg_col: *const ImVec4, tint_col: *const ImVec4) bool;
 extern fn _ogColoredText(r: f32, g: f32, b: f32, text: [*c]const u8) void;
 
 // arm64 cant send ImVec2s to anything...
@@ -37,7 +38,7 @@ pub fn ogImageButton(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec
 }
 
 pub fn ogImageButtonEx(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImVec2, frame_padding: c_int, bg_col: ImVec4, tint_col: ImVec4) bool {
-    return _ogImageButton(texture, &size, &uv0, &uv1, frame_padding);
+    return _ogImageButtonEx(texture, &size, &uv0, &uv1, frame_padding, &bg_col, &tint_col);
 }
 
 pub fn ogColoredText(r: f32, g: f32, b: f32, text: [:0]const u8) void {
