@@ -38,38 +38,50 @@ pub fn draw(state: *root.AppState) void {
 }
 
 fn drawTilesets(state: *root.AppState) void {
-    for (root.asset_man.tilesets) |tileset| {
+    for (state.asset_man.tilesets) |tileset| {
         igText(tileset.ptr);
     }
 }
 
 fn drawTextures(state: *root.AppState) void {
+    const thumb_size = 50;
     const num = 80;
     const win_visible_width = ogGetWindowPos().x + ogGetWindowContentRegionMax().x;
     const x_spacing = igGetStyle().ItemSpacing.x;
 
-    var i: usize = 0;
-    while (i < num) : (i += 1) {
+    // var i: usize = 0;
+    // while (i < state.asset_man.thumbnail_atlas.names.len) : (i += 1) {
+    for (state.asset_man.thumbnail_atlas.names) |asset_name, i| {
         igPushIDInt(@intCast(c_int, i));
         defer igPopID();
 
         igBeginGroup();
-        _ = ogButtonEx("Box", .{ .x = 50, .y = 50 });
+        const uvs = state.asset_man.getUvsForThumbnailAtIndex(i);
+        _ = ogImageButtonEx(state.asset_man.thumbnail_texture.imTextureID(), .{ .x = thumb_size, .y = thumb_size }, uvs[0], uvs[1], 0, root.colors.rgbToVec4(50, 50, 50), .{ .x = 1, .y = 1, .z = 1, .w = 1 });
 
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
             defer igEndDragDropSource();
             _ = igSetDragDropPayload("TEXTURE_ASSET_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
-            _ = ogButtonEx("Texy", .{ .x = 50, .y = 50 });
+            _ = ogButtonEx("Texy", .{ .x = thumb_size, .y = thumb_size });
         }
 
         if (igIsItemActive())
             ogImDrawList_AddLine(igGetForegroundDrawListNil(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, igGetColorU32Col(ImGuiCol_Button, 1), 2);
 
-        igText("Word up");
+        const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
+        var name_buf: [10]u8 = undefined;
+        std.mem.set(u8, &name_buf, 0);
+
+        if (base_name.len > 7) {
+            std.mem.copy(u8, &name_buf, base_name[0..7]);
+        } else {
+            std.mem.copy(u8, &name_buf, base_name);
+        }
+        igText(&name_buf);
         igEndGroup();
 
         // Expected position if next button was on same line
-        const next_x = ogGetItemRectMax().x + x_spacing + 50;
+        const next_x = ogGetItemRectMax().x + x_spacing + thumb_size;
         if (i + 1 < num and next_x < win_visible_width) {
             igSameLine(0, x_spacing);
         } else {

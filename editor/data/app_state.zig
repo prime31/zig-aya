@@ -33,11 +33,13 @@ pub const AppState = struct {
     components: std.ArrayList(Component),
     next_component_id: u8 = 0,
     selected_layer_index: usize = 0,
+    asset_man: root.AssetManager,
 
     pub fn init() AppState {
         return .{
             .level = Level.init(""),
             .components = std.ArrayList(Component).init(aya.mem.allocator),
+            .asset_man = root.AssetManager.init(),
         };
     }
 
@@ -97,7 +99,7 @@ pub const AppState = struct {
         const desktop = root.utils.known_folders.getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
         const root_dir = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ desktop.?, "aya-project" }) catch unreachable;
         createProjectFolder(root_dir);
-        root.asset_man.setRootPath(root_dir);
+        state.asset_man.setRootPath(root_dir);
 
         return state;
     }
@@ -106,6 +108,7 @@ pub const AppState = struct {
         self.level.deinit();
         for (self.components.items) |*comp| comp.deinit();
         self.components.deinit();
+        self.asset_man.deinit();
     }
 
     pub fn createProjectFolder(folder: []const u8) void {

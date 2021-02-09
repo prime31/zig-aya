@@ -21,7 +21,6 @@ var next_stall_time: f32 = 10;
 // global state
 pub var state: AppState = undefined;
 pub var scene: windows.Scene = undefined;
-pub var asset_man: AssetManager = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -43,7 +42,6 @@ pub fn main() !void {
 
 fn init() !void {
     colors.init();
-    asset_man = AssetManager.init();
     state = AppState.initWithTestData();
     scene = windows.Scene.init();
 
@@ -58,7 +56,6 @@ fn init() !void {
 fn shutdown() !void {
     scene.deinit();
     state.deinit();
-    asset_man.deinit();
 }
 
 fn update() !void {
