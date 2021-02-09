@@ -12,7 +12,7 @@ const Animation = @import("tileset.zig").Animation;
 /// multiple tile indices for the animation itself.
 pub fn draw(tileset: *Tileset) void {
     ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-    ogSetNextWindowSize(.{ .x = 195, .y = -1 }, ImGuiCond_Always);
+    ogSetNextWindowSize(.{ .x = 195, .y = 0 }, ImGuiCond_Always);
     if (igBeginPopup("##tileset-animations", ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
@@ -55,7 +55,7 @@ pub fn draw(tileset: *Tileset) void {
 
         if (ogButtonEx("Add Animation", .{ .x = -1 })) igOpenPopup("add-anim", ImGuiPopupFlags_None);
 
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("add-anim", ImGuiWindowFlags_None)) {
             addAnimationPopup(tileset);
             igEndPopup();

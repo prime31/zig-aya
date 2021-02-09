@@ -131,9 +131,13 @@ pub const Tileset = struct {
 
         igSetCursorPosY(igGetCursorPosY() - 8);
         igSetCursorPosX(igGetWindowContentRegionWidth() - 40);
+        
         if (ogButton(icons.adjust)) igOpenPopup("##tileset-definitions", ImGuiPopupFlags_None);
+        ogUnformattedTooltip(100, "Tileset definitions");
+
         igSameLine(0, 2);
         if (ogButton(icons.universal_access)) igOpenPopup("##tileset-animations", ImGuiPopupFlags_None);
+        ogUnformattedTooltip(100, "Animation editor");
 
         var origin = ogGetCursorScreenPos();
         ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
@@ -208,8 +212,8 @@ const TileDefinitions = struct {
     }
 
     pub fn drawPopup(self: *@This(), tileset: *Tileset) void {
-        igSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
-        igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        ogSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
         if (igBeginPopup("##tileset-definitions", ImGuiWindowFlags_None)) {
             defer igEndPopup();
 
@@ -219,7 +223,7 @@ const TileDefinitions = struct {
 
                 drawTileIcon(field.name);
 
-                igDummy(.{});
+                ogDummy(.{});
                 igSameLine(0, igGetFrameHeight() + 7);
 
                 // replace underscores with spaces
@@ -257,17 +261,17 @@ const TileDefinitions = struct {
         var color = root.colors.rgbToU32(252, 186, 3);
 
         if (std.mem.eql(u8, name, "solid")) {
-            ImDrawList_AddQuadFilled(igGetWindowDrawList(), tl, tr, br, bl, color);
+            ogImDrawList_AddQuadFilled(igGetWindowDrawList(), &tl, &tr, &br, &bl, color);
         } else if (std.mem.eql(u8, name, "slope_down")) {
             tl.y += igGetFrameHeight() / 2;
-            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
         } else if (std.mem.eql(u8, name, "slope_down_steep")) {
-            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
         } else if (std.mem.eql(u8, name, "slope_up")) {
             tr.y += igGetFrameHeight() / 2;
-            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
         } else if (std.mem.eql(u8, name, "slope_up_steep")) {
-            ImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
         }
     }
 
