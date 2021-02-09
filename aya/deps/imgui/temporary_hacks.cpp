@@ -101,23 +101,27 @@ CIMGUI_API void _ogDockSpace(ImGuiID id, const float w, const float h, ImGuiDock
     ImVec2 size;
     size.x = w;
     size.y = h;
-    return ImGui::DockSpace(id, size, flags, window_class);
+    ImGui::DockSpace(id, size, flags, window_class);
 }
 
 CIMGUI_API void _ogImDrawList_AddQuad(ImDrawList* self, const ImVec2* p1, const ImVec2* p2, const ImVec2* p3, const ImVec2* p4, ImU32 col, float thickness) {
-    return self->AddQuad(*p1, *p2, *p3, *p4, col, thickness);
+    self->AddQuad(*p1, *p2, *p3, *p4, col, thickness);
 }
 
 CIMGUI_API void _ogImDrawList_AddQuadFilled(ImDrawList* self, const ImVec2* p1, const ImVec2* p2, const ImVec2* p3, const ImVec2* p4, ImU32 col) {
-    return self->AddQuadFilled(*p1, *p2, *p3, *p4, col);
+    self->AddQuadFilled(*p1, *p2, *p3, *p4, col);
+}
+
+CIMGUI_API void _ogImDrawList_AddTriangleFilled(ImDrawList* self, const ImVec2* tl, const ImVec2* bl, const ImVec2* br, ImU32 col) {
+    self->AddTriangleFilled(*tl, *bl, *br, col);
 }
 
 CIMGUI_API void _ogImDrawList_AddLine(ImDrawList* self, const ImVec2* p1, const ImVec2* p2, ImU32 col, float thickness) {
-    return self->AddLine(*p1, *p2, col, thickness);
+    self->AddLine(*p1, *p2, col, thickness);
 }
 
 CIMGUI_API void _ogSetCursorScreenPos(const ImVec2* pos) {
-    return ImGui::SetCursorScreenPos(*pos);
+    ImGui::SetCursorScreenPos(*pos);
 }
 
 CIMGUI_API bool _ogListBoxHeaderVec2(const char* label, const ImVec2* size) {
