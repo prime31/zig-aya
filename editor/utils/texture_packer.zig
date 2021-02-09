@@ -11,7 +11,7 @@ const Size = struct {
 };
 
 pub const Atlas = struct {
-    names: [][]const u8,
+    names: [][:0]const u8,
     rects: []math.RectI,
     w: u16,
     h: u16,
@@ -20,7 +20,7 @@ pub const Atlas = struct {
     pub fn init(frames: []stb.stbrp_rect, files: [][]const u8, size: Size) Atlas {
         std.debug.assert(frames.len == files.len);
         var res_atlas = Atlas{
-            .names = aya.mem.allocator.alloc([]const u8, files.len) catch unreachable,
+            .names = aya.mem.allocator.alloc([:0]const u8, files.len) catch unreachable,
             .rects = aya.mem.allocator.alloc(math.RectI, frames.len) catch unreachable,
             .w = size.width,
             .h = size.height,
@@ -32,7 +32,7 @@ pub const Atlas = struct {
         }
 
         for (files) |file, i| {
-            res_atlas.names[i] = std.mem.dupe(aya.mem.allocator, u8, fs.path.basename(file)) catch unreachable;
+            res_atlas.names[i] = std.mem.dupeZ(aya.mem.allocator, u8, fs.path.basename(file)) catch unreachable;
         }
 
         // generate the atlas
