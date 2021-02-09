@@ -24,6 +24,11 @@ CIMGUI_API bool _ogImageButton(ImTextureID user_texture_id, const ImVec2* size, 
     return ImGui::ImageButton(user_texture_id, *size, *uv0, *uv1, frame_padding, border_col, tint_col);
 }
 
+CIMGUI_API bool _ogImageButtonEx(ImTextureID user_texture_id, const ImVec2* size, const ImVec2* uv0, const ImVec2* uv1, int frame_padding, const ImVec4* bg_col, const ImVec4* tint_col) {
+    return ImGui::ImageButton(user_texture_id, *size, *uv0, *uv1, frame_padding, *bg_col, *tint_col);
+}
+
+
 CIMGUI_API void _ogColoredText(float r, float g, float b, const char* text) {
     ImVec4 tint_col;
     tint_col.x = r;
