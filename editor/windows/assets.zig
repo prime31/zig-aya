@@ -4,6 +4,8 @@ usingnamespace @import("imgui");
 
 var selected_comp: usize = 0;
 var asset_types = [_][:0]const u8{ icons.th_list ++ " Tilesets", icons.image ++ " Textures", icons.atlas ++ " Atlases", icons.dungeon ++ " Levels" };
+const thumb_size = 75;
+const max_thumb_chars = 7;
 
 pub fn draw(state: *root.AppState) void {
     defer igEnd();
@@ -44,13 +46,13 @@ fn drawTilesets(state: *root.AppState) void {
 }
 
 fn drawTextures(state: *root.AppState) void {
-    const thumb_size = 50;
-    const num = 80;
     const win_visible_width = ogGetWindowPos().x + ogGetWindowContentRegionMax().x;
     const x_spacing = igGetStyle().ItemSpacing.x;
 
-    // var i: usize = 0;
-    // while (i < state.asset_man.thumbnail_atlas.names.len) : (i += 1) {
+    const w = ogGetContentRegionAvail().x + 10;
+    _ = igBeginChildID(666, .{.x = w}, false, ImGuiWindowFlags_None);
+    defer igEndChildFrame();
+
     for (state.asset_man.thumbnail_atlas.names) |asset_name, i| {
         igPushIDInt(@intCast(c_int, i));
         defer igPopID();
@@ -72,8 +74,8 @@ fn drawTextures(state: *root.AppState) void {
         var name_buf: [10]u8 = undefined;
         std.mem.set(u8, &name_buf, 0);
 
-        if (base_name.len > 7) {
-            std.mem.copy(u8, &name_buf, base_name[0..7]);
+        if (base_name.len > max_thumb_chars) {
+            std.mem.copy(u8, &name_buf, base_name[0..max_thumb_chars]);
         } else {
             std.mem.copy(u8, &name_buf, base_name);
         }
@@ -82,7 +84,7 @@ fn drawTextures(state: *root.AppState) void {
 
         // Expected position if next button was on same line
         const next_x = ogGetItemRectMax().x + x_spacing + thumb_size;
-        if (i + 1 < num and next_x < win_visible_width) {
+        if (next_x < win_visible_width) {
             igSameLine(0, x_spacing);
         } else {
             ogDummy(.{ .y = 10 });
