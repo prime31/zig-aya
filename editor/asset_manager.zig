@@ -5,10 +5,49 @@ usingnamespace @import("imgui");
 const root = @import("main.zig");
 const Atlas = @import("utils/texture_packer.zig").Atlas;
 
+/// takes ownership of the Atlas passed in!
+const ThumbnailAtlas = struct {
+    tex: aya.gfx.Texture = undefined,
+    names: [][:0]const u8,
+    uvs: []Uv,
+
+    const Uv = struct {
+        tl: ImVec2,
+        br: ImVec2,
+    };
+
+    pub fn init(atlas: Atlas) ThumbnailAtlas {
+        var uvs = aya.mem.allocator.alloc(Uv, atlas.rects.len) catch unreachable;
+        for (uvs) |*uv, i| {
+            const rect = atlas.rects[i];
+            uv.tl.x = @intToFloat(f32, rect.x) / @intToFloat(f32, atlas.image.w);
+            uv.tl.y = @intToFloat(f32, rect.y) / @intToFloat(f32, atlas.image.h);
+            uv.br.x = uv.tl.x + @intToFloat(f32, rect.w) / @intToFloat(f32, atlas.image.w);
+            uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / @intToFloat(f32, atlas.image.h); 
+        }
+
+        defer aya.mem.allocator.free(atlas.rects);
+        defer atlas.image.deinit();
+        return .{
+            .tex = aya.gfx.Texture.initWithData(u32, atlas.w, atlas.h, atlas.image.pixels), 
+            .names = atlas.names,
+            .uvs = uvs,
+        };
+    }
+
+    pub fn deinit(self: @This()) void {
+        self.tex.deinit();
+        for (self.names) |name| {
+            aya.mem.allocator.free(name);
+        }
+        aya.mem.allocator.free(self.names);
+        aya.mem.allocator.free(self.uvs);
+    }
+};
+
 pub const AssetManager = struct {
     root_path: [:0]const u8 = "",
-    thumbnail_atlas: Atlas = undefined,
-    thumbnail_texture: aya.gfx.Texture = undefined,
+    thumbnails: ThumbnailAtlas = undefined,
     tilesets: [][:0]const u8 = &[_][:0]u8{},
 
     pub fn init() AssetManager {
@@ -17,16 +56,11 @@ pub const AssetManager = struct {
 
     pub fn deinit(self: @This()) void {
         if (self.root_path.len > 0) aya.mem.allocator.free(self.root_path);
-        self.thumbnail_texture.deinit();
+        self.thumbnails.deinit();
     }
 
-    pub fn getUvsForThumbnailAtIndex(self: @This(), index: usize) [2]ImVec2 {
-        const rect = self.thumbnail_atlas.rects[index];
-        const tl = ImVec2{ .x = @intToFloat(f32, rect.x) / @intToFloat(f32, self.thumbnail_atlas.w), .y = @intToFloat(f32, rect.y) / @intToFloat(f32, self.thumbnail_atlas.h) };
-        return [_]ImVec2 {
-            tl,
-            .{ .x = tl.x + @intToFloat(f32, rect.w) / @intToFloat(f32, self.thumbnail_atlas.w), .y = tl.y + @intToFloat(f32, rect.h) / @intToFloat(f32, self.thumbnail_atlas.h) },
-        };
+    pub fn getUvsForThumbnailAtIndex(self: @This(), index: usize) ThumbnailAtlas.Uv {
+        return self.thumbnails.uvs[index];
     }
 
     /// sets the root project path and starts a scan of the subfolders to load up the asset state
@@ -40,8 +74,9 @@ pub const AssetManager = struct {
     fn generateThumbnailAtlas(self: *@This()) void {
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);
-        self.thumbnail_atlas = root.utils.texture_packer.packThumbnails(tex_folder, 90) catch unreachable;
-        self.thumbnail_texture = aya.gfx.Texture.initWithData(u32, self.thumbnail_atlas.w, self.thumbnail_atlas.h, self.thumbnail_atlas.image.pixels);
+
+        const thumb_atlas = root.utils.texture_packer.packThumbnails(tex_folder, 90) catch unreachable;
+        self.thumbnails = ThumbnailAtlas.init(thumb_atlas);
     }
 
     fn loadTilesets(self: *@This()) void {
