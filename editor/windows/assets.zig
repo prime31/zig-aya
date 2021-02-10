@@ -50,16 +50,16 @@ fn drawTextures(state: *root.AppState) void {
     const x_spacing = igGetStyle().ItemSpacing.x;
 
     const w = ogGetContentRegionAvail().x + 10;
-    _ = igBeginChildID(666, .{.x = w}, false, ImGuiWindowFlags_None);
+    _ = ogBeginChildID(666, .{ .x = w }, false, ImGuiWindowFlags_None);
     defer igEndChildFrame();
 
-    for (state.asset_man.thumbnail_atlas.names) |asset_name, i| {
+    for (state.asset_man.thumbnails.names) |asset_name, i| {
         igPushIDInt(@intCast(c_int, i));
         defer igPopID();
 
         igBeginGroup();
         const uvs = state.asset_man.getUvsForThumbnailAtIndex(i);
-        _ = ogImageButtonEx(state.asset_man.thumbnail_texture.imTextureID(), .{ .x = thumb_size, .y = thumb_size }, uvs[0], uvs[1], 0, root.colors.rgbToVec4(50, 50, 50), .{ .x = 1, .y = 1, .z = 1, .w = 1 });
+        _ = ogImageButtonEx(state.asset_man.thumbnails.tex.imTextureID(), .{ .x = thumb_size, .y = thumb_size }, uvs.tl, uvs.br, 0, root.colors.rgbToVec4(50, 50, 50), .{ .x = 1, .y = 1, .z = 1, .w = 1 });
 
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
             defer igEndDragDropSource();
