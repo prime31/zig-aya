@@ -40,7 +40,7 @@ pub const AssetManager = struct {
     fn generateThumbnailAtlas(self: *@This()) void {
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);
-        self.thumbnail_atlas = root.utils.texture_packer.packThumbnails(tex_folder, 50) catch unreachable;
+        self.thumbnail_atlas = root.utils.texture_packer.packThumbnails(tex_folder, 90) catch unreachable;
         self.thumbnail_texture = aya.gfx.Texture.initWithData(u32, self.thumbnail_atlas.w, self.thumbnail_atlas.h, self.thumbnail_atlas.image.pixels);
     }
 
