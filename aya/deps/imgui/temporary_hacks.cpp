@@ -127,3 +127,7 @@ CIMGUI_API void _ogSetCursorScreenPos(const ImVec2* pos) {
 CIMGUI_API bool _ogListBoxHeaderVec2(const char* label, const ImVec2* size) {
     return ImGui::ListBoxHeader(label, *size);
 }
+
+CIMGUI_API bool _ogBeginChildID(ImGuiID id, const ImVec2* size, bool border, ImGuiWindowFlags flags) {
+    return ImGui::BeginChild(id, *size, border, flags);
+}

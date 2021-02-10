@@ -26,6 +26,7 @@ extern fn _ogImDrawList_AddTriangleFilled(self: [*c]ImDrawList, tl: *const ImVec
 extern fn _ogImDrawList_AddLine(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, col: ImU32, thickness: f32) void;
 extern fn _ogSetCursorScreenPos(pos: *const ImVec2) void;
 extern fn _ogListBoxHeaderVec2(label: [*c]const u8, size: *const ImVec2) bool;
+extern fn _ogBeginChildID(id: ImGuiID, size: *const ImVec2, border: bool, flags: ImGuiWindowFlags) bool;
 
 // implementations for ABI incompatibility bugs
 pub fn ogImage(texture: ImTextureID, width: i32, height: i32) void {
@@ -341,4 +342,8 @@ pub fn ogColorConvertU32ToFloat4(in: ImU32) ImVec4 {
     var col = ImVec4{};
     igColorConvertU32ToFloat4(&col, in);
     return col;
+}
+
+pub fn ogBeginChildID(id: ImGuiID, size: ImVec2, border: bool, flags: ImGuiWindowFlags) bool {
+    return _ogBeginChildID(id, &size, border, flags);
 }
