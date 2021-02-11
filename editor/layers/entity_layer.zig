@@ -93,7 +93,9 @@ pub const EntityLayer = struct {
             if (entity.sprite) |sprite| {
                 aya.draw.texViewport(sprite.tex, .{ .w = @floatToInt(i32, sprite.tex.width), .h = @floatToInt(i32, sprite.tex.height) }, entity.transformMatrix());
             } else {
-                aya.draw.rect(entity.transform.pos, 15 * entity.transform.scale.x, 15 * entity.transform.scale.y, math.Color.blue);
+                // if we have no sprite we just draw the bounds, which default to some size so that we have something to look at and select
+                const bounds = entity.bounds();
+                aya.draw.rect(.{ .x = bounds.x, .y = bounds.y }, bounds.w, bounds.h, math.Color.blue);
             }
 
             if (entity.collider) |collider| {
@@ -149,7 +151,7 @@ pub const EntityLayer = struct {
 
         // context menu for entity commands
         if (self.selected_index != null and igBeginPopupContextItem("##entity-scene-context-menu", ImGuiMouseButton_Right)) {
-            if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(self.entities.items[self.selected_index.?], state); 
+            if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(self.entities.items[self.selected_index.?], state);
             igEndPopup();
         }
     }
@@ -252,7 +254,7 @@ pub const EntityLayer = struct {
             var is_open = true;
             if (igCollapsingHeaderBoolPtr("Sprite", &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
                 igIndent(10);
-                inspectors.inspectSprite(sprite);
+                inspectors.inspectSprite(state, sprite);
                 igUnindent(10);
             }
 

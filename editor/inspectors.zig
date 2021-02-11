@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 const root = @import("root");
 usingnamespace @import("imgui");
+const AppState = root.data.AppState;
 
 // entity link state
 var filter_buffer: [25]u8 = undefined;
@@ -185,7 +186,7 @@ pub fn inspectEntityLink(label: [:0]const u8, entity_id: u8, link: *u8, entities
     }
 }
 
-pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
+pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Texture) void {
     beginColumns(label, tex);
     defer endColumns();
 
@@ -199,10 +200,44 @@ pub fn inspectTexture(label: [:0]const u8, tex: *aya.gfx.Texture) void {
     igPopItemWidth();
 
     // texture chooser popup
-    ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+    const popup_height = ogGetWindowSize().y - ogGetCursorScreenPos().y;
+    ogSetNextWindowPos(ogGetCursorScreenPos(), ImGuiCond_Appearing, .{ .x = 0.5 });
+    ogSetNextWindowSize(.{ .x = 75 * 2 + igGetStyle().ItemSpacing.x * 5, .y = popup_height }, ImGuiCond_Always);
+
     if (igBeginPopup("##texture-chooser", ImGuiWindowFlags_None)) {
         defer igEndPopup();
-        igText("texture chooser");
+
+        for (state.asset_man.thumbnails.names) |asset_name, i| {
+            igPushIDInt(@intCast(c_int, i));
+            defer igPopID();
+
+            igBeginGroup();
+
+            const uvs = state.asset_man.getUvsForThumbnailAtIndex(i);
+            if (ogImageButton(state.asset_man.thumbnails.tex.imTextureID(), .{ .x = 75, .y = 75 }, uvs.tl, uvs.br, 0)) {
+                std.log.warn("selected image: {s}", .{asset_name});
+                igCloseCurrentPopup();
+            }
+
+            const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
+            var name_buf: [12]u8 = undefined;
+            std.mem.set(u8, &name_buf, 0);
+
+            if (base_name.len > 11) {
+                std.mem.copy(u8, &name_buf, base_name[0..11]);
+            } else {
+                std.mem.copy(u8, &name_buf, base_name);
+            }
+
+            igText(&name_buf);
+            igEndGroup();
+
+            if (i % 2 == 0) {
+                igSameLine(0, igGetStyle().ItemSpacing.x);
+            } else {
+                ogDummy(.{ .y = 10 });
+            }
+        }
     }
 }
 
@@ -268,8 +303,8 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
     }
 }
 
-pub fn inspectSprite(sprite: *root.data.Sprite) void {
-    inspectTexture("Texture", &sprite.tex);
+pub fn inspectSprite(state: *AppState, sprite: *root.data.Sprite) void {
+    inspectTexture(state, "Texture", &sprite.tex);
     inspectOrigin("Origin", &sprite.origin, .{ .x = sprite.tex.width, .y = sprite.tex.height });
 }
 
@@ -319,4 +354,3 @@ pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25:0]u8) voi
         }
     }
 }
-

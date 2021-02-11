@@ -35,12 +35,12 @@ pub const Entity = struct {
             if (c_index != null) break :blk c_index.?;
 
             var tmp = std.mem.indexOfScalar(u8, &self.name, 0).?;
-            if (tmp > 20) break :blk 20; 
+            if (tmp > 20) break :blk 20;
             break :blk tmp;
         };
 
         var buf: [25]u8 = undefined;
-        var name = std.fmt.bufPrint(&buf, "{s} (c)", .{self.name[0 ..name_sentinel_index]}) catch unreachable;
+        var name = std.fmt.bufPrint(&buf, "{s} (c)", .{self.name[0..name_sentinel_index]}) catch unreachable;
 
         var entity = init(id, name, self.transform.pos.add(.{ .x = 16, .y = 16 }));
         entity.transform.rot = self.transform.rot;
@@ -63,15 +63,21 @@ pub const Entity = struct {
     }
 
     pub fn intersects(self: @This(), rect: math.Rect) bool {
-        // we need to have either a collider or a sprite to be picked
         if (self.collider) |collider| if (collider.bounds(self.transform.pos).intersects(rect)) return true;
         if (self.sprite) |sprite| return sprite.bounds(self.transform).intersects(rect);
-
-        return false;
+        return self.bounds().intersects(rect);
     }
 
     pub fn bounds(self: @This()) math.Rect {
-        if (self.sprite == null and self.collider == null) return .{ .x = self.transform.pos.x, .y = self.transform.pos.y, .w = 2, .h = 2 };
+        if (self.sprite == null and self.collider == null) {
+            // create a matrix at our origin then translate the top-left and bottom-right corners. We ignore rotatation here.
+            const mat = aya.math.Mat32.initTransform(.{ .x = self.transform.pos.x, .y = self.transform.pos.y, .sx = self.transform.scale.x, .sy = self.transform.scale.y });
+            const tl = mat.transformVec2(.{ .x = -6, .y = -6 });
+            const br = mat.transformVec2(.{ .x = 6, .y = 6 });
+
+            return .{ .x = tl.x, .y = tl.y, .w = br.x - tl.x, .h = br.y - tl.y };
+        }
+
         if (self.sprite != null and self.collider != null) {
             const spr_bounds = self.sprite.?.bounds(self.transform);
             const col_bounds = self.collider.?.bounds(self.transform.pos);
@@ -109,6 +115,7 @@ pub const Transform = struct {
 
 pub const Sprite = struct {
     tex: aya.gfx.Texture,
+    tex_name: [:0]u8 = undefined,
     origin: aya.math.Vec2 = .{},
 
     pub fn init(tex: aya.gfx.Texture) Sprite {
