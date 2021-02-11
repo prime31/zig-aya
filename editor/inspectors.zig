@@ -5,7 +5,7 @@ usingnamespace @import("imgui");
 const AppState = root.data.AppState;
 
 // entity link state
-var filter_buffer: [25]u8 = undefined;
+var filter_buffer: [25:0]u8 = undefined;
 var filter_entities = false;
 
 fn beginColumns(label: [:0]const u8, ptr_id: ?*const c_void) void {
@@ -195,8 +195,10 @@ pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Textu
     const max_dim = std.math.max(tex.width, tex.height);
     const multiplier = 50 / max_dim;
 
-    if (ogImageButton(tex.imTextureID(), .{ .x = tex.width * multiplier, .y = tex.height * multiplier }, .{}, .{ .x = 1, .y = 1 }, 5))
+    if (ogImageButton(tex.imTextureID(), .{ .x = tex.width * multiplier, .y = tex.height * multiplier }, .{}, .{ .x = 1, .y = 1 }, 5)) {
         igOpenPopup("##texture-chooser", ImGuiPopupFlags_None);
+        std.mem.set(u8, &filter_buffer, 0);
+    }
     igPopItemWidth();
 
     // texture chooser popup
@@ -207,9 +209,24 @@ pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Textu
     if (igBeginPopup("##texture-chooser", ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
+        igPushItemWidth(igGetWindowContentRegionWidth());
+        if (ogInputText("##texture-filter", &filter_buffer, filter_buffer.len)) {
+            const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+            filter_entities = null_index > 0;
+        }
+        igPopItemWidth();
+
+        var displayed_count: usize = 0;
         for (state.asset_man.thumbnails.names) |asset_name, i| {
+            if (filter_entities) {
+                const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
+                if (std.mem.indexOf(u8, asset_name, filter_buffer[0..null_index]) == null)
+                    continue;
+            }
+
             igPushIDInt(@intCast(c_int, i));
             defer igPopID();
+            defer displayed_count += 1;
 
             igBeginGroup();
 
@@ -220,7 +237,7 @@ pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Textu
             }
 
             const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
-            var name_buf: [12]u8 = undefined;
+            var name_buf: [12:0]u8 = undefined;
             std.mem.set(u8, &name_buf, 0);
 
             if (base_name.len > 11) {
@@ -232,7 +249,7 @@ pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Textu
             igText(&name_buf);
             igEndGroup();
 
-            if (i % 2 == 0) {
+            if (displayed_count % 2 == 0) {
                 igSameLine(0, igGetStyle().ItemSpacing.x);
             } else {
                 ogDummy(.{ .y = 10 });
