@@ -16,7 +16,7 @@ pub const Scene = struct {
         self.pass.?.deinit();
     }
 
-    pub fn onFileDropped(self: @This(), state: *root.AppState, file: []const u8) void {
+    pub fn onFileDropped(self: @This(), state: *root.AppState, file: [:0]const u8) void {
         // swallow up any project files and load them
         if (std.mem.endsWith(u8, file, ".editor_extension")) {
             std.debug.print("Scene got an editor extension\n", .{});
@@ -64,14 +64,15 @@ pub const Scene = struct {
             if (igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", ImGuiDragDropFlags_None)) |payload| {
                 std.debug.assert(payload.DataSize == @sizeOf(usize));
                 const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                const tex_name = state.asset_man.textures.names[data.*];
 
                 const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
                 const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
                 var entity_layer = &state.level.layers.items[state.selected_layer_index].entity;
                 var entity = entity_layer.addEntity("Dropped Payload", .{ .x = mouse_world.x, .y = mouse_world.y });
-                entity.transform.scale = .{.x = 5, .y = 5};
-                entity.sprite = root.data.Sprite.init(aya.gfx.Texture.initCheckerTexture());
+                const index = state.asset_man.textures.indexOfTexture(tex_name);
+                entity.sprite = root.data.Sprite.init(state.asset_man.textures.tex, state.asset_man.textures.rects[index], tex_name);
             }
         }
 

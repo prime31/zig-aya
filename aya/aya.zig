@@ -44,7 +44,7 @@ pub const Config = struct {
     update: ?fn () anyerror!void,
     render: fn () anyerror!void,
     shutdown: ?fn () anyerror!void = null,
-    onFileDropped: ?fn ([]const u8) void = null,
+    onFileDropped: ?fn ([:0]const u8) void = null,
 
     gfx: gfx.Config = gfx.Config{},
     window: WindowConfig = WindowConfig{},
@@ -116,7 +116,7 @@ pub fn run(config: Config) !void {
     sdl.SDL_Quit();
 }
 
-fn pollEvents(onFileDropped: ?fn ([]const u8) void) bool {
+fn pollEvents(onFileDropped: ?fn ([:0]const u8) void) bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         if (enable_imgui and imgui_impl.handleEvent(&event)) continue;
