@@ -5,7 +5,7 @@ usingnamespace @import("imgui");
 var selected_comp: usize = 0;
 var asset_types = [_][:0]const u8{ icons.th_list ++ " Tilesets", icons.image ++ " Textures", icons.atlas ++ " Atlases", icons.dungeon ++ " Levels" };
 const thumb_size = 75;
-const max_thumb_chars = 7;
+const max_thumb_chars = 10;
 
 pub fn draw(state: *root.AppState) void {
     defer igEnd();
@@ -64,14 +64,14 @@ fn drawTextures(state: *root.AppState) void {
         if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
             defer igEndDragDropSource();
             _ = igSetDragDropPayload("TEXTURE_ASSET_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
-            _ = ogButtonEx("Texy", .{ .x = thumb_size, .y = thumb_size });
+            _ = ogButtonEx(asset_name.ptr, .{ .x = thumb_size, .y = thumb_size });
         }
 
         if (igIsItemActive())
             ogImDrawList_AddLine(igGetForegroundDrawListNil(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, igGetColorU32Col(ImGuiCol_Button, 1), 2);
 
         const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
-        var name_buf: [10]u8 = undefined;
+        var name_buf: [max_thumb_chars + 1:0]u8 = undefined;
         std.mem.set(u8, &name_buf, 0);
 
         if (base_name.len > max_thumb_chars) {

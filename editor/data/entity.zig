@@ -115,20 +115,28 @@ pub const Transform = struct {
 
 pub const Sprite = struct {
     tex: aya.gfx.Texture,
+    rect: math.RectI,
     tex_name: [:0]u8 = undefined,
     origin: aya.math.Vec2 = .{},
 
-    pub fn init(tex: aya.gfx.Texture) Sprite {
+    pub fn init(tex: aya.gfx.Texture, rect: math.RectI, name: [:0]const u8) Sprite {
         return .{
             .tex = tex,
-            .origin = .{ .x = tex.width * 0.5, .y = tex.height * 0.5 },
+            .rect = rect,
+            .tex_name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
+            .origin = .{ .x = @intToFloat(f32, rect.w) * 0.5, .y = @intToFloat(f32, rect.h) * 0.5 },
         };
+    }
+
+    pub fn initNoTexture() Sprite {
+        const tex = aya.gfx.Texture.initCheckerTexture();
+        return Sprite.init(tex, .{ .w = @floatToInt(i32, tex.width), .h = @floatToInt(i32, tex.height) }, "default");
     }
 
     pub fn bounds(self: Sprite, transform: Transform) math.Rect {
         // TODO: take rotation into account when calculating the bounds of the sprite texture
         const tl = transform.pos.subtract(self.origin.mul(transform.scale));
-        return .{ .x = tl.x, .y = tl.y, .w = self.tex.width * transform.scale.x, .h = self.tex.height * transform.scale.y };
+        return .{ .x = tl.x, .y = tl.y, .w = @intToFloat(f32, self.rect.w) * transform.scale.x, .h = @intToFloat(f32, self.rect.h) * transform.scale.y };
     }
 };
 

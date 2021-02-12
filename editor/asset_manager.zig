@@ -23,13 +23,13 @@ const ThumbnailAtlas = struct {
             uv.tl.x = @intToFloat(f32, rect.x) / @intToFloat(f32, atlas.image.w);
             uv.tl.y = @intToFloat(f32, rect.y) / @intToFloat(f32, atlas.image.h);
             uv.br.x = uv.tl.x + @intToFloat(f32, rect.w) / @intToFloat(f32, atlas.image.w);
-            uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / @intToFloat(f32, atlas.image.h); 
+            uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / @intToFloat(f32, atlas.image.h);
         }
 
         defer aya.mem.allocator.free(atlas.rects);
         defer atlas.image.deinit();
         return .{
-            .tex = aya.gfx.Texture.initWithData(u32, atlas.w, atlas.h, atlas.image.pixels), 
+            .tex = aya.gfx.Texture.initWithData(u32, atlas.w, atlas.h, atlas.image.pixels),
             .names = atlas.names,
             .uvs = uvs,
         };
@@ -37,17 +37,48 @@ const ThumbnailAtlas = struct {
 
     pub fn deinit(self: @This()) void {
         self.tex.deinit();
-        for (self.names) |name| {
+        for (self.names) |name|
             aya.mem.allocator.free(name);
-        }
         aya.mem.allocator.free(self.names);
         aya.mem.allocator.free(self.uvs);
+    }
+};
+
+/// takes ownership of the Atlas passed in!
+pub const TextureAtlas = struct {
+    tex: aya.gfx.Texture = undefined,
+    names: [][:0]const u8,
+    rects: []aya.math.RectI,
+
+    pub fn init(atlas: Atlas) TextureAtlas {
+        defer atlas.image.deinit();
+        return .{
+            .tex = aya.gfx.Texture.initWithData(u32, atlas.w, atlas.h, atlas.image.pixels),
+            .names = atlas.names,
+            .rects = atlas.rects,
+        };
+    }
+
+    pub fn deinit(self: @This()) void {
+        self.tex.deinit();
+        for (self.names) |name|
+            aya.mem.allocator.free(name);
+        aya.mem.allocator.free(self.names);
+        aya.mem.allocator.free(self.rects);
+    }
+
+    pub fn indexOfTexture(self: @This(), tex_name: [:0]const u8) usize {
+        for (self.names) |name, i| {
+            if (std.mem.eql(u8, name, tex_name)) return i;
+        }
+        unreachable;
     }
 };
 
 pub const AssetManager = struct {
     root_path: [:0]const u8 = "",
     thumbnails: ThumbnailAtlas = undefined,
+    textures: TextureAtlas = undefined,
     tilesets: [][:0]const u8 = &[_][:0]u8{},
 
     pub fn init() AssetManager {
@@ -67,16 +98,23 @@ pub const AssetManager = struct {
     pub fn setRootPath(self: *@This(), path: []const u8) void {
         if (self.root_path.len > 0) aya.mem.allocator.free(self.root_path);
         self.root_path = aya.mem.allocator.dupeZ(u8, path) catch unreachable;
-        self.generateThumbnailAtlas();
-        self.loadTilesets();
-    }
-
-    fn generateThumbnailAtlas(self: *@This()) void {
+       
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);
 
+        self.generateThumbnailAtlas(tex_folder);
+        self.generateTextureAtlas(tex_folder);
+        self.loadTilesets();
+    }
+
+    fn generateThumbnailAtlas(self: *@This(), tex_folder: []const u8) void {
         const thumb_atlas = root.utils.texture_packer.packThumbnails(tex_folder, 90) catch unreachable;
         self.thumbnails = ThumbnailAtlas.init(thumb_atlas);
+    }
+
+    fn generateTextureAtlas(self: *@This(), tex_folder: []const u8) void {
+        const atlas = root.utils.texture_packer.pack(tex_folder) catch unreachable;
+        self.textures = TextureAtlas.init(atlas);
     }
 
     fn loadTilesets(self: *@This()) void {
