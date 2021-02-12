@@ -36,7 +36,7 @@ pub const EntityLayer = struct {
         self.entities.deinit();
     }
 
-    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: [:0]const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
             if (self.selected_index) |selected_index| {
                 var texture = aya.gfx.Texture.initFromFile(file, .nearest) catch |err| {
@@ -46,7 +46,7 @@ pub const EntityLayer = struct {
 
                 var selected_entity = &self.entities.items[selected_index];
                 // TODO: dont leak the sprite texture if we already have a sprite here
-                selected_entity.sprite = root.data.Sprite.init(texture);
+                selected_entity.sprite = root.data.Sprite.init(texture, .{ .w = @floatToInt(i32, texture.width), .h = @floatToInt(i32, texture.height) }, file);
                 if (selected_entity.collider != null) selected_entity.autoFitCollider();
             }
         }
@@ -91,7 +91,7 @@ pub const EntityLayer = struct {
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
         for (self.entities.items) |entity, i| {
             if (entity.sprite) |sprite| {
-                aya.draw.texViewport(sprite.tex, .{ .w = @floatToInt(i32, sprite.tex.width), .h = @floatToInt(i32, sprite.tex.height) }, entity.transformMatrix());
+                aya.draw.texViewport(sprite.tex, sprite.rect, entity.transformMatrix());
             } else {
                 // if we have no sprite we just draw the bounds, which default to some size so that we have something to look at and select
                 const bounds = entity.bounds();
@@ -321,7 +321,7 @@ pub const EntityLayer = struct {
 
         if (igBeginPopup("add-component", ImGuiWindowFlags_None)) {
             if (entity.sprite == null and igMenuItemBool("Sprite", null, false, true)) {
-                entity.sprite = root.data.Sprite.init(aya.gfx.Texture.initCheckerTexture());
+                entity.sprite = root.data.Sprite.initNoTexture();
             }
 
             if (entity.collider == null) {

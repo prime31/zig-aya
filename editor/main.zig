@@ -117,7 +117,7 @@ fn render() !void {
     }
 }
 
-fn onFileDropped(file: []const u8) void {
+fn onFileDropped(file: [:0]const u8) void {
     scene.onFileDropped(&state, file);
 }
 

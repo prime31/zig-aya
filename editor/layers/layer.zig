@@ -77,7 +77,7 @@ pub const Layer = union(LayerType) {
         }
     }
 
-    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+    pub fn onFileDropped(self: *@This(), state: *AppState, file: [:0]const u8) void {
         switch (self.*) {
             .tilemap => |*layer| layer.onFileDropped(state, file),
             .auto_tilemap => |*layer| layer.onFileDropped(state, file),
