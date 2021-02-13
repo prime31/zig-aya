@@ -106,6 +106,10 @@ pub const Color = extern union {
         return fromBytes(@truncate(u8, @intCast(u32, r)), @truncate(u8, @intCast(u32, g)), @truncate(u8, @intCast(u32, b)), @truncate(u8, @intCast(u32, a)));
     }
 
+    pub fn fromVec4(col: Vec4) Color {
+        return Color.fromRgba(col.x, col.y, col.z, col.w);
+    }
+
     pub fn r_val(self: Color) u8 {
         return @truncate(u8, self.value);
     }

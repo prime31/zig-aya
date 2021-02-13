@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 const root = @import("../main.zig");
 
+const Color = aya.math.Color;
 const Size = @import("data.zig").Size;
 const Layer = @import("root").layers.Layer;
 const Component = @import("data.zig").Component;
@@ -29,6 +30,8 @@ pub const Level = struct {
 pub const AppState = struct {
     tile_size: usize = 16,
     snap_size: u8 = 0,
+    clear_color: Color = Color.gray,
+    bg_color: Color = Color.black,
     level: Level,
     components: std.ArrayList(Component),
     next_component_id: u8 = 0,
@@ -37,7 +40,7 @@ pub const AppState = struct {
 
     pub fn init() AppState {
         return .{
-            .level = Level.init(""),
+            .level = Level.init("default"),
             .components = std.ArrayList(Component).init(aya.mem.allocator),
             .asset_man = root.AssetManager.init(),
         };

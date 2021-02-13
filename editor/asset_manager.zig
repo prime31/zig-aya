@@ -108,9 +108,21 @@ pub const AssetManager = struct {
         return self.thumbnails.uvs[self.indexOfTexture(self.thumbnails.names, name).?];
     }
 
-    /// returns the Texture that contains the image. Currently we only keep one atlas so its pretty useless ;)
+    /// returns the Texture that contains the image. Currently we only keep one atlas so its pretty useless but if we support multiple atlases later ;)
     pub fn getTextureAndRect(self: @This(), name: [:0]const u8) struct { tex: aya.gfx.Texture, rect: aya.math.RectI } {
         return .{ .tex = self.textures.tex, .rect = self.textures.rects[self.indexOfTexture(self.textures.names, name).?] };
+    }
+
+    /// gets the Texture and UVs appropropriate for adding a Dear ImGui image to the draw list
+    pub fn getTextureAndUvs(self: @This(), name: [:0]const u8) struct { tex: aya.gfx.Texture, uvs: ThumbnailAtlas.Uv, rect: aya.math.RectI } {
+        const rect = self.textures.rects[self.indexOfTexture(self.textures.names, name).?];
+        var uv = ThumbnailAtlas.Uv{ .tl = .{}, .br = .{} };
+        uv.tl.x = @intToFloat(f32, rect.x) / self.textures.tex.width;
+        uv.tl.y = @intToFloat(f32, rect.y) / self.textures.tex.height;
+        uv.br.x = uv.tl.x + @intToFloat(f32, rect.w) / self.textures.tex.width;
+        uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / self.textures.tex.height;
+
+        return .{ .tex = self.textures.tex, .uvs = uv, .rect = rect };
     }
 
     fn indexOfTexture(self: @This(), haystack: [][:0]const u8, name: [:0]const u8) ?usize {

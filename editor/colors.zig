@@ -105,3 +105,4 @@ pub fn rgbToVec4(r: i32, g: i32, b: i32) ImVec4 {
 pub fn rgbaToVec4(r: i32, g: i32, b: i32, a: i32) ImVec4 {
     return .{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) };
 }
+
