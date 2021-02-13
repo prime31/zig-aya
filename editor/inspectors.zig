@@ -59,6 +59,11 @@ pub fn inspectInt(label: [:0]const u8, value: *i32, reset_value: i32) void {
 }
 
 pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
+    inspectFloatMinMax(label, value, reset_value, 0, 0);
+}
+
+/// note that BOTH min and max must be non-zero or Dear ImGui seems to ignore them entirely...
+pub fn inspectFloatMinMax(label: [:0]const u8, value: *f32, reset_value: f32, min: f32, max: f32) void {
     beginColumns(label, value);
     defer endColumns();
 
@@ -72,7 +77,7 @@ pub fn inspectFloat(label: [:0]const u8, value: *f32, reset_value: f32) void {
     igPopStyleColor(1);
 
     igSameLine(0, 0);
-    _ = ogDragSignedFormat(f32, "##x", value, 0.1, 0, 0, "%.2f");
+    _ = ogDragSignedFormat(f32, "##x", value, 0.1, min, max, "%.2f");
     igPopItemWidth();
 }
 
@@ -186,16 +191,18 @@ pub fn inspectEntityLink(label: [:0]const u8, entity_id: u8, link: *u8, entities
     }
 }
 
-pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Texture) void {
-    beginColumns(label, tex);
+pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
+    beginColumns("Texture", &sprite.tex);
     defer endColumns();
 
     igPushItemWidth(-1);
 
-    const max_dim = std.math.max(tex.width, tex.height);
+    const max_dim = std.math.max(sprite.tex.width, sprite.tex.height);
     const multiplier = 50 / max_dim;
 
-    if (ogImageButton(tex.imTextureID(), .{ .x = tex.width * multiplier, .y = tex.height * multiplier }, .{}, .{ .x = 1, .y = 1 }, 5)) {
+    const thumb_uvs = state.asset_man.getUvsForThumbnail(sprite.tex_name);
+    const thumb_tex = if (sprite.tex.img == state.asset_man.default_tex.img) sprite.tex else state.asset_man.thumbnails.tex;
+    if (ogImageButton(thumb_tex.imTextureID(), .{ .x = 75, .y = 75 }, thumb_uvs.tl, thumb_uvs.br, 5)) {
         igOpenPopup("##texture-chooser", ImGuiPopupFlags_None);
         std.mem.set(u8, &filter_buffer, 0);
     }
@@ -232,7 +239,8 @@ pub fn inspectTexture(state: *AppState, label: [:0]const u8, tex: *aya.gfx.Textu
 
             const uvs = state.asset_man.getUvsForThumbnailAtIndex(i);
             if (ogImageButton(state.asset_man.thumbnails.tex.imTextureID(), .{ .x = 75, .y = 75 }, uvs.tl, uvs.br, 0)) {
-                std.log.warn("selected image: {s}", .{asset_name});
+                const tex_rect = state.asset_man.getTextureAndRect(asset_name);
+                sprite.updateTexture(tex_rect.tex, tex_rect.rect, asset_name);
                 igCloseCurrentPopup();
             }
 
@@ -321,27 +329,27 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
 }
 
 pub fn inspectSprite(state: *AppState, sprite: *root.data.Sprite) void {
-    inspectTexture(state, "Texture", &sprite.tex);
-    inspectOrigin("Origin", &sprite.origin, .{ .x = sprite.tex.width, .y = sprite.tex.height });
+    inspectSpriteTexture(state, sprite);
+    inspectOrigin("Origin", &sprite.origin, .{ .x = @intToFloat(f32, sprite.rect.w), .y = @intToFloat(f32, sprite.rect.h) });
 }
 
 pub fn inspectCollider(collider: *root.data.Collider) void {
     switch (collider.*) {
         .box => |*box| {
             inspectVec2("Offset", &box.offset, .{});
-            inspectFloat("Width", &box.w, 25);
-            inspectFloat("Height", &box.h, 25);
+            inspectFloatMinMax("Width", &box.w, 25, 1, std.math.f32_max);
+            inspectFloatMinMax("Height", &box.h, 25, 1, std.math.f32_max);
         },
         .circle => |*circle| {
             inspectVec2("Offset", &circle.offset, .{});
-            inspectFloat("Radius", &circle.r, 25);
+            inspectFloatMinMax("Radius", &circle.r, 25, 5, std.math.f32_max);
         },
     }
 }
 
 pub fn inspectTransform(transform: *root.data.Transform) void {
     inspectVec2("Position", &transform.pos, .{});
-    inspectFloat("Rotation", &transform.rot, 0);
+    inspectFloatMinMax("Rotation", &transform.rot, 0, -360, 360);
     inspectVec2("Scale", &transform.scale, .{ .x = 1, .y = 1 });
 }
 

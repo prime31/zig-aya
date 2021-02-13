@@ -335,6 +335,7 @@ pub fn ogDragSignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_s
         f32 => ImGuiDataType_Float,
         else => unreachable,
     };
+
     return igDragScalar(label, data_type, p_data, v_speed, &min, &max, format, 1);
 }
 

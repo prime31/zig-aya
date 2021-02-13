@@ -78,12 +78,16 @@ pub const EntityLayer = struct {
 
     /// draws the entities window and optionally the inspector window
     pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
-        // TODO: draw entity sprites if we are not selected and self.visible
         if (is_selected) {
             self.drawEntitiesWindow(state);
 
             if (self.selected_index) |selected_index|
                 self.drawInspectorWindow(state, &self.entities.items[selected_index]);
+        } else if (self.visible) {
+            // if we are not selected but visible then draw just the sprites
+            for (self.entities.items) |entity| {
+                if (entity.sprite) |sprite| aya.draw.texViewport(sprite.tex, sprite.rect, entity.transformMatrix());
+            }
         }
     }
 
@@ -258,7 +262,10 @@ pub const EntityLayer = struct {
                 igUnindent(10);
             }
 
-            if (!is_open) entity.sprite = null;
+            if (!is_open) {
+                entity.sprite.?.deinit();
+                entity.sprite = null;
+            }
             ogDummy(.{ .y = 5 });
         }
 
@@ -321,7 +328,7 @@ pub const EntityLayer = struct {
 
         if (igBeginPopup("add-component", ImGuiWindowFlags_None)) {
             if (entity.sprite == null and igMenuItemBool("Sprite", null, false, true)) {
-                entity.sprite = root.data.Sprite.initNoTexture();
+                entity.sprite = root.data.Sprite.initNoTexture(state);
             }
 
             if (entity.collider == null) {
