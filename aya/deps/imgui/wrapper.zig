@@ -24,6 +24,7 @@ extern fn _ogImDrawList_AddQuad(self: [*c]ImDrawList, p1: *const ImVec2, p2: *co
 extern fn _ogImDrawList_AddQuadFilled(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, p3: *const ImVec2, p4: *const ImVec2, col: ImU32) void;
 extern fn _ogImDrawList_AddTriangleFilled(self: [*c]ImDrawList, tl: *const ImVec2, bl: *const ImVec2, br: *const ImVec2, col: ImU32) void;
 extern fn _ogImDrawList_AddLine(self: [*c]ImDrawList, p1: *const ImVec2, p2: *const ImVec2, col: ImU32, thickness: f32) void;
+extern fn _ogImDrawList_AddImage(self: [*c]ImDrawList, user_texture_id: ImTextureID, p_min: *const ImVec2, p_max: *const ImVec2, uv_min: *const ImVec2, uv_max: *const ImVec2, col: ImU32) void;
 extern fn _ogSetCursorScreenPos(pos: *const ImVec2) void;
 extern fn _ogListBoxHeaderVec2(label: [*c]const u8, size: *const ImVec2) bool;
 extern fn _ogBeginChildID(id: ImGuiID, size: *const ImVec2, border: bool, flags: ImGuiWindowFlags) bool;
@@ -118,6 +119,10 @@ pub fn ogImDrawList_AddTriangleFilled(draw_list: [*c]ImDrawList, tl: ImVec2, bl:
 
 pub fn ogImDrawList_AddLine(draw_list: [*c]ImDrawList, p1: ImVec2, p2: ImVec2, col: ImU32, thickness: f32) void {
     _ogImDrawList_AddLine(draw_list, &p1, &p2, col, thickness);
+}
+
+pub fn ogImDrawList_AddImage(draw_list: [*c]ImDrawList, user_texture_id: ImTextureID, p_min: ImVec2, p_max: ImVec2, uv_min: ImVec2, uv_max: ImVec2, col: ImU32) void {
+    _ogImDrawList_AddImage(draw_list, user_texture_id, &p_min, &p_max, &uv_min, &uv_max, col);
 }
 
 pub fn ogSetCursorScreenPos(pos: ImVec2) void {
