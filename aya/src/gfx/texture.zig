@@ -70,15 +70,24 @@ pub const Texture = struct {
         };
     }
 
-    pub fn initCheckerTexture() Texture {
-        var pixels = [_]u32{
+    pub fn initCheckerTexture(comptime scale: usize) Texture {
+        const colors = [_]u32{
             0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
             0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
             0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
             0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
         };
+        
+        var pixels: [4 * scale * 4 * scale]u32 = undefined;
+        var y: usize = 0;
+        while (y < 4 * scale) : (y += 1) {
+            var x: usize = 0;
+            while (x < 4 * scale) : (x += 1) {
+                pixels[y + x * 4 * scale] = colors[@mod(x / scale, 4) + @mod(y / scale, 4) * 4];
+            }
+        }
 
-        return initWithData(u32, 4, 4, &pixels);
+        return initWithData(u32, 4 * @intCast(i32, scale), 4 * @intCast(i32, scale), &pixels);
     }
 
     pub fn initSingleColor(color: u32) Texture {

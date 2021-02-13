@@ -77,28 +77,53 @@ pub const TextureAtlas = struct {
 
 pub const AssetManager = struct {
     root_path: [:0]const u8 = "",
+    default_tex: aya.gfx.Texture,
     thumbnails: ThumbnailAtlas = undefined,
     textures: TextureAtlas = undefined,
     tilesets: [][:0]const u8 = &[_][:0]u8{},
 
     pub fn init() AssetManager {
-        return .{};
+        return .{ .default_tex = aya.gfx.Texture.initCheckerTexture(8) };
     }
 
     pub fn deinit(self: @This()) void {
         if (self.root_path.len > 0) aya.mem.allocator.free(self.root_path);
+        self.default_tex.deinit();
         self.thumbnails.deinit();
+        self.textures.deinit();
+        aya.mem.allocator.free(self.tilesets);
     }
 
     pub fn getUvsForThumbnailAtIndex(self: @This(), index: usize) ThumbnailAtlas.Uv {
         return self.thumbnails.uvs[index];
     }
 
+    pub fn getUvsForThumbnail(self: @This(), name: [:0]const u8) ThumbnailAtlas.Uv {
+        // special case for the default texture, which is called "def"
+        if (std.mem.eql(u8, name, "def"))
+            return ThumbnailAtlas.Uv{
+                .tl = .{},
+                .br = .{ .x = 1, .y = 1 },
+            };
+        return self.thumbnails.uvs[self.indexOfTexture(self.thumbnails.names, name).?];
+    }
+
+    /// returns the Texture that contains the image. Currently we only keep one atlas so its pretty useless ;)
+    pub fn getTextureAndRect(self: @This(), name: [:0]const u8) struct { tex: aya.gfx.Texture, rect: aya.math.RectI } {
+        return .{ .tex = self.textures.tex, .rect = self.textures.rects[self.indexOfTexture(self.textures.names, name).?] };
+    }
+
+    fn indexOfTexture(self: @This(), haystack: [][:0]const u8, name: [:0]const u8) ?usize {
+        return for (haystack) |slice, i| {
+            if (std.mem.eql(u8, slice, name)) break @as(?usize, i);
+        } else @as(?usize, null);
+    }
+
     /// sets the root project path and starts a scan of the subfolders to load up the asset state
     pub fn setRootPath(self: *@This(), path: []const u8) void {
         if (self.root_path.len > 0) aya.mem.allocator.free(self.root_path);
         self.root_path = aya.mem.allocator.dupeZ(u8, path) catch unreachable;
-       
+
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);
 

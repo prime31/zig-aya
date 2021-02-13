@@ -113,6 +113,7 @@ pub const Transform = struct {
     scale: aya.math.Vec2 = .{ .x = 1, .y = 1 },
 };
 
+/// note that Sprite does not own its Texture and should not deinit it
 pub const Sprite = struct {
     tex: aya.gfx.Texture,
     rect: math.RectI,
@@ -128,9 +129,20 @@ pub const Sprite = struct {
         };
     }
 
-    pub fn initNoTexture() Sprite {
-        const tex = aya.gfx.Texture.initCheckerTexture();
-        return Sprite.init(tex, .{ .w = @floatToInt(i32, tex.width), .h = @floatToInt(i32, tex.height) }, "default");
+    pub fn initNoTexture(state: *data.AppState) Sprite {
+        const tex = state.asset_man.default_tex;
+        return Sprite.init(tex, .{ .w = @floatToInt(i32, tex.width), .h = @floatToInt(i32, tex.height) }, "def");
+    }
+
+    pub fn deinit(self: @This()) void {
+        aya.mem.allocator.free(self.tex_name);
+    }
+
+    pub fn updateTexture(self: *Sprite, tex: aya.gfx.Texture, rect: math.RectI, name: [:0]const u8) void {
+        aya.mem.allocator.free(self.tex_name);
+        self.tex = tex;
+        self.rect = rect;
+        self.tex_name = aya.mem.allocator.dupeZ(u8, name) catch unreachable;
     }
 
     pub fn bounds(self: Sprite, transform: Transform) math.Rect {
