@@ -53,6 +53,9 @@ fn drawTextures(state: *root.AppState) void {
     _ = ogBeginChildID(666, .{ .x = w }, false, ImGuiWindowFlags_None);
     defer igEndChildFrame();
 
+    // we only drag/drop if the entity layer is active
+    const entity_layer = if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity) state.level.layers.items[state.selected_layer_index].entity else null;
+
     for (state.asset_man.thumbnails.names) |asset_name, i| {
         igPushIDInt(@intCast(c_int, i));
         defer igPopID();
@@ -61,13 +64,22 @@ fn drawTextures(state: *root.AppState) void {
         const uvs = state.asset_man.getUvsForThumbnailAtIndex(i);
         _ = ogImageButtonEx(state.asset_man.thumbnails.tex.imTextureID(), .{ .x = thumb_size, .y = thumb_size }, uvs.tl, uvs.br, 0, root.colors.rgbToVec4(50, 50, 50), .{ .x = 1, .y = 1, .z = 1, .w = 1 });
 
-        if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+        if (entity_layer != null and igBeginDragDropSource(ImGuiDragDropFlags_None)) {
             defer igEndDragDropSource();
+            const tex_uvs = state.asset_man.getTextureAndUvs(asset_name);
+
+            const scale = root.scene.cam.zoom;
+            const tex_w = @intToFloat(f32, tex_uvs.rect.w) * root.scene.cam.zoom;
+            const tex_h = @intToFloat(f32, tex_uvs.rect.h) * root.scene.cam.zoom;
+
+            const cursor_pos = igGetIO().MousePos.subtract(.{ .x = tex_w / 2, .y = tex_h / 2 });
+            const cursor_bl = cursor_pos.add(.{ .x = tex_w, .y = tex_h });
+            ogImDrawList_AddImage(igGetForegroundDrawListNil(), tex_uvs.tex.imTextureID(), cursor_pos, cursor_bl, tex_uvs.uvs.tl, tex_uvs.uvs.br, 0xFFFFFFFF);
             _ = igSetDragDropPayload("TEXTURE_ASSET_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
-            _ = ogButtonEx(asset_name.ptr, .{ .x = thumb_size, .y = thumb_size });
+            igText(asset_name);
         }
 
-        if (igIsItemActive())
+        if (entity_layer != null and igIsItemActive())
             ogImDrawList_AddLine(igGetForegroundDrawListNil(), igGetIO().MouseClickedPos[0], igGetIO().MousePos, igGetColorU32Col(ImGuiCol_Button, 1), 2);
 
         const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];

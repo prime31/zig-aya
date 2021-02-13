@@ -84,9 +84,9 @@ pub const Scene = struct {
 
         if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
 
-        aya.gfx.beginPass(.{ .color = math.Color.gray, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
+        aya.gfx.beginPass(.{ .color = state.clear_color, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
         // the map area and some decorations
-        aya.draw.rect(.{}, @intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size), math.Color.black);
+        aya.draw.rect(.{}, @intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size), state.bg_color);
         aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.level.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.level.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
 
         // outer decorations
@@ -123,11 +123,13 @@ pub const Scene = struct {
 
         // reset position to the start of where we want our button bar
         igSetCursorPosY(igGetCursorPosY() + 5);
-        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 60);
+        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 90);
 
         if (ogButton(icons.search)) igOpenPopup("##zoom-settings", ImGuiPopupFlags_None);
         igSameLine(0, 10);
         if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
+        igSameLine(0, 10);
+        if (ogButton(icons.palette)) igOpenPopup("##color-settings", ImGuiPopupFlags_None);
 
         ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
         if (state.level.layers.items.len > 0) {
@@ -157,6 +159,19 @@ pub const Scene = struct {
                 self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
             }
             if (ogButtonEx("Reset Zoom", .{ .x = -1 })) self.cam.zoom = 1;
+            igEndPopup();
+        }
+
+        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (igBeginPopup("##color-settings", ImGuiPopupFlags_None)) {
+            var col = state.bg_color.asVec4();
+            if (igColorEdit3("Map Background", &col.x, ImGuiColorEditFlags_NoInputs))
+                state.bg_color = math.Color.fromVec4(col);
+
+            col = state.clear_color.asVec4();
+            if (igColorEdit3("Clear Color", &col.x, ImGuiColorEditFlags_NoInputs))
+                state.clear_color = math.Color.fromVec4(col);
+
             igEndPopup();
         }
     }
