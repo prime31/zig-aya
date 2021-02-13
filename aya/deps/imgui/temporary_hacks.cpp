@@ -120,6 +120,10 @@ CIMGUI_API void _ogImDrawList_AddLine(ImDrawList* self, const ImVec2* p1, const 
     self->AddLine(*p1, *p2, col, thickness);
 }
 
+CIMGUI_API void _ogImDrawList_AddImage(ImDrawList* self, ImTextureID texture_id, const ImVec2* p_min, const ImVec2* p_max, const ImVec2* uv_min, const ImVec2* uv_max, ImU32 col) {
+    self->AddImage(texture_id, *p_min, *p_max, *uv_min, *uv_max, col);
+}
+
 CIMGUI_API void _ogSetCursorScreenPos(const ImVec2* pos) {
     ImGui::SetCursorScreenPos(*pos);
 }
