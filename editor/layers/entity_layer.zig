@@ -13,6 +13,7 @@ const Size = data.Size;
 const Camera = @import("../camera.zig").Camera;
 
 var name_buf: [25:0]u8 = undefined;
+var dnd_swap: ?struct { remove_from: usize, insert_into: usize } = null;
 
 pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
@@ -172,7 +173,34 @@ pub const EntityLayer = struct {
             igPushIDPtr(entity);
             var rename_index: ?usize = null;
 
+            // make a drop zone above each entity
+            const cursor = ogGetCursorPos();
+            ogSetCursorPos(cursor.subtract(.{ .y = 6 }));
+            _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+
+            if (igBeginDragDropTarget()) {
+                defer igEndDragDropTarget();
+
+                if (igAcceptDragDropPayload("ENTITY_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                    std.debug.assert(payload.DataSize == @sizeOf(usize));
+                    const dragged_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                    if (i > dragged_index.* and i - dragged_index.* > 1) {
+                        dnd_swap = .{ .remove_from = dragged_index.*, .insert_into = i - 1 };
+                    } else if (i < dragged_index.*) {
+                        dnd_swap = .{ .remove_from = dragged_index.*, .insert_into = i };
+                    }
+                }
+            }
+            ogSetCursorPos(cursor);
+
             _ = ogButton(icons.grip_horizontal);
+            if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+                defer igEndDragDropSource();
+
+                _ = igSetDragDropPayload("ENTITY_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
+                igText(std.mem.spanZ(&entity.name));
+            }
+
             const drag_grip_w = ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
             ogUnformattedTooltip(-1, "Click and drag to reorder");
             igSameLine(0, 10);
@@ -189,8 +217,26 @@ pub const EntityLayer = struct {
 
             // make some room for the delete button
             igSameLine(igGetWindowContentRegionWidth() - 8, 0);
-            if (ogButton(icons.trash)) {
+            if (ogButton(icons.trash))
                 delete_index = i;
+
+            // make a drop zone below only the last layer
+            if (self.entities.items.len - 1 == i) {
+                const cursor2 = ogGetCursorPos();
+                ogSetCursorPos(cursor.add(.{ .y = igGetFrameHeight() - 6 }));
+                _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+
+                if (igBeginDragDropTarget()) {
+                    defer igEndDragDropTarget();
+
+                    if (igAcceptDragDropPayload("ENTITY_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                        std.debug.assert(payload.DataSize == @sizeOf(usize));
+                        const dropped_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                        if (dropped_index.* != i)
+                            dnd_swap = .{ .remove_from = dropped_index.*, .insert_into = i };
+                    }
+                }
+                ogSetCursorPos(cursor2);
             }
 
             if (rename_index != null) {
@@ -200,6 +246,23 @@ pub const EntityLayer = struct {
 
             self.renameEntityPopup(entity);
             igPopID();
+        }
+
+        if (dnd_swap) |swapper| {
+            const removed = self.entities.orderedRemove(swapper.remove_from);
+            self.entities.insert(swapper.insert_into, removed) catch unreachable;
+
+            // handle updating the selected index
+            if (self.selected_index) |selected_index| {
+                if (swapper.remove_from == selected_index) {
+                    self.selected_index = swapper.insert_into;
+                } else if (swapper.remove_from < selected_index and swapper.insert_into >= selected_index) {
+                    self.selected_index.? -= 1;
+                } else if (swapper.remove_from > selected_index and swapper.insert_into <= selected_index) {
+                    self.selected_index.? += 1;
+                }
+            }
+            dnd_swap = null;
         }
 
         if (delete_index) |index| {
