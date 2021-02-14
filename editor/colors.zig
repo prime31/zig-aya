@@ -45,37 +45,38 @@ fn setDefaultImGuiStyle() void {
     style.Colors[ImGuiCol_TextSelectedBg] = ogColorConvertU32ToFloat4(rgbaToU32(66, 150, 250, 187));
     style.Colors[ImGuiCol_PopupBg] = rgbaToVec4(20, 20, 20, 255);
 
-    // setTintColor(ui_tint);
+    setTintColor(ui_tint);
 }
 
 pub fn setTintColor(color: ImVec4) void {
     var colors = &igGetStyle().Colors;
-    colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2);
-    colors[ImGuiCol_Border] = hsvShiftColor(color, 0, 0, -0.2);
+    colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2, colors[ImGuiCol_FrameBg].w);
+    colors[ImGuiCol_FrameBgHovered] = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_FrameBgHovered].w); 
+    colors[ImGuiCol_FrameBgActive] = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_FrameBgActive].w);
+    colors[ImGuiCol_Border] = hsvShiftColor(color, 0, 0, -0.2, colors[ImGuiCol_Border].w);
 
-    const header = hsvShiftColor(color, 0, -0.2, 0);
+    const header = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_Header].w);
     colors[ImGuiCol_Header] = header;
-    colors[ImGuiCol_HeaderHovered] = hsvShiftColor(header, 0, 0, 0.1);
-    colors[ImGuiCol_HeaderActive] = hsvShiftColor(header, 0, 0, -0.1);
+    colors[ImGuiCol_HeaderHovered] = hsvShiftColor(header, 0, 0, 0.1, colors[ImGuiCol_HeaderHovered].w); 
+    colors[ImGuiCol_HeaderActive] = hsvShiftColor(header, 0, 0, -0.1, colors[ImGuiCol_HeaderActive].w);
 
-    const title = hsvShiftColor(color, 0, 0.1, 0);
-    colors[ImGuiCol_TitleBg] = title;
-    colors[ImGuiCol_TitleBgActive] = title;
+    colors[ImGuiCol_TitleBg] = hsvShiftColor(color, 0, 0.1, 0, colors[ImGuiCol_TitleBg].w);
+    colors[ImGuiCol_TitleBgActive] = hsvShiftColor(color, 0, 0.1, 0, colors[ImGuiCol_TitleBgActive].w); 
 
-    const tab = hsvShiftColor(color, 0, 0.1, 0);
+    const tab = hsvShiftColor(color, 0, 0.1, 0, 1.0);
     colors[ImGuiCol_Tab] = tab;
-    colors[ImGuiCol_TabActive] = hsvShiftColor(tab, 0.05, 0.2, 0.2);
-    colors[ImGuiCol_TabHovered] = hsvShiftColor(tab, 0.02, 0.1, 0.2);
-    colors[ImGuiCol_TabUnfocused] = hsvShiftColor(tab, 0, -0.1, 0);
+    colors[ImGuiCol_TabActive] = hsvShiftColor(tab, 0.05, 0.2, 0.2, colors[ImGuiCol_TabActive].w);
+    colors[ImGuiCol_TabHovered] = hsvShiftColor(tab, 0.02, 0.1, 0.2, colors[ImGuiCol_TabHovered].w);
+    colors[ImGuiCol_TabUnfocused] = hsvShiftColor(tab, 0, -0.1, 0, colors[ImGuiCol_TabUnfocused].w);
     colors[ImGuiCol_TabUnfocusedActive] = colors[ImGuiCol_TabActive];
 
-    const button = hsvShiftColor(color, -0.05, 0, 0);
+    const button = hsvShiftColor(color, -0.05, 0, 0, 1.0);
     colors[ImGuiCol_Button] = button;
-    colors[ImGuiCol_ButtonHovered] = hsvShiftColor(button, 0, 0, 0.1);
-    colors[ImGuiCol_ButtonActive] = hsvShiftColor(button, 0, 0, -0.1);
+    colors[ImGuiCol_ButtonHovered] = hsvShiftColor(button, 0, 0, 0.1, colors[ImGuiCol_ButtonHovered].w);
+    colors[ImGuiCol_ButtonActive] = hsvShiftColor(button, 0, 0, -0.1, colors[ImGuiCol_ButtonActive].w);
 }
 
-pub fn hsvShiftColor(color: ImVec4, h_shift: f32, s_shift: f32, v_shift: f32) ImVec4 {
+pub fn hsvShiftColor(color: ImVec4, h_shift: f32, s_shift: f32, v_shift: f32, alpha: f32) ImVec4 {
     var h: f32 = undefined;
     var s: f32 = undefined;
     var v: f32 = undefined;
