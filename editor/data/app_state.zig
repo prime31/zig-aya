@@ -98,6 +98,7 @@ pub const AppState = struct {
         entity_layer.entities.items[1].collider = .{ .box = .{ .w = 25, .h = 25 } };
         entity_layer.entities.items[2].collider = .{ .circle = .{ .r = 25 } };
         entity_layer.entities.items[2].addComponent(comp2.spawnInstance());
+        entity_layer.entities.items[2].sprite = root.data.Sprite.initNoTexture(&state);
 
         const desktop = root.utils.known_folders.getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
         const root_dir = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ desktop.?, "aya-project" }) catch unreachable;
