@@ -134,7 +134,8 @@ pub const EntityLayer = struct {
         if (!igIsMouseDown(ImGuiMouseButton_Left)) self.dragged_index = null;
 
         if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-            if (self.dragged_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 2)) {
+            // make sure alt/super isnt pressed since that is a Scene drag!
+            if (self.dragged_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 2) and !(igGetIO().KeyAlt or igGetIO().KeySuper)) {
                 // if we are dragging an entity, move it taking into account the snap set
                 const drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
                 const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
