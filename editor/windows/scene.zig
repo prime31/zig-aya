@@ -172,6 +172,9 @@ pub const Scene = struct {
             if (igColorEdit3("Clear Color", &col.x, ImGuiColorEditFlags_NoInputs))
                 state.clear_color = math.Color.fromVec4(col);
 
+            if (igColorEdit3("Editor Tint Color", &root.colors.ui_tint.x, ImGuiColorEditFlags_NoInputs))
+                root.colors.setTintColor(root.colors.ui_tint);
+
             igEndPopup();
         }
     }
