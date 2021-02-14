@@ -704,7 +704,7 @@ fn groupDropTarget(group: u8, index: usize) void {
     if (drag_drop_state.active) {
         var cursor = ogGetCursorPos();
         const old_pos = cursor;
-        cursor.y -= 5;
+        cursor.y -= 6;
         ogSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
         _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
@@ -757,7 +757,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
     // if we are dragging a group dont allow dragging it into another group
     if (drag_drop_state.active and !(drag_drop_state.isGroup() and rule.group > 0)) {
         const old_pos = ogGetCursorPos();
-        cursor.y -= 5;
+        cursor.y -= 6;
         ogSetCursorPos(cursor);
         igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
         _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);

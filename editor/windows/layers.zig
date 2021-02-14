@@ -7,6 +7,7 @@ const Layer = root.layers.Layer;
 
 var name_buf: [25:0]u8 = undefined;
 var new_layer_type: root.layers.LayerType = .tilemap;
+var dnd_swap: ?struct { remove_from: usize, insert_into: usize } = null;
 
 /// draws the Layers window
 pub fn draw(state: *root.AppState) void {
@@ -18,12 +19,32 @@ pub fn draw(state: *root.AppState) void {
             ogPushIDUsize(i);
             defer igPopID();
 
+            // make a drop zone above each layer
+            const cursor = ogGetCursorPos();
+            ogSetCursorPos(cursor.subtract(.{ .y = 6 }));
+            _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+
+            if (igBeginDragDropTarget()) {
+                defer igEndDragDropTarget();
+
+                if (igAcceptDragDropPayload("LAYER_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                    std.debug.assert(payload.DataSize == @sizeOf(usize));
+                    const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                    if (i > data.* and i - data.* > 1) {
+                        dnd_swap = .{ .remove_from = data.*, .insert_into = i - 1 };
+                    } else if (i < data.*) {
+                        dnd_swap = .{ .remove_from = data.*, .insert_into = i };
+                    }
+                }
+            }
+            ogSetCursorPos(cursor);
+
             _ = ogButton(icons.grip_horizontal);
             if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
                 defer igEndDragDropSource();
 
-                _ = igSetDragDropPayload("LAYER_DRAG", null, 0, ImGuiCond_Once);
-                _ = ogButtonEx("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
+                _ = igSetDragDropPayload("LAYER_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
+                igText(std.mem.spanZ(&layer.name()));
             }
 
             const drag_grip_w = ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
@@ -32,13 +53,6 @@ pub fn draw(state: *root.AppState) void {
 
             if (ogSelectableBool(std.mem.spanZ(&layer.name()), state.selected_layer_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
                 state.selected_layer_index = i;
-            }
-            if (igBeginDragDropTarget()) {
-                defer igEndDragDropTarget();
-
-                if (igAcceptDragDropPayload("LAYER_DRAG", ImGuiDragDropFlags_None)) |payload| {
-                    std.debug.print("hi drop: {}\n", .{payload});
-                }
             }
 
             if (igBeginPopupContextItem("##layer-context-menu", ImGuiMouseButton_Right)) {
@@ -55,12 +69,46 @@ pub fn draw(state: *root.AppState) void {
             if (ogButton(icons.trash))
                 delete_index = i;
 
+            // make a drop zone below only the last layer
+            if (state.level.layers.items.len - 1 == i) {
+                const cursor2 = ogGetCursorPos();
+                ogSetCursorPos(cursor.add(.{ .y = igGetFrameHeight() - 6 }));
+                _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+
+                if (igBeginDragDropTarget()) {
+                    defer igEndDragDropTarget();
+
+                    if (igAcceptDragDropPayload("LAYER_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                        std.debug.assert(payload.DataSize == @sizeOf(usize));
+                        const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                        if (data.* != i)
+                            dnd_swap = .{ .remove_from = data.*, .insert_into = i };
+                    }
+                }
+                ogSetCursorPos(cursor2);
+            }
+
             if (rename_index != null) {
                 aya.mem.copyZ(u8, &name_buf, std.mem.spanZ(&layer.name()));
                 ogOpenPopup("##rename-layer");
             }
 
             renameLayerPopup(layer);
+        }
+
+        if (dnd_swap) |swapper| {
+            const removed = state.level.layers.orderedRemove(swapper.remove_from);
+            state.level.layers.insert(swapper.insert_into, removed) catch unreachable;
+
+            // handle updating the selected index
+            if (swapper.remove_from == state.selected_layer_index) {
+                state.selected_layer_index = swapper.insert_into;
+            } else if (swapper.remove_from < state.selected_layer_index and swapper.insert_into >= state.selected_layer_index) {
+                state.selected_layer_index -= 1;
+            } else if (swapper.remove_from > state.selected_layer_index and swapper.insert_into <= state.selected_layer_index) {
+                state.selected_layer_index += 1;
+            }
+            dnd_swap = null;
         }
 
         if (delete_index < std.math.maxInt(usize)) {
