@@ -211,7 +211,7 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
     // texture chooser popup
     const popup_height = ogGetWindowSize().y - ogGetCursorScreenPos().y;
     ogSetNextWindowPos(ogGetCursorScreenPos(), ImGuiCond_Appearing, .{ .x = 0.5 });
-    ogSetNextWindowSize(.{ .x = 75 * 2 + igGetStyle().ItemSpacing.x * 5, .y = popup_height }, ImGuiCond_Always);
+    ogSetNextWindowSize(.{ .x = 75 * 3 + igGetStyle().ItemSpacing.x * 6, .y = popup_height }, ImGuiCond_Always);
 
     if (igBeginPopup("##texture-chooser", ImGuiWindowFlags_None)) {
         defer igEndPopup();
@@ -233,7 +233,7 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
 
             igPushIDInt(@intCast(c_int, i));
             defer igPopID();
-            defer displayed_count += 1;
+            displayed_count += 1;
 
             igBeginGroup();
 
@@ -257,10 +257,10 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
             igText(&name_buf);
             igEndGroup();
 
-            if (displayed_count % 2 == 0) {
-                igSameLine(0, igGetStyle().ItemSpacing.x);
-            } else {
+            if (displayed_count % 3 == 0) {
                 ogDummy(.{ .y = 10 });
+            } else {
+                igSameLine(0, igGetStyle().ItemSpacing.x);
             }
         }
     }
