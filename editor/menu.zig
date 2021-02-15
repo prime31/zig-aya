@@ -6,6 +6,8 @@ usingnamespace @import("imgui");
 var buffer: [25:0]u8 = undefined;
 var map_width: usize = 0;
 var map_height: usize = 0;
+var new_project_state: enum { tile, folder, non_empty_folder } = .tile;
+var tile_size: usize = 16;
 
 pub fn draw(state: *root.AppState) void {
     var show_component_editor_popup = false;
@@ -35,7 +37,8 @@ pub fn draw(state: *root.AppState) void {
     if (show_component_editor_popup) ogOpenPopup("Component Editor");
     if (show_new_project_popup) {
         ogOpenPopup("New Project");
-        root.utils.file_picker.setup("Create a folder to put your new Aya Editor project in", true, true);
+        new_project_state = .tile;
+        root.utils.file_picker.setup("Create a folder to put your new Aya Edit project in", true, true);
     }
     if (show_new_level_popup) {
         ogOpenPopup("New Level");
@@ -49,10 +52,37 @@ pub fn draw(state: *root.AppState) void {
 
     if (igBeginPopupModal("New Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
-        if (root.utils.file_picker.draw()) {
-            std.debug.print("done with picker: {s}, {s}\n", .{ root.utils.file_picker.selected_dir, root.utils.file_picker.selected_file });
-            root.utils.file_picker.cleanup();
-            igCloseCurrentPopup();
+
+        if (new_project_state == .tile) {
+            _ = ogDrag(usize, "Tile Size", &tile_size, 0.5, 8, 128);
+            igSeparator();
+            if (ogButton("Cancel")) igCloseCurrentPopup();
+            igSameLine(igGetWindowContentRegionWidth() - 35, 0);
+            if (ogButton("Next"))
+                new_project_state = .folder;
+        } else if (new_project_state == .folder) {
+            if (root.utils.file_picker.draw()) |res| {
+                if (res) {
+                    var dir = std.fs.cwd().openDir(root.utils.file_picker.selected_dir.?, .{ .iterate = true }) catch unreachable;
+                    const is_empty = dir.iterate().next() catch unreachable == null;
+                    dir.close();
+
+                    if (!is_empty) {
+                        new_project_state = .non_empty_folder;
+                    } else {
+                        state.startNewProjectInFolder(root.utils.file_picker.selected_dir.?);
+                        root.utils.file_picker.cleanup();
+                        igCloseCurrentPopup();
+                    }
+                } else {
+                    root.utils.file_picker.cleanup();
+                    igCloseCurrentPopup();
+                }
+            }
+        } else if (new_project_state == .non_empty_folder) {
+            igText("The project folder must be empty");
+            igSeparator();
+            if (igButton("Go back and try again", .{ .x = -1 })) new_project_state = .folder;
         }
     }
 
