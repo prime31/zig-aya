@@ -50,7 +50,7 @@ pub fn draw(state: *root.AppState) void {
     if (igBeginPopupModal("New Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
         if (root.utils.file_picker.draw()) {
-            std.debug.print("done with picker: {}, {}\n", .{ root.utils.file_picker.selected_dir, root.utils.file_picker.selected_file });
+            std.debug.print("done with picker: {s}, {s}\n", .{ root.utils.file_picker.selected_dir, root.utils.file_picker.selected_file });
             root.utils.file_picker.cleanup();
             igCloseCurrentPopup();
         }
