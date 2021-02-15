@@ -249,7 +249,7 @@ pub const AutoTilemapLayer = struct {
                         igCloseCurrentPopup();
                         const label_sentinel_index = std.mem.indexOfScalar(u8, &rename_group_buf, 0).?;
                         self.renameGroup(group, rename_group_buf[0..label_sentinel_index]);
-                        std.debug.print("grp: {}\n", .{rename_group_buf[0..label_sentinel_index]});
+                        std.debug.print("grp: {s}\n", .{rename_group_buf[0..label_sentinel_index]});
                     }
 
                     igEndPopup();

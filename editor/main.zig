@@ -87,7 +87,7 @@ fn update() !void {
 
     if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
-        if (utils.file_picker.draw()) std.debug.print("done with picker: {}, {}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
+        if (utils.file_picker.draw()) std.debug.print("done with picker: {s}, {s}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
     }
 
     // igShowDemoWindow(null);

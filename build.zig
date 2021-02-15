@@ -79,7 +79,7 @@ fn createExe(b: *Builder, target: Target, name: []const u8, source: []const u8) 
     addAyaToArtifact(b, exe, target, "");
 
     const run_cmd = exe.run();
-    const exe_step = b.step(name, b.fmt("run {}.zig", .{name}));
+    const exe_step = b.step(name, b.fmt("run {s}.zig", .{name}));
     exe_step.dependOn(&run_cmd.step);
 
     return exe;
