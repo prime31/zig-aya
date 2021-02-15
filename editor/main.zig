@@ -42,7 +42,8 @@ pub fn main() !void {
 
 fn init() !void {
     colors.init();
-    state = AppState.initWithTestData();
+    state = AppState.init();
+    state.addTestData();
     scene = windows.Scene.init();
 
     var io = igGetIO();
@@ -87,16 +88,13 @@ fn update() !void {
 
     if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
-        if (utils.file_picker.draw()) std.debug.print("done with picker: {s}, {s}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
+        if (utils.file_picker.draw()) |res| {
+            std.debug.print("done with picker: {s}, {s}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
+            igCloseCurrentPopup();
+        }
     }
 
     // igShowDemoWindow(null);
-
-    // _ = igBegin("sadfasdf", null, ImGuiWindowFlags_None);
-    // if (igColorEdit4("fart", &colors.ui_tint.x, ImGuiColorEditFlags_NoInputs)) {
-    //     colors.setTintColor(colors.ui_tint);
-    // }
-    // igEnd();
 
     igEnd();
 }

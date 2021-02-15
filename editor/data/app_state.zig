@@ -46,16 +46,21 @@ pub const AppState = struct {
         };
     }
 
-    pub fn initWithTestData() AppState {
-        var state = init();
+    pub fn deinit(self: AppState) void {
+        self.level.deinit();
+        for (self.components.items) |*comp| comp.deinit();
+        self.components.deinit();
+        self.asset_man.deinit();
+    }
 
-        state.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 1", state.level.map_size, state.tile_size)) catch unreachable;
-        state.level.layers.append(Layer.init(.tilemap, "Tilemap 1", state.level.map_size, state.tile_size)) catch unreachable;
-        state.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 2", state.level.map_size, state.tile_size)) catch unreachable;
-        state.level.layers.append(Layer.init(.tilemap, "Tilemap 2", state.level.map_size, state.tile_size)) catch unreachable;
+    pub fn addTestData(self: *AppState) void {
+        self.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 1", self.level.map_size, self.tile_size)) catch unreachable;
+        self.level.layers.append(Layer.init(.tilemap, "Tilemap 1", self.level.map_size, self.tile_size)) catch unreachable;
+        self.level.layers.append(Layer.init(.auto_tilemap, "Auto Tilemap 2", self.level.map_size, self.tile_size)) catch unreachable;
+        self.level.layers.append(Layer.init(.tilemap, "Tilemap 2", self.level.map_size, self.tile_size)) catch unreachable;
 
         // components
-        var comp1 = state.createComponent("SomeComponent");
+        var comp1 = self.createComponent("SomeComponent");
         comp1.addProperty(.{ .float = 6.666 });
         aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "some_float");
 
@@ -71,7 +76,7 @@ pub const AppState = struct {
         comp1.addProperty(.{ .vec2 = .{ .x = 5, .y = 10 } });
         aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "a_vec2");
 
-        var comp2 = state.createComponent("Thingy");
+        var comp2 = self.createComponent("Thingy");
         comp2.addProperty(.{ .float = 55 });
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "width");
         comp2.addProperty(.{ .float = 55 });
@@ -87,9 +92,9 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "super_enum");
 
         // entities
-        state.level.layers.append(Layer.init(.entity, "Entities", state.level.map_size, state.tile_size)) catch unreachable;
+        self.level.layers.append(Layer.init(.entity, "Entities", self.level.map_size, self.tile_size)) catch unreachable;
 
-        var entity_layer = &state.level.layers.items[state.level.layers.items.len - 1].entity;
+        var entity_layer = &self.level.layers.items[self.level.layers.items.len - 1].entity;
         _ = entity_layer.addEntity("First", .{ .x = 100, .y = 50 });
         _ = entity_layer.addEntity("Second", .{ .x = 350, .y = 250 });
         _ = entity_layer.addEntity("Black Wall", .{ .x = 290, .y = 30 });
@@ -98,32 +103,33 @@ pub const AppState = struct {
         entity_layer.entities.items[1].collider = .{ .box = .{ .w = 25, .h = 25 } };
         entity_layer.entities.items[2].collider = .{ .circle = .{ .r = 25 } };
         entity_layer.entities.items[2].addComponent(comp2.spawnInstance());
-        entity_layer.entities.items[2].sprite = root.data.Sprite.initNoTexture(&state);
+        entity_layer.entities.items[2].sprite = root.data.Sprite.initNoTexture(self);
 
+        // create a folder on the desktop to hold the project data if one isnt there already
         const desktop = root.utils.known_folders.getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
         const root_dir = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ desktop.?, "aya-project" }) catch unreachable;
+        if (std.fs.cwd().access(root_dir, .{})) {} else |err| {
+            std.fs.makeDirAbsolute(root_dir) catch unreachable;
+        }
         createProjectFolder(root_dir);
-        state.asset_man.setRootPath(root_dir);
 
-        return state;
+        self.asset_man.setRootPath(root_dir);
     }
 
-    pub fn deinit(self: AppState) void {
-        self.level.deinit();
-        for (self.components.items) |*comp| comp.deinit();
-        self.components.deinit();
-        self.asset_man.deinit();
+    pub fn startNewProjectInFolder(self: *AppState, folder: []const u8) void {
+        self.deinit();
+        self.* = AppState.init();
+
+        createProjectFolder(folder);
+        self.asset_man.setRootPath(folder);
     }
 
+    /// folder should be empty. This creates the required subfolders for a project.
     pub fn createProjectFolder(folder: []const u8) void {
         // textures, atlases, tilesets, levels folders need to be created in the project folder
-        if (std.fs.makeDirAbsolute(folder)) {
-            for ([_][]const u8{ "textures", "atlases", "tilesets", "levels" }) |sub_folder| {
-                const sub = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ folder, sub_folder }) catch unreachable;
-                std.fs.makeDirAbsolute(sub) catch unreachable;
-            }
-        } else |err| {
-            std.debug.print("error creating project folder: {}\n", .{err});
+        for ([_][]const u8{ "textures", "atlases", "tilesets", "levels" }) |sub_folder| {
+            const sub = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ folder, sub_folder }) catch unreachable;
+            std.fs.makeDirAbsolute(sub) catch |err| {};
         }
     }
 

@@ -23,7 +23,10 @@ var directories = std.ArrayList([]const u8).init(aya.mem.allocator);
 
 // if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
 //     defer igEndPopup();
-//     if (utils.file_picker.draw()) std.debug.print("done with true\n", .{});
+//     if (utils.file_picker.draw()) |res| {
+//          std.debug.print("done with true\n", .{});
+//          igCloseCurrentPopup();
+//     }
 // }
 
 pub fn setup(description: [:0]const u8, dont_show_hidden_dirs: bool, only_display_directories: bool) void {
@@ -40,10 +43,12 @@ pub fn cleanup() void {
     if (selected_dir) |directory| aya.mem.allocator.free(directory);
     selected_dir = null;
     selected_file = null;
+    dir.close();
 }
 
-/// when draw returns true selected_file and selected_dir are valid and should be copied if needed
-pub fn draw() bool {
+/// when draw returns true selected_file and selected_dir are valid and should be copied if needed.
+/// if false is returned cancel was pressed
+pub fn draw() ?bool {
     // if we dont have a selected_dir, get one started
     if (selected_dir == null) {
         const tmp_dir = std.process.getCwdAlloc(aya.mem.tmp_allocator) catch unreachable;
@@ -65,7 +70,7 @@ pub fn draw() bool {
 
     igText(selected_dir.?.ptr);
 
-    if (ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, ImGuiWindowFlags_None)) {
+    if (ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndChildFrame();
 
         if (dir.access("..", .{})) {
@@ -92,25 +97,16 @@ pub fn draw() bool {
         }
     }
 
-    if (ogButton("Cancel")) {
-        igCloseCurrentPopup();
-        return false;
-    }
+    if (ogButton("Cancel")) return false;
 
     if (only_dirs) {
         igSameLine(igGetWindowContentRegionWidth() - 30, 0);
-        if (ogButton("Open")) {
-            igCloseCurrentPopup();
-            return true;
-        }
+        if (ogButton("Open")) return true;
     }
 
     if (selected_file != null) {
         igSameLine(igGetWindowContentRegionWidth() - 30, 0);
-        if (ogButton("Open")) {
-            igCloseCurrentPopup();
-            return true;
-        }
+        if (ogButton("Open")) return true;
     }
 
     ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
@@ -134,7 +130,7 @@ pub fn draw() bool {
         ogPopDisabled(disabled);
     }
 
-    return false;
+    return null;
 }
 
 fn changeDirToKnownFolder(known: known_folders.KnownFolder) void {
@@ -143,7 +139,7 @@ fn changeDirToKnownFolder(known: known_folders.KnownFolder) void {
             changeDir(folder);
         }
     } else |err| {
-        std.debug.print("couldnt get folder {}: {}\n", .{ known, err });
+        std.debug.print("couldnt get folder {s}: {s}\n", .{ known, err });
     }
 }
 
@@ -158,7 +154,7 @@ fn changeDir(new_dir: []const u8) void {
     if (fs.cwd().openDir(selected_dir.?, .{ .iterate = true })) |next_dir| {
         dir = next_dir;
     } else |err| {
-        std.debug.print("couldnt open dir ../: {}\n", .{err});
+        std.debug.print("couldnt open dir ../: {s}\n", .{err});
         return;
     }
 
