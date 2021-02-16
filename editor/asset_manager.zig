@@ -150,6 +150,9 @@ pub const AssetManager = struct {
     pub fn setRootPath(self: *@This(), path: []const u8) void {
         if (self.root_path.len > 0) aya.mem.allocator.free(self.root_path);
         self.root_path = aya.mem.allocator.dupeZ(u8, path) catch unreachable;
+        var dir = std.fs.cwd().openDir(self.root_path, .{}) catch unreachable;
+        dir.setAsCwd() catch unreachable;
+        dir.close();
 
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);

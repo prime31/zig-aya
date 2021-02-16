@@ -11,6 +11,7 @@ pub const data = @import("data/data.zig");
 pub const colors = @import("colors.zig");
 pub const windows = @import("windows/windows.zig");
 pub const layers = @import("layers/layers.zig");
+pub const persistence = @import("persistence.zig");
 
 pub const Camera = @import("camera.zig").Camera;
 pub const AssetManager = @import("asset_manager.zig").AssetManager;

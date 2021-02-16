@@ -22,6 +22,9 @@ pub fn draw(state: *root.AppState) void {
 
             if (igMenuItemBool("New Project...", null, false, true)) show_new_project_popup = true;
             if (igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
+            igSeparator();
+            if (igMenuItemBool("Save Project...", null, false, true))
+                root.persistence.saveProject(state) catch unreachable;
         }
 
         if (igBeginMenu("Tools", true)) {
