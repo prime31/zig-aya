@@ -32,10 +32,10 @@ pub const AppState = struct {
     snap_size: u8 = 0,
     clear_color: Color = Color.gray,
     bg_color: Color = Color.black,
-    level: Level,
     components: std.ArrayList(Component),
     next_component_id: u8 = 0,
     selected_layer_index: usize = 0,
+    level: Level,
     asset_man: root.AssetManager,
 
     pub fn init() AppState {
@@ -86,6 +86,8 @@ pub const AppState = struct {
 
         // var t = [_][25:0]u8{ ("Value1" ++ [_]u8{0} ** 19).* };
         var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
+        std.mem.set(u8, &enums[0], 0); 
+        std.mem.set(u8, &enums[1], 0);
         std.mem.copy(u8, &enums[0], "default_value");
         std.mem.copy(u8, &enums[1], "second_value");
         comp2.addProperty(.{ .enum_values = enums });
@@ -122,6 +124,7 @@ pub const AppState = struct {
 
         createProjectFolder(folder);
         self.asset_man.setRootPath(folder);
+        root.persistence.saveProject(self) catch unreachable;
     }
 
     /// folder should be empty. This creates the required subfolders for a project.

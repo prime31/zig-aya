@@ -187,6 +187,7 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
         }
         if (ogSelectableBool("enum", false, ImGuiSelectableFlags_None, .{})) {
             var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
+            std.mem.set(u8, &enums[0], 0);
             std.mem.copy(u8, &enums[0], "default_value");
             component.addProperty(.{ .enum_values = enums });
             addLastPropertyToEntitiesContainingComponent(state, component);
