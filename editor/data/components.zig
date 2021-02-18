@@ -6,23 +6,24 @@ const data = @import("data.zig");
 pub const Component = struct {
     id: u8,
     name: [25:0]u8 = undefined,
-    props: std.ArrayList(Property),
+    props: []Property = &[_]Property{},
     next_property_id: u8 = 0,
 
     pub fn init(id: u8, name: []const u8) Component {
-        var comp = Component{ .id = id, .props = std.ArrayList(Property).init(aya.mem.allocator) };
+        var comp = Component{ .id = id };
+        std.mem.set(u8, &comp.name, 0);
         aya.mem.copyZ(u8, &comp.name, name);
         return comp;
     }
 
     pub fn deinit(self: Component) void {
-        for (self.props.items) |*prop| prop.deinit();
-        self.props.deinit();
+        for (self.props) |*prop| prop.deinit();
+        aya.mem.allocator.free(self.props);
     }
 
     pub fn addProperty(self: *Component, prop: PropertyValue) void {
         defer self.next_property_id += 1;
-        self.props.append(Property.init(self.next_property_id, prop)) catch unreachable;
+        aya.utils.array.append(Property, &self.props, Property.init(self.next_property_id, prop)) catch unreachable;
     }
 
     pub fn spawnInstance(self: Component) ComponentInstance {
@@ -30,7 +31,7 @@ pub const Component = struct {
     }
 
     pub fn propertyWithId(self: @This(), id: u8) *Property {
-        for (self.props.items) |*prop| {
+        for (self.props) |*prop| {
             if (prop.id == id) return prop;
         }
         unreachable;
@@ -97,7 +98,7 @@ pub const ComponentInstance = struct {
             .props = std.ArrayList(PropertyInstance).init(aya.mem.allocator),
         };
 
-        for (src_component.props.items) |prop| comp.addProperty(prop);
+        for (src_component.props) |prop| comp.addProperty(prop);
 
         return comp;
     }

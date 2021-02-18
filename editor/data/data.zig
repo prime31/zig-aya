@@ -23,6 +23,7 @@ pub const BoxCollider = @import("entity.zig").BoxCollider;
 pub const CircleCollider = @import("entity.zig").CircleCollider;
 
 pub const Component = @import("components.zig").Component;
+pub const Property = @import("components.zig").Property;
 pub const ComponentInstance = @import("components.zig").ComponentInstance;
 
 const Camera = @import("../camera.zig").Camera;

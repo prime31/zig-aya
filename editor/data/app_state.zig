@@ -62,27 +62,27 @@ pub const AppState = struct {
         // components
         var comp1 = self.createComponent("SomeComponent");
         comp1.addProperty(.{ .float = 6.666 });
-        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "some_float");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "some_float");
 
         comp1.addProperty(.{ .bool = true });
-        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "toggle_bool");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "toggle_bool");
 
         comp1.addProperty(.{ .string = undefined });
-        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "the_string");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "the_string");
 
         comp1.addProperty(.{ .int = 55 });
-        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "an_int");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "an_int");
 
         comp1.addProperty(.{ .vec2 = .{ .x = 5, .y = 10 } });
-        aya.mem.copyZ(u8, &comp1.props.items[comp1.props.items.len - 1].name, "a_vec2");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "a_vec2");
 
         var comp2 = self.createComponent("Thingy");
         comp2.addProperty(.{ .float = 55 });
-        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "width");
+        aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "width");
         comp2.addProperty(.{ .float = 55 });
-        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "height");
+        aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "height");
         comp2.addProperty(.{ .entity_link = 0 });
-        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "link");
+        aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "link");
 
         // var t = [_][25:0]u8{ ("Value1" ++ [_]u8{0} ** 19).* };
         var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
@@ -91,7 +91,7 @@ pub const AppState = struct {
         std.mem.copy(u8, &enums[0], "default_value");
         std.mem.copy(u8, &enums[1], "second_value");
         comp2.addProperty(.{ .enum_values = enums });
-        aya.mem.copyZ(u8, &comp2.props.items[comp2.props.items.len - 1].name, "super_enum");
+        aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "super_enum");
 
         // entities
         self.level.layers.append(Layer.init(.entity, "Entities", self.level.map_size, self.tile_size)) catch unreachable;
