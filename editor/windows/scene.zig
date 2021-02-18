@@ -89,12 +89,6 @@ pub const Scene = struct {
         aya.draw.rect(.{}, @intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size), state.bg_color);
         aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.level.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.level.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
 
-        // outer decorations
-        aya.draw.point(.{ .x = -40, .y = -40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = -40, .y = @intToFloat(f32, state.level.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = @intToFloat(f32, state.level.map_size.w * state.tile_size) + 40, .y = -40 }, 20, math.Color.light_gray);
-        aya.draw.point(.{ .x = @intToFloat(f32, state.level.map_size.w * state.tile_size) + 40, .y = @intToFloat(f32, state.level.map_size.h * state.tile_size) + 40 }, 20, math.Color.light_gray);
-
         self.render(state);
         aya.gfx.endPass();
     }
