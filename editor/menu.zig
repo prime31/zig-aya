@@ -13,6 +13,7 @@ pub fn draw(state: *root.AppState) void {
     var show_component_editor_popup = false;
     var show_new_project_popup = false;
     var show_new_level_popup = false;
+    var show_open_project_popup = false;
 
     if (igBeginMenuBar()) {
         defer igEndMenuBar();
@@ -22,6 +23,8 @@ pub fn draw(state: *root.AppState) void {
 
             if (igMenuItemBool("New Project...", null, false, true)) show_new_project_popup = true;
             if (igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
+            igSeparator();
+            if (igMenuItemBool("Open Project...", null, false, true)) show_open_project_popup = true;
             igSeparator();
             if (igMenuItemBool("Save Project...", null, false, true))
                 root.persistence.saveProject(state) catch unreachable;
@@ -37,18 +40,26 @@ pub fn draw(state: *root.AppState) void {
     }
 
     // handle popup toggles
-    if (show_component_editor_popup) ogOpenPopup("Component Editor");
     if (show_new_project_popup) {
         ogOpenPopup("New Project");
         new_project_state = .tile;
         root.utils.file_picker.setup("Create a folder to put your new Aya Edit project in", true, true);
     }
+
     if (show_new_level_popup) {
         ogOpenPopup("New Level");
         std.mem.set(u8, &buffer, 0);
         map_width = 32;
         map_height = 32;
     }
+    
+    if (show_open_project_popup) {
+        // TODO: save the old project/level
+        ogOpenPopup("Open Project");
+    }
+
+    if (show_component_editor_popup) ogOpenPopup("Component Editor");
+
 
     // we always need to call our popup code
     root.windows.component_editor.draw(state);
@@ -109,5 +120,17 @@ pub fn draw(state: *root.AppState) void {
             igCloseCurrentPopup();
         }
         ogPopDisabled(disabled);
+    }
+
+    if (igBeginPopupModal("Open Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer igEndPopup();
+        igText("some ui to select a project file or folder");
+
+        if (ogButton("Cancel")) igCloseCurrentPopup();
+        igSameLine(igGetWindowContentRegionWidth() - 45, 0);
+
+        if (ogButton("Caxpoo")) {
+            igCloseCurrentPopup();
+        }
     }
 }
