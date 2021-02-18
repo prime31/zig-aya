@@ -4,7 +4,72 @@ const data = @import("data/data.zig");
 const components = @import("data/components.zig");
 const AppState = data.AppState;
 
+const AppStateJson = struct {
+    tile_size: usize,
+    snap_size: u8,
+    clear_color: u32,
+    bg_color: u32,
+    components: []ComponentJson,
+    next_component_id: u8 = 0,
+    selected_layer_index: usize = 0,
+
+    pub fn init(state: *AppState) AppStateJson {
+        return .{
+            .tile_size = state.tile_size,
+            .snap_size = state.snap_size,
+            .clear_color = state.clear_color.value,
+            .bg_color = state.bg_color.value,
+            .components = ComponentJson.init(state.components.items),
+            .next_component_id = state.next_component_id,
+            .selected_layer_index = state.selected_layer_index,
+        };
+    }
+};
+
+const ComponentJson = struct {
+    id: u8,
+    name: [25:0]u8 = undefined,
+    props: []components.Property,
+    next_property_id: u8 = 0,
+
+    pub fn init(comps: []data.Component) []ComponentJson {
+        var arr = aya.mem.tmp_allocator.alloc(ComponentJson, comps.len) catch unreachable;
+        for (comps) |comp, i| {
+            arr[i] = .{
+                .id = comp.id,
+                .name = comp.name, // aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&comp.name)) catch unreachable,
+                .props = comp.props,
+                .next_property_id = comp.next_property_id,  
+            };
+        }  
+        return arr;
+    }
+};
+
+fn fart(state: *AppState) !void {
+    var handle = try std.fs.cwd().createFile("project2.json", .{});
+
+    const state_json = AppStateJson.init(state);
+    try std.json.stringify(state_json, .{}, handle.writer());
+    handle.close();
+
+    // and back
+    var bytes = try aya.fs.read(aya.mem.tmp_allocator, "project2.json");
+    var res = try std.json.parse(AppStateJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+
+    for (res.components) |comp| {
+        std.log.info("{s}", .{comp.name});
+        for (comp.props) |prop| {
+            std.log.info("    name: {s}, val: {s}", .{prop.name, prop.value});
+        }
+    }
+}
+
+
+
 pub fn saveProject(state: *AppState) !void {
+    try fart(state);
+
     var handle = try std.fs.cwd().createFile("project.json", .{});
     defer handle.close();
     const out_stream = handle.writer();
@@ -33,7 +98,7 @@ pub fn saveProject(state: *AppState) !void {
         {
             defer jw.endArray() catch unreachable;
 
-            for (component.props.items) |prop| {
+            for (component.props) |prop| {
                 try jw.arrayElem();
                 try jw.beginObject();
 
@@ -116,4 +181,10 @@ fn writePropertyValue(writer: anytype, value: components.PropertyValue) !void {
     }
 
     try writer.endObject();
+}
+
+pub fn loadProject(path: []const u8) !AppState {
+    var state = AppState.init();
+
+    return state;
 }

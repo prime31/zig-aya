@@ -4,6 +4,7 @@ const root = @import("../main.zig");
 usingnamespace @import("imgui");
 
 const Component = root.data.Component;
+const Property = root.data.Property;
 
 var name_buf: [25]u8 = undefined;
 var selected_comp: usize = 0;
@@ -69,7 +70,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     igText("Default Value");
 
     var delete_index: ?usize = null;
-    for (component.props.items) |*prop, i| {
+    for (component.props) |*prop, i| {
         igPushIDPtr(prop);
         defer igPopID();
 
@@ -102,7 +103,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         if (igBeginPopupModal("Enum Values##enum-values", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
             defer igEndPopup();
            
-            var prop_value = &component.props.items[index].value;
+            var prop_value = &component.props[index].value;
             for (prop_value.enum_values) |*val, i| {
                 igPushIDPtr(val);
                 defer igPopID();
@@ -120,7 +121,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         }
 
         if (enum_delete_index) |i| {
-            var prop_value = &component.props.items[index].value;
+            var prop_value = &component.props[index].value;
             const newlen = prop_value.enum_values.len - 1;
 
             // if this isnt the last element, copy each element after the one we remove back one to fill the gap
@@ -135,7 +136,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     }
 
     if (delete_index) |index| {
-        var prop = component.props.orderedRemove(index);
+        var prop = aya.utils.array.orderedRemove(Property, &component.props, index); // component.props.orderedRemove(index);
 
         // remove the property from any Entities that have this component
         for (state.level.layers.items) |*layer| {
@@ -208,7 +209,7 @@ fn addLastPropertyToEntitiesContainingComponent(state: *root.AppState, component
             for (layer.entity.entities.items) |*entity| {
                 for (entity.components.items) |*comp| {
                     if (comp.component_id == component.id) {
-                        comp.addProperty(component.props.items[component.props.items.len - 1]);
+                        comp.addProperty(component.props[component.props.len - 1]);
                         break;
                     }
                 }
