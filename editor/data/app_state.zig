@@ -69,6 +69,7 @@ pub const AppState = struct {
 
         comp1.addProperty(.{ .string = undefined });
         aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "the_string");
+        aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].value.string, "deffy");
 
         comp1.addProperty(.{ .int = 55 });
         aya.mem.copyZ(u8, &comp1.props[comp1.props.len - 1].name, "an_int");
@@ -84,7 +85,6 @@ pub const AppState = struct {
         comp2.addProperty(.{ .entity_link = 0 });
         aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "link");
 
-        // var t = [_][25:0]u8{ ("Value1" ++ [_]u8{0} ** 19).* };
         var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
         std.mem.set(u8, &enums[0], 0); 
         std.mem.set(u8, &enums[1], 0);

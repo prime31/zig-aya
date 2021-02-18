@@ -9,7 +9,7 @@ const AppStateJson = struct {
     snap_size: u8,
     clear_color: u32,
     bg_color: u32,
-    components: []ComponentJson,
+    components: []components.Component,
     next_component_id: u8 = 0,
     selected_layer_index: usize = 0,
 
@@ -19,30 +19,10 @@ const AppStateJson = struct {
             .snap_size = state.snap_size,
             .clear_color = state.clear_color.value,
             .bg_color = state.bg_color.value,
-            .components = ComponentJson.init(state.components.items),
+            .components = state.components.items,
             .next_component_id = state.next_component_id,
             .selected_layer_index = state.selected_layer_index,
         };
-    }
-};
-
-const ComponentJson = struct {
-    id: u8,
-    name: [25:0]u8 = undefined,
-    props: []components.Property,
-    next_property_id: u8 = 0,
-
-    pub fn init(comps: []data.Component) []ComponentJson {
-        var arr = aya.mem.tmp_allocator.alloc(ComponentJson, comps.len) catch unreachable;
-        for (comps) |comp, i| {
-            arr[i] = .{
-                .id = comp.id,
-                .name = comp.name, // aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&comp.name)) catch unreachable,
-                .props = comp.props,
-                .next_property_id = comp.next_property_id,  
-            };
-        }  
-        return arr;
     }
 };
 
