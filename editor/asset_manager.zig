@@ -154,6 +154,10 @@ pub const AssetManager = struct {
         dir.setAsCwd() catch unreachable;
         dir.close();
 
+        self.rescanProjectAssets();
+    }
+
+    pub fn rescanProjectAssets(self: *@This()) void {
         const tex_folder = fs.path.join(aya.mem.allocator, &[_][]const u8{ self.root_path, "textures" }) catch unreachable;
         defer aya.mem.allocator.free(tex_folder);
 
