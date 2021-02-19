@@ -12,6 +12,7 @@ var tile_size: usize = 16;
 pub fn draw(state: *root.AppState) void {
     var show_component_editor_popup = false;
     var show_new_project_popup = false;
+    var show_open_level_popup = false;
     var show_new_level_popup = false;
     var show_open_project_popup = false;
 
@@ -25,9 +26,12 @@ pub fn draw(state: *root.AppState) void {
             if (igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
             igSeparator();
             if (igMenuItemBool("Open Project...", null, false, true)) show_open_project_popup = true;
+            if (igMenuItemBool("Open Level...", null, false, true)) show_open_level_popup = true;
             igSeparator();
             if (igMenuItemBool("Save Project...", null, false, true))
                 root.persistence.saveProject(state) catch unreachable;
+            if (igMenuItemBool("Save Level...", null, false, true))
+                root.persistence.saveLevel(state.level) catch unreachable;
         }
 
         if (igBeginMenu("Tools", true)) {
@@ -52,14 +56,18 @@ pub fn draw(state: *root.AppState) void {
         map_width = 32;
         map_height = 32;
     }
-    
+
     if (show_open_project_popup) {
         // TODO: save the old project/level
         ogOpenPopup("Open Project");
     }
 
-    if (show_component_editor_popup) ogOpenPopup("Component Editor");
+    if (show_open_level_popup) {
+        // TODO: save the old level
+        ogOpenPopup("Open Level");
+    }
 
+    if (show_component_editor_popup) ogOpenPopup("Component Editor");
 
     // we always need to call our popup code
     root.windows.component_editor.draw(state);
@@ -116,9 +124,24 @@ pub fn draw(state: *root.AppState) void {
 
         ogPushDisabled(disabled);
         if (ogButton("Create")) {
-            state.createLevel(buffer[0..label_sentinel_index]);
+            state.createLevel(buffer[0..label_sentinel_index], map_width, map_height);
             igCloseCurrentPopup();
         }
+        ogPopDisabled(disabled);
+    }
+
+    if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer igEndPopup();
+        igText("open level selector");
+
+        if (ogButton("Cancel")) igCloseCurrentPopup();
+        igSameLine(igGetWindowContentRegionWidth() - 30, 0);
+
+        const disabled = true;
+
+        ogPushDisabled(disabled);
+        if (ogButton("Open"))
+            igCloseCurrentPopup();
         ogPopDisabled(disabled);
     }
 
@@ -129,8 +152,7 @@ pub fn draw(state: *root.AppState) void {
         if (ogButton("Cancel")) igCloseCurrentPopup();
         igSameLine(igGetWindowContentRegionWidth() - 45, 0);
 
-        if (ogButton("Caxpoo")) {
+        if (ogButton("Caxpoo"))
             igCloseCurrentPopup();
-        }
     }
 }

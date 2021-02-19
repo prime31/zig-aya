@@ -6,6 +6,7 @@ usingnamespace @import("imgui");
 const editor = @import("../editor.zig");
 
 pub const AppState = @import("app_state.zig").AppState;
+pub const Level = @import("app_state.zig").Level;
 pub const Tilemap = @import("tilemap.zig").Tilemap;
 pub const Tileset = @import("tileset.zig").Tileset;
 pub const Brushset = @import("brushset.zig").Brushset;

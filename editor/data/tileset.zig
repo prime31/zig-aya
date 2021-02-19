@@ -14,6 +14,7 @@ pub const Tileset = struct {
     tile_size: usize,
     spacing: usize,
     tex: aya.gfx.Texture = undefined,
+    tex_name: []const u8 = &[_]u8{},
     tiles_per_row: usize = 0,
     tiles_per_col: usize = 0,
     tile_definitions: TileDefinitions = .{},
@@ -38,7 +39,7 @@ pub const Tileset = struct {
     pub fn loadTexture(self: *Tileset, file: []const u8) !void {
         var spacing: usize = 0;
         if (!validateImage(file, self.tile_size, &spacing)) {
-            std.debug.print("invalid file. failed validation\n", .{});
+            std.log.warn("invalid file. failed validation", .{});
             return error.FailedValidation;
         }
 
