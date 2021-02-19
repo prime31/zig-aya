@@ -1,9 +1,11 @@
 const std = @import("std");
 const aya = @import("aya");
+const root = @import("main.zig");
 const data = @import("data/data.zig");
 const components = @import("data/components.zig");
 const AppState = data.AppState;
 
+/// AppState mirror that contains just the fields that should be persisted
 const AppStateJson = struct {
     tile_size: usize,
     snap_size: u8,
@@ -123,6 +125,11 @@ fn writeNumber(writer: anytype, field_name: []const u8, value: anytype) !void {
     try writeValue(value, writer);
 }
 
+fn writeBool(writer: anytype, field_name: []const u8, value: bool) !void {
+    try writer.objectField(field_name);
+    try writeValue(value, writer);
+}
+
 fn writeString(writer: anytype, field_name: []const u8, string: [:0]const u8) !void {
     const sentinel = std.mem.indexOfScalar(u8, string, 0) orelse string.len;
     const str = string[0..sentinel];
@@ -168,3 +175,111 @@ pub fn loadProject(path: []const u8) !AppState {
 
     return state;
 }
+
+
+// level save/load
+pub fn saveLevel(level: data.Level) !void {
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
+
+    var handle = try std.fs.cwd().createFile(filename, .{});
+    defer handle.close();
+    const out_stream = handle.writer();
+    var jw = std.json.writeStream(out_stream, 10);
+
+    try jw.beginObject();
+    try writeNumber(&jw, "width", level.map_size.w);
+    try writeNumber(&jw, "height", level.map_size.h);
+
+    try jw.objectField("layers");
+    try jw.beginArray();
+
+    for (level.layers.items) |layer| {
+        try jw.arrayElem();
+        try jw.beginObject();
+        
+        try jw.objectField("type");
+        try jw.emitString(@tagName(std.meta.activeTag(layer)));
+        try writeString(&jw, "name", &layer.name());
+        try writeBool(&jw, "visible", layer.visible());
+
+        try switch (layer) {
+            .tilemap => |tilemap| writeTilemapLayer(&jw, tilemap), 
+            .auto_tilemap => |auto_tilemap| writeAutoTilemapLayer(&jw, auto_tilemap),
+            .entity => |entity| writeEntityLayer(&jw, entity),
+        };
+        try jw.endObject();
+    }
+
+    try jw.endArray();
+    try jw.endObject();
+}
+
+fn writeTilemapLayer(writer: anytype, layer: root.layers.TilemapLayer) !void {
+    try writer.objectField("tilemap");
+    try writeTilemap(writer, layer.tilemap);
+
+    try writer.objectField("tileset");
+    try writeTileset(writer, layer.tileset);
+}
+
+fn writeAutoTilemapLayer(writer: anytype, layer: root.layers.AutoTilemapLayer) !void {
+}
+
+fn writeEntityLayer(writer: anytype, layer: root.layers.EntityLayer) !void {
+}
+
+fn writeTilemap(writer: anytype, tilemap: data.Tilemap) !void {
+    try writer.beginObject();
+    try writer.objectField("data");
+    try writer.beginArray();
+
+    for (tilemap.data) |tile| {
+        try writer.arrayElem();
+        try writer.emitNumber(tile);
+    }
+
+    try writer.endArray();
+    try writer.endObject();
+}
+
+fn writeTileset(writer: anytype, tileset: data.Tileset) !void {
+    try writer.beginObject();
+    
+    try writer.objectField("tex_name");
+    try writer.emitString(tileset.tex_name);
+
+    try writer.objectField("tile_definitions");
+    try writer.beginObject();
+    inline for (std.meta.fields(@TypeOf(tileset.tile_definitions))) |field| {
+        try writeFixedList(writer, field.name, @field(tileset.tile_definitions, field.name));
+    }
+    try writer.endObject();
+
+    try writer.objectField("animations");
+    try writer.beginArray();
+    for (tileset.animations.items) |ani| {
+        try writer.arrayElem();
+        try writer.beginObject();
+        try writeNumber(writer, "tile", ani.tile);
+        try writeNumber(writer, "rate", ani.rate);
+        try writeFixedList(writer, "tiles", ani.tiles);
+        try writer.endObject();
+    }
+    try writer.endArray();
+
+    try writer.endObject();
+}
+
+fn writeFixedList(writer: anytype, field_name: []const u8, list: anytype) !void {
+    try writer.objectField(field_name);
+    try writer.beginArray();
+    
+    var i: usize = 0;
+    while (i < list.len) : (i += 1) {
+        try writer.arrayElem();
+        try writer.emitNumber(list.items[i]);
+    }
+
+    try writer.endArray();
+}
+

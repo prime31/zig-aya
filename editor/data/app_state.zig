@@ -9,12 +9,13 @@ const Component = @import("data.zig").Component;
 
 pub const Level = struct {
     name: []const u8 = "",
-    map_size: Size = .{ .w = 32, .h = 32 },
+    map_size: Size,
     layers: std.ArrayList(Layer),
 
-    pub fn init(name: []const u8) Level {
+    pub fn init(name: []const u8, width: usize, height: usize) Level {
         return .{
             .name = aya.mem.allocator.dupe(u8, name) catch unreachable,
+            .map_size = .{ .w = width, .h = height },
             .layers = std.ArrayList(Layer).init(aya.mem.allocator),
         };
     }
@@ -40,7 +41,7 @@ pub const AppState = struct {
 
     pub fn init() AppState {
         return .{
-            .level = Level.init("default"),
+            .level = Level.init("default", 32, 32),
             .components = std.ArrayList(Component).init(aya.mem.allocator),
             .asset_man = root.AssetManager.init(),
         };
@@ -136,8 +137,8 @@ pub const AppState = struct {
         }
     }
 
-    pub fn createLevel(self: *@This(), name: []const u8) void {
-        self.level = Level.init(name);
+    pub fn createLevel(self: *@This(), name: []const u8, width: usize, height: usize) void {
+        self.level = Level.init(name, width, height);
         self.selected_layer_index = 0;
     }
 
