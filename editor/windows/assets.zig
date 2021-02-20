@@ -57,7 +57,7 @@ fn drawTextures(state: *root.AppState) void {
     const entity_layer = if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity) state.level.layers.items[state.selected_layer_index].entity else null;
 
     for (state.asset_man.thumbnails.names) |asset_name, i| {
-        igPushIDInt(@intCast(c_int, i));
+        ogPushIDUsize(i);
         defer igPopID();
 
         igBeginGroup();
@@ -109,5 +109,17 @@ fn drawAtlases(state: *root.AppState) void {
 }
 
 fn drawLevels(state: *root.AppState) void {
-    igText("levels");
+    const win_visible_width = ogGetWindowPos().x + ogGetWindowContentRegionMax().x;
+    const x_spacing = igGetStyle().ItemSpacing.x;
+
+    const w = ogGetContentRegionAvail().x + 10;
+    _ = ogBeginChildID(777, .{ .x = w }, false, ImGuiWindowFlags_None);
+    defer igEndChildFrame();
+
+    for (state.asset_man.levels) |level, i| {
+        ogPushIDUsize(i);
+        defer igPopID();
+
+        if (ogButtonEx(level.ptr, .{ .x = -1 })) {}
+    }
 }

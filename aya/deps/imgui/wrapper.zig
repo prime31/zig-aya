@@ -44,6 +44,12 @@ pub fn ogImageButtonEx(texture: ImTextureID, size: ImVec2, uv0: ImVec2, uv1: ImV
     return _ogImageButtonEx(texture, &size, &uv0, &uv1, frame_padding, &bg_col, &tint_col);
 }
 
+pub fn ogCalcTextSize(text: [*c]const u8, text_end: [*c]const u8, hide_text_after_double_hash: bool, wrap_width: f32) ImVec2 {
+    var size = ImVec2{};
+    igCalcTextSize(&size, text, text_end, hide_text_after_double_hash, wrap_width);
+    return size;
+}
+
 pub fn ogColoredText(r: f32, g: f32, b: f32, text: [:0]const u8) void {
     _ogColoredText(r, g, b, text);
 }

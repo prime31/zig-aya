@@ -30,8 +30,10 @@ pub fn draw(state: *root.AppState) void {
             igSeparator();
             if (igMenuItemBool("Save Project...", null, false, true))
                 root.persistence.saveProject(state) catch unreachable;
-            if (igMenuItemBool("Save Level...", null, false, true))
+            if (igMenuItemBool("Save Level...", null, false, true)) {
                 root.persistence.saveLevel(state.level) catch unreachable;
+                state.asset_man.loadLevels();
+            }
         }
 
         if (igBeginMenu("Tools", true)) {
