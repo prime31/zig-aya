@@ -96,6 +96,7 @@ pub const AssetManager = struct {
     thumbnails: ThumbnailAtlas = ThumbnailAtlas.initEmpty(),
     textures: TextureAtlas = TextureAtlas.initEmpty(),
     tilesets: [][:0]const u8 = &[_][:0]u8{},
+    levels: [][:0]const u8 = &[_][:0]u8{},
 
     pub fn init() AssetManager {
         return .{ .default_tex = aya.gfx.Texture.initCheckerTexture(8) };
@@ -164,6 +165,7 @@ pub const AssetManager = struct {
         self.generateThumbnailAtlas(tex_folder);
         self.generateTextureAtlas(tex_folder);
         self.loadTilesets();
+        self.loadLevels();
     }
 
     fn generateThumbnailAtlas(self: *@This(), tex_folder: []const u8) void {
@@ -178,13 +180,23 @@ pub const AssetManager = struct {
         self.textures = TextureAtlas.init(atlas);
     }
 
-    fn loadTilesets(self: *@This()) void {
+    pub fn loadTilesets(self: *@This()) void {
         const src_folder = fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ self.root_path, "tilesets" }) catch unreachable;
-        const pngs = aya.fs.getAllFilesOfType(aya.mem.allocator, src_folder, ".png", true);
-        defer aya.mem.allocator.free(pngs);
-
+        const pngs = aya.fs.getAllFilesOfType(aya.mem.tmp_allocator, src_folder, ".png", true);
+        if (pngs.len == 0) return;
+        
         aya.mem.allocator.free(self.tilesets);
         self.tilesets = aya.mem.allocator.alloc([:0]u8, pngs.len) catch unreachable;
         for (pngs) |png, i| self.tilesets[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(png)) catch unreachable;
     }
+
+    pub fn loadLevels(self: *@This()) void {
+        const src_folder = fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ self.root_path, "levels" }) catch unreachable;
+        const levels = aya.fs.getAllFilesOfType(aya.mem.tmp_allocator, src_folder, ".json", false);
+        if (levels.len == 0) return;
+
+        aya.mem.allocator.free(self.levels);
+        self.levels = aya.mem.allocator.alloc([:0]u8, levels.len) catch unreachable;
+        for (levels) |level, i| self.levels[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(level)) catch unreachable;
+    } 
 };
