@@ -79,26 +79,63 @@ const AutoTilemapLayerJson = struct {
     tilemap: data.Tilemap,
     tileset: []const u8,
     ruleset: RuleSetJson,
-    // ruleset_groups: std.AutoHashMap(u8, []const u8),
+    ruleset_groups: []RulesetGroup, // convert the HashMap into a slice of key/value pairs
+
+    const RulesetGroup = struct {
+        id: u8,
+        name: []const u8,
+    };
 
     pub fn init(layer: root.layers.AutoTilemapLayer) AutoTilemapLayerJson {
+        var ruleset_groups = aya.mem.tmp_allocator.alloc(RulesetGroup, layer.ruleset_groups.count()) catch unreachable;
+
+        var i: usize = 0;
+        var iter = layer.ruleset_groups.iterator();
+        while (iter.next()) |kv| {
+            ruleset_groups[i] = .{ .id = kv.key, .name = kv.value };
+            i += 1;
+        }
+
         return .{
             .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&layer.name)) catch unreachable,
             .visible = layer.visible,
             .tilemap = layer.tilemap,
             .tileset = layer.tileset.tex_name,
             .ruleset = RuleSetJson.init(layer.ruleset),
-            // .rulseset_groups = BBB,
+            .ruleset_groups = ruleset_groups,
         };
     }
 };
 
 const RuleSetJson = struct {
     seed: u64,
+    rules: []RuleJson,
 
     pub fn init(ruleset: data.RuleSet) RuleSetJson {
+        var rules = aya.mem.tmp_allocator.alloc(RuleJson, ruleset.rules.items.len) catch unreachable;
+        for (ruleset.rules.items) |rule, i| rules[i] = RuleJson.init(rule);
+
         return .{
             .seed = ruleset.seed,
+            .rules = rules,
+        };
+    }
+};
+
+const RuleJson = struct {
+    name: []const u8,
+    rule_tiles: [25]data.RuleTile,
+    chance: u8 = 100,
+    result_tiles: [25]u8,
+    group: u8 = 0,
+
+    pub fn init(rule: data.Rule) RuleJson {
+        return .{
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&rule.name)) catch unreachable,
+            .rule_tiles = rule.rule_tiles,
+            .chance = rule.chance,
+            .result_tiles = rule.result_tiles.items,
+            .group = rule.group,
         };
     }
 };
@@ -140,21 +177,33 @@ const EntityJson = struct {
     id: u8 = 0,
     name: []u8 = undefined,
     selectable: bool = true,
-    // components: std.ArrayList(ComponentInstance),
+    components: []ComponentInstanceJson,
     transform: data.Transform,
     sprite: ?SpriteJson = null,
     collider: ?data.Collider = null,
 
     pub fn init(entity: data.Entity) EntityJson {
+        var comps = aya.mem.tmp_allocator.alloc(ComponentInstanceJson, entity.components.items.len) catch unreachable;
+        for (entity.components.items) |comp, i| comps[i] = ComponentInstanceJson.init(comp);
+
         return .{
             .id = entity.id,
             .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&entity.name)) catch unreachable,
             .selectable = entity.selectable,
-            // .components = ,
+            .components = comps,
             .transform = entity.transform,
             .sprite = if (entity.sprite) |sprite| SpriteJson.init(sprite) else null,
             .collider = entity.collider,
         };
+    }
+};
+
+const ComponentInstanceJson = struct {
+    component_id: u8,
+    props: []components.PropertyInstance,
+
+    pub fn init(comp: data.ComponentInstance) ComponentInstanceJson {
+        return .{ .component_id = comp.component_id, .props = comp.props.items };
     }
 };
 
@@ -189,12 +238,11 @@ pub fn saveLevelFart(level: data.Level) !void {
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
     var res = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
 
-    std.log.info("{any}", .{res});
-
     for (res.layers) |layer| {
         if (layer == .entity) {
-            std.log.info("{any}", .{layer.entity});
             for (layer.entity.entities) |e| std.log.info("{any}", .{e.collider});
+        } else if (layer == .auto_tilemap) {
+            for (layer.auto_tilemap.ruleset.rules) |rule| std.log.info("rule: {any}", .{rule});
         } else {
             std.log.info("name: {s}, layer: {any}", .{ layer, std.meta.activeTag(layer) });
         }

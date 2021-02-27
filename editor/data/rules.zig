@@ -277,6 +277,10 @@ pub const RuleTile = struct {
         none,
         negated,
         required,
+
+        pub fn jsonStringify(self: RuleState, options: std.json.StringifyOptions, writer: anytype) !void {
+            try writer.print("{d}", .{@enumToInt(self)});
+        }
     };
 
     pub fn clone(self: RuleTile) RuleTile {
@@ -325,3 +329,4 @@ pub const RuleTile = struct {
         }
     }
 };
+
