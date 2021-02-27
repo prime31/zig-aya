@@ -8,6 +8,7 @@ const ComponentInstance = data.ComponentInstance;
 pub const Entity = struct {
     id: u8 = 0,
     name: [25:0]u8 = undefined,
+    selectable: bool = true,
     components: std.ArrayList(ComponentInstance),
     transform: Transform,
     sprite: ?Sprite = null,
