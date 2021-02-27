@@ -145,13 +145,41 @@ pub const EntityLayer = struct {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels
                 var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
                 self.selected_index = for (self.entities.items) |entity, i| {
-                    if (entity.intersects(rect)) {
+                    if (entity.selectable and entity.intersects(rect)) {
                         // store off our dragged_index and the position so we can snap it as its dragged around
                         self.dragged_index = i;
                         self.dragged_start_pos = entity.transform.pos;
                         break i;
                     }
                 } else null;
+            }
+        }
+
+        // allow moving the selected entity with the arrow keys
+        if (self.selected_index) |index| {
+            var moved = false;
+            var delta = aya.math.Vec2{};
+
+            if (ogKeyDown(aya.sdl.SDL_SCANCODE_LEFT)) {
+                delta.x -= 1;
+                moved = true;
+            }
+            if (ogKeyDown(aya.sdl.SDL_SCANCODE_RIGHT)) {
+                delta.x = 1;
+                moved = true;
+            }
+            if (ogKeyDown(aya.sdl.SDL_SCANCODE_UP)) {
+                delta.y -= 1;
+                moved = true;
+            }
+            if (ogKeyDown(aya.sdl.SDL_SCANCODE_DOWN)) {
+                delta.y = 1;
+                moved = true;
+            }
+            if (moved) {
+                delta = delta.add(self.entities.items[index].transform.pos);
+                const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
+                self.entities.items[index].transform.pos = delta.clamp(.{}, max_pos); //.snapTo(@intToFloat(f32, state.snap_size));
             }
         }
 
@@ -206,7 +234,7 @@ pub const EntityLayer = struct {
             ogUnformattedTooltip(-1, "Click and drag to reorder");
             igSameLine(0, 10);
 
-            if (ogSelectableBool(&entity.name, self.selected_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 30 })) {
+            if (ogSelectableBool(&entity.name, self.selected_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
                 self.selected_index = i;
             }
 
@@ -215,6 +243,11 @@ pub const EntityLayer = struct {
                 if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(entity.*, state);
                 igEndPopup();
             }
+
+            igSameLine(igGetWindowContentRegionWidth() - 35, 0);
+            if (ogButtonEx(if (entity.selectable) icons.lock_open else icons.lock, .{ .x = 23 }))
+                entity.selectable = !entity.selectable;
+            ogUnformattedTooltip(100, "Entity selectable in scene view state");
 
             // make some room for the delete button
             igSameLine(igGetWindowContentRegionWidth() - 8, 0);
