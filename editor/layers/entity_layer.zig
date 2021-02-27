@@ -19,11 +19,11 @@ pub const EntityLayer = struct {
     name: [25:0]u8 = undefined,
     visible: bool = true,
     entities: std.ArrayList(Entity),
+    id_counter: u8 = 0,
     selected_index: ?usize = null,
     dragged_index: ?usize = null,
     dragged_start_pos: math.Vec2 = .{},
     showing_entity_ctx_menu: bool = false,
-    id_counter: u8 = 0,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
         var layer = EntityLayer{
@@ -158,22 +158,23 @@ pub const EntityLayer = struct {
         // allow moving the selected entity with the arrow keys
         if (self.selected_index) |index| {
             var moved = false;
+            const move_amt = if (state.snap_size > 0) @intToFloat(f32, state.snap_size) else 1;
             var delta = aya.math.Vec2{};
 
-            if (ogKeyDown(aya.sdl.SDL_SCANCODE_LEFT)) {
-                delta.x -= 1;
+            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_LEFT)) {
+                delta.x -= move_amt;
                 moved = true;
             }
-            if (ogKeyDown(aya.sdl.SDL_SCANCODE_RIGHT)) {
-                delta.x = 1;
+            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_RIGHT)) {
+                delta.x = move_amt;
                 moved = true;
             }
-            if (ogKeyDown(aya.sdl.SDL_SCANCODE_UP)) {
-                delta.y -= 1;
+            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_UP)) {
+                delta.y -= move_amt;
                 moved = true;
             }
-            if (ogKeyDown(aya.sdl.SDL_SCANCODE_DOWN)) {
-                delta.y = 1;
+            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_DOWN)) {
+                delta.y = move_amt;
                 moved = true;
             }
             if (moved) {

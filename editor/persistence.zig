@@ -28,6 +28,136 @@ const AppStateJson = struct {
     }
 };
 
+const LevelJson = struct {
+    name: []const u8,
+    map_size: data.Size,
+    layers: []LayerJson,
+
+    pub fn init(level: data.Level) LevelJson {
+        var layers = aya.mem.tmp_allocator.alloc(LayerJson, level.layers.items.len) catch unreachable;
+        for (level.layers.items) |src_level, i| {
+            layers[i] = switch (src_level) {
+                .tilemap => |layer| .{ .tilemap = TilemapLayerJson.init(layer) },
+                .auto_tilemap => |layer| .{ .auto_tilemap = AutoTilemapLayerJson.init(layer) },
+                .entity => |layer| .{ .entity = EntityLayerJson.init(layer) },
+            };
+        }
+
+        return .{
+            .name = level.name,
+            .map_size = level.map_size,
+            .layers = layers,
+        };
+    }
+};
+
+const LayerJson = union(root.layers.LayerType) {
+    tilemap: TilemapLayerJson,
+    auto_tilemap: AutoTilemapLayerJson,
+    entity: EntityLayerJson,
+};
+
+const TilemapLayerJson = struct {
+    name: []u8 = undefined,
+    visible: bool,
+    tilemap: data.Tilemap,
+    tileset: []const u8,
+
+    pub fn init(tilemap: root.layers.TilemapLayer) TilemapLayerJson {
+        return .{
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&tilemap.name)) catch unreachable,
+            .visible = tilemap.visible,
+            .tilemap = tilemap.tilemap,
+            .tileset = aya.mem.tmp_allocator.dupe(u8, std.mem.span(tilemap.tileset.tex_name)) catch unreachable,
+        };
+    }
+};
+
+const AutoTilemapLayerJson = struct {
+    name: []u8 = undefined,
+    visible: bool = true,
+    tilemap: data.Tilemap,
+    tileset: []const u8,
+    ruleset: RuleSetJson,
+    // ruleset_groups: std.AutoHashMap(u8, []const u8),
+
+    pub fn init(layer: root.layers.AutoTilemapLayer) AutoTilemapLayerJson {
+        return .{
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&layer.name)) catch unreachable,
+            .visible = layer.visible,
+            .tilemap = layer.tilemap,
+            .tileset = layer.tileset.tex_name,
+            .ruleset = RuleSetJson.init(layer.ruleset),
+            // .rulseset_groups = BBB,
+        };
+    }
+};
+
+const RuleSetJson = struct {
+    seed: u64,
+
+    pub fn init(ruleset: data.RuleSet) RuleSetJson {
+        return .{
+            .seed = ruleset.seed,
+        };
+    }
+};
+
+const EntityLayerJson = struct {
+    name: []u8,
+    visible: bool,
+    entities: []EntityJson,
+    id_counter: u8,
+
+    pub fn init(layer: root.layers.EntityLayer) EntityLayerJson {
+        var entities = aya.mem.tmp_allocator.alloc(EntityJson, layer.entities.items.len) catch unreachable;
+        for (layer.entities.items) |entity, i| entities[i] = EntityJson.init(entity);
+
+        return .{
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&layer.name)) catch unreachable,
+            .visible = layer.visible,
+            .entities = entities,
+            .id_counter = layer.id_counter,
+        };
+    }
+};
+
+const SpriteJson = struct {
+    rect: aya.math.RectI,
+    tex_name: []u8,
+    origin: aya.math.Vec2,
+
+    pub fn init(sprite: data.Sprite) SpriteJson {
+        return .{
+            .rect = sprite.rect,
+            .tex_name = aya.mem.tmp_allocator.dupe(u8, sprite.tex_name) catch unreachable,
+            .origin = sprite.origin,
+        };
+    }
+};
+
+const EntityJson = struct {
+    id: u8 = 0,
+    name: []u8 = undefined,
+    selectable: bool = true,
+    // components: std.ArrayList(ComponentInstance),
+    transform: data.Transform,
+    sprite: ?SpriteJson = null,
+    collider: ?data.Collider = null,
+
+    pub fn init(entity: data.Entity) EntityJson {
+        return .{
+            .id = entity.id,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&entity.name)) catch unreachable,
+            .selectable = entity.selectable,
+            // .components = ,
+            .transform = entity.transform,
+            .sprite = if (entity.sprite) |sprite| SpriteJson.init(sprite) else null,
+            .collider = entity.collider,
+        };
+    }
+};
+
 fn fart(state: *AppState) !void {
     var handle = try std.fs.cwd().createFile("project2.json", .{});
 
@@ -42,12 +172,34 @@ fn fart(state: *AppState) !void {
     for (res.components) |comp| {
         std.log.info("{s}", .{comp.name});
         for (comp.props) |prop| {
-            std.log.info("    name: {s}, val: {s}", .{prop.name, prop.value});
+            std.log.info("    name: {s}, val: {s}", .{ prop.name, prop.value });
         }
     }
 }
 
+pub fn saveLevelFart(level: data.Level) !void {
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}_2.json", .{std.mem.span(level.name)});
 
+    var handle = try std.fs.cwd().createFile(filename, .{});
+    const level_json = LevelJson.init(level);
+    try std.json.stringify(level_json, .{}, handle.writer());
+    handle.close();
+    
+    // and back
+    var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
+    var res = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+
+    std.log.info("{any}", .{res});
+
+    for (res.layers) |layer| {
+        if (layer == .entity) {
+            std.log.info("{any}", .{layer.entity});
+            for (layer.entity.entities) |e| std.log.info("{any}", .{e.collider});
+        } else {
+            std.log.info("name: {s}, layer: {any}", .{ layer, std.meta.activeTag(layer) });
+        }
+    }
+}
 
 pub fn saveProject(state: *AppState) !void {
     try fart(state);
@@ -176,9 +328,9 @@ pub fn loadProject(path: []const u8) !AppState {
     return state;
 }
 
-
 // level save/load
 pub fn saveLevel(level: data.Level) !void {
+    try saveLevelFart(level);
     const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
 
     var handle = try std.fs.cwd().createFile(filename, .{});
@@ -196,14 +348,14 @@ pub fn saveLevel(level: data.Level) !void {
     for (level.layers.items) |layer| {
         try jw.arrayElem();
         try jw.beginObject();
-        
+
         try jw.objectField("type");
         try jw.emitString(@tagName(std.meta.activeTag(layer)));
         try writeString(&jw, "name", &layer.name());
         try writeBool(&jw, "visible", layer.visible());
 
         try switch (layer) {
-            .tilemap => |tilemap| writeTilemapLayer(&jw, tilemap), 
+            .tilemap => |tilemap| writeTilemapLayer(&jw, tilemap),
             .auto_tilemap => |auto_tilemap| writeAutoTilemapLayer(&jw, auto_tilemap),
             .entity => |entity| writeEntityLayer(&jw, entity),
         };
@@ -222,11 +374,9 @@ fn writeTilemapLayer(writer: anytype, layer: root.layers.TilemapLayer) !void {
     try writeTileset(writer, layer.tileset);
 }
 
-fn writeAutoTilemapLayer(writer: anytype, layer: root.layers.AutoTilemapLayer) !void {
-}
+fn writeAutoTilemapLayer(writer: anytype, layer: root.layers.AutoTilemapLayer) !void {}
 
-fn writeEntityLayer(writer: anytype, layer: root.layers.EntityLayer) !void {
-}
+fn writeEntityLayer(writer: anytype, layer: root.layers.EntityLayer) !void {}
 
 fn writeTilemap(writer: anytype, tilemap: data.Tilemap) !void {
     try writer.beginObject();
@@ -244,7 +394,7 @@ fn writeTilemap(writer: anytype, tilemap: data.Tilemap) !void {
 
 fn writeTileset(writer: anytype, tileset: data.Tileset) !void {
     try writer.beginObject();
-    
+
     try writer.objectField("tex_name");
     try writer.emitString(tileset.tex_name);
 
@@ -273,7 +423,7 @@ fn writeTileset(writer: anytype, tileset: data.Tileset) !void {
 fn writeFixedList(writer: anytype, field_name: []const u8, list: anytype) !void {
     try writer.objectField(field_name);
     try writer.beginArray();
-    
+
     var i: usize = 0;
     while (i < list.len) : (i += 1) {
         try writer.arrayElem();
@@ -282,4 +432,3 @@ fn writeFixedList(writer: anytype, field_name: []const u8, list: anytype) !void 
 
     try writer.endArray();
 }
-
