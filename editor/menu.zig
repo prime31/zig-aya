@@ -26,7 +26,7 @@ pub fn draw(state: *root.AppState) void {
             if (igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
             igSeparator();
             if (igMenuItemBool("Open Project...", null, false, true)) show_open_project_popup = true;
-            if (igMenuItemBool("Open Level...", null, false, true)) show_open_level_popup = true;
+            if (igMenuItemBool("Open Level...", null, false, state.asset_man.levels.len > 1)) show_open_level_popup = true;
             igSeparator();
             if (igMenuItemBool("Save Project...", null, false, true))
                 root.persistence.saveProject(state) catch unreachable;
@@ -134,17 +134,13 @@ pub fn draw(state: *root.AppState) void {
 
     if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
-        igText("open level selector");
 
-        if (ogButton("Cancel")) igCloseCurrentPopup();
-        igSameLine(igGetWindowContentRegionWidth() - 30, 0);
+        for (state.asset_man.levels) |level| {
+            if (ogButton(level)) _ = root.persistence.loadLevel(level) catch unreachable;
+        }
 
-        const disabled = true;
-
-        ogPushDisabled(disabled);
-        if (ogButton("Open"))
-            igCloseCurrentPopup();
-        ogPopDisabled(disabled);
+        igSeparator();
+        if (ogButtonEx("Cancel", .{ .x = -1 })) igCloseCurrentPopup();
     }
 
     if (igBeginPopupModal("Open Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -158,3 +154,4 @@ pub fn draw(state: *root.AppState) void {
             igCloseCurrentPopup();
     }
 }
+

@@ -336,11 +336,13 @@ pub fn inspectSprite(state: *AppState, sprite: *root.data.Sprite) void {
 pub fn inspectCollider(collider: *root.data.Collider) void {
     switch (collider.*) {
         .box => |*box| {
+            inspectBool("Trigger", &box.trigger, false);
             inspectVec2("Offset", &box.offset, .{});
             inspectFloatMinMax("Width", &box.w, 25, 1, std.math.f32_max);
             inspectFloatMinMax("Height", &box.h, 25, 1, std.math.f32_max);
         },
         .circle => |*circle| {
+            inspectBool("Trigger", &circle.trigger, false);
             inspectVec2("Offset", &circle.offset, .{});
             inspectFloatMinMax("Radius", &circle.r, 25, 5, std.math.f32_max);
         },
