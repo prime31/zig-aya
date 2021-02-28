@@ -14,6 +14,7 @@ const AppStateJson = struct {
     components: []components.Component,
     next_component_id: u8 = 0,
     selected_layer_index: usize = 0,
+    loaded_level: []const u8,
 
     pub fn init(state: *AppState) AppStateJson {
         return .{
@@ -24,7 +25,21 @@ const AppStateJson = struct {
             .components = state.components.items,
             .next_component_id = state.next_component_id,
             .selected_layer_index = state.selected_layer_index,
+            .loaded_level = state.level.name,
         };
+    }
+
+    pub fn toOwnedAppState(self: AppStateJson) !AppState {
+        const level = try loadLevel(self.loaded_level);
+        var state = AppState.initWithLevel(level);
+        state.tile_size = self.tile_size;
+        state.snap_size = self.snap_size;
+        state.clear_color = aya.math.Color{.value = self.clear_color};
+        state.bg_color = aya.math.Color{.value = self.bg_color};
+        state.components = std.ArrayList(components.Component).fromOwnedSlice(aya.mem.allocator, self.components);
+        state.next_component_id = self.next_component_id;
+        state.selected_layer_index = self.selected_layer_index;
+        return state;
     }
 };
 
@@ -48,6 +63,10 @@ const LevelJson = struct {
             .map_size = level.map_size,
             .layers = layers,
         };
+    }
+
+    pub fn toOwnedLevel(self: @This()) !data.Level {
+        return data.Level.init("", 0, 0);
     }
 };
 
@@ -207,7 +226,7 @@ const ComponentInstanceJson = struct {
     }
 };
 
-fn fart(state: *AppState) !void {
+pub fn saveProject(state: *AppState) !void {
     var handle = try std.fs.cwd().createFile("project2.json", .{});
 
     const state_json = AppStateJson.init(state);
@@ -226,8 +245,14 @@ fn fart(state: *AppState) !void {
     }
 }
 
-pub fn saveLevelFart(level: data.Level) !void {
-    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}_2.json", .{std.mem.span(level.name)});
+pub fn loadProject(path: []const u8) !AppState {
+    var bytes = try aya.fs.read(aya.mem.tmp_allocator, "project2.json");
+    var state = try std.json.parse(AppStateJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+    return state.toOwnedAppState();
+}
+
+pub fn saveLevel(level: data.Level) !void {
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
 
     var handle = try std.fs.cwd().createFile(filename, .{});
     const level_json = LevelJson.init(level);
@@ -249,9 +274,14 @@ pub fn saveLevelFart(level: data.Level) !void {
     }
 }
 
-pub fn saveProject(state: *AppState) !void {
-    try fart(state);
+pub fn loadLevel(name: []const u8) !data.Level {
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}", .{name});
+    var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
+    var level_json = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+    return level_json.toOwnedLevel();
+}
 
+fn manuallySaveProject(state: *AppState) !void {
     var handle = try std.fs.cwd().createFile("project.json", .{});
     defer handle.close();
     const out_stream = handle.writer();
@@ -370,14 +400,8 @@ fn writePropertyValue(writer: anytype, value: components.PropertyValue) !void {
     try writer.endObject();
 }
 
-pub fn loadProject(path: []const u8) !AppState {
-    var state = AppState.init();
-
-    return state;
-}
-
 // level save/load
-pub fn saveLevel(level: data.Level) !void {
+fn manuallySaveLevel(level: data.Level) !void {
     try saveLevelFart(level);
     const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
 

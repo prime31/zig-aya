@@ -47,6 +47,14 @@ pub const AppState = struct {
         };
     }
 
+    pub fn initWithLevel(level: Level) AppState {
+        return .{
+            .level = level,
+            .components = std.ArrayList(Component).init(aya.mem.allocator),
+            .asset_man = root.AssetManager.init(),
+        };
+    }
+    
     pub fn deinit(self: AppState) void {
         self.level.deinit();
         for (self.components.items) |*comp| comp.deinit();

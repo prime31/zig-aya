@@ -167,6 +167,7 @@ pub const Collider = union(enum) {
 
 pub const BoxCollider = struct {
     offset: aya.math.Vec2 = .{},
+    trigger: bool = false,
     w: f32,
     h: f32,
 
@@ -182,6 +183,7 @@ pub const BoxCollider = struct {
 
 pub const CircleCollider = struct {
     offset: aya.math.Vec2 = .{},
+    trigger: bool = false,
     r: f32,
 
     pub fn init(r: f32) CircleCollider {
