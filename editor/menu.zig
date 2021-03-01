@@ -132,11 +132,18 @@ pub fn draw(state: *root.AppState) void {
         ogPopDisabled(disabled);
     }
 
-    if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ogSetNextWindowSize(.{.x = 200 }, ImGuiCond_Once);
+    if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
         for (state.asset_man.levels) |level| {
-            if (ogButton(level)) _ = root.persistence.loadLevel(level) catch unreachable;
+            if (ogButtonEx(level, .{ .x = -1 })) {
+                const new_level = root.persistence.loadLevel(level) catch unreachable;
+                state.level.deinit();
+                state.level = new_level;
+                state.selected_layer_index = 0;
+                igCloseCurrentPopup();
+            }
         }
 
         igSeparator();

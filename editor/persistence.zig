@@ -34,8 +34,8 @@ const AppStateJson = struct {
         var state = AppState.initWithLevel(level);
         state.tile_size = self.tile_size;
         state.snap_size = self.snap_size;
-        state.clear_color = aya.math.Color{.value = self.clear_color};
-        state.bg_color = aya.math.Color{.value = self.bg_color};
+        state.clear_color = aya.math.Color{ .value = self.clear_color };
+        state.bg_color = aya.math.Color{ .value = self.bg_color };
         state.components = std.ArrayList(components.Component).fromOwnedSlice(aya.mem.allocator, self.components);
         state.next_component_id = self.next_component_id;
         state.selected_layer_index = self.selected_layer_index;
@@ -65,8 +65,22 @@ const LevelJson = struct {
         };
     }
 
-    pub fn toOwnedLevel(self: @This()) !data.Level {
-        return data.Level.init("", 0, 0);
+    pub fn toOwnedLevel(self: @This()) data.Level {
+        var layers = aya.mem.allocator.alloc(root.layers.Layer, self.layers.len) catch unreachable;
+        for (self.layers) |src_layer, i| {
+            layers[i] = switch (src_layer) {
+                .tilemap => |layer| .{ .tilemap = TilemapLayerJson.toOwnedTilemapLayer(layer) },
+                .auto_tilemap => |layer| .{ .auto_tilemap = AutoTilemapLayerJson.toOwnedAutoTilemapLayer(layer) },
+                .entity => |layer| .{ .entity = EntityLayerJson.toOwnedEntityLayer(layer) },
+            };
+        }
+        aya.mem.allocator.free(self.layers);
+
+        return .{
+            .name = self.name,
+            .map_size = self.map_size,
+            .layers = std.ArrayList(root.layers.Layer).fromOwnedSlice(aya.mem.allocator, layers),
+        };
     }
 };
 
@@ -88,6 +102,17 @@ const TilemapLayerJson = struct {
             .visible = tilemap.visible,
             .tilemap = tilemap.tilemap,
             .tileset = aya.mem.tmp_allocator.dupe(u8, std.mem.span(tilemap.tileset.tex_name)) catch unreachable,
+        };
+    }
+
+    pub fn toOwnedTilemapLayer(self: @This()) root.layers.TilemapLayer {
+        var name: [25:0]u8 = undefined;
+        aya.mem.copyZ(u8, &name, self.name);
+        return .{
+            .name = name,
+            .visible = self.visible,
+            .tilemap = self.tilemap,
+            .tileset = data.Tileset.init(16), // TODO: dont hardcode tile size
         };
     }
 };
@@ -124,6 +149,29 @@ const AutoTilemapLayerJson = struct {
             .ruleset_groups = ruleset_groups,
         };
     }
+
+    pub fn toOwnedAutoTilemapLayer(self: @This()) root.layers.AutoTilemapLayer {
+        var name: [25:0]u8 = undefined;
+        aya.mem.copyZ(u8, &name, self.name);
+
+        var ruleset_groups = std.AutoHashMap(u8, []const u8).init(aya.mem.allocator);
+        for (self.ruleset_groups) |group| ruleset_groups.put(group.id, group.name) catch unreachable;
+
+        var tmp_data = aya.mem.allocator.alloc(u16, self.tilemap.data.len) catch unreachable;
+        std.mem.set(u16, tmp_data, 0);
+
+        return .{
+            .name = name,
+            .visible = self.visible,
+            .tilemap = self.tilemap,
+            .final_map = tmp_data,
+            .random_map_data = aya.mem.allocator.alloc(root.layers.AutoTilemapLayer.Randoms, self.tilemap.data.len) catch unreachable,
+            .brushset = data.Brushset.init(16), // TODO: dont make up tile size
+            .tileset = data.Tileset.init(16), // TODO: load the real Tileset
+            .ruleset = self.ruleset.toOwnedRuleSet(),
+            .ruleset_groups = ruleset_groups,
+        };
+    }
 };
 
 const RuleSetJson = struct {
@@ -138,6 +186,22 @@ const RuleSetJson = struct {
             .seed = ruleset.seed,
             .rules = rules,
         };
+    }
+
+    pub fn toOwnedRuleSet(self: @This()) data.RuleSet {
+        var ruleset = data.RuleSet.init();
+        ruleset.seed = self.seed;
+
+        for (self.rules) |rule| {
+            var new_rule = data.Rule.init();
+            std.mem.copy(u8, &new_rule.name, rule.name);
+            new_rule.rule_tiles = rule.rule_tiles;
+            new_rule.chance = rule.chance;
+            new_rule.result_tiles.items = rule.result_tiles;
+            new_rule.group = rule.group;
+            ruleset.rules.append(new_rule) catch unreachable;
+        }
+        return ruleset;
     }
 };
 
@@ -174,6 +238,18 @@ const EntityLayerJson = struct {
             .visible = layer.visible,
             .entities = entities,
             .id_counter = layer.id_counter,
+        };
+    }
+
+    pub fn toOwnedEntityLayer(self: @This()) root.layers.EntityLayer {
+        var name: [25:0]u8 = undefined;
+        aya.mem.copyZ(u8, &name, self.name);
+
+        return .{
+            .name = name,
+            .visible = self.visible,
+            .entities = std.ArrayList(data.Entity).init(aya.mem.allocator),
+            .id_counter = self.id_counter,
         };
     }
 };
@@ -258,7 +334,7 @@ pub fn saveLevel(level: data.Level) !void {
     const level_json = LevelJson.init(level);
     try std.json.stringify(level_json, .{}, handle.writer());
     handle.close();
-    
+
     // and back
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
     var res = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
