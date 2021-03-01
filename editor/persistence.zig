@@ -5,6 +5,8 @@ const data = @import("data/data.zig");
 const components = @import("data/components.zig");
 const AppState = data.AppState;
 
+// TODO: all the toOwned* methods should cleanup memory they dont need
+
 /// AppState mirror that contains just the fields that should be persisted
 const AppStateJson = struct {
     tile_size: usize,
@@ -245,10 +247,13 @@ const EntityLayerJson = struct {
         var name: [25:0]u8 = undefined;
         aya.mem.copyZ(u8, &name, self.name);
 
+        var entities = std.ArrayList(data.Entity).initCapacity(aya.mem.allocator, self.entities.len) catch unreachable;
+        for (self.entities) |entity| entities.appendAssumeCapacity(entity.toOwnedEntity());
+
         return .{
             .name = name,
             .visible = self.visible,
-            .entities = std.ArrayList(data.Entity).init(aya.mem.allocator),
+            .entities = entities,
             .id_counter = self.id_counter,
         };
     }
@@ -290,6 +295,35 @@ const EntityJson = struct {
             .sprite = if (entity.sprite) |sprite| SpriteJson.init(sprite) else null,
             .collider = entity.collider,
         };
+    }
+
+    pub fn toOwnedEntity(self: @This()) data.Entity {
+        var entity = data.Entity{
+            .id = self.id,
+            .selectable = self.selectable,
+            .components = std.ArrayList(data.ComponentInstance).initCapacity(aya.mem.allocator, self.components.len) catch unreachable,
+            .transform = self.transform,
+            .collider = self.collider,
+        };
+        aya.mem.copyZ(u8, &entity.name, self.name);
+
+        for (self.components) |comp| entity.components.appendAssumeCapacity(.{
+            .component_id = comp.component_id,
+            .props = std.ArrayList(components.PropertyInstance).fromOwnedSlice(aya.mem.allocator, comp.props),
+        });
+
+        if (self.sprite) |sprite| {
+            const tex_name = aya.mem.allocator.dupeZ(u8, sprite.tex_name) catch unreachable;
+            const tex_rect = root.state.asset_man.getTextureAndRect(tex_name);
+            entity.sprite = .{
+                .tex = tex_rect.tex,
+                .rect = sprite.rect,
+                .tex_name = tex_name,
+                .origin = sprite.origin,
+            };
+        }
+
+        return entity;
     }
 };
 
