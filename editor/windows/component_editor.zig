@@ -226,8 +226,8 @@ fn ensureLiveEnumValueIsValid(state: *root.AppState, component: *Component, enum
                 for (entity.components.items) |*comp| {
                     if (comp.component_id == component.id) {
                         for (comp.props.items) |*prop| {
-                            if (prop.value == .enum_value and prop.value.enum_value > 0 and prop.value.enum_value == enum_len)
-                                prop.value.enum_value -= 1;
+                            if (prop.value == .enum_value and prop.value.enum_value.index > 0 and prop.value.enum_value.index == enum_len)
+                                prop.value.enum_value.index -= 1;
                         }
                         break;
                     }

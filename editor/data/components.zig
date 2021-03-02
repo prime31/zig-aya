@@ -70,20 +70,24 @@ pub const PropertyValue = union(enum) {
             .float => |f| .{ .float = f },
             .bool => |b| .{ .bool = b },
             .vec2 => |v| .{ .vec2 = v },
-            .enum_values => .{ .enum_value = 0 },
-            .entity_link => |link| .{ .entity_link = link },
+            .enum_values => .{ .enum_value = .{} },
+            .entity_link => |link| .{ .entity_link = .{ .entity = link } },
         };
     }
 };
 
+pub const PropEnumValue = struct { index: u8 = 0 };
+pub const PropLinkValue = struct { entity: u8 = 0 };
+
+// if any new int-like values are needed they need to be wrapped in structs that have unique field names!
 pub const PropertyInstanceValue = union(enum) {
     string: [25:0]u8,
     int: i32,
     float: f32,
     bool: bool,
     vec2: math.Vec2,
-    enum_value: u8,
-    entity_link: u8,
+    enum_value: PropEnumValue,
+    entity_link: PropLinkValue,
 };
 
 /// ComponentInstances represent the component's data on an Entity. Only the actual values are stored along with the Component.id
