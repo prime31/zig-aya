@@ -120,6 +120,11 @@ fn drawLevels(state: *root.AppState) void {
         ogPushIDUsize(i);
         defer igPopID();
 
-        if (ogButtonEx(level.ptr, .{ .x = -1 })) {}
+        const base_name = level[0..std.mem.indexOfScalar(u8, level, '.').?];
+        var name_buf: [25:0]u8 = undefined;
+        std.mem.set(u8, &name_buf, 0);
+        std.mem.copy(u8, &name_buf, base_name);
+
+        if (ogButtonEx(&name_buf, .{ .x = -1 })) state.level = root.persistence.loadLevel(level) catch unreachable;
     }
 }

@@ -137,7 +137,12 @@ pub fn draw(state: *root.AppState) void {
         defer igEndPopup();
 
         for (state.asset_man.levels) |level| {
-            if (ogButtonEx(level, .{ .x = -1 })) {
+            const base_name = level[0..std.mem.indexOfScalar(u8, level, '.').?];
+            var name_buf: [25:0]u8 = undefined;
+            std.mem.set(u8, &name_buf, 0);
+            std.mem.copy(u8, &name_buf, base_name);
+
+            if (ogButtonEx(&name_buf, .{ .x = -1 })) {
                 const new_level = root.persistence.loadLevel(level) catch unreachable;
                 state.level.deinit();
                 state.level = new_level;

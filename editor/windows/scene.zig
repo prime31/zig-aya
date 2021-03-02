@@ -70,7 +70,7 @@ pub const Scene = struct {
                 const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
                 var entity_layer = &state.level.layers.items[state.selected_layer_index].entity;
-                var entity = entity_layer.addEntity("Dropped Payload", .{ .x = mouse_world.x, .y = mouse_world.y });
+                var entity = entity_layer.addEntity(tex_name, .{ .x = mouse_world.x, .y = mouse_world.y });
                 const index = state.asset_man.textures.indexOfTexture(tex_name);
                 entity.sprite = root.data.Sprite.init(state.asset_man.textures.tex, state.asset_man.textures.rects[index], tex_name);
             }
