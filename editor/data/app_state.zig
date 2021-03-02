@@ -4,7 +4,7 @@ const root = @import("../main.zig");
 
 const Color = aya.math.Color;
 const Size = @import("data.zig").Size;
-const Layer = @import("root").layers.Layer;
+const Layer = root.layers.Layer;
 const Component = @import("data.zig").Component;
 
 pub const Level = struct {

@@ -75,26 +75,6 @@ fn update() !void {
         igEnd();
     }
 
-    // file picker tester
-    var open_picker = false;
-    if (igBegin("debug", null, ImGuiWindowFlags_None)) {
-        if (ogButton("Open Sesame")) {
-            utils.file_picker.setup("Farty", true, false);
-            open_picker = true;
-        }
-    }
-    igEnd();
-
-    if (open_picker) ogOpenPopup("File Picker");
-
-    if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndPopup();
-        if (utils.file_picker.draw()) |res| {
-            std.debug.print("done with picker: {s}, {s}\n", .{ utils.file_picker.selected_dir, utils.file_picker.selected_file });
-            igCloseCurrentPopup();
-        }
-    }
-
     // igShowDemoWindow(null);
 
     igEnd();

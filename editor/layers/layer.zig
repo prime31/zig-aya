@@ -3,7 +3,7 @@ const aya = @import("aya");
 const math = aya.math;
 usingnamespace @import("imgui");
 
-const root = @import("root");
+const root = @import("../main.zig");
 const data = root.data;
 const AppState = data.AppState;
 pub const TilemapLayer = root.layers.TilemapLayer;
