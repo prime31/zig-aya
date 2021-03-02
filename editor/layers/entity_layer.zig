@@ -115,8 +115,8 @@ pub const EntityLayer = struct {
 
             for (entity.components.items) |comp| {
                 for (comp.props.items) |prop| {
-                    if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link > 0) {
-                        const linked_entity = self.getEntityWithId(prop.value.entity_link).?;
+                    if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link.entity > 0) {
+                        const linked_entity = self.getEntityWithId(prop.value.entity_link.entity).?;
                         aya.draw.line(entity.transform.pos, linked_entity.transform.pos, 1, math.Color.sky_blue);
                     }
                 }
@@ -316,8 +316,8 @@ pub const EntityLayer = struct {
             for (self.entities.items) |*e| {
                 for (e.components.items) |*comp| {
                     for (comp.props.items) |*prop| {
-                        if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link == entity.id)
-                            prop.value.entity_link = 0;
+                        if (std.meta.activeTag(prop.value) == .entity_link and prop.value.entity_link.entity == entity.id)
+                            prop.value.entity_link.entity = 0;
                     }
                 }
             }
@@ -407,8 +407,8 @@ pub const EntityLayer = struct {
                         .int => |*int| inspectors.inspectInt(&src_prop.name, int, src_prop.value.int),
                         .bool => |*b| inspectors.inspectBool(&src_prop.name, b, src_prop.value.bool),
                         .vec2 => |*v2| inspectors.inspectVec2(&src_prop.name, v2, src_prop.value.vec2),
-                        .enum_value => |*enum_value| inspectors.inspectEnum(&src_prop.name, enum_value, src_prop.value.enum_values),
-                        .entity_link => |*entity_link| inspectors.inspectEntityLink(&src_prop.name, entity.id, entity_link, self.entities),
+                        .enum_value => |*enum_value| inspectors.inspectEnum(&src_prop.name, &enum_value.index, src_prop.value.enum_values),
+                        .entity_link => |*entity_link| inspectors.inspectEntityLink(&src_prop.name, entity.id, &entity_link.entity, self.entities),
                     }
                 }
             }

@@ -126,6 +126,8 @@ pub const AssetManager = struct {
 
     /// returns the Texture that contains the image. Currently we only keep one atlas so its pretty useless but if we support multiple atlases later ;)
     pub fn getTextureAndRect(self: @This(), name: [:0]const u8) struct { tex: aya.gfx.Texture, rect: aya.math.RectI } {
+        if (std.mem.eql(u8, name, "def"))
+            return .{ .tex = self.default_tex, .rect = .{ .w = 1, .h = 1 } };
         return .{ .tex = self.textures.tex, .rect = self.textures.rects[self.indexOfTexture(self.textures.names, name).?] };
     }
 

@@ -368,20 +368,6 @@ pub fn saveLevel(level: data.Level) !void {
     const level_json = LevelJson.init(level);
     try std.json.stringify(level_json, .{}, handle.writer());
     handle.close();
-
-    // and back
-    var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
-    var res = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
-
-    for (res.layers) |layer| {
-        if (layer == .entity) {
-            for (layer.entity.entities) |e| std.log.info("{any}", .{e.collider});
-        } else if (layer == .auto_tilemap) {
-            for (layer.auto_tilemap.ruleset.rules) |rule| std.log.info("rule: {any}", .{rule});
-        } else {
-            std.log.info("name: {s}, layer: {any}", .{ layer, std.meta.activeTag(layer) });
-        }
-    }
 }
 
 pub fn loadLevel(name: []const u8) !data.Level {
