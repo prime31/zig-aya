@@ -7,6 +7,7 @@ const Layer = root.layers.Layer;
 
 var name_buf: [25:0]u8 = undefined;
 var new_layer_type: root.layers.LayerType = .tilemap;
+var new_layer_tileset_index: usize = 0;
 var dnd_swap: ?struct { remove_from: usize, insert_into: usize } = null;
 
 /// draws the Layers window
@@ -128,6 +129,7 @@ pub fn draw(state: *root.AppState) void {
         if (ogButtonEx("Add Layer", .{ .x = 75 })) {
             std.mem.set(u8, &name_buf, 0);
             new_layer_type = .tilemap;
+            new_layer_tileset_index = 0;
             ogOpenPopup("##add-layer");
         }
 
@@ -171,27 +173,24 @@ fn addLayerPopup(state: *root.AppState) void {
 
         ogDummy(.{ .y = 5 });
 
-        // igText("Type");
-        // const tag_name = @tagName(new_layer_type);
-        // const tag_name_c = std.cstr.addNullByte(aya.mem.tmp_allocator, tag_name) catch unreachable;
-        // _ = std.mem.replace(u8, tag_name_c, "_", " ", tag_name_c);
-        // if (igBeginCombo("##type", &tag_name_c[0], ImGuiComboFlags_None)) {
-        //     inline for (std.meta.fields(root.LayerType)) |field| {
-        //         var buf: [15]u8 = undefined;
-        //         _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-        //         if (ogSelectableBool(&buf[0], new_layer_type == @intToEnum(root.LayerType, field.value), ImGuiSelectableFlags_None, .{})) {
-        //             new_layer_type = @intToEnum(root.LayerType, field.value);
-        //         }
-        //     }
-        //     igEndCombo();
-        // }
+        if (new_layer_type != .entity) {
+            if (state.asset_man.tilesets.len == 0) {
+                igText("No tilesets available in your project");
+            } else {
+                if (igBeginCombo("Tileset", state.asset_man.tilesets[new_layer_tileset_index], ImGuiComboFlags_None)) {
+                    defer igEndCombo();
+
+                    for (state.asset_man.tilesets) |tileset, i| {
+                        if (ogSelectableBool(tileset, new_layer_tileset_index == i, ImGuiSelectableFlags_None, .{})) new_layer_tileset_index = i;
+                    }
+                }
+            }
+            ogDummy(.{ .y = 5 });
+        }
 
         const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
         const disabled = label_sentinel_index == 0;
-        if (disabled) {
-            igPushItemFlag(ImGuiItemFlags_Disabled, true);
-            igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
-        }
+        ogPushDisabled(disabled);
 
         if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Add Layer", .{ .x = -1, .y = 0 })) {
             igCloseCurrentPopup();
@@ -199,10 +198,7 @@ fn addLayerPopup(state: *root.AppState) void {
             state.selected_layer_index = state.level.layers.items.len - 1;
         }
 
-        if (disabled) {
-            igPopItemFlag();
-            igPopStyleVar(1);
-        }
+        ogPopDisabled(disabled);
 
         igEndPopup();
     }

@@ -60,12 +60,12 @@ pub fn draw(state: *root.AppState) void {
     }
 
     if (show_open_project_popup) {
-        // TODO: save the old project/level
+        root.persistence.saveProject(state) catch unreachable;
         ogOpenPopup("Open Project");
     }
 
     if (show_open_level_popup) {
-        // TODO: save the old level
+        root.persistence.saveLevel(state.level) catch unreachable;
         ogOpenPopup("Open Level");
     }
 

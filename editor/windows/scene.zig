@@ -102,11 +102,9 @@ pub const Scene = struct {
 
         for (state.level.layers.items) |*layer, i| {
             layer.draw(state, state.selected_layer_index == i);
+            if (state.selected_layer_index == i)
+                state.level.layers.items[i].handleSceneInput(state, self.cam, mouse_world);
         }
-
-        // the selected layer now handles input and gets to draw on top of all the other layers
-        if (state.level.layers.items.len > 0)
-            state.level.layers.items[state.selected_layer_index].handleSceneInput(state, self.cam, mouse_world);
     }
 
     fn drawToolBar(self: *@This(), state: *root.AppState) void {
