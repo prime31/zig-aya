@@ -11,6 +11,7 @@ var tile_size: usize = 16;
 
 pub fn draw(state: *root.AppState) void {
     var show_component_editor_popup = false;
+    var show_timeline_popup = false;
     var show_new_project_popup = false;
     var show_open_level_popup = false;
     var show_new_level_popup = false;
@@ -39,9 +40,8 @@ pub fn draw(state: *root.AppState) void {
         if (igBeginMenu("Tools", true)) {
             defer igEndMenu();
 
-            if (igMenuItemBool("Component Editor...", null, false, true)) {
-                show_component_editor_popup = true;
-            }
+            if (igMenuItemBool("Component Editor...", null, false, true)) show_component_editor_popup = true;
+            if (igMenuItemBool("Timeline Editor...", null, false, true)) show_timeline_popup = true;
         }
     }
 
@@ -70,9 +70,11 @@ pub fn draw(state: *root.AppState) void {
     }
 
     if (show_component_editor_popup) ogOpenPopup("Component Editor");
+    if (show_timeline_popup) ogOpenPopup("Timeline Editor");
 
     // we always need to call our popup code
     root.windows.component_editor.draw(state);
+    root.windows.timeline.draw(state);
 
     if (igBeginPopupModal("New Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
         defer igEndPopup();
