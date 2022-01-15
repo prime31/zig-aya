@@ -12,7 +12,7 @@ const Color = aya.math.Color;
 var map: Texture = undefined;
 var block: Texture = undefined;
 var mode7_shader: shaders.Mode7Shader = undefined;
-var uniform: Mode7Uniform = .{};
+var uniform: shaders.Mode7Params = .{};
 var camera: Camera = undefined;
 var blocks: std.ArrayList(math.Vec2) = undefined;
 var wrap: f32 = 0;
@@ -109,7 +109,7 @@ const Camera = struct {
         self.sprites.items.len = 0;
     }
 
-    fn sort(ctx: void, a: Block, b: Block) bool {
+    fn sort(_: void, a: Block, b: Block) bool {
         return a.dist < b.dist;
     }
 };

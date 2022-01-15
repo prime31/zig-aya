@@ -18,18 +18,18 @@ pub const Params = extern struct {
     width: c_int = 256,
     height: c_int = 256,
     flags: Flags = .top_left,
-    user_ptr: *c_void,
-    renderCreate: ?fn (?*c_void, c_int, c_int) callconv(.C) c_int = null,
-    renderResize: ?fn (?*c_void, c_int, c_int) callconv(.C) c_int = null,
-    renderUpdate: ?fn (?*c_void, [*c]c_int, [*c]const u8) callconv(.C) c_int = null,
+    user_ptr: *anyopaque,
+    renderCreate: ?fn (?*anyopaque, c_int, c_int) callconv(.C) c_int = null,
+    renderResize: ?fn (?*anyopaque, c_int, c_int) callconv(.C) c_int = null,
+    renderUpdate: ?fn (?*anyopaque, [*c]c_int, [*c]const u8) callconv(.C) c_int = null,
 };
 
-pub const Flags = extern enum(u8) {
+pub const Flags = enum(u8) {
     top_left = 1,
     bottom_left = 2,
 };
 
-pub const Align = extern enum(c_int) {
+pub const Align = enum(c_int) {
     // horizontal
     left = 1, // Default
     center = 2,
@@ -47,7 +47,7 @@ pub const Align = extern enum(c_int) {
     top_left = 9,
 };
 
-pub const ErrorCode = extern enum(c_int) {
+pub const ErrorCode = enum(c_int) {
     atlas_full = 1,
     scratch_full = 2, // Scratch memory used to render glyphs is full, requested size reported in 'val', you may need to bump up FONS_SCRATCH_BUF_SIZE.
     overflow = 3, // Calls to fonsPushState has created too large stack, if you need deep state stack bump up FONS_MAX_STATES.
@@ -65,7 +65,7 @@ pub const Quad = extern struct {
     t1: f32,
 };
 
-pub const FONSfont =opaque{};
+pub const FONSfont = opaque {};
 
 pub const TextIter = extern struct {
     x: f32,
@@ -90,7 +90,7 @@ pub const FONS_INVALID = -1;
 
 pub extern fn fonsCreateInternal(params: [*c]Params) ?*Context;
 pub extern fn fonsDeleteInternal(s: ?*Context) void;
-pub extern fn fonsSetErrorCallback(s: ?*Context, callback: ?fn (?*c_void, c_int, c_int) callconv(.C) void, uptr: ?*c_void) void;
+pub extern fn fonsSetErrorCallback(s: ?*Context, callback: ?fn (?*anyopaque, c_int, c_int) callconv(.C) void, uptr: ?*anyopaque) void;
 pub extern fn fonsGetAtlasSize(s: ?*Context, width: [*c]c_int, height: [*c]c_int) void;
 pub extern fn fonsExpandAtlas(s: ?*Context, width: c_int, height: c_int) c_int;
 pub extern fn fonsResetAtlas(stash: ?*Context, width: c_int, height: c_int) c_int;

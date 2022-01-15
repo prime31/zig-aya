@@ -28,9 +28,9 @@ pub fn color() Color {
 /// Returns an evenly distributed random integer `at_least <= i < less_than`.
 pub fn range(comptime T: type, at_least: T, less_than: T) T {
     if (@typeInfo(T) == .Int) {
-        return rng.random.intRangeLessThanBiased(T, at_least, less_than);
+        return rng.random().intRangeLessThanBiased(T, at_least, less_than);
     } else if (@typeInfo(T) == .Float) {
-        return at_least + rng.random.float(T) * (less_than - at_least);
+        return at_least + rng.random().float(T) * (less_than - at_least);
     }
     unreachable;
 }

@@ -25,7 +25,7 @@ pub const Level = struct {
         self.layers.deinit();
     }
 
-    pub fn save(self: @This()) void {}
+    pub fn save(_: @This()) void {}
 };
 
 pub const AppState = struct {
@@ -54,7 +54,7 @@ pub const AppState = struct {
             .asset_man = root.AssetManager.init(),
         };
     }
-    
+
     pub fn deinit(self: AppState) void {
         self.level.deinit();
         for (self.components.items) |*comp| comp.deinit();
@@ -95,7 +95,7 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "link");
 
         var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
-        std.mem.set(u8, &enums[0], 0); 
+        std.mem.set(u8, &enums[0], 0);
         std.mem.set(u8, &enums[1], 0);
         std.mem.copy(u8, &enums[0], "default_value");
         std.mem.copy(u8, &enums[1], "second_value");
@@ -119,7 +119,7 @@ pub const AppState = struct {
         // create a folder on the desktop to hold the project data if one isnt there already
         const desktop = root.utils.known_folders.getPath(aya.mem.tmp_allocator, .desktop) catch unreachable;
         const root_dir = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ desktop.?, "aya-project" }) catch unreachable;
-        if (std.fs.cwd().access(root_dir, .{})) {} else |err| {
+        if (std.fs.cwd().access(root_dir, .{})) {} else |_| {
             std.fs.makeDirAbsolute(root_dir) catch unreachable;
         }
         createProjectFolder(root_dir);
@@ -141,7 +141,7 @@ pub const AppState = struct {
         // textures, atlases, tilesets, levels folders need to be created in the project folder
         for ([_][]const u8{ "textures", "atlases", "tilesets", "levels" }) |sub_folder| {
             const sub = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ folder, sub_folder }) catch unreachable;
-            std.fs.makeDirAbsolute(sub) catch |err| {};
+            std.fs.makeDirAbsolute(sub) catch |_| {};
         }
     }
 

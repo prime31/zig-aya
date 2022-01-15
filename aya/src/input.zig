@@ -2,7 +2,7 @@ const std = @import("std");
 const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 const math = aya.math;
-pub usingnamespace @import("input_types.zig");
+pub const Keys = @import("input_types.zig").Keys;
 
 const FixedList = aya.utils.FixedList;
 
@@ -73,10 +73,10 @@ pub const Input = struct {
                 self.mouse_rel_x = event.motion.xrel;
                 self.mouse_rel_y = event.motion.yrel;
             },
-            sdl.SDL_CONTROLLERAXISMOTION => std.debug.warn("SDL_CONTROLLERAXISMOTION\n", .{}),
-            sdl.SDL_CONTROLLERBUTTONDOWN, sdl.SDL_CONTROLLERBUTTONUP => std.debug.warn("SDL_CONTROLLERBUTTONUP/DOWN\n", .{}),
-            sdl.SDL_CONTROLLERDEVICEADDED, sdl.SDL_CONTROLLERDEVICEREMOVED => std.debug.warn("SDL_CONTROLLERDEVICEADDED/REMOVED\n", .{}),
-            sdl.SDL_CONTROLLERDEVICEREMAPPED => std.debug.warn("SDL_CONTROLLERDEVICEREMAPPED\n", .{}),
+            sdl.SDL_CONTROLLERAXISMOTION => std.debug.print("SDL_CONTROLLERAXISMOTION\n", .{}),
+            sdl.SDL_CONTROLLERBUTTONDOWN, sdl.SDL_CONTROLLERBUTTONUP => std.debug.print("SDL_CONTROLLERBUTTONUP/DOWN\n", .{}),
+            sdl.SDL_CONTROLLERDEVICEADDED, sdl.SDL_CONTROLLERDEVICEREMOVED => std.debug.print("SDL_CONTROLLERDEVICEADDED/REMOVED\n", .{}),
+            sdl.SDL_CONTROLLERDEVICEREMAPPED => std.debug.print("SDL_CONTROLLERDEVICEREMAPPED\n", .{}),
             else => {},
         }
     }
@@ -91,7 +91,7 @@ pub const Input = struct {
             self.keys[@intCast(usize, scancode)] = pressed;
         }
 
-        // std.debug.warn("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
+        // std.debug.print("kb: {s}: {}\n", .{ sdl.SDL_GetKeyName(evt.keysym.sym), evt });
     }
 
     fn handleMouseEvent(self: *Input, evt: *sdl.SDL_MouseButtonEvent) void {
@@ -102,7 +102,7 @@ pub const Input = struct {
             self.mouse_buttons[@intCast(usize, evt.button)] = pressed;
         }
 
-        // std.debug.warn("mouse: {}\n", .{evt});
+        // std.debug.print("mouse: {}\n", .{evt});
     }
 
     /// only true if down this frame and not down the previous frame
@@ -149,10 +149,10 @@ pub const Input = struct {
     // gets the scaled mouse position based on the currently bound render texture scale and offset
     // as calcuated in OffscreenPass. scale should be scale and offset_n is the calculated x, y value.
     pub fn mousePosScaled(self: Input) math.Vec2 {
-        self.mousePos(x, y);
+        var pos = self.mousePos();
 
-        const xf = @intToFloat(f32, x.*) - @intToFloat(f32, self.res_scaler.x);
-        const yf = @intToFloat(f32, y.*) - @intToFloat(f32, self.res_scaler.y);
+        const xf = @intToFloat(f32, pos.x.*) - @intToFloat(f32, self.res_scaler.x);
+        const yf = @intToFloat(f32, pos.y.*) - @intToFloat(f32, self.res_scaler.y);
         return .{ .x = xf / self.res_scaler.scale, .y = yf / self.res_scaler.scale };
     }
 

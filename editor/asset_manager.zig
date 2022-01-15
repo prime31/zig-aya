@@ -57,7 +57,7 @@ pub const TextureAtlas = struct {
     tex: aya.gfx.Texture = undefined,
     names: [][:0]const u8,
     rects: []aya.math.RectI,
-    
+
     pub fn initEmpty() TextureAtlas {
         return .{
             .names = &[_][:0]const u8{},
@@ -186,7 +186,7 @@ pub const AssetManager = struct {
         const src_folder = fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ self.root_path, "tilesets" }) catch unreachable;
         const pngs = aya.fs.getAllFilesOfType(aya.mem.tmp_allocator, src_folder, ".png", true);
         if (pngs.len == 0) return;
-        
+
         aya.mem.allocator.free(self.tilesets);
         self.tilesets = aya.mem.allocator.alloc([:0]u8, pngs.len) catch unreachable;
         for (pngs) |png, i| self.tilesets[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(png)) catch unreachable;
@@ -200,5 +200,5 @@ pub const AssetManager = struct {
         aya.mem.allocator.free(self.levels);
         self.levels = aya.mem.allocator.alloc([:0]u8, levels.len) catch unreachable;
         for (levels) |level, i| self.levels[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(level)) catch unreachable;
-    } 
+    }
 };

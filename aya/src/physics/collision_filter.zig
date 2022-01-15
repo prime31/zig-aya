@@ -4,9 +4,12 @@ const std = @import("std");
 /// - If the value in both objects is equal and positive, the objects always collide.
 /// - If the value in both objects is equal and negative, the objects never collide.
 pub const CollisionFilter = struct {
-    category: u32 = 0xffffffff, /// bit mask describing which layers this object belongs to
-    mask: u32 = 0xffffffff, /// bit mask describing which layers this object can collide with
-    group: i32 = 0, /// optional override for the bit mask checks
+    // bit mask describing which layers this object belongs to
+    category: u32 = 0xffffffff,
+    // bit mask describing which layers this object can collide with
+    mask: u32 = 0xffffffff,
+    // optional override for the bit mask checks
+    group: i32 = 0,
 
     pub fn init() CollisionFilter {
         return .{};

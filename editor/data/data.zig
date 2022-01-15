@@ -1,9 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
-
-const editor = @import("../editor.zig");
+const imgui = @import("imgui");
 
 pub const AppState = @import("app_state.zig").AppState;
 pub const Level = @import("app_state.zig").Level;
@@ -126,4 +124,3 @@ pub const TileRenderInfo = struct {
         aya.draw.texViewport(tileset.tex, vp, mat);
     }
 };
-

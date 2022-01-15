@@ -5,10 +5,11 @@ const OffscreenPass = aya.gfx.OffscreenPass;
 /// manaages a list of PostProcessors that are used to process a render texture before blitting it to the screen.
 pub const PostProcessStack = struct {
     processors: std.ArrayList(*PostProcessor),
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     pass: OffscreenPass,
 
-    pub fn init(allocator: ?*std.mem.Allocator, design_w: i32, design_h: i32) PostProcessStack {
+    pub fn init(allocator: ?std.mem.Allocator, design_w: i32, _: i32) PostProcessStack {
+        _ = design_w;
         const alloc = allocator orelse aya.mem.allocator;
         return .{
             .processors = std.ArrayList(*PostProcessor).init(alloc),
@@ -36,7 +37,7 @@ pub const PostProcessStack = struct {
 
         // get a closure so that we can safely deinit this later
         processor.postprocessor.deinit = struct {
-            fn deinit(proc: *PostProcessor, allocator: *std.mem.Allocator) void {
+            fn deinit(proc: *PostProcessor, allocator: std.mem.Allocator) void {
                 proc.getParent(T).deinit();
                 allocator.destroy(@fieldParentPtr(T, "postprocessor", proc));
             }
@@ -71,7 +72,7 @@ pub const PostProcessStack = struct {
 /// The initialize method is where default values should be set since this will be a heap allocated object.
 pub const PostProcessor = struct {
     process: fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
-    deinit: fn (self: *PostProcessor, allocator: *std.mem.Allocator) void = undefined,
+    deinit: fn (self: *PostProcessor, allocator: std.mem.Allocator) void = undefined,
 
     /// can be used externally, to get the original PostProcessor by Type or by the PostProcessor to get itself interface methods.
     pub fn getParent(self: *PostProcessor, comptime T: type) *T {
@@ -80,7 +81,7 @@ pub const PostProcessor = struct {
 
     // helper method for taking the final texture from a postprocessor and blitting it. Simple postprocessors
     // can get away with just calling this method directly.
-    pub fn blit(self: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: *aya.gfx.Shader) void {
+    pub fn blit(_: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: *aya.gfx.Shader) void {
         aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass, .shader = shader });
         aya.draw.tex(tex, 0, 0);
         aya.gfx.endPass();

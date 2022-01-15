@@ -134,7 +134,7 @@ pub fn draw(state: *root.AppState) void {
         ogPopDisabled(disabled);
     }
 
-    ogSetNextWindowSize(.{.x = 200 }, ImGuiCond_Once);
+    ogSetNextWindowSize(.{ .x = 200 }, ImGuiCond_Once);
     if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_None)) {
         defer igEndPopup();
 
@@ -168,4 +168,3 @@ pub fn draw(state: *root.AppState) void {
             igCloseCurrentPopup();
     }
 }
-

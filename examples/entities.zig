@@ -18,7 +18,7 @@ fn init() !void {
     var player = manager.create(Player);
     manager.destroy(player.entity, Player);
 
-    var e2 = manager.create(Enemy);
+    _ = manager.create(Enemy);
 
     generational();
 }
@@ -28,7 +28,7 @@ fn generational() void {
     defer manager.deinit();
 
     var player = manager.create();
-    var enemy = manager.create();
+    _ = manager.create();
 
     var player_id = player.id;
     std.debug.print("get player before dead: {}\n", .{manager.getEntity(player_id)});
@@ -137,7 +137,6 @@ pub const EntityManager = struct {
         aya.mem.allocator.destroy(entity.cast(T));
     }
 };
-
 
 pub const GenerationalEntity = struct {
     id: u32,

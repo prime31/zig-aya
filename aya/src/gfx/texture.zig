@@ -77,7 +77,7 @@ pub const Texture = struct {
             0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
             0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
         };
-        
+
         var pixels: [4 * scale * 4 * scale]u32 = undefined;
         var y: usize = 0;
         while (y < 4 * scale) : (y += 1) {
@@ -172,6 +172,6 @@ pub const Texture = struct {
     }
 
     pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
-        return @intToPtr(*c_void, self.img);
+        return @intToPtr(*anyopaque, self.img);
     }
 };

@@ -8,7 +8,7 @@ const AppState = root.data.AppState;
 var filter_buffer: [25:0]u8 = undefined;
 var filter_entities = false;
 
-fn beginColumns(label: [:0]const u8, ptr_id: ?*const c_void) void {
+fn beginColumns(label: [:0]const u8, ptr_id: ?*const anyopaque) void {
     igPushIDPtr(ptr_id);
 
     igColumns(2, null, false);

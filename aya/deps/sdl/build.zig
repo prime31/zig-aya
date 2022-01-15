@@ -2,14 +2,14 @@ const builtin = @import("builtin");
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {}
+pub fn build(_: *Builder) void {}
 
-pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
 
-    if (std.builtin.os.tag == .windows) {
+    if (@import("builtin").os.tag == .windows) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2
         exe.addLibPath("c:\\SDL2\\lib\\x64");
 
@@ -28,6 +28,6 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
 pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {
     return .{
         .name = "sdl",
-        .path = prefix_path ++ "aya/deps/sdl/sdl.zig",
+        .path = .{ .path = prefix_path ++ "aya/deps/sdl/sdl.zig" },
     };
 }

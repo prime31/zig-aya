@@ -10,7 +10,7 @@ pub const ResolutionScaler = struct {
 };
 
 pub const ResolutionPolicy = enum {
-    none, /// here be dragons: if you use this no faux backbuffer will be created and you must always call gfx.beginNullPass first!
+    none, // here be dragons: if you use this no faux backbuffer will be created and you must always call gfx.beginNullPass first!
     default,
     no_border,
     no_border_pixel_perfect,

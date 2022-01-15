@@ -3,24 +3,24 @@ const fs = std.fs;
 const aya = @import("../aya.zig");
 
 /// reads the contents of a file. Returned value is owned by the caller and must be freed!
-pub fn read(allocator: *std.mem.Allocator, filename: []const u8) ![]u8 {
+pub fn read(_: std.mem.Allocator, filename: []const u8) ![]u8 {
     const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
     var buffer = try aya.mem.allocator.alloc(u8, file_size);
-    const bytes_read = try file.read(buffer);
+    _ = try file.read(buffer);
 
     return buffer;
 }
 
-pub fn readZ(allocator: *std.mem.Allocator, filename: []const u8) ![:0]u8 {
+pub fn readZ(_: std.mem.Allocator, filename: []const u8) ![:0]u8 {
     const file = try std.fs.cwd().openFile(filename, .{});
     defer file.close();
 
     const file_size = try file.getEndPos();
     var buffer = try aya.mem.allocator.alloc(u8, file_size + 1);
-    const bytes_read = try file.read(buffer);
+    _ = try file.read(buffer);
     buffer[file_size] = 0;
 
     return buffer[0..file_size :0];
@@ -30,7 +30,7 @@ pub fn write(filename: []const u8, data: []u8) !void {
     const file = try std.fs.cwd().openFile(filename, .{ .write = true });
     defer file.close();
 
-    const file_size = try file.getEndPos();
+    // const file_size = try file.getEndPos();
     try file.writeAll(data);
 }
 
@@ -84,7 +84,7 @@ pub fn freePrefsJson(data: anytype) void {
 }
 
 /// returns a slice of all the files with extension. The caller owns the slice AND each path in the slice.
-pub fn getAllFilesOfType(allocator: *std.mem.Allocator, root_directory: []const u8, extension: []const u8, recurse: bool) [][]const u8 {
+pub fn getAllFilesOfType(allocator: std.mem.Allocator, root_directory: []const u8, extension: []const u8, recurse: bool) [][]const u8 {
     var recursor = struct {
         fn search(directory: []const u8, recursive: bool, filelist: *std.ArrayList([]const u8), ext: []const u8) void {
             var dir = fs.cwd().openDir(directory, .{ .iterate = true }) catch unreachable;

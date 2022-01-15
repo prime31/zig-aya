@@ -47,9 +47,9 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         bindings: renderkit.BufferBindings,
         verts: []VertT,
         element_count: c_int,
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
 
-        pub fn init(allocator: ?*std.mem.Allocator, vertex_count: usize, indices: []IndexT) !Self {
+        pub fn init(allocator: ?std.mem.Allocator, vertex_count: usize, indices: []IndexT) !Self {
             const alloc = allocator orelse aya.mem.allocator;
 
             var ibuffer = if (IndexT == void) @as(renderer.Buffer, 0) else renderer.createBuffer(IndexT, .{
@@ -123,9 +123,9 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         bindings: renderkit.BufferBindings,
         instance_data: []InstanceT,
         element_count: c_int,
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
 
-        pub fn init(allocator: ?*std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) !Self {
+        pub fn init(allocator: ?std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) !Self {
             const alloc = allocator orelse aya.mem.allocator;
 
             var ibuffer = renderer.createBuffer(IndexT, .{

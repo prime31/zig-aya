@@ -32,7 +32,6 @@ fn render() !void {
     book.setAlign(.left);
     aya.draw.text("top-left", 100, 18, book);
 
-
     book.setAlign(.middle);
     book.pushState();
     book.setBlur(1.2);

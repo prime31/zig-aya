@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const math = @import("math/math.zig");
-const draw = aya.gfx.draw;
+pub const draw = aya.gfx.draw;
 
 pub const Debug = struct {
     debug_items: std.ArrayList(DebugDrawCommand),
@@ -87,7 +87,7 @@ pub const Debug = struct {
         self.debug_items.append(.{ .point = point }) catch return;
     }
 
-    pub fn drawLine(self: *Debug, pt1, pt2: math.Vec2, thickness: f32, color: ?math.Color) void {
+    pub fn drawLine(self: *Debug, pt1: math.Vec2, pt2: math.Vec2, thickness: f32, color: ?math.Color) void {
         const line = Line{ .pt2 = pt1, .pt2 = pt2, .thickness = thickness, .color = color orelse math.Color.white };
         self.debug_items.append(.{ .line = line }) catch return;
     }

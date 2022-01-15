@@ -23,7 +23,7 @@ pub fn toRadians(deg: anytype) @TypeOf(deg) {
 }
 
 /// Converts radian to degree
-pub fn toDegrees(rad: anytype) @TypeOf(deg) {
+pub fn toDegrees(rad: anytype) @TypeOf(rad) {
     return 180.0 * rad / pi;
 }
 
