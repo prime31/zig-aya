@@ -2,7 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 const Color = math.Color;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 pub const enable_imgui = true;
 
@@ -29,7 +29,7 @@ fn init() !void {
 fn update() !void {
     // _ = aya.utils.inspect("Trans", &trans);
     // _ = aya.utils.inspect("Trans2", &trans2);
-    if (ogButton("go " ++ icons.inbox)) {
+    if (imgui.ogButton("go " ++ imgui.icons.inbox)) {
         var poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
         for (poly) |pt| {
             std.debug.print("{d}\n", .{pt});
@@ -213,7 +213,7 @@ pub const TexturePolygon = struct {
                 },
                 9 => {
                     const i = @intCast(usize, x) + @intCast(usize, y) * @intCast(usize, w);
-                    if (std.mem.indexOfScalar(usize, case9s.items, i)) |found_index| {
+                    if (std.mem.indexOfScalar(usize, case9s.items, i)) |_| {
                         step_x = 0;
                         step_y = 1;
                         _ = case9s.swapRemove(i);
@@ -225,7 +225,7 @@ pub const TexturePolygon = struct {
                 },
                 6 => {
                     const i = @intCast(usize, x) + @intCast(usize, y) * @intCast(usize, w);
-                    if (std.mem.indexOfScalar(usize, case6s.items, i)) |found_index| {
+                    if (std.mem.indexOfScalar(usize, case6s.items, i)) |_| {
                         step_x = -1;
                         step_y = 0;
                         _ = case6s.swapRemove(i);

@@ -5,9 +5,9 @@ pub fn MultiHashMap(comptime K: type, comptime V: type) type {
     return struct {
         const Self = @This();
         map: std.AutoHashMap(K, std.ArrayList(V)),
-        allocator: *std.mem.Allocator,
+        allocator: std.mem.Allocator,
 
-        pub fn init(allocator: ?*std.mem.Allocator) Self {
+        pub fn init(allocator: ?std.mem.Allocator) Self {
             const alloc = allocator orelse aya.mem.allocator;
 
             return .{

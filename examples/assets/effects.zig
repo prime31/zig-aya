@@ -14,6 +14,7 @@ pub const Sepia = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
+        _ = data;
         self.postprocessor = .{ .process = process };
         self.shader = shaders.createSepiaShader();
         self.shader.frag_uniform.sepia_tone = .{ .x = 1.2, .y = 1.0, .z = 0.8 };
@@ -38,6 +39,7 @@ pub const Vignette = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
+        _ = data;
         self.postprocessor = .{ .process = process };
         self.shader = shaders.createVignetteShader();
         self.shader.frag_uniform.radius = 1.2;
@@ -50,6 +52,8 @@ pub const Vignette = struct {
     }
 
     pub fn setUniforms(self: *@This(), radius: f32, power: f32) void {
+        _ = radius;
+        _ = power;
         self.shader.frag_uniform.radius = 1.2;
         self.shader.frag_uniform.power = 1;
     }
@@ -64,6 +68,7 @@ pub const PixelGlitch = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
+        _ = data;
         self.postprocessor = .{ .process = process };
         self.shader = shaders.createPixelGlitchShader();
 
@@ -79,6 +84,8 @@ pub const PixelGlitch = struct {
     }
 
     pub fn setUniforms(self: *@This(), vertical_size: f32, horizontal_offset: f32) void {
+        _ = vertical_size;
+        _ = horizontal_offset;
         const size = aya.window.size();
         self.params.screen_size = .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) };
         self.shader.frag_uniform.vertical_size = 0.5;

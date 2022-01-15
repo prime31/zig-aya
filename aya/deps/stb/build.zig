@@ -8,7 +8,7 @@ pub fn build(b: *Builder) void {
     exe.install();
 }
 
-pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+pub fn linkArtifact(_: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
     exe.addPackage(getPackage(prefix_path));
 
@@ -22,6 +22,6 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.buil
 pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {
     return .{
         .name = "stb",
-        .path = prefix_path ++ "aya/deps/stb/stb.zig",
+        .path = .{ .path = prefix_path ++ "aya/deps/stb/stb.zig" },
     };
 }

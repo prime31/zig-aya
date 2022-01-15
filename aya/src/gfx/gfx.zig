@@ -3,6 +3,9 @@ const aya = @import("../../aya.zig");
 const renderkit = @import("renderkit");
 const math = aya.math;
 
+// import all the drawing methods
+pub const draw = @import("draw.zig").draw;
+
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
@@ -122,9 +125,9 @@ pub fn beginFrame() void {
     draw.batcher.begin();
 }
 
-pub fn setRenderState(state: renderkit.RenderState) void {
+pub fn setRenderState(rk_state: renderkit.RenderState) void {
     draw.batcher.flush();
-    renderkit.renderer.setRenderState(state);
+    renderkit.renderer.setRenderState(rk_state);
 }
 
 /// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
@@ -206,6 +209,3 @@ pub fn commitFrame() void {
     state.blitted_to_screen = false;
     renderkit.renderer.commitFrame();
 }
-
-// import all the drawing methods
-usingnamespace @import("draw.zig");

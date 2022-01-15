@@ -114,7 +114,7 @@ pub fn renderObjectLayer(layer: tilemap.ObjectLayer) void {
                 aya.draw.circle(.{ .x = obj.x + rad, .y = obj.y + rad }, rad, 5, 1, aya.math.Color.yellow);
             },
             .point => aya.draw.point(.{ .x = obj.x, .y = obj.y }, 6, aya.math.Color.yellow),
-            .polygon => std.debug.warn("polygon draw not implemented\n", .{}),
+            .polygon => std.debug.print("polygon draw not implemented\n", .{}),
         }
     }
 }

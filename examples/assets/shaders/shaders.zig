@@ -65,7 +65,6 @@ pub fn createVignetteShader() VignetteShader {
     return VignetteShader.init(.{ .frag = frag, .onPostBind = VignetteShader.onPostBind });
 }
 
-
 pub const InstancedVertParams = extern struct {
     pub const metadata = .{
         .uniforms = .{ .InstancedVertParams = .{ .type = .float4, .array_count = 2 } },
@@ -76,7 +75,7 @@ pub const InstancedVertParams = extern struct {
 
 pub const NoiseParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .NoiseParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -87,7 +86,7 @@ pub const NoiseParams = extern struct {
 
 pub const SepiaParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .SepiaParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -129,7 +128,7 @@ pub const Mode7Params = extern struct {
 
 pub const PixelGlitchParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .PixelGlitchParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -148,7 +147,7 @@ pub const VertexParams = extern struct {
 
 pub const RgbShiftParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .RgbShiftParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -159,7 +158,7 @@ pub const RgbShiftParams = extern struct {
 
 pub const MetaFlamesParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .MetaFlamesParams = .{ .type = .float4, .array_count = 2 } },
     };
 
@@ -174,7 +173,7 @@ pub const MetaFlamesParams = extern struct {
 
 pub const VignetteParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .VignetteParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -185,7 +184,7 @@ pub const VignetteParams = extern struct {
 
 pub const LinesParams = extern struct {
     pub const metadata = .{
-        .images = .{ "main_tex" },
+        .images = .{"main_tex"},
         .uniforms = .{ .LinesParams = .{ .type = .float4, .array_count = 2 } },
     };
 
@@ -193,4 +192,3 @@ pub const LinesParams = extern struct {
     line_size: f32 = 0,
     _pad20_0_: [12]u8 = [_]u8{0} ** 12,
 };
-

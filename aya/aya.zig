@@ -71,11 +71,10 @@ pub fn run(config: Config) !void {
     }
 
     renderkit.renderer.setup(.{
-        .allocator = std.testing.allocator,
         .gl_loader = sdl.SDL_GL_GetProcAddress,
         .disable_vsync = config.window.disable_vsync,
         .metal = metal_setup,
-    });
+    }, std.testing.allocator);
 
     gfx.init(config.gfx);
     time = Time.init(config.update_rate);
@@ -130,7 +129,7 @@ fn pollEvents(onFileDropped: ?fn ([:0]const u8) void) bool {
                 }
             },
             sdl.SDL_DROPFILE => {
-                if (onFileDropped) |fileDropped| fileDropped(std.mem.spanZ(event.drop.file));
+                if (onFileDropped) |fileDropped| fileDropped(std.mem.span(event.drop.file));
                 sdl.SDL_free(event.drop.file);
             },
             else => input.handleEvent(&event),

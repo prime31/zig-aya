@@ -51,17 +51,17 @@ fn setDefaultImGuiStyle() void {
 pub fn setTintColor(color: ImVec4) void {
     var colors = &igGetStyle().Colors;
     colors[ImGuiCol_FrameBg] = hsvShiftColor(color, 0, 0, -0.2, colors[ImGuiCol_FrameBg].w);
-    colors[ImGuiCol_FrameBgHovered] = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_FrameBgHovered].w); 
+    colors[ImGuiCol_FrameBgHovered] = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_FrameBgHovered].w);
     colors[ImGuiCol_FrameBgActive] = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_FrameBgActive].w);
     colors[ImGuiCol_Border] = hsvShiftColor(color, 0, 0, -0.2, colors[ImGuiCol_Border].w);
 
     const header = hsvShiftColor(color, 0, -0.2, 0, colors[ImGuiCol_Header].w);
     colors[ImGuiCol_Header] = header;
-    colors[ImGuiCol_HeaderHovered] = hsvShiftColor(header, 0, 0, 0.1, colors[ImGuiCol_HeaderHovered].w); 
+    colors[ImGuiCol_HeaderHovered] = hsvShiftColor(header, 0, 0, 0.1, colors[ImGuiCol_HeaderHovered].w);
     colors[ImGuiCol_HeaderActive] = hsvShiftColor(header, 0, 0, -0.1, colors[ImGuiCol_HeaderActive].w);
 
     colors[ImGuiCol_TitleBg] = hsvShiftColor(color, 0, 0.1, 0, colors[ImGuiCol_TitleBg].w);
-    colors[ImGuiCol_TitleBgActive] = hsvShiftColor(color, 0, 0.1, 0, colors[ImGuiCol_TitleBgActive].w); 
+    colors[ImGuiCol_TitleBgActive] = hsvShiftColor(color, 0, 0.1, 0, colors[ImGuiCol_TitleBgActive].w);
 
     const tab = hsvShiftColor(color, 0, 0.1, 0, 1.0);
     colors[ImGuiCol_Tab] = tab;
@@ -106,4 +106,3 @@ pub fn rgbToVec4(r: i32, g: i32, b: i32) ImVec4 {
 pub fn rgbaToVec4(r: i32, g: i32, b: i32, a: i32) ImVec4 {
     return .{ .x = @intToFloat(f32, r) / 255, .y = @intToFloat(f32, g) / 255, .z = @intToFloat(f32, b) / 255, .w = @intToFloat(f32, a) };
 }
-

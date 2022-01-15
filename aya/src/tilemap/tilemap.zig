@@ -39,7 +39,7 @@ pub const Map = struct {
 
     /// currently loads just the first Tileset's image until multiple Tilesets are supported
     pub fn loadTexture(self: *Map, map_folder: []const u8, filter: rk.TextureFilter) aya.gfx.Texture {
-        const image_path = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8 {map_folder, self.tilesets[0].image}) catch unreachable;
+        const image_path = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ map_folder, self.tilesets[0].image }) catch unreachable;
         return aya.gfx.Texture.initFromFile(image_path, filter) catch unreachable;
     }
 

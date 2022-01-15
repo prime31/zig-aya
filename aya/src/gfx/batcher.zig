@@ -24,7 +24,7 @@ pub const Batcher = struct {
         quad_count: i32,
     };
 
-    fn createDynamicMesh(allocator: *std.mem.Allocator, max_sprites: u16) !gfx.DynamicMesh(u16, Vertex) {
+    fn createDynamicMesh(allocator: std.mem.Allocator, max_sprites: u16) !gfx.DynamicMesh(u16, Vertex) {
         var indices = aya.mem.tmp_allocator.alloc(u16, max_sprites * 6) catch unreachable;
         var i: usize = 0;
         while (i < max_sprites) : (i += 1) {
@@ -39,7 +39,7 @@ pub const Batcher = struct {
         return try gfx.DynamicMesh(u16, Vertex).init(allocator, max_sprites * 4, indices);
     }
 
-    pub fn init(allocator: ?*std.mem.Allocator, max_sprites: u16) Batcher {
+    pub fn init(allocator: ?std.mem.Allocator, max_sprites: u16) Batcher {
         if (max_sprites * 6 > std.math.maxInt(u16)) @panic("max_sprites exceeds u16 index buffer size");
 
         const alloc = allocator orelse aya.mem.allocator;
@@ -126,7 +126,7 @@ pub const Batcher = struct {
 
     pub fn drawTex(self: *Batcher, pos: math.Vec2, col: u32, texture: Texture) void {
         self.ensureCapacity(texture) catch |err| {
-            std.debug.warn("Batcher.draw failed to append a draw call with error: {}\n", .{err});
+            std.debug.print("Batcher.draw failed to append a draw call with error: {}\n", .{err});
             return;
         };
 
@@ -154,7 +154,7 @@ pub const Batcher = struct {
 
     pub fn draw(self: *Batcher, texture: Texture, quad: math.Quad, mat: math.Mat32, color: math.Color) void {
         self.ensureCapacity(texture) catch |err| {
-            std.debug.warn("Batcher.draw failed to append a draw call with error: {}\n", .{err});
+            std.debug.print("Batcher.draw failed to append a draw call with error: {}\n", .{err});
             return;
         };
 

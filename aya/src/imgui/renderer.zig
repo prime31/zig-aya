@@ -84,7 +84,6 @@ pub const Renderer = struct {
         imgui.igEndFrame();
         imgui.igRender();
 
-        const io = imgui.igGetIO();
         const draw_data = imgui.igGetDrawData();
         if (draw_data.TotalVtxCount == 0) return;
 
@@ -105,7 +104,7 @@ pub const Renderer = struct {
         renderer.setRenderState(.{ .scissor = true });
 
         var vb_offset: u32 = 0;
-        for (draw_data.CmdLists[0..@intCast(usize, draw_data.CmdListsCount)]) |list, i| {
+        for (draw_data.CmdLists[0..@intCast(usize, draw_data.CmdListsCount)]) |list| {
             // append vertices and indices to buffers
             const indices = @ptrCast([*]u16, list.IdxBuffer.Data)[0..@intCast(usize, list.IdxBuffer.Size)];
             self.bindings.index_buffer_offset = renderer.appendBuffer(u16, self.bindings.index_buffer, indices);
@@ -168,7 +167,7 @@ pub const Renderer = struct {
             renderer.destroyBuffer(self.bindings.vert_buffers[0]);
 
             self.vert_buffer_size = @floatToInt(c_long, @intToFloat(f32, draw_data.TotalVtxCount) * 1.5);
-            var vertex_buffer = renderer.createBuffer(gfx.Vertex, .{
+            _ = renderer.createBuffer(gfx.Vertex, .{
                 .usage = .stream,
                 .size = self.vert_buffer_size,
             });

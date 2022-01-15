@@ -18,6 +18,7 @@ pub const Flames = struct {
     }
 
     pub fn initialize(self: *@This(), data: anytype) void {
+        _ = data;
         self.postprocessor = .{ .process = process };
         self.shader = shaders.createMetaFlamesShader();
         self.shader.frag_uniform.tear_sharpness = 7;

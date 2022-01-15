@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 const shaders = @import("assets/shaders/shaders.zig");
 
 pub const renderer: aya.renderkit.Renderer = .opengl;
@@ -36,7 +36,7 @@ fn init() !void {
     clouds_tex = aya.gfx.Texture.initFromFile("examples/assets/textures/clouds.png", .linear) catch unreachable;
 
     lines_shader = shaders.createLinesShader();
-    lines_shader.frag_uniform.line_color = [_]f32 {0.9, 0.8, 0.2, 1};
+    lines_shader.frag_uniform.line_color = [_]f32{ 0.9, 0.8, 0.2, 1 };
     lines_shader.frag_uniform.line_size = 4;
 
     noise_shader = shaders.createNoiseShader();
@@ -44,7 +44,7 @@ fn init() !void {
 
     dissolve_shader = shaders.createDissolveShader();
     dissolve_shader.frag_uniform.threshold = 0.04;
-    dissolve_shader.frag_uniform.threshold_color = [_]f32 {1, 0.6, 0, 1};
+    dissolve_shader.frag_uniform.threshold_color = [_]f32{ 1, 0.6, 0, 1 };
 
     stack = aya.gfx.createPostProcessStack();
     _ = stack.add(effects.PixelGlitch, {});
@@ -65,11 +65,11 @@ fn shutdown() !void {
 fn update() !void {
     if (aya.renderkit.current_renderer != .opengl) return;
 
-    _ = igCheckbox("Enable PostProcessing", &post_process);
+    _ = imgui.igCheckbox("Enable PostProcessing", &post_process);
 
     var pixel_glitch = stack.processors.items[0].getParent(effects.PixelGlitch);
-    var sepia = stack.processors.items[1].getParent(effects.Sepia);
-    var vignette = stack.processors.items[1].getParent(effects.Vignette);
+    _ = stack.processors.items[1].getParent(effects.Sepia);
+    _ = stack.processors.items[1].getParent(effects.Vignette);
 
     // _ = aya.utils.inspect("lines", &lines_shader.frag_uniform);
     // _ = aya.utils.inspect("noise", &noise_shader.frag_uniform);
@@ -79,8 +79,8 @@ fn update() !void {
     // _ = aya.utils.inspect("sepia", &vignette.shader.frag_uniform);
 
     if (@mod(aya.time.frames(), 5) == 0) {
-         pixel_glitch.shader.frag_uniform.vertical_size = aya.math.rand.range(f32, 1, 5);
-         pixel_glitch.shader.frag_uniform.horizontal_offset = aya.math.rand.range(f32, -20, 20);
+        pixel_glitch.shader.frag_uniform.vertical_size = aya.math.rand.range(f32, 1, 5);
+        pixel_glitch.shader.frag_uniform.horizontal_offset = aya.math.rand.range(f32, -20, 20);
     }
 }
 

@@ -9,13 +9,7 @@ var checker_quad: aya.math.Quad = undefined;
 var font_quad: aya.math.Quad = undefined;
 
 pub fn main() !void {
-    try aya.run(.{
-        .init = init,
-        .update = update,
-        .render = render,
-        .shutdown = shutdown,
-        .window = .{ .disable_vsync = true }
-    });
+    try aya.run(.{ .init = init, .update = update, .render = render, .shutdown = shutdown, .window = .{ .disable_vsync = true } });
 }
 
 fn init() !void {

@@ -12,7 +12,6 @@ const InstancedVert = struct {
     pos: aya.math.Vec2,
 };
 
-
 pub fn main() !void {
     try aya.run(.{
         .init = init,

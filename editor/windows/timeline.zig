@@ -15,4 +15,3 @@ pub fn draw(state: *root.AppState) void {
         igText("Timeline Editor");
     }
 }
-

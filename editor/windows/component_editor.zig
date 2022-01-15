@@ -102,7 +102,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         var open = true;
         if (igBeginPopupModal("Enum Values##enum-values", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
             defer igEndPopup();
-           
+
             var prop_value = &component.props[index].value;
             for (prop_value.enum_values) |*val, i| {
                 igPushIDPtr(val);

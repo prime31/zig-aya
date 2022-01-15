@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 pub const array = @import("array.zig");
 pub const FixedList = @import("fixed_list.zig").FixedList;
@@ -39,23 +39,23 @@ fn getMinMax(comptime T: type, comptime P: type, comptime name: []const u8) stru
 pub fn inspect(comptime T: type, comptime label: []const u8, comptime value: *T) bool {
     if (!aya.enable_imgui) return false;
 
-    if (igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, ImGuiTreeNodeFlags_DefaultOpen)) {
-        igIndent(10);
-        defer igUnindent(10);
+    if (imgui.igCollapsingHeaderBoolPtr(@as([*c]const u8, label.ptr), null, imgui.ImGuiTreeNodeFlags_DefaultOpen)) {
+        imgui.igIndent(10);
+        defer imgui.igUnindent(10);
 
         const info = @typeInfo(T).Struct;
-        igPushIDPtr(value);
+        imgui.igPushIDPtr(value);
         var changed = false;
         inline for (info.fields) |*field_info| {
             const name = field_info.name;
             const FieldType = field_info.field_type;
             if (comptime std.meta.trait.is(.Pointer)(FieldType)) {
-                std.debug.print("skipping field " ++ name ++ " of struct " ++ @typeName(C) ++ " because it is of pointer-type " ++ @typeName(FieldType), .{});
+                std.debug.print("skipping field " ++ name ++ " of struct " ++ @typeName(T) ++ " because it is of pointer-type " ++ @typeName(FieldType), .{});
                 continue;
             }
             if (inspectValue(name, value, &@field(value, name))) changed = true;
         }
-        igPopID();
+        imgui.igPopID();
         return changed;
     }
     return false;
@@ -84,14 +84,14 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Mat32, aya.math.Mat4 => return false,
         aya.math.Vec2 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (igDragFloat2(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat2(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
         },
         aya.math.Vec3 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (igDragFloat3(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat3(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -99,7 +99,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Vec4 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
             // should be able to use @ptrCast([*c]f32, &value.x) but when the Vec4 is padded with align(n) it doesnt work
-            if (igDragFloat4(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat4(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -110,11 +110,11 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
     const child_type_info = @typeInfo(C);
 
     switch (child_type_info) {
-        .Bool => return igCheckbox(@as([*c]const u8, label.ptr), value),
+        .Bool => return imgui.igCheckbox(@as([*c]const u8, label.ptr), value),
         .Int => {
             var min_max = getMinMax(i32, std.meta.Child(@TypeOf(parent)), label);
             var tmp = @alignCast(@alignOf(i32), value);
-            if (igDragInt(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragInt(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
                 value.* = tmp.*;
                 return true;
             }
@@ -122,7 +122,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         .Float => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
             var tmp = @alignCast(@alignOf(f32), value);
-            if (igDragFloat(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
                 value.* = tmp.*;
                 return true;
             }

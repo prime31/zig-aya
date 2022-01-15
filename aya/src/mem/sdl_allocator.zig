@@ -1,13 +1,19 @@
 const std = @import("std");
 const sdl = @import("sdl");
 
-pub const sdl_allocator = &sdl_allocator_state;
-var sdl_allocator_state = std.mem.Allocator{
-    .allocFn = sdlAlloc,
-    .resizeFn = sdlResize,
+pub const sdl_allocator = std.mem.Allocator{
+    .ptr = undefined,
+    .vtable = &sdlAllocator_vtable,
 };
 
-fn sdlAlloc(allocator: *std.mem.Allocator, len: usize, ptr_align: u29, len_align: u29, ret_addr: usize) ![]u8 {
+const sdlAllocator_vtable = std.mem.Allocator.VTable{
+    .alloc = sdlAlloc,
+    .resize = sdlResize,
+    .free = sdlFree,
+};
+
+
+fn sdlAlloc(_: *anyopaque, len: usize, ptr_align: u29, len_align: u29, _: usize) ![]u8 {
     std.debug.assert(ptr_align <= @alignOf(c_longdouble));
     const ptr = @ptrCast([*]u8, sdl.SDL_malloc(len) orelse return error.OutOfMemory);
 
@@ -18,7 +24,7 @@ fn sdlAlloc(allocator: *std.mem.Allocator, len: usize, ptr_align: u29, len_align
     return ptr[0..std.mem.alignBackwardAnyAlign(len, len_align)];
 }
 
-fn sdlResize(self: *std.mem.Allocator, old_mem: []u8, buf_align: u29, new_len: usize, len_align: u29, ret_addr: usize) std.mem.Allocator.Error!usize {
+fn sdlResize(_: *anyopaque, old_mem: []u8, _: u29, new_len: usize, len_align: u29, _: usize) ?usize {
     if (new_len == 0) {
         sdl.SDL_free(old_mem.ptr);
         return 0;
@@ -27,7 +33,11 @@ fn sdlResize(self: *std.mem.Allocator, old_mem: []u8, buf_align: u29, new_len: u
     if (new_len <= old_mem.len)
         return std.mem.alignAllocLen(old_mem.len, new_len, len_align);
 
-    return error.OutOfMemory;
+    return null;
+}
+
+fn sdlFree(_: *anyopaque, buf: []u8, _: u29, _: usize) void {
+    sdl.SDL_free(buf.ptr);
 }
 
 test "sdl allocator" {

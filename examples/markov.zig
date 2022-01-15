@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 pub const enable_imgui = true;
 
@@ -69,11 +69,11 @@ fn init() !void {
 }
 
 fn update() !void {
-    if (ogButton("Regen")) generateMap();
+    if (imgui.ogButton("Regen")) generateMap();
 
-    _ = ogDrag(usize, "Minimum # Rows", &minimum_rows, 0.5, 5, 100);
+    _ = imgui.ogDrag(usize, "Minimum # Rows", &minimum_rows, 0.5, 5, 100);
 
-    if (ogButton("Extract From Image and Dump to Console")) extractImage();
+    if (imgui.ogButton("Extract From Image and Dump to Console")) extractImage();
 }
 
 fn generateMap() void {
@@ -120,7 +120,7 @@ fn extractImage() void {
 
     var i: usize = 0;
     while (i < h) : (i += 1) {
-        const first = i * w;
+        // const first = i * w;
         var j: usize = 0;
         while (j < w) : (j += 1) {
             const pixel_index = (j + i * w) * 4;
@@ -145,7 +145,7 @@ pub const Markov = struct {
     rows: std.StringHashMap(std.StringHashMap(u8)),
     firsts: std.StringHashMap(u8),
     final: []u8 = undefined,
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
     pub fn init() Markov {
         return .{
@@ -155,31 +155,31 @@ pub const Markov = struct {
         };
     }
 
-    pub fn deinit(self: *Markov) void {}
+    pub fn deinit(_: *Markov) void {}
 
     fn choose(hashmap: std.StringHashMap(u8)) []const u8 {
         var n: i32 = 0;
         var iter = hashmap.iterator();
         while (iter.next()) |entry| {
-            n += @intCast(i32, entry.value);
+            n += @intCast(i32, entry.value_ptr.*);
         }
 
         if (n <= 1) {
             iter = hashmap.iterator();
-            return iter.next().?.key;
+            return iter.next().?.key_ptr.*;
         }
 
         n = aya.math.rand.range(i32, 0, n);
         iter = hashmap.iterator();
         while (iter.next()) |entry| {
-            n = n - @intCast(i32, entry.value);
-            if (n < 0) return entry.key;
+            n = n - @intCast(i32, entry.value_ptr.*);
+            if (n < 0) return entry.key_ptr.*;
         }
 
         unreachable;
     }
 
-    pub fn generateChain(data: []const u8, width: usize, height: usize) []const u8 {
+    pub fn generateChain(self: *Markov, data: []const u8, width: usize, height: usize) []const u8 {
         aya.math.rand.seed(@intCast(u64, std.time.milliTimestamp()));
 
         var markov = Markov.init();
@@ -220,7 +220,7 @@ pub const Markov = struct {
             var iter = self.rows.iterator();
             while (iter.next()) |entry| {
                 if (index == 0) {
-                    item = choose(entry.value);
+                    item = choose(entry.value_ptr.*);
                     break;
                 }
                 index -= 1;
@@ -266,18 +266,18 @@ pub const Markov = struct {
     fn incrementItemCount(hashmap: *std.StringHashMap(u8), row: []u8) void {
         var res = hashmap.getOrPut(row) catch unreachable;
         if (!res.found_existing) {
-            res.entry.value = 1;
+            res.value_ptr.* = 1;
         } else {
-            res.entry.value += 1;
+            res.value_ptr.* += 1;
         }
     }
 
     fn updateItem(self: *Markov, item: []u8, next: []u8) void {
         var entry = self.rows.getOrPut(item) catch unreachable;
         if (!entry.found_existing) {
-            entry.entry.value = std.StringHashMap(u8).init(self.allocator);
+            entry.value_ptr.* = std.StringHashMap(u8).init(self.allocator);
         }
-        incrementItemCount(&entry.entry.value, next);
+        incrementItemCount(entry.value_ptr, next);
     }
 };
 
@@ -290,7 +290,7 @@ pub const Tilemap = struct {
         return .{
             .w = width,
             .h = height,
-            .map = std.mem.dupe(std.testing.allocator, u8, data) catch unreachable,
+            .map = std.testing.allocator.dupe(u8, data) catch unreachable,
         };
     }
 

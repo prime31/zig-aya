@@ -1,4 +1,5 @@
-pub usingnamespace @import("wrapper.zig");
+const w = @import("wrapper.zig");
+pub usingnamespace w;
 
 // uncomment to generate a cimport.zig file
 // pub usingnamespace @cImport({
@@ -21,11 +22,11 @@ pub const struct___sFILE = extern struct {
     _file: c_short,
     _bf: struct___sbuf,
     _lbfsize: c_int,
-    _cookie: ?*c_void,
-    _close: ?fn (?*c_void) callconv(.C) c_int,
-    _read: ?fn (?*c_void, [*c]u8, c_int) callconv(.C) c_int,
-    _seek: ?fn (?*c_void, fpos_t, c_int) callconv(.C) fpos_t,
-    _write: ?fn (?*c_void, [*c]const u8, c_int) callconv(.C) c_int,
+    _cookie: ?*anyopaque,
+    _close: ?fn (?*anyopaque) callconv(.C) c_int,
+    _read: ?fn (?*anyopaque, [*c]u8, c_int) callconv(.C) c_int,
+    _seek: ?fn (?*anyopaque, fpos_t, c_int) callconv(.C) fpos_t,
+    _write: ?fn (?*anyopaque, [*c]const u8, c_int) callconv(.C) c_int,
     _ub: struct___sbuf,
     _extra: ?*struct___sFILEX,
     _ur: c_int,
@@ -36,7 +37,6 @@ pub const struct___sFILE = extern struct {
     _offset: fpos_t,
 };
 pub const FILE = struct___sFILE;
-
 
 pub const struct_ImGuiViewportP = extern struct {
     _ImGuiViewport: ImGuiViewport,
@@ -62,7 +62,7 @@ pub const struct_ImGuiViewportP = extern struct {
 };
 pub const ImGuiViewportP = struct_ImGuiViewportP;
 pub const struct_ImGuiPtrOrIndex = extern struct {
-    Ptr: ?*c_void,
+    Ptr: ?*anyopaque,
     Index: c_int,
 };
 pub const ImGuiPtrOrIndex = struct_ImGuiPtrOrIndex;
@@ -244,11 +244,11 @@ pub const struct_ImGuiSettingsHandler = extern struct {
     TypeHash: ImGuiID,
     ClearAllFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler) callconv(.C) void,
     ReadInitFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler) callconv(.C) void,
-    ReadOpenFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler, [*c]const u8) callconv(.C) ?*c_void,
-    ReadLineFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler, ?*c_void, [*c]const u8) callconv(.C) void,
+    ReadOpenFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler, [*c]const u8) callconv(.C) ?*anyopaque,
+    ReadLineFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler, ?*anyopaque, [*c]const u8) callconv(.C) void,
     ApplyAllFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler) callconv(.C) void,
     WriteAllFn: ?fn ([*c]ImGuiContext, [*c]ImGuiSettingsHandler, [*c]ImGuiTextBuffer) callconv(.C) void,
-    UserData: ?*c_void,
+    UserData: ?*anyopaque,
 };
 pub const ImGuiSettingsHandler = struct_ImGuiSettingsHandler;
 pub const struct_ImGuiPopupData = extern struct {
@@ -284,7 +284,7 @@ pub const struct_ImGuiNextWindowData = extern struct {
     CollapsedVal: bool,
     SizeConstraintRect: ImRect,
     SizeCallback: ImGuiSizeCallback,
-    SizeCallbackUserData: ?*c_void,
+    SizeCallbackUserData: ?*anyopaque,
     BgAlphaVal: f32,
     ViewportId: ImGuiID,
     DockId: ImGuiID,
@@ -334,7 +334,7 @@ pub const struct_ImGuiInputTextState = extern struct {
     Edited: bool,
     UserFlags: ImGuiInputTextFlags,
     UserCallback: ImGuiInputTextCallback,
-    UserCallbackData: ?*c_void,
+    UserCallbackData: ?*anyopaque,
 };
 pub const ImGuiInputTextState = struct_ImGuiInputTextState;
 pub const struct_ImGuiGroupData = extern struct {
@@ -428,7 +428,7 @@ pub const ImFontAtlasCustomRect = struct_ImFontAtlasCustomRect;
 const union_unnamed_3 = extern union {
     val_i: c_int,
     val_f: f32,
-    val_p: ?*c_void,
+    val_p: ?*anyopaque,
 };
 pub const struct_ImGuiStoragePair = extern struct {
     key: ImGuiID,
@@ -490,10 +490,10 @@ pub const struct_ImGuiViewport = extern struct {
     DpiScale: f32,
     DrawData: [*c]ImDrawData,
     ParentViewportId: ImGuiID,
-    RendererUserData: ?*c_void,
-    PlatformUserData: ?*c_void,
-    PlatformHandle: ?*c_void,
-    PlatformHandleRaw: ?*c_void,
+    RendererUserData: ?*anyopaque,
+    PlatformUserData: ?*anyopaque,
+    PlatformHandle: ?*anyopaque,
+    PlatformHandleRaw: ?*anyopaque,
     PlatformRequestMove: bool,
     PlatformRequestResize: bool,
     PlatformRequestClose: bool,
@@ -556,7 +556,7 @@ pub const struct_ImGuiStorage = extern struct {
 };
 pub const ImGuiStorage = struct_ImGuiStorage;
 pub const struct_ImGuiSizeCallbackData = extern struct {
-    UserData: ?*c_void,
+    UserData: ?*anyopaque,
     Pos: ImVec2,
     CurrentSize: ImVec2,
     DesiredSize: ImVec2,
@@ -584,24 +584,24 @@ pub const struct_ImGuiPlatformIO = extern struct {
     Platform_SetWindowTitle: ?fn ([*c]ImGuiViewport, [*c]const u8) callconv(.C) void,
     Platform_SetWindowAlpha: ?fn ([*c]ImGuiViewport, f32) callconv(.C) void,
     Platform_UpdateWindow: ?fn ([*c]ImGuiViewport) callconv(.C) void,
-    Platform_RenderWindow: ?fn ([*c]ImGuiViewport, ?*c_void) callconv(.C) void,
-    Platform_SwapBuffers: ?fn ([*c]ImGuiViewport, ?*c_void) callconv(.C) void,
+    Platform_RenderWindow: ?fn ([*c]ImGuiViewport, ?*anyopaque) callconv(.C) void,
+    Platform_SwapBuffers: ?fn ([*c]ImGuiViewport, ?*anyopaque) callconv(.C) void,
     Platform_GetWindowDpiScale: ?fn ([*c]ImGuiViewport) callconv(.C) f32,
     Platform_OnChangedViewport: ?fn ([*c]ImGuiViewport) callconv(.C) void,
     Platform_SetImeInputPos: ?fn ([*c]ImGuiViewport, ImVec2) callconv(.C) void,
-    Platform_CreateVkSurface: ?fn ([*c]ImGuiViewport, ImU64, ?*const c_void, [*c]ImU64) callconv(.C) c_int,
+    Platform_CreateVkSurface: ?fn ([*c]ImGuiViewport, ImU64, ?*const anyopaque, [*c]ImU64) callconv(.C) c_int,
     Renderer_CreateWindow: ?fn ([*c]ImGuiViewport) callconv(.C) void,
     Renderer_DestroyWindow: ?fn ([*c]ImGuiViewport) callconv(.C) void,
     Renderer_SetWindowSize: ?fn ([*c]ImGuiViewport, ImVec2) callconv(.C) void,
-    Renderer_RenderWindow: ?fn ([*c]ImGuiViewport, ?*c_void) callconv(.C) void,
-    Renderer_SwapBuffers: ?fn ([*c]ImGuiViewport, ?*c_void) callconv(.C) void,
+    Renderer_RenderWindow: ?fn ([*c]ImGuiViewport, ?*anyopaque) callconv(.C) void,
+    Renderer_SwapBuffers: ?fn ([*c]ImGuiViewport, ?*anyopaque) callconv(.C) void,
     Monitors: ImVector_ImGuiPlatformMonitor,
     MainViewport: [*c]ImGuiViewport,
     Viewports: ImVector_ImGuiViewportPtr,
 };
 pub const ImGuiPlatformIO = struct_ImGuiPlatformIO;
 pub const struct_ImGuiPayload = extern struct {
-    Data: ?*c_void,
+    Data: ?*anyopaque,
     DataSize: c_int,
     SourceId: ImGuiID,
     SourceParentId: ImGuiID,
@@ -627,7 +627,7 @@ pub const ImGuiListClipper = struct_ImGuiListClipper;
 pub const struct_ImGuiInputTextCallbackData = extern struct {
     EventFlag: ImGuiInputTextFlags,
     Flags: ImGuiInputTextFlags,
-    UserData: ?*c_void,
+    UserData: ?*anyopaque,
     EventChar: ImWchar,
     EventKey: ImGuiKey,
     Buf: [*c]u8,
@@ -653,7 +653,7 @@ pub const struct_ImGuiIO = extern struct {
     KeyMap: [22]c_int,
     KeyRepeatDelay: f32,
     KeyRepeatRate: f32,
-    UserData: ?*c_void,
+    UserData: ?*anyopaque,
     Fonts: *ImFontAtlas,
     FontGlobalScale: f32,
     FontAllowUserScaling: bool,
@@ -675,13 +675,13 @@ pub const struct_ImGuiIO = extern struct {
     ConfigWindowsMemoryCompactTimer: f32,
     BackendPlatformName: [*c]const u8,
     BackendRendererName: [*c]const u8,
-    BackendPlatformUserData: ?*c_void,
-    BackendRendererUserData: ?*c_void,
-    BackendLanguageUserData: ?*c_void,
-    GetClipboardTextFn: ?fn (?*c_void) callconv(.C) [*c]const u8,
-    SetClipboardTextFn: ?fn (?*c_void, [*c]const u8) callconv(.C) void,
-    ClipboardUserData: ?*c_void,
-    RenderDrawListsFnUnused: ?*c_void,
+    BackendPlatformUserData: ?*anyopaque,
+    BackendRendererUserData: ?*anyopaque,
+    BackendLanguageUserData: ?*anyopaque,
+    GetClipboardTextFn: ?fn (?*anyopaque) callconv(.C) [*c]const u8,
+    SetClipboardTextFn: ?fn (?*anyopaque, [*c]const u8) callconv(.C) void,
+    ClipboardUserData: ?*anyopaque,
+    RenderDrawListsFnUnused: ?*anyopaque,
     MousePos: ImVec2,
     MouseDown: [5]bool,
     MouseWheel: f32,
@@ -751,7 +751,7 @@ pub const struct_ImGuiContext = extern struct {
     WithinEndChild: bool,
     TestEngineHookItems: bool,
     TestEngineHookIdInfo: ImGuiID,
-    TestEngine: ?*c_void,
+    TestEngine: ?*anyopaque,
     Windows: ImVector_ImGuiWindowPtr,
     WindowsFocusOrder: ImVector_ImGuiWindowPtr,
     WindowsTempSortBuffer: ImVector_ImGuiWindowPtr,
@@ -941,7 +941,7 @@ pub const ImFontGlyphRangesBuilder = struct_ImFontGlyphRangesBuilder;
 pub const struct_ImFontGlyph = opaque {}; // /Users/desaro/zig-gl/src/deps/imgui/cimgui/cimgui.h:1033:18: warning: struct demoted to opaque type - has bitfield
 pub const ImFontGlyph = struct_ImFontGlyph;
 pub const struct_ImFontConfig = extern struct {
-    FontData: ?*c_void,
+    FontData: ?*anyopaque,
     FontDataSize: c_int,
     FontDataOwnedByAtlas: bool,
     FontNo: c_int,
@@ -1063,7 +1063,7 @@ pub const struct_ImDrawCmd = extern struct {
     IdxOffset: c_uint,
     ElemCount: c_uint,
     UserCallback: ImDrawCallback,
-    UserCallbackData: ?*c_void,
+    UserCallbackData: ?*anyopaque,
 };
 pub const ImDrawCmd = struct_ImDrawCmd;
 pub const struct_ImDrawChannel = extern struct {
@@ -1102,7 +1102,7 @@ pub const ImGuiTabItemFlags = c_int;
 pub const ImGuiTreeNodeFlags = c_int;
 pub const ImGuiViewportFlags = c_int;
 pub const ImGuiWindowFlags = c_int;
-pub const ImTextureID = ?*c_void;
+pub const ImTextureID = ?*anyopaque;
 pub const ImGuiID = c_uint;
 pub const ImGuiInputTextCallback = ?fn ([*c]ImGuiInputTextCallbackData) callconv(.C) c_int;
 pub const ImGuiSizeCallback = ?fn ([*c]ImGuiSizeCallbackData) callconv(.C) void;
@@ -1138,7 +1138,7 @@ pub const ImPoolIdx = c_int;
 pub const struct_ImVector = extern struct {
     Size: c_int,
     Capacity: c_int,
-    Data: ?*c_void,
+    Data: ?*anyopaque,
 };
 pub const ImVector = struct_ImVector;
 pub const struct_ImVector_ImGuiWindowSettings = extern struct {
@@ -1411,7 +1411,7 @@ pub const ImGuiWindowFlags_Popup = @enumToInt(enum_unnamed_4.ImGuiWindowFlags_Po
 pub const ImGuiWindowFlags_Modal = @enumToInt(enum_unnamed_4.ImGuiWindowFlags_Modal);
 pub const ImGuiWindowFlags_ChildMenu = @enumToInt(enum_unnamed_4.ImGuiWindowFlags_ChildMenu);
 pub const ImGuiWindowFlags_DockNodeHost = @enumToInt(enum_unnamed_4.ImGuiWindowFlags_DockNodeHost);
-const enum_unnamed_4 = extern enum(c_int) {
+const enum_unnamed_4 = enum(c_int) {
     ImGuiWindowFlags_None = 0,
     ImGuiWindowFlags_NoTitleBar = 1,
     ImGuiWindowFlags_NoResize = 2,
@@ -1470,7 +1470,7 @@ pub const ImGuiInputTextFlags_CallbackResize = @enumToInt(enum_unnamed_5.ImGuiIn
 pub const ImGuiInputTextFlags_CallbackEdit = @enumToInt(enum_unnamed_5.ImGuiInputTextFlags_CallbackEdit);
 pub const ImGuiInputTextFlags_Multiline = @enumToInt(enum_unnamed_5.ImGuiInputTextFlags_Multiline);
 pub const ImGuiInputTextFlags_NoMarkEdited = @enumToInt(enum_unnamed_5.ImGuiInputTextFlags_NoMarkEdited);
-const enum_unnamed_5 = extern enum(c_int) {
+const enum_unnamed_5 = enum(c_int) {
     ImGuiInputTextFlags_None = 0,
     ImGuiInputTextFlags_CharsDecimal = 1,
     ImGuiInputTextFlags_CharsHexadecimal = 2,
@@ -1513,7 +1513,7 @@ pub const ImGuiTreeNodeFlags_SpanAvailWidth = @enumToInt(enum_unnamed_6.ImGuiTre
 pub const ImGuiTreeNodeFlags_SpanFullWidth = @enumToInt(enum_unnamed_6.ImGuiTreeNodeFlags_SpanFullWidth);
 pub const ImGuiTreeNodeFlags_NavLeftJumpsBackHere = @enumToInt(enum_unnamed_6.ImGuiTreeNodeFlags_NavLeftJumpsBackHere);
 pub const ImGuiTreeNodeFlags_CollapsingHeader = @enumToInt(enum_unnamed_6.ImGuiTreeNodeFlags_CollapsingHeader);
-const enum_unnamed_6 = extern enum(c_int) {
+const enum_unnamed_6 = enum(c_int) {
     ImGuiTreeNodeFlags_None = 0,
     ImGuiTreeNodeFlags_Selected = 1,
     ImGuiTreeNodeFlags_Framed = 2,
@@ -1544,7 +1544,7 @@ pub const ImGuiPopupFlags_NoOpenOverItems = @enumToInt(enum_unnamed_7.ImGuiPopup
 pub const ImGuiPopupFlags_AnyPopupId = @enumToInt(enum_unnamed_7.ImGuiPopupFlags_AnyPopupId);
 pub const ImGuiPopupFlags_AnyPopupLevel = @enumToInt(enum_unnamed_7.ImGuiPopupFlags_AnyPopupLevel);
 pub const ImGuiPopupFlags_AnyPopup = @enumToInt(enum_unnamed_7.ImGuiPopupFlags_AnyPopup);
-const enum_unnamed_7 = extern enum(c_int) {
+const enum_unnamed_7 = enum(c_int) {
     ImGuiPopupFlags_None = 0,
     ImGuiPopupFlags_MouseButtonLeft = 0,
     ImGuiPopupFlags_MouseButtonRight = 1,
@@ -1565,7 +1565,7 @@ pub const ImGuiSelectableFlags_SpanAllColumns = @enumToInt(enum_unnamed_8.ImGuiS
 pub const ImGuiSelectableFlags_AllowDoubleClick = @enumToInt(enum_unnamed_8.ImGuiSelectableFlags_AllowDoubleClick);
 pub const ImGuiSelectableFlags_Disabled = @enumToInt(enum_unnamed_8.ImGuiSelectableFlags_Disabled);
 pub const ImGuiSelectableFlags_AllowItemOverlap = @enumToInt(enum_unnamed_8.ImGuiSelectableFlags_AllowItemOverlap);
-const enum_unnamed_8 = extern enum(c_int) {
+const enum_unnamed_8 = enum(c_int) {
     ImGuiSelectableFlags_None = 0,
     ImGuiSelectableFlags_DontClosePopups = 1,
     ImGuiSelectableFlags_SpanAllColumns = 2,
@@ -1584,7 +1584,7 @@ pub const ImGuiComboFlags_HeightLargest = @enumToInt(enum_unnamed_9.ImGuiComboFl
 pub const ImGuiComboFlags_NoArrowButton = @enumToInt(enum_unnamed_9.ImGuiComboFlags_NoArrowButton);
 pub const ImGuiComboFlags_NoPreview = @enumToInt(enum_unnamed_9.ImGuiComboFlags_NoPreview);
 pub const ImGuiComboFlags_HeightMask_ = @enumToInt(enum_unnamed_9.ImGuiComboFlags_HeightMask_);
-const enum_unnamed_9 = extern enum(c_int) {
+const enum_unnamed_9 = enum(c_int) {
     ImGuiComboFlags_None = 0,
     ImGuiComboFlags_PopupAlignLeft = 1,
     ImGuiComboFlags_HeightSmall = 2,
@@ -1608,7 +1608,7 @@ pub const ImGuiTabBarFlags_FittingPolicyResizeDown = @enumToInt(enum_unnamed_10.
 pub const ImGuiTabBarFlags_FittingPolicyScroll = @enumToInt(enum_unnamed_10.ImGuiTabBarFlags_FittingPolicyScroll);
 pub const ImGuiTabBarFlags_FittingPolicyMask_ = @enumToInt(enum_unnamed_10.ImGuiTabBarFlags_FittingPolicyMask_);
 pub const ImGuiTabBarFlags_FittingPolicyDefault_ = @enumToInt(enum_unnamed_10.ImGuiTabBarFlags_FittingPolicyDefault_);
-const enum_unnamed_10 = extern enum(c_int) {
+const enum_unnamed_10 = enum(c_int) {
     ImGuiTabBarFlags_None = 0,
     ImGuiTabBarFlags_Reorderable = 1,
     ImGuiTabBarFlags_AutoSelectNewTabs = 2,
@@ -1632,7 +1632,7 @@ pub const ImGuiTabItemFlags_NoTooltip = @enumToInt(enum_unnamed_11.ImGuiTabItemF
 pub const ImGuiTabItemFlags_NoReorder = @enumToInt(enum_unnamed_11.ImGuiTabItemFlags_NoReorder);
 pub const ImGuiTabItemFlags_Leading = @enumToInt(enum_unnamed_11.ImGuiTabItemFlags_Leading);
 pub const ImGuiTabItemFlags_Trailing = @enumToInt(enum_unnamed_11.ImGuiTabItemFlags_Trailing);
-const enum_unnamed_11 = extern enum(c_int) {
+const enum_unnamed_11 = enum(c_int) {
     ImGuiTabItemFlags_None = 0,
     ImGuiTabItemFlags_UnsavedDocument = 1,
     ImGuiTabItemFlags_SetSelected = 2,
@@ -1650,7 +1650,7 @@ pub const ImGuiFocusedFlags_ChildWindows = @enumToInt(enum_unnamed_12.ImGuiFocus
 pub const ImGuiFocusedFlags_RootWindow = @enumToInt(enum_unnamed_12.ImGuiFocusedFlags_RootWindow);
 pub const ImGuiFocusedFlags_AnyWindow = @enumToInt(enum_unnamed_12.ImGuiFocusedFlags_AnyWindow);
 pub const ImGuiFocusedFlags_RootAndChildWindows = @enumToInt(enum_unnamed_12.ImGuiFocusedFlags_RootAndChildWindows);
-const enum_unnamed_12 = extern enum(c_int) {
+const enum_unnamed_12 = enum(c_int) {
     ImGuiFocusedFlags_None = 0,
     ImGuiFocusedFlags_ChildWindows = 1,
     ImGuiFocusedFlags_RootWindow = 2,
@@ -1669,7 +1669,7 @@ pub const ImGuiHoveredFlags_AllowWhenOverlapped = @enumToInt(enum_unnamed_13.ImG
 pub const ImGuiHoveredFlags_AllowWhenDisabled = @enumToInt(enum_unnamed_13.ImGuiHoveredFlags_AllowWhenDisabled);
 pub const ImGuiHoveredFlags_RectOnly = @enumToInt(enum_unnamed_13.ImGuiHoveredFlags_RectOnly);
 pub const ImGuiHoveredFlags_RootAndChildWindows = @enumToInt(enum_unnamed_13.ImGuiHoveredFlags_RootAndChildWindows);
-const enum_unnamed_13 = extern enum(c_int) {
+const enum_unnamed_13 = enum(c_int) {
     ImGuiHoveredFlags_None = 0,
     ImGuiHoveredFlags_ChildWindows = 1,
     ImGuiHoveredFlags_RootWindow = 2,
@@ -1690,7 +1690,7 @@ pub const ImGuiDockNodeFlags_PassthruCentralNode = @enumToInt(enum_unnamed_14.Im
 pub const ImGuiDockNodeFlags_NoSplit = @enumToInt(enum_unnamed_14.ImGuiDockNodeFlags_NoSplit);
 pub const ImGuiDockNodeFlags_NoResize = @enumToInt(enum_unnamed_14.ImGuiDockNodeFlags_NoResize);
 pub const ImGuiDockNodeFlags_AutoHideTabBar = @enumToInt(enum_unnamed_14.ImGuiDockNodeFlags_AutoHideTabBar);
-const enum_unnamed_14 = extern enum(c_int) {
+const enum_unnamed_14 = enum(c_int) {
     ImGuiDockNodeFlags_None = 0,
     ImGuiDockNodeFlags_KeepAliveOnly = 1,
     ImGuiDockNodeFlags_NoDockingInCentralNode = 4,
@@ -1712,7 +1712,7 @@ pub const ImGuiDragDropFlags_AcceptBeforeDelivery = @enumToInt(enum_unnamed_15.I
 pub const ImGuiDragDropFlags_AcceptNoDrawDefaultRect = @enumToInt(enum_unnamed_15.ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 pub const ImGuiDragDropFlags_AcceptNoPreviewTooltip = @enumToInt(enum_unnamed_15.ImGuiDragDropFlags_AcceptNoPreviewTooltip);
 pub const ImGuiDragDropFlags_AcceptPeekOnly = @enumToInt(enum_unnamed_15.ImGuiDragDropFlags_AcceptPeekOnly);
-const enum_unnamed_15 = extern enum(c_int) {
+const enum_unnamed_15 = enum(c_int) {
     ImGuiDragDropFlags_None = 0,
     ImGuiDragDropFlags_SourceNoPreviewTooltip = 1,
     ImGuiDragDropFlags_SourceNoDisableHover = 2,
@@ -1738,7 +1738,7 @@ pub const ImGuiDataType_U64 = @enumToInt(enum_unnamed_16.ImGuiDataType_U64);
 pub const ImGuiDataType_Float = @enumToInt(enum_unnamed_16.ImGuiDataType_Float);
 pub const ImGuiDataType_Double = @enumToInt(enum_unnamed_16.ImGuiDataType_Double);
 pub const ImGuiDataType_COUNT = @enumToInt(enum_unnamed_16.ImGuiDataType_COUNT);
-const enum_unnamed_16 = extern enum(c_int) {
+const enum_unnamed_16 = enum(c_int) {
     ImGuiDataType_S8,
     ImGuiDataType_U8,
     ImGuiDataType_S16,
@@ -1759,7 +1759,7 @@ pub const ImGuiDir_Right = @enumToInt(enum_unnamed_17.ImGuiDir_Right);
 pub const ImGuiDir_Up = @enumToInt(enum_unnamed_17.ImGuiDir_Up);
 pub const ImGuiDir_Down = @enumToInt(enum_unnamed_17.ImGuiDir_Down);
 pub const ImGuiDir_COUNT = @enumToInt(enum_unnamed_17.ImGuiDir_COUNT);
-const enum_unnamed_17 = extern enum(c_int) {
+const enum_unnamed_17 = enum(c_int) {
     ImGuiDir_None = -1,
     ImGuiDir_Left = 0,
     ImGuiDir_Right = 1,
@@ -1792,7 +1792,7 @@ pub const ImGuiKey_X = @enumToInt(enum_unnamed_18.ImGuiKey_X);
 pub const ImGuiKey_Y = @enumToInt(enum_unnamed_18.ImGuiKey_Y);
 pub const ImGuiKey_Z = @enumToInt(enum_unnamed_18.ImGuiKey_Z);
 pub const ImGuiKey_COUNT = @enumToInt(enum_unnamed_18.ImGuiKey_COUNT);
-const enum_unnamed_18 = extern enum(c_int) {
+const enum_unnamed_18 = enum(c_int) {
     ImGuiKey_Tab,
     ImGuiKey_LeftArrow,
     ImGuiKey_RightArrow,
@@ -1824,7 +1824,7 @@ pub const ImGuiKeyModFlags_Ctrl = @enumToInt(enum_unnamed_19.ImGuiKeyModFlags_Ct
 pub const ImGuiKeyModFlags_Shift = @enumToInt(enum_unnamed_19.ImGuiKeyModFlags_Shift);
 pub const ImGuiKeyModFlags_Alt = @enumToInt(enum_unnamed_19.ImGuiKeyModFlags_Alt);
 pub const ImGuiKeyModFlags_Super = @enumToInt(enum_unnamed_19.ImGuiKeyModFlags_Super);
-const enum_unnamed_19 = extern enum(c_int) {
+const enum_unnamed_19 = enum(c_int) {
     ImGuiKeyModFlags_None = 0,
     ImGuiKeyModFlags_Ctrl = 1,
     ImGuiKeyModFlags_Shift = 2,
@@ -1856,7 +1856,7 @@ pub const ImGuiNavInput_KeyUp_ = @enumToInt(enum_unnamed_20.ImGuiNavInput_KeyUp_
 pub const ImGuiNavInput_KeyDown_ = @enumToInt(enum_unnamed_20.ImGuiNavInput_KeyDown_);
 pub const ImGuiNavInput_COUNT = @enumToInt(enum_unnamed_20.ImGuiNavInput_COUNT);
 pub const ImGuiNavInput_InternalStart_ = @enumToInt(enum_unnamed_20.ImGuiNavInput_InternalStart_);
-const enum_unnamed_20 = extern enum(c_int) {
+const enum_unnamed_20 = enum(c_int) {
     ImGuiNavInput_Activate = 0,
     ImGuiNavInput_Cancel = 1,
     ImGuiNavInput_Input = 2,
@@ -1896,7 +1896,7 @@ pub const ImGuiConfigFlags_DpiEnableScaleViewports = @enumToInt(enum_unnamed_21.
 pub const ImGuiConfigFlags_DpiEnableScaleFonts = @enumToInt(enum_unnamed_21.ImGuiConfigFlags_DpiEnableScaleFonts);
 pub const ImGuiConfigFlags_IsSRGB = @enumToInt(enum_unnamed_21.ImGuiConfigFlags_IsSRGB);
 pub const ImGuiConfigFlags_IsTouchScreen = @enumToInt(enum_unnamed_21.ImGuiConfigFlags_IsTouchScreen);
-const enum_unnamed_21 = extern enum(c_int) {
+const enum_unnamed_21 = enum(c_int) {
     ImGuiConfigFlags_None = 0,
     ImGuiConfigFlags_NavEnableKeyboard = 1,
     ImGuiConfigFlags_NavEnableGamepad = 2,
@@ -1921,7 +1921,7 @@ pub const ImGuiBackendFlags_RendererHasVtxOffset = @enumToInt(enum_unnamed_22.Im
 pub const ImGuiBackendFlags_PlatformHasViewports = @enumToInt(enum_unnamed_22.ImGuiBackendFlags_PlatformHasViewports);
 pub const ImGuiBackendFlags_HasMouseHoveredViewport = @enumToInt(enum_unnamed_22.ImGuiBackendFlags_HasMouseHoveredViewport);
 pub const ImGuiBackendFlags_RendererHasViewports = @enumToInt(enum_unnamed_22.ImGuiBackendFlags_RendererHasViewports);
-const enum_unnamed_22 = extern enum(c_int) {
+const enum_unnamed_22 = enum(c_int) {
     ImGuiBackendFlags_None = 0,
     ImGuiBackendFlags_HasGamepad = 1,
     ImGuiBackendFlags_HasMouseCursors = 2,
@@ -1984,7 +1984,7 @@ pub const ImGuiCol_NavWindowingHighlight = @enumToInt(enum_unnamed_23.ImGuiCol_N
 pub const ImGuiCol_NavWindowingDimBg = @enumToInt(enum_unnamed_23.ImGuiCol_NavWindowingDimBg);
 pub const ImGuiCol_ModalWindowDimBg = @enumToInt(enum_unnamed_23.ImGuiCol_ModalWindowDimBg);
 pub const ImGuiCol_COUNT = @enumToInt(enum_unnamed_23.ImGuiCol_COUNT);
-const enum_unnamed_23 = extern enum(c_int) {
+const enum_unnamed_23 = enum(c_int) {
     ImGuiCol_Text,
     ImGuiCol_TextDisabled,
     ImGuiCol_WindowBg,
@@ -2063,7 +2063,7 @@ pub const ImGuiStyleVar_TabRounding = @enumToInt(enum_unnamed_24.ImGuiStyleVar_T
 pub const ImGuiStyleVar_ButtonTextAlign = @enumToInt(enum_unnamed_24.ImGuiStyleVar_ButtonTextAlign);
 pub const ImGuiStyleVar_SelectableTextAlign = @enumToInt(enum_unnamed_24.ImGuiStyleVar_SelectableTextAlign);
 pub const ImGuiStyleVar_COUNT = @enumToInt(enum_unnamed_24.ImGuiStyleVar_COUNT);
-const enum_unnamed_24 = extern enum(c_int) {
+const enum_unnamed_24 = enum(c_int) {
     ImGuiStyleVar_Alpha,
     ImGuiStyleVar_WindowPadding,
     ImGuiStyleVar_WindowRounding,
@@ -2097,7 +2097,7 @@ pub const ImGuiButtonFlags_MouseButtonRight = @enumToInt(enum_unnamed_25.ImGuiBu
 pub const ImGuiButtonFlags_MouseButtonMiddle = @enumToInt(enum_unnamed_25.ImGuiButtonFlags_MouseButtonMiddle);
 pub const ImGuiButtonFlags_MouseButtonMask_ = @enumToInt(enum_unnamed_25.ImGuiButtonFlags_MouseButtonMask_);
 pub const ImGuiButtonFlags_MouseButtonDefault_ = @enumToInt(enum_unnamed_25.ImGuiButtonFlags_MouseButtonDefault_);
-const enum_unnamed_25 = extern enum(c_int) {
+const enum_unnamed_25 = enum(c_int) {
     ImGuiButtonFlags_None = 0,
     ImGuiButtonFlags_MouseButtonLeft = 1,
     ImGuiButtonFlags_MouseButtonRight = 2,
@@ -2136,7 +2136,7 @@ pub const ImGuiColorEditFlags__DisplayMask = @enumToInt(enum_unnamed_26.ImGuiCol
 pub const ImGuiColorEditFlags__DataTypeMask = @enumToInt(enum_unnamed_26.ImGuiColorEditFlags__DataTypeMask);
 pub const ImGuiColorEditFlags__PickerMask = @enumToInt(enum_unnamed_26.ImGuiColorEditFlags__PickerMask);
 pub const ImGuiColorEditFlags__InputMask = @enumToInt(enum_unnamed_26.ImGuiColorEditFlags__InputMask);
-const enum_unnamed_26 = extern enum(c_int) {
+const enum_unnamed_26 = enum(c_int) {
     ImGuiColorEditFlags_None = 0,
     ImGuiColorEditFlags_NoAlpha = 2,
     ImGuiColorEditFlags_NoPicker = 4,
@@ -2175,7 +2175,7 @@ pub const ImGuiSliderFlags_Logarithmic = @enumToInt(enum_unnamed_27.ImGuiSliderF
 pub const ImGuiSliderFlags_NoRoundToFormat = @enumToInt(enum_unnamed_27.ImGuiSliderFlags_NoRoundToFormat);
 pub const ImGuiSliderFlags_NoInput = @enumToInt(enum_unnamed_27.ImGuiSliderFlags_NoInput);
 pub const ImGuiSliderFlags_InvalidMask_ = @enumToInt(enum_unnamed_27.ImGuiSliderFlags_InvalidMask_);
-const enum_unnamed_27 = extern enum(c_int) {
+const enum_unnamed_27 = enum(c_int) {
     ImGuiSliderFlags_None = 0,
     ImGuiSliderFlags_AlwaysClamp = 16,
     ImGuiSliderFlags_Logarithmic = 32,
@@ -2189,7 +2189,7 @@ pub const ImGuiMouseButton_Left = @enumToInt(enum_unnamed_28.ImGuiMouseButton_Le
 pub const ImGuiMouseButton_Right = @enumToInt(enum_unnamed_28.ImGuiMouseButton_Right);
 pub const ImGuiMouseButton_Middle = @enumToInt(enum_unnamed_28.ImGuiMouseButton_Middle);
 pub const ImGuiMouseButton_COUNT = @enumToInt(enum_unnamed_28.ImGuiMouseButton_COUNT);
-const enum_unnamed_28 = extern enum(c_int) {
+const enum_unnamed_28 = enum(c_int) {
     ImGuiMouseButton_Left = 0,
     ImGuiMouseButton_Right = 1,
     ImGuiMouseButton_Middle = 2,
@@ -2208,7 +2208,7 @@ pub const ImGuiMouseCursor_ResizeNWSE = @enumToInt(enum_unnamed_29.ImGuiMouseCur
 pub const ImGuiMouseCursor_Hand = @enumToInt(enum_unnamed_29.ImGuiMouseCursor_Hand);
 pub const ImGuiMouseCursor_NotAllowed = @enumToInt(enum_unnamed_29.ImGuiMouseCursor_NotAllowed);
 pub const ImGuiMouseCursor_COUNT = @enumToInt(enum_unnamed_29.ImGuiMouseCursor_COUNT);
-const enum_unnamed_29 = extern enum(c_int) {
+const enum_unnamed_29 = enum(c_int) {
     ImGuiMouseCursor_None = -1,
     ImGuiMouseCursor_Arrow = 0,
     ImGuiMouseCursor_TextInput = 1,
@@ -2228,7 +2228,7 @@ pub const ImGuiCond_Always = @enumToInt(enum_unnamed_30.ImGuiCond_Always);
 pub const ImGuiCond_Once = @enumToInt(enum_unnamed_30.ImGuiCond_Once);
 pub const ImGuiCond_FirstUseEver = @enumToInt(enum_unnamed_30.ImGuiCond_FirstUseEver);
 pub const ImGuiCond_Appearing = @enumToInt(enum_unnamed_30.ImGuiCond_Appearing);
-const enum_unnamed_30 = extern enum(c_int) {
+const enum_unnamed_30 = enum(c_int) {
     ImGuiCond_None = 0,
     ImGuiCond_Always = 1,
     ImGuiCond_Once = 2,
@@ -2259,7 +2259,7 @@ pub const ImDrawCornerFlags_Bot = @enumToInt(enum_unnamed_31.ImDrawCornerFlags_B
 pub const ImDrawCornerFlags_Left = @enumToInt(enum_unnamed_31.ImDrawCornerFlags_Left);
 pub const ImDrawCornerFlags_Right = @enumToInt(enum_unnamed_31.ImDrawCornerFlags_Right);
 pub const ImDrawCornerFlags_All = @enumToInt(enum_unnamed_31.ImDrawCornerFlags_All);
-const enum_unnamed_31 = extern enum(c_int) {
+const enum_unnamed_31 = enum(c_int) {
     ImDrawCornerFlags_None = 0,
     ImDrawCornerFlags_TopLeft = 1,
     ImDrawCornerFlags_TopRight = 2,
@@ -2278,7 +2278,7 @@ pub const ImDrawListFlags_AntiAliasedLines = @enumToInt(enum_unnamed_32.ImDrawLi
 pub const ImDrawListFlags_AntiAliasedLinesUseTex = @enumToInt(enum_unnamed_32.ImDrawListFlags_AntiAliasedLinesUseTex);
 pub const ImDrawListFlags_AntiAliasedFill = @enumToInt(enum_unnamed_32.ImDrawListFlags_AntiAliasedFill);
 pub const ImDrawListFlags_AllowVtxOffset = @enumToInt(enum_unnamed_32.ImDrawListFlags_AllowVtxOffset);
-const enum_unnamed_32 = extern enum(c_int) {
+const enum_unnamed_32 = enum(c_int) {
     ImDrawListFlags_None = 0,
     ImDrawListFlags_AntiAliasedLines = 1,
     ImDrawListFlags_AntiAliasedLinesUseTex = 2,
@@ -2291,7 +2291,7 @@ pub const ImFontAtlasFlags_None = @enumToInt(enum_unnamed_33.ImFontAtlasFlags_No
 pub const ImFontAtlasFlags_NoPowerOfTwoHeight = @enumToInt(enum_unnamed_33.ImFontAtlasFlags_NoPowerOfTwoHeight);
 pub const ImFontAtlasFlags_NoMouseCursors = @enumToInt(enum_unnamed_33.ImFontAtlasFlags_NoMouseCursors);
 pub const ImFontAtlasFlags_NoBakedLines = @enumToInt(enum_unnamed_33.ImFontAtlasFlags_NoBakedLines);
-const enum_unnamed_33 = extern enum(c_int) {
+const enum_unnamed_33 = enum(c_int) {
     ImFontAtlasFlags_None = 0,
     ImFontAtlasFlags_NoPowerOfTwoHeight = 1,
     ImFontAtlasFlags_NoMouseCursors = 2,
@@ -2310,7 +2310,7 @@ pub const ImGuiViewportFlags_TopMost = @enumToInt(enum_unnamed_34.ImGuiViewportF
 pub const ImGuiViewportFlags_Minimized = @enumToInt(enum_unnamed_34.ImGuiViewportFlags_Minimized);
 pub const ImGuiViewportFlags_NoAutoMerge = @enumToInt(enum_unnamed_34.ImGuiViewportFlags_NoAutoMerge);
 pub const ImGuiViewportFlags_CanHostOtherWindows = @enumToInt(enum_unnamed_34.ImGuiViewportFlags_CanHostOtherWindows);
-const enum_unnamed_34 = extern enum(c_int) {
+const enum_unnamed_34 = enum(c_int) {
     ImGuiViewportFlags_None = 0,
     ImGuiViewportFlags_NoDecoration = 1,
     ImGuiViewportFlags_NoTaskBarIcon = 2,
@@ -2335,7 +2335,7 @@ pub const ImGuiItemFlags_SelectableDontClosePopup = @enumToInt(enum_unnamed_35.I
 pub const ImGuiItemFlags_MixedValue = @enumToInt(enum_unnamed_35.ImGuiItemFlags_MixedValue);
 pub const ImGuiItemFlags_ReadOnly = @enumToInt(enum_unnamed_35.ImGuiItemFlags_ReadOnly);
 pub const ImGuiItemFlags_Default_ = @enumToInt(enum_unnamed_35.ImGuiItemFlags_Default_);
-const enum_unnamed_35 = extern enum(c_int) {
+const enum_unnamed_35 = enum(c_int) {
     ImGuiItemFlags_None = 0,
     ImGuiItemFlags_NoTabStop = 1,
     ImGuiItemFlags_ButtonRepeat = 2,
@@ -2357,7 +2357,7 @@ pub const ImGuiItemStatusFlags_ToggledSelection = @enumToInt(enum_unnamed_36.ImG
 pub const ImGuiItemStatusFlags_ToggledOpen = @enumToInt(enum_unnamed_36.ImGuiItemStatusFlags_ToggledOpen);
 pub const ImGuiItemStatusFlags_HasDeactivated = @enumToInt(enum_unnamed_36.ImGuiItemStatusFlags_HasDeactivated);
 pub const ImGuiItemStatusFlags_Deactivated = @enumToInt(enum_unnamed_36.ImGuiItemStatusFlags_Deactivated);
-const enum_unnamed_36 = extern enum(c_int) {
+const enum_unnamed_36 = enum(c_int) {
     ImGuiItemStatusFlags_None = 0,
     ImGuiItemStatusFlags_HoveredRect = 1,
     ImGuiItemStatusFlags_HasDisplayRect = 2,
@@ -2387,7 +2387,7 @@ pub const ImGuiButtonFlags_NoNavFocus = @enumToInt(enum_unnamed_37.ImGuiButtonFl
 pub const ImGuiButtonFlags_NoHoveredOnFocus = @enumToInt(enum_unnamed_37.ImGuiButtonFlags_NoHoveredOnFocus);
 pub const ImGuiButtonFlags_PressedOnMask_ = @enumToInt(enum_unnamed_37.ImGuiButtonFlags_PressedOnMask_);
 pub const ImGuiButtonFlags_PressedOnDefault_ = @enumToInt(enum_unnamed_37.ImGuiButtonFlags_PressedOnDefault_);
-const enum_unnamed_37 = extern enum(c_int) {
+const enum_unnamed_37 = enum(c_int) {
     ImGuiButtonFlags_PressedOnClick = 16,
     ImGuiButtonFlags_PressedOnClickRelease = 32,
     ImGuiButtonFlags_PressedOnClickReleaseAnywhere = 64,
@@ -2411,7 +2411,7 @@ const enum_unnamed_37 = extern enum(c_int) {
 pub const ImGuiButtonFlagsPrivate_ = enum_unnamed_37;
 pub const ImGuiSliderFlags_Vertical = @enumToInt(enum_unnamed_38.ImGuiSliderFlags_Vertical);
 pub const ImGuiSliderFlags_ReadOnly = @enumToInt(enum_unnamed_38.ImGuiSliderFlags_ReadOnly);
-const enum_unnamed_38 = extern enum(c_int) {
+const enum_unnamed_38 = enum(c_int) {
     ImGuiSliderFlags_Vertical = 1048576,
     ImGuiSliderFlags_ReadOnly = 2097152,
     _,
@@ -2424,7 +2424,7 @@ pub const ImGuiSelectableFlags_SpanAvailWidth = @enumToInt(enum_unnamed_39.ImGui
 pub const ImGuiSelectableFlags_DrawHoveredWhenHeld = @enumToInt(enum_unnamed_39.ImGuiSelectableFlags_DrawHoveredWhenHeld);
 pub const ImGuiSelectableFlags_SetNavIdOnHover = @enumToInt(enum_unnamed_39.ImGuiSelectableFlags_SetNavIdOnHover);
 pub const ImGuiSelectableFlags_NoPadWithHalfSpacing = @enumToInt(enum_unnamed_39.ImGuiSelectableFlags_NoPadWithHalfSpacing);
-const enum_unnamed_39 = extern enum(c_int) {
+const enum_unnamed_39 = enum(c_int) {
     ImGuiSelectableFlags_NoHoldingActiveID = 1048576,
     ImGuiSelectableFlags_SelectOnClick = 2097152,
     ImGuiSelectableFlags_SelectOnRelease = 4194304,
@@ -2436,7 +2436,7 @@ const enum_unnamed_39 = extern enum(c_int) {
 };
 pub const ImGuiSelectableFlagsPrivate_ = enum_unnamed_39;
 pub const ImGuiTreeNodeFlags_ClipLabelForTrailingButton = @enumToInt(enum_unnamed_40.ImGuiTreeNodeFlags_ClipLabelForTrailingButton);
-const enum_unnamed_40 = extern enum(c_int) {
+const enum_unnamed_40 = enum(c_int) {
     ImGuiTreeNodeFlags_ClipLabelForTrailingButton = 1048576,
     _,
 };
@@ -2445,7 +2445,7 @@ pub const ImGuiSeparatorFlags_None = @enumToInt(enum_unnamed_41.ImGuiSeparatorFl
 pub const ImGuiSeparatorFlags_Horizontal = @enumToInt(enum_unnamed_41.ImGuiSeparatorFlags_Horizontal);
 pub const ImGuiSeparatorFlags_Vertical = @enumToInt(enum_unnamed_41.ImGuiSeparatorFlags_Vertical);
 pub const ImGuiSeparatorFlags_SpanAllColumns = @enumToInt(enum_unnamed_41.ImGuiSeparatorFlags_SpanAllColumns);
-const enum_unnamed_41 = extern enum(c_int) {
+const enum_unnamed_41 = enum(c_int) {
     ImGuiSeparatorFlags_None = 0,
     ImGuiSeparatorFlags_Horizontal = 1,
     ImGuiSeparatorFlags_Vertical = 2,
@@ -2455,7 +2455,7 @@ const enum_unnamed_41 = extern enum(c_int) {
 pub const ImGuiSeparatorFlags_ = enum_unnamed_41;
 pub const ImGuiTextFlags_None = @enumToInt(enum_unnamed_42.ImGuiTextFlags_None);
 pub const ImGuiTextFlags_NoWidthForLargeClippedText = @enumToInt(enum_unnamed_42.ImGuiTextFlags_NoWidthForLargeClippedText);
-const enum_unnamed_42 = extern enum(c_int) {
+const enum_unnamed_42 = enum(c_int) {
     ImGuiTextFlags_None = 0,
     ImGuiTextFlags_NoWidthForLargeClippedText = 1,
     _,
@@ -2463,7 +2463,7 @@ const enum_unnamed_42 = extern enum(c_int) {
 pub const ImGuiTextFlags_ = enum_unnamed_42;
 pub const ImGuiTooltipFlags_None = @enumToInt(enum_unnamed_43.ImGuiTooltipFlags_None);
 pub const ImGuiTooltipFlags_OverridePreviousTooltip = @enumToInt(enum_unnamed_43.ImGuiTooltipFlags_OverridePreviousTooltip);
-const enum_unnamed_43 = extern enum(c_int) {
+const enum_unnamed_43 = enum(c_int) {
     ImGuiTooltipFlags_None = 0,
     ImGuiTooltipFlags_OverridePreviousTooltip = 1,
     _,
@@ -2471,7 +2471,7 @@ const enum_unnamed_43 = extern enum(c_int) {
 pub const ImGuiTooltipFlags_ = enum_unnamed_43;
 pub const ImGuiLayoutType_Horizontal = @enumToInt(enum_unnamed_44.ImGuiLayoutType_Horizontal);
 pub const ImGuiLayoutType_Vertical = @enumToInt(enum_unnamed_44.ImGuiLayoutType_Vertical);
-const enum_unnamed_44 = extern enum(c_int) {
+const enum_unnamed_44 = enum(c_int) {
     ImGuiLayoutType_Horizontal = 0,
     ImGuiLayoutType_Vertical = 1,
     _,
@@ -2482,7 +2482,7 @@ pub const ImGuiLogType_TTY = @enumToInt(enum_unnamed_45.ImGuiLogType_TTY);
 pub const ImGuiLogType_File = @enumToInt(enum_unnamed_45.ImGuiLogType_File);
 pub const ImGuiLogType_Buffer = @enumToInt(enum_unnamed_45.ImGuiLogType_Buffer);
 pub const ImGuiLogType_Clipboard = @enumToInt(enum_unnamed_45.ImGuiLogType_Clipboard);
-const enum_unnamed_45 = extern enum(c_int) {
+const enum_unnamed_45 = enum(c_int) {
     ImGuiLogType_None = 0,
     ImGuiLogType_TTY = 1,
     ImGuiLogType_File = 2,
@@ -2494,7 +2494,7 @@ pub const ImGuiLogType = enum_unnamed_45;
 pub const ImGuiAxis_None = @enumToInt(enum_unnamed_46.ImGuiAxis_None);
 pub const ImGuiAxis_X = @enumToInt(enum_unnamed_46.ImGuiAxis_X);
 pub const ImGuiAxis_Y = @enumToInt(enum_unnamed_46.ImGuiAxis_Y);
-const enum_unnamed_46 = extern enum(c_int) {
+const enum_unnamed_46 = enum(c_int) {
     ImGuiAxis_None = -1,
     ImGuiAxis_X = 0,
     ImGuiAxis_Y = 1,
@@ -2503,7 +2503,7 @@ const enum_unnamed_46 = extern enum(c_int) {
 pub const ImGuiAxis = enum_unnamed_46;
 pub const ImGuiPlotType_Lines = @enumToInt(enum_unnamed_47.ImGuiPlotType_Lines);
 pub const ImGuiPlotType_Histogram = @enumToInt(enum_unnamed_47.ImGuiPlotType_Histogram);
-const enum_unnamed_47 = extern enum(c_int) {
+const enum_unnamed_47 = enum(c_int) {
     ImGuiPlotType_Lines,
     ImGuiPlotType_Histogram,
     _,
@@ -2515,7 +2515,7 @@ pub const ImGuiInputSource_Nav = @enumToInt(enum_unnamed_48.ImGuiInputSource_Nav
 pub const ImGuiInputSource_NavKeyboard = @enumToInt(enum_unnamed_48.ImGuiInputSource_NavKeyboard);
 pub const ImGuiInputSource_NavGamepad = @enumToInt(enum_unnamed_48.ImGuiInputSource_NavGamepad);
 pub const ImGuiInputSource_COUNT = @enumToInt(enum_unnamed_48.ImGuiInputSource_COUNT);
-const enum_unnamed_48 = extern enum(c_int) {
+const enum_unnamed_48 = enum(c_int) {
     ImGuiInputSource_None = 0,
     ImGuiInputSource_Mouse = 1,
     ImGuiInputSource_Nav = 2,
@@ -2531,7 +2531,7 @@ pub const ImGuiInputReadMode_Released = @enumToInt(enum_unnamed_49.ImGuiInputRea
 pub const ImGuiInputReadMode_Repeat = @enumToInt(enum_unnamed_49.ImGuiInputReadMode_Repeat);
 pub const ImGuiInputReadMode_RepeatSlow = @enumToInt(enum_unnamed_49.ImGuiInputReadMode_RepeatSlow);
 pub const ImGuiInputReadMode_RepeatFast = @enumToInt(enum_unnamed_49.ImGuiInputReadMode_RepeatFast);
-const enum_unnamed_49 = extern enum(c_int) {
+const enum_unnamed_49 = enum(c_int) {
     ImGuiInputReadMode_Down,
     ImGuiInputReadMode_Pressed,
     ImGuiInputReadMode_Released,
@@ -2546,7 +2546,7 @@ pub const ImGuiNavHighlightFlags_TypeDefault = @enumToInt(enum_unnamed_50.ImGuiN
 pub const ImGuiNavHighlightFlags_TypeThin = @enumToInt(enum_unnamed_50.ImGuiNavHighlightFlags_TypeThin);
 pub const ImGuiNavHighlightFlags_AlwaysDraw = @enumToInt(enum_unnamed_50.ImGuiNavHighlightFlags_AlwaysDraw);
 pub const ImGuiNavHighlightFlags_NoRounding = @enumToInt(enum_unnamed_50.ImGuiNavHighlightFlags_NoRounding);
-const enum_unnamed_50 = extern enum(c_int) {
+const enum_unnamed_50 = enum(c_int) {
     ImGuiNavHighlightFlags_None = 0,
     ImGuiNavHighlightFlags_TypeDefault = 1,
     ImGuiNavHighlightFlags_TypeThin = 2,
@@ -2559,7 +2559,7 @@ pub const ImGuiNavDirSourceFlags_None = @enumToInt(enum_unnamed_51.ImGuiNavDirSo
 pub const ImGuiNavDirSourceFlags_Keyboard = @enumToInt(enum_unnamed_51.ImGuiNavDirSourceFlags_Keyboard);
 pub const ImGuiNavDirSourceFlags_PadDPad = @enumToInt(enum_unnamed_51.ImGuiNavDirSourceFlags_PadDPad);
 pub const ImGuiNavDirSourceFlags_PadLStick = @enumToInt(enum_unnamed_51.ImGuiNavDirSourceFlags_PadLStick);
-const enum_unnamed_51 = extern enum(c_int) {
+const enum_unnamed_51 = enum(c_int) {
     ImGuiNavDirSourceFlags_None = 0,
     ImGuiNavDirSourceFlags_Keyboard = 1,
     ImGuiNavDirSourceFlags_PadDPad = 2,
@@ -2575,7 +2575,7 @@ pub const ImGuiNavMoveFlags_WrapY = @enumToInt(enum_unnamed_52.ImGuiNavMoveFlags
 pub const ImGuiNavMoveFlags_AllowCurrentNavId = @enumToInt(enum_unnamed_52.ImGuiNavMoveFlags_AllowCurrentNavId);
 pub const ImGuiNavMoveFlags_AlsoScoreVisibleSet = @enumToInt(enum_unnamed_52.ImGuiNavMoveFlags_AlsoScoreVisibleSet);
 pub const ImGuiNavMoveFlags_ScrollToEdge = @enumToInt(enum_unnamed_52.ImGuiNavMoveFlags_ScrollToEdge);
-const enum_unnamed_52 = extern enum(c_int) {
+const enum_unnamed_52 = enum(c_int) {
     ImGuiNavMoveFlags_None = 0,
     ImGuiNavMoveFlags_LoopX = 1,
     ImGuiNavMoveFlags_LoopY = 2,
@@ -2590,7 +2590,7 @@ pub const ImGuiNavMoveFlags_ = enum_unnamed_52;
 pub const ImGuiNavForward_None = @enumToInt(enum_unnamed_53.ImGuiNavForward_None);
 pub const ImGuiNavForward_ForwardQueued = @enumToInt(enum_unnamed_53.ImGuiNavForward_ForwardQueued);
 pub const ImGuiNavForward_ForwardActive = @enumToInt(enum_unnamed_53.ImGuiNavForward_ForwardActive);
-const enum_unnamed_53 = extern enum(c_int) {
+const enum_unnamed_53 = enum(c_int) {
     ImGuiNavForward_None,
     ImGuiNavForward_ForwardQueued,
     ImGuiNavForward_ForwardActive,
@@ -2600,7 +2600,7 @@ pub const ImGuiNavForward = enum_unnamed_53;
 pub const ImGuiNavLayer_Main = @enumToInt(enum_unnamed_54.ImGuiNavLayer_Main);
 pub const ImGuiNavLayer_Menu = @enumToInt(enum_unnamed_54.ImGuiNavLayer_Menu);
 pub const ImGuiNavLayer_COUNT = @enumToInt(enum_unnamed_54.ImGuiNavLayer_COUNT);
-const enum_unnamed_54 = extern enum(c_int) {
+const enum_unnamed_54 = enum(c_int) {
     ImGuiNavLayer_Main = 0,
     ImGuiNavLayer_Menu = 1,
     ImGuiNavLayer_COUNT = 2,
@@ -2610,7 +2610,7 @@ pub const ImGuiNavLayer = enum_unnamed_54;
 pub const ImGuiPopupPositionPolicy_Default = @enumToInt(enum_unnamed_55.ImGuiPopupPositionPolicy_Default);
 pub const ImGuiPopupPositionPolicy_ComboBox = @enumToInt(enum_unnamed_55.ImGuiPopupPositionPolicy_ComboBox);
 pub const ImGuiPopupPositionPolicy_Tooltip = @enumToInt(enum_unnamed_55.ImGuiPopupPositionPolicy_Tooltip);
-const enum_unnamed_55 = extern enum(c_int) {
+const enum_unnamed_55 = enum(c_int) {
     ImGuiPopupPositionPolicy_Default,
     ImGuiPopupPositionPolicy_ComboBox,
     ImGuiPopupPositionPolicy_Tooltip,
@@ -2620,7 +2620,7 @@ pub const ImGuiPopupPositionPolicy = enum_unnamed_55;
 pub const ImGuiDataType_String = @enumToInt(enum_unnamed_56.ImGuiDataType_String);
 pub const ImGuiDataType_Pointer = @enumToInt(enum_unnamed_56.ImGuiDataType_Pointer);
 pub const ImGuiDataType_ID = @enumToInt(enum_unnamed_56.ImGuiDataType_ID);
-const enum_unnamed_56 = extern enum(c_int) {
+const enum_unnamed_56 = enum(c_int) {
     ImGuiDataType_String = 11,
     ImGuiDataType_Pointer = 12,
     ImGuiDataType_ID = 13,
@@ -2639,7 +2639,7 @@ pub const ImGuiNextWindowDataFlags_HasScroll = @enumToInt(enum_unnamed_57.ImGuiN
 pub const ImGuiNextWindowDataFlags_HasViewport = @enumToInt(enum_unnamed_57.ImGuiNextWindowDataFlags_HasViewport);
 pub const ImGuiNextWindowDataFlags_HasDock = @enumToInt(enum_unnamed_57.ImGuiNextWindowDataFlags_HasDock);
 pub const ImGuiNextWindowDataFlags_HasWindowClass = @enumToInt(enum_unnamed_57.ImGuiNextWindowDataFlags_HasWindowClass);
-const enum_unnamed_57 = extern enum(c_int) {
+const enum_unnamed_57 = enum(c_int) {
     ImGuiNextWindowDataFlags_None = 0,
     ImGuiNextWindowDataFlags_HasPos = 1,
     ImGuiNextWindowDataFlags_HasSize = 2,
@@ -2658,7 +2658,7 @@ pub const ImGuiNextWindowDataFlags_ = enum_unnamed_57;
 pub const ImGuiNextItemDataFlags_None = @enumToInt(enum_unnamed_58.ImGuiNextItemDataFlags_None);
 pub const ImGuiNextItemDataFlags_HasWidth = @enumToInt(enum_unnamed_58.ImGuiNextItemDataFlags_HasWidth);
 pub const ImGuiNextItemDataFlags_HasOpen = @enumToInt(enum_unnamed_58.ImGuiNextItemDataFlags_HasOpen);
-const enum_unnamed_58 = extern enum(c_int) {
+const enum_unnamed_58 = enum(c_int) {
     ImGuiNextItemDataFlags_None = 0,
     ImGuiNextItemDataFlags_HasWidth = 1,
     ImGuiNextItemDataFlags_HasOpen = 2,
@@ -2671,7 +2671,7 @@ pub const ImGuiColumnsFlags_NoResize = @enumToInt(enum_unnamed_59.ImGuiColumnsFl
 pub const ImGuiColumnsFlags_NoPreserveWidths = @enumToInt(enum_unnamed_59.ImGuiColumnsFlags_NoPreserveWidths);
 pub const ImGuiColumnsFlags_NoForceWithinWindow = @enumToInt(enum_unnamed_59.ImGuiColumnsFlags_NoForceWithinWindow);
 pub const ImGuiColumnsFlags_GrowParentContentsSize = @enumToInt(enum_unnamed_59.ImGuiColumnsFlags_GrowParentContentsSize);
-const enum_unnamed_59 = extern enum(c_int) {
+const enum_unnamed_59 = enum(c_int) {
     ImGuiColumnsFlags_None = 0,
     ImGuiColumnsFlags_NoBorder = 1,
     ImGuiColumnsFlags_NoResize = 2,
@@ -2699,7 +2699,7 @@ pub const ImGuiDockNodeFlags_NoResizeFlagsMask_ = @enumToInt(enum_unnamed_60.ImG
 pub const ImGuiDockNodeFlags_LocalFlagsMask_ = @enumToInt(enum_unnamed_60.ImGuiDockNodeFlags_LocalFlagsMask_);
 pub const ImGuiDockNodeFlags_LocalFlagsTransferMask_ = @enumToInt(enum_unnamed_60.ImGuiDockNodeFlags_LocalFlagsTransferMask_);
 pub const ImGuiDockNodeFlags_SavedFlagsMask_ = @enumToInt(enum_unnamed_60.ImGuiDockNodeFlags_SavedFlagsMask_);
-const enum_unnamed_60 = extern enum(c_int) {
+const enum_unnamed_60 = enum(c_int) {
     ImGuiDockNodeFlags_DockSpace = 1024,
     ImGuiDockNodeFlags_CentralNode = 2048,
     ImGuiDockNodeFlags_NoTabBar = 4096,
@@ -2724,7 +2724,7 @@ pub const ImGuiDockNodeFlagsPrivate_ = enum_unnamed_60;
 pub const ImGuiDataAuthority_Auto = @enumToInt(enum_unnamed_61.ImGuiDataAuthority_Auto);
 pub const ImGuiDataAuthority_DockNode = @enumToInt(enum_unnamed_61.ImGuiDataAuthority_DockNode);
 pub const ImGuiDataAuthority_Window = @enumToInt(enum_unnamed_61.ImGuiDataAuthority_Window);
-const enum_unnamed_61 = extern enum(c_int) {
+const enum_unnamed_61 = enum(c_int) {
     ImGuiDataAuthority_Auto,
     ImGuiDataAuthority_DockNode,
     ImGuiDataAuthority_Window,
@@ -2735,7 +2735,7 @@ pub const ImGuiDockNodeState_Unknown = @enumToInt(enum_unnamed_62.ImGuiDockNodeS
 pub const ImGuiDockNodeState_HostWindowHiddenBecauseSingleWindow = @enumToInt(enum_unnamed_62.ImGuiDockNodeState_HostWindowHiddenBecauseSingleWindow);
 pub const ImGuiDockNodeState_HostWindowHiddenBecauseWindowsAreResizing = @enumToInt(enum_unnamed_62.ImGuiDockNodeState_HostWindowHiddenBecauseWindowsAreResizing);
 pub const ImGuiDockNodeState_HostWindowVisible = @enumToInt(enum_unnamed_62.ImGuiDockNodeState_HostWindowVisible);
-const enum_unnamed_62 = extern enum(c_int) {
+const enum_unnamed_62 = enum(c_int) {
     ImGuiDockNodeState_Unknown,
     ImGuiDockNodeState_HostWindowHiddenBecauseSingleWindow,
     ImGuiDockNodeState_HostWindowHiddenBecauseWindowsAreResizing,
@@ -2746,7 +2746,7 @@ pub const ImGuiDockNodeState = enum_unnamed_62;
 pub const ImGuiTabBarFlags_DockNode = @enumToInt(enum_unnamed_63.ImGuiTabBarFlags_DockNode);
 pub const ImGuiTabBarFlags_IsFocused = @enumToInt(enum_unnamed_63.ImGuiTabBarFlags_IsFocused);
 pub const ImGuiTabBarFlags_SaveSettings = @enumToInt(enum_unnamed_63.ImGuiTabBarFlags_SaveSettings);
-const enum_unnamed_63 = extern enum(c_int) {
+const enum_unnamed_63 = enum(c_int) {
     ImGuiTabBarFlags_DockNode = 1048576,
     ImGuiTabBarFlags_IsFocused = 2097152,
     ImGuiTabBarFlags_SaveSettings = 4194304,
@@ -2757,7 +2757,7 @@ pub const ImGuiTabItemFlags_NoCloseButton = @enumToInt(enum_unnamed_64.ImGuiTabI
 pub const ImGuiTabItemFlags_Button = @enumToInt(enum_unnamed_64.ImGuiTabItemFlags_Button);
 pub const ImGuiTabItemFlags_Unsorted = @enumToInt(enum_unnamed_64.ImGuiTabItemFlags_Unsorted);
 pub const ImGuiTabItemFlags_Preview = @enumToInt(enum_unnamed_64.ImGuiTabItemFlags_Preview);
-const enum_unnamed_64 = extern enum(c_int) {
+const enum_unnamed_64 = enum(c_int) {
     ImGuiTabItemFlags_NoCloseButton = 1048576,
     ImGuiTabItemFlags_Button = 2097152,
     ImGuiTabItemFlags_Unsorted = 4194304,
@@ -2810,7 +2810,7 @@ pub extern fn igGetWindowWidth() f32;
 pub extern fn igGetWindowHeight() f32;
 pub extern fn igSetNextWindowPos(pos: ImVec2, cond: ImGuiCond, pivot: ImVec2) void;
 pub extern fn igSetNextWindowSize(size: ImVec2, cond: ImGuiCond) void;
-pub extern fn igSetNextWindowSizeConstraints(size_min: ImVec2, size_max: ImVec2, custom_callback: ImGuiSizeCallback, custom_callback_data: ?*c_void) void;
+pub extern fn igSetNextWindowSizeConstraints(size_min: ImVec2, size_max: ImVec2, custom_callback: ImGuiSizeCallback, custom_callback_data: ?*anyopaque) void;
 pub extern fn igSetNextWindowContentSize(size: ImVec2) void;
 pub extern fn igSetNextWindowCollapsed(collapsed: bool, cond: ImGuiCond) void;
 pub extern fn igSetNextWindowFocus() void;
@@ -2890,25 +2890,25 @@ pub extern fn igGetFrameHeight() f32;
 pub extern fn igGetFrameHeightWithSpacing() f32;
 pub extern fn igPushIDStr(str_id: [*c]const u8) void;
 pub extern fn igPushIDStrStr(str_id_begin: [*c]const u8, str_id_end: [*c]const u8) void;
-pub extern fn igPushIDPtr(ptr_id: ?*const c_void) void;
+pub extern fn igPushIDPtr(ptr_id: ?*const anyopaque) void;
 pub extern fn igPushIDInt(int_id: c_int) void;
 pub extern fn igPopID() void;
 pub extern fn igGetIDStr(str_id: [*c]const u8) ImGuiID;
 pub extern fn igGetIDStrStr(str_id_begin: [*c]const u8, str_id_end: [*c]const u8) ImGuiID;
-pub extern fn igGetIDPtr(ptr_id: ?*const c_void) ImGuiID;
+pub extern fn igGetIDPtr(ptr_id: ?*const anyopaque) ImGuiID;
 pub extern fn igTextUnformatted(text: [*c]const u8, text_end: [*c]const u8) void;
 pub extern fn igText(fmt: [*c]const u8, ...) void;
-pub extern fn igTextV(fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igTextV(fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igTextColored(col: ImVec4, fmt: [*c]const u8, ...) void;
-pub extern fn igTextColoredV(col: ImVec4, fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igTextColoredV(col: ImVec4, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igTextDisabled(fmt: [*c]const u8, ...) void;
-pub extern fn igTextDisabledV(fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igTextDisabledV(fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igTextWrapped(fmt: [*c]const u8, ...) void;
-pub extern fn igTextWrappedV(fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igTextWrappedV(fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igLabelText(label: [*c]const u8, fmt: [*c]const u8, ...) void;
-pub extern fn igLabelTextV(label: [*c]const u8, fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igLabelTextV(label: [*c]const u8, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igBulletText(fmt: [*c]const u8, ...) void;
-pub extern fn igBulletTextV(fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igBulletTextV(fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igButton(label: [*c]const u8, size: ImVec2) bool;
 pub extern fn igSmallButton(label: [*c]const u8) bool;
 pub extern fn igInvisibleButton(str_id: [*c]const u8, size: ImVec2, flags: ImGuiButtonFlags) bool;
@@ -2925,7 +2925,7 @@ pub extern fn igBeginCombo(label: [*c]const u8, preview_value: [*c]const u8, fla
 pub extern fn igEndCombo() void;
 pub extern fn igComboStr_arr(label: [*c]const u8, current_item: [*c]c_int, items: [*c]const [*c]const u8, items_count: c_int, popup_max_height_in_items: c_int) bool;
 pub extern fn igComboStr(label: [*c]const u8, current_item: [*c]c_int, items_separated_by_zeros: [*c]const u8, popup_max_height_in_items: c_int) bool;
-pub extern fn igComboFnBoolPtr(label: [*c]const u8, current_item: [*c]c_int, items_getter: ?fn (?*c_void, c_int, [*c][*c]const u8) callconv(.C) bool, data: ?*c_void, items_count: c_int, popup_max_height_in_items: c_int) bool;
+pub extern fn igComboFnBoolPtr(label: [*c]const u8, current_item: [*c]c_int, items_getter: ?fn (?*anyopaque, c_int, [*c][*c]const u8) callconv(.C) bool, data: ?*anyopaque, items_count: c_int, popup_max_height_in_items: c_int) bool;
 pub extern fn igDragFloat(label: [*c]const u8, v: [*c]f32, v_speed: f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igDragFloat2(label: [*c]const u8, v: [*c]f32, v_speed: f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igDragFloat3(label: [*c]const u8, v: [*c]f32, v_speed: f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
@@ -2936,8 +2936,8 @@ pub extern fn igDragInt2(label: [*c]const u8, v: [*c]c_int, v_speed: f32, v_min:
 pub extern fn igDragInt3(label: [*c]const u8, v: [*c]c_int, v_speed: f32, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igDragInt4(label: [*c]const u8, v: [*c]c_int, v_speed: f32, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igDragIntRange2(label: [*c]const u8, v_current_min: [*c]c_int, v_current_max: [*c]c_int, v_speed: f32, v_min: c_int, v_max: c_int, format: [*c]const u8, format_max: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igDragScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, v_speed: f32, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igDragScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, components: c_int, v_speed: f32, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igDragScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, v_speed: f32, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igDragScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, components: c_int, v_speed: f32, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igSliderFloat(label: [*c]const u8, v: [*c]f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igSliderFloat2(label: [*c]const u8, v: [*c]f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igSliderFloat3(label: [*c]const u8, v: [*c]f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
@@ -2947,14 +2947,14 @@ pub extern fn igSliderInt(label: [*c]const u8, v: [*c]c_int, v_min: c_int, v_max
 pub extern fn igSliderInt2(label: [*c]const u8, v: [*c]c_int, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igSliderInt3(label: [*c]const u8, v: [*c]c_int, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igSliderInt4(label: [*c]const u8, v: [*c]c_int, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igSliderScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igSliderScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, components: c_int, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igSliderScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igSliderScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, components: c_int, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igVSliderFloat(label: [*c]const u8, size: ImVec2, v: [*c]f32, v_min: f32, v_max: f32, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
 pub extern fn igVSliderInt(label: [*c]const u8, size: ImVec2, v: [*c]c_int, v_min: c_int, v_max: c_int, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igVSliderScalar(label: [*c]const u8, size: ImVec2, data_type: ImGuiDataType, p_data: ?*c_void, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*c_void) bool;
-pub extern fn igInputTextMultiline(label: [*c]const u8, buf: [*c]u8, buf_size: usize, size: ImVec2, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*c_void) bool;
-pub extern fn igInputTextWithHint(label: [*c]const u8, hint: [*c]const u8, buf: [*c]u8, buf_size: usize, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*c_void) bool;
+pub extern fn igVSliderScalar(label: [*c]const u8, size: ImVec2, data_type: ImGuiDataType, p_data: ?*anyopaque, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*anyopaque) bool;
+pub extern fn igInputTextMultiline(label: [*c]const u8, buf: [*c]u8, buf_size: usize, size: ImVec2, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*anyopaque) bool;
+pub extern fn igInputTextWithHint(label: [*c]const u8, hint: [*c]const u8, buf: [*c]u8, buf_size: usize, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*anyopaque) bool;
 pub extern fn igInputFloat(label: [*c]const u8, v: [*c]f32, step: f32, step_fast: f32, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
 pub extern fn igInputFloat2(label: [*c]const u8, v: [*c]f32, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
 pub extern fn igInputFloat3(label: [*c]const u8, v: [*c]f32, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
@@ -2964,8 +2964,8 @@ pub extern fn igInputInt2(label: [*c]const u8, v: [*c]c_int, flags: ImGuiInputTe
 pub extern fn igInputInt3(label: [*c]const u8, v: [*c]c_int, flags: ImGuiInputTextFlags) bool;
 pub extern fn igInputInt4(label: [*c]const u8, v: [*c]c_int, flags: ImGuiInputTextFlags) bool;
 pub extern fn igInputDouble(label: [*c]const u8, v: [*c]f64, step: f64, step_fast: f64, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
-pub extern fn igInputScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, p_step: ?*const c_void, p_step_fast: ?*const c_void, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
-pub extern fn igInputScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, components: c_int, p_step: ?*const c_void, p_step_fast: ?*const c_void, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
+pub extern fn igInputScalar(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, p_step: ?*const anyopaque, p_step_fast: ?*const anyopaque, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
+pub extern fn igInputScalarN(label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, components: c_int, p_step: ?*const anyopaque, p_step_fast: ?*const anyopaque, format: [*c]const u8, flags: ImGuiInputTextFlags) bool;
 pub extern fn igColorEdit3(label: [*c]const u8, col: [*c]f32, flags: ImGuiColorEditFlags) bool;
 pub extern fn igColorEdit4(label: [*c]const u8, col: [*c]f32, flags: ImGuiColorEditFlags) bool;
 pub extern fn igColorPicker3(label: [*c]const u8, col: [*c]f32, flags: ImGuiColorEditFlags) bool;
@@ -2974,16 +2974,16 @@ pub extern fn igColorButton(desc_id: [*c]const u8, col: ImVec4, flags: ImGuiColo
 pub extern fn igSetColorEditOptions(flags: ImGuiColorEditFlags) void;
 pub extern fn igTreeNodeStr(label: [*c]const u8) bool;
 pub extern fn igTreeNodeStrStr(str_id: [*c]const u8, fmt: [*c]const u8, ...) bool;
-pub extern fn igTreeNodePtr(ptr_id: ?*const c_void, fmt: [*c]const u8, ...) bool;
-pub extern fn igTreeNodeVStr(str_id: [*c]const u8, fmt: [*c]const u8, args: [*c]struct___va_list_tag) bool;
-pub extern fn igTreeNodeVPtr(ptr_id: ?*const c_void, fmt: [*c]const u8, args: [*c]struct___va_list_tag) bool;
+pub extern fn igTreeNodePtr(ptr_id: ?*const anyopaque, fmt: [*c]const u8, ...) bool;
+pub extern fn igTreeNodeVStr(str_id: [*c]const u8, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) bool;
+pub extern fn igTreeNodeVPtr(ptr_id: ?*const anyopaque, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) bool;
 pub extern fn igTreeNodeExStr(label: [*c]const u8, flags: ImGuiTreeNodeFlags) bool;
 pub extern fn igTreeNodeExStrStr(str_id: [*c]const u8, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, ...) bool;
-pub extern fn igTreeNodeExPtr(ptr_id: ?*const c_void, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, ...) bool;
-pub extern fn igTreeNodeExVStr(str_id: [*c]const u8, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, args: [*c]struct___va_list_tag) bool;
-pub extern fn igTreeNodeExVPtr(ptr_id: ?*const c_void, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, args: [*c]struct___va_list_tag) bool;
+pub extern fn igTreeNodeExPtr(ptr_id: ?*const anyopaque, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, ...) bool;
+pub extern fn igTreeNodeExVStr(str_id: [*c]const u8, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) bool;
+pub extern fn igTreeNodeExVPtr(ptr_id: ?*const anyopaque, flags: ImGuiTreeNodeFlags, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) bool;
 pub extern fn igTreePushStr(str_id: [*c]const u8) void;
-pub extern fn igTreePushPtr(ptr_id: ?*const c_void) void;
+pub extern fn igTreePushPtr(ptr_id: ?*const anyopaque) void;
 pub extern fn igTreePop() void;
 pub extern fn igGetTreeNodeToLabelSpacing() f32;
 pub extern fn igCollapsingHeaderTreeNodeFlags(label: [*c]const u8, flags: ImGuiTreeNodeFlags) bool;
@@ -2992,14 +2992,14 @@ pub extern fn igSetNextItemOpen(is_open: bool, cond: ImGuiCond) void;
 pub extern fn igSelectableBool(label: [*c]const u8, selected: bool, flags: ImGuiSelectableFlags, size: ImVec2) bool;
 pub extern fn igSelectableBoolPtr(label: [*c]const u8, p_selected: [*c]bool, flags: ImGuiSelectableFlags, size: ImVec2) bool;
 pub extern fn igListBoxStr_arr(label: [*c]const u8, current_item: [*c]c_int, items: [*c]const [*c]const u8, items_count: c_int, height_in_items: c_int) bool;
-pub extern fn igListBoxFnBoolPtr(label: [*c]const u8, current_item: [*c]c_int, items_getter: ?fn (?*c_void, c_int, [*c][*c]const u8) callconv(.C) bool, data: ?*c_void, items_count: c_int, height_in_items: c_int) bool;
+pub extern fn igListBoxFnBoolPtr(label: [*c]const u8, current_item: [*c]c_int, items_getter: ?fn (?*anyopaque, c_int, [*c][*c]const u8) callconv(.C) bool, data: ?*anyopaque, items_count: c_int, height_in_items: c_int) bool;
 pub extern fn igListBoxHeaderVec2(label: [*c]const u8, size: ImVec2) bool;
 pub extern fn igListBoxHeaderInt(label: [*c]const u8, items_count: c_int, height_in_items: c_int) bool;
 pub extern fn igListBoxFooter() void;
 pub extern fn igPlotLinesFloatPtr(label: [*c]const u8, values: [*c]const f32, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2, stride: c_int) void;
-pub extern fn igPlotLinesFnFloatPtr(label: [*c]const u8, values_getter: ?fn (?*c_void, c_int) callconv(.C) f32, data: ?*c_void, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2) void;
+pub extern fn igPlotLinesFnFloatPtr(label: [*c]const u8, values_getter: ?fn (?*anyopaque, c_int) callconv(.C) f32, data: ?*anyopaque, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2) void;
 pub extern fn igPlotHistogramFloatPtr(label: [*c]const u8, values: [*c]const f32, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2, stride: c_int) void;
-pub extern fn igPlotHistogramFnFloatPtr(label: [*c]const u8, values_getter: ?fn (?*c_void, c_int) callconv(.C) f32, data: ?*c_void, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2) void;
+pub extern fn igPlotHistogramFnFloatPtr(label: [*c]const u8, values_getter: ?fn (?*anyopaque, c_int) callconv(.C) f32, data: ?*anyopaque, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, graph_size: ImVec2) void;
 pub extern fn igValueBool(prefix: [*c]const u8, b: bool) void;
 pub extern fn igValueInt(prefix: [*c]const u8, v: c_int) void;
 pub extern fn igValueUint(prefix: [*c]const u8, v: c_uint) void;
@@ -3015,7 +3015,7 @@ pub extern fn igMenuItemBoolPtr(label: [*c]const u8, shortcut: [*c]const u8, p_s
 pub extern fn igBeginTooltip() void;
 pub extern fn igEndTooltip() void;
 pub extern fn igSetTooltip(fmt: [*c]const u8, ...) void;
-pub extern fn igSetTooltipV(fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn igSetTooltipV(fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn igBeginPopup(str_id: [*c]const u8, flags: ImGuiWindowFlags) bool;
 pub extern fn igBeginPopupModal(name: [*c]const u8, p_open: [*c]bool, flags: ImGuiWindowFlags) bool;
 pub extern fn igEndPopup() void;
@@ -3052,10 +3052,10 @@ pub extern fn igLogToClipboard(auto_open_depth: c_int) void;
 pub extern fn igLogFinish() void;
 pub extern fn igLogButtons() void;
 pub extern fn igBeginDragDropSource(flags: ImGuiDragDropFlags) bool;
-pub extern fn igSetDragDropPayload(type: [*c]const u8, data: ?*const c_void, sz: usize, cond: ImGuiCond) bool;
+pub extern fn igSetDragDropPayload(type: [*c]const u8, data: ?*const anyopaque, sz: usize, cond: ImGuiCond) bool;
 pub extern fn igEndDragDropSource() void;
 pub extern fn igBeginDragDropTarget() bool;
-pub extern fn igAcceptDragDropPayload(type: [*c]const u8, flags: ImGuiDragDropFlags) ?*const ImGuiPayload;
+pub extern fn igAcceptDragDropPayload(type: [*c]const u8, flags: ImGuiDragDropFlags) [*c]const ImGuiPayload;
 pub extern fn igEndDragDropTarget() void;
 pub extern fn igGetDragDropPayload() [*c]const ImGuiPayload;
 pub extern fn igPushClipRect(clip_rect_min: ImVec2, clip_rect_max: ImVec2, intersect_with_current_clip_rect: bool) void;
@@ -3127,16 +3127,16 @@ pub extern fn igLoadIniSettingsFromMemory(ini_data: [*c]const u8, ini_size: usiz
 pub extern fn igSaveIniSettingsToDisk(ini_filename: [*c]const u8) void;
 pub extern fn igSaveIniSettingsToMemory(out_ini_size: [*c]usize) [*c]const u8;
 pub extern fn igDebugCheckVersionAndDataLayout(version_str: [*c]const u8, sz_io: usize, sz_style: usize, sz_vec2: usize, sz_vec4: usize, sz_drawvert: usize, sz_drawidx: usize) bool;
-pub extern fn igSetAllocatorFunctions(alloc_func: ?fn (usize, ?*c_void) callconv(.C) ?*c_void, free_func: ?fn (?*c_void, ?*c_void) callconv(.C) void, user_data: ?*c_void) void;
-pub extern fn igMemAlloc(size: usize) ?*c_void;
-pub extern fn igMemFree(ptr: ?*c_void) void;
+pub extern fn igSetAllocatorFunctions(alloc_func: ?fn (usize, ?*anyopaque) callconv(.C) ?*anyopaque, free_func: ?fn (?*anyopaque, ?*anyopaque) callconv(.C) void, user_data: ?*anyopaque) void;
+pub extern fn igMemAlloc(size: usize) ?*anyopaque;
+pub extern fn igMemFree(ptr: ?*anyopaque) void;
 pub extern fn igGetPlatformIO() [*c]ImGuiPlatformIO;
 pub extern fn igGetMainViewport() *ImGuiViewport;
 pub extern fn igUpdatePlatformWindows() void;
-pub extern fn igRenderPlatformWindowsDefault(platform_render_arg: ?*c_void, renderer_render_arg: ?*c_void) void;
+pub extern fn igRenderPlatformWindowsDefault(platform_render_arg: ?*anyopaque, renderer_render_arg: ?*anyopaque) void;
 pub extern fn igDestroyPlatformWindows() void;
 pub extern fn igFindViewportByID(id: ImGuiID) [*c]ImGuiViewport;
-pub extern fn igFindViewportByPlatformHandle(platform_handle: ?*c_void) ?*ImGuiViewport;
+pub extern fn igFindViewportByPlatformHandle(platform_handle: ?*anyopaque) ?*ImGuiViewport;
 pub extern fn ImGuiStyle_ImGuiStyle() [*c]ImGuiStyle;
 pub extern fn ImGuiStyle_destroy(self: [*c]ImGuiStyle) void;
 pub extern fn ImGuiStyle_ScaleAllSizes(self: [*c]ImGuiStyle, scale_factor: f32) void;
@@ -3185,11 +3185,11 @@ pub extern fn ImGuiTextBuffer_clear(self: [*c]ImGuiTextBuffer) void;
 pub extern fn ImGuiTextBuffer_reserve(self: [*c]ImGuiTextBuffer, capacity: c_int) void;
 pub extern fn ImGuiTextBuffer_c_str(self: [*c]ImGuiTextBuffer) [*c]const u8;
 pub extern fn ImGuiTextBuffer_append(self: [*c]ImGuiTextBuffer, str: [*c]const u8, str_end: [*c]const u8) void;
-pub extern fn ImGuiTextBuffer_appendfv(self: [*c]ImGuiTextBuffer, fmt: [*c]const u8, args: [*c]struct___va_list_tag) void;
+pub extern fn ImGuiTextBuffer_appendfv(self: [*c]ImGuiTextBuffer, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) void;
 pub extern fn ImGuiStoragePair_ImGuiStoragePairInt(_key: ImGuiID, _val_i: c_int) [*c]ImGuiStoragePair;
 pub extern fn ImGuiStoragePair_destroy(self: [*c]ImGuiStoragePair) void;
 pub extern fn ImGuiStoragePair_ImGuiStoragePairFloat(_key: ImGuiID, _val_f: f32) [*c]ImGuiStoragePair;
-pub extern fn ImGuiStoragePair_ImGuiStoragePairPtr(_key: ImGuiID, _val_p: ?*c_void) [*c]ImGuiStoragePair;
+pub extern fn ImGuiStoragePair_ImGuiStoragePairPtr(_key: ImGuiID, _val_p: ?*anyopaque) [*c]ImGuiStoragePair;
 pub extern fn ImGuiStorage_Clear(self: [*c]ImGuiStorage) void;
 pub extern fn ImGuiStorage_GetInt(self: [*c]ImGuiStorage, key: ImGuiID, default_val: c_int) c_int;
 pub extern fn ImGuiStorage_SetInt(self: [*c]ImGuiStorage, key: ImGuiID, val: c_int) void;
@@ -3197,12 +3197,12 @@ pub extern fn ImGuiStorage_GetBool(self: [*c]ImGuiStorage, key: ImGuiID, default
 pub extern fn ImGuiStorage_SetBool(self: [*c]ImGuiStorage, key: ImGuiID, val: bool) void;
 pub extern fn ImGuiStorage_GetFloat(self: [*c]ImGuiStorage, key: ImGuiID, default_val: f32) f32;
 pub extern fn ImGuiStorage_SetFloat(self: [*c]ImGuiStorage, key: ImGuiID, val: f32) void;
-pub extern fn ImGuiStorage_GetVoidPtr(self: [*c]ImGuiStorage, key: ImGuiID) ?*c_void;
-pub extern fn ImGuiStorage_SetVoidPtr(self: [*c]ImGuiStorage, key: ImGuiID, val: ?*c_void) void;
+pub extern fn ImGuiStorage_GetVoidPtr(self: [*c]ImGuiStorage, key: ImGuiID) ?*anyopaque;
+pub extern fn ImGuiStorage_SetVoidPtr(self: [*c]ImGuiStorage, key: ImGuiID, val: ?*anyopaque) void;
 pub extern fn ImGuiStorage_GetIntRef(self: [*c]ImGuiStorage, key: ImGuiID, default_val: c_int) [*c]c_int;
 pub extern fn ImGuiStorage_GetBoolRef(self: [*c]ImGuiStorage, key: ImGuiID, default_val: bool) [*c]bool;
 pub extern fn ImGuiStorage_GetFloatRef(self: [*c]ImGuiStorage, key: ImGuiID, default_val: f32) [*c]f32;
-pub extern fn ImGuiStorage_GetVoidPtrRef(self: [*c]ImGuiStorage, key: ImGuiID, default_val: ?*c_void) [*c]?*c_void;
+pub extern fn ImGuiStorage_GetVoidPtrRef(self: [*c]ImGuiStorage, key: ImGuiID, default_val: ?*anyopaque) [*c]?*anyopaque;
 pub extern fn ImGuiStorage_SetAllInt(self: [*c]ImGuiStorage, val: c_int) void;
 pub extern fn ImGuiStorage_BuildSortByKey(self: [*c]ImGuiStorage) void;
 pub extern fn ImGuiListClipper_ImGuiListClipper() [*c]ImGuiListClipper;
@@ -3265,7 +3265,7 @@ pub extern fn ImDrawList_PathArcTo(self: [*c]ImDrawList, center: ImVec2, radius:
 pub extern fn ImDrawList_PathArcToFast(self: [*c]ImDrawList, center: ImVec2, radius: f32, a_min_of_12: c_int, a_max_of_12: c_int) void;
 pub extern fn ImDrawList_PathBezierCurveTo(self: [*c]ImDrawList, p2: ImVec2, p3: ImVec2, p4: ImVec2, num_segments: c_int) void;
 pub extern fn ImDrawList_PathRect(self: [*c]ImDrawList, rect_min: ImVec2, rect_max: ImVec2, rounding: f32, rounding_corners: ImDrawCornerFlags) void;
-pub extern fn ImDrawList_AddCallback(self: [*c]ImDrawList, callback: ImDrawCallback, callback_data: ?*c_void) void;
+pub extern fn ImDrawList_AddCallback(self: [*c]ImDrawList, callback: ImDrawCallback, callback_data: ?*anyopaque) void;
 pub extern fn ImDrawList_AddDrawCmd(self: [*c]ImDrawList) void;
 pub extern fn ImDrawList_CloneOutput(self: [*c]ImDrawList) [*c]ImDrawList;
 pub extern fn ImDrawList_ChannelsSplit(self: [*c]ImDrawList, count: c_int) void;
@@ -3309,8 +3309,8 @@ pub extern fn ImFontAtlas_destroy(self: [*c]ImFontAtlas) void;
 pub extern fn ImFontAtlas_AddFont(self: [*c]ImFontAtlas, font_cfg: [*c]const ImFontConfig) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontDefault(self: [*c]ImFontAtlas, font_cfg: [*c]const ImFontConfig) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontFromFileTTF(self: [*c]ImFontAtlas, filename: [*c]const u8, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
-pub extern fn ImFontAtlas_AddFontFromMemoryTTF(self: [*c]ImFontAtlas, font_data: ?*const c_void, font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
-pub extern fn ImFontAtlas_AddFontFromMemoryCompressedTTF(self: [*c]ImFontAtlas, compressed_font_data: ?*const c_void, compressed_font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
+pub extern fn ImFontAtlas_AddFontFromMemoryTTF(self: [*c]ImFontAtlas, font_data: ?*const anyopaque, font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
+pub extern fn ImFontAtlas_AddFontFromMemoryCompressedTTF(self: [*c]ImFontAtlas, compressed_font_data: ?*const anyopaque, compressed_font_size: c_int, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
 pub extern fn ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(self: [*c]ImFontAtlas, compressed_font_data_base85: [*c]const u8, size_pixels: f32, font_cfg: [*c]const ImFontConfig, glyph_ranges: [*c]const ImWchar) [*c]ImFont;
 pub extern fn ImFontAtlas_ClearInputData(self: [*c]ImFontAtlas) void;
 pub extern fn ImFontAtlas_ClearTexData(self: [*c]ImFontAtlas) void;
@@ -3362,7 +3362,7 @@ pub extern fn ImGuiViewport_destroy(self: [*c]ImGuiViewport) void;
 pub extern fn ImGuiViewport_GetCenter(pOut: [*c]ImVec2, self: [*c]ImGuiViewport) void;
 pub extern fn ImGuiViewport_GetWorkPos(pOut: [*c]ImVec2, self: [*c]ImGuiViewport) void;
 pub extern fn ImGuiViewport_GetWorkSize(pOut: [*c]ImVec2, self: [*c]ImGuiViewport) void;
-pub extern fn igImHashData(data: ?*const c_void, data_size: usize, seed: ImU32) ImU32;
+pub extern fn igImHashData(data: ?*const anyopaque, data_size: usize, seed: ImU32) ImU32;
 pub extern fn igImHashStr(data: [*c]const u8, data_size: usize, seed: ImU32) ImU32;
 pub extern fn igImAlphaBlendColors(col_a: ImU32, col_b: ImU32) ImU32;
 pub extern fn igImIsPowerOfTwo(v: c_int) bool;
@@ -3380,7 +3380,7 @@ pub extern fn igImStristr(haystack: [*c]const u8, haystack_end: [*c]const u8, ne
 pub extern fn igImStrTrimBlanks(str: [*c]u8) void;
 pub extern fn igImStrSkipBlank(str: [*c]const u8) [*c]const u8;
 pub extern fn igImFormatString(buf: [*c]u8, buf_size: usize, fmt: [*c]const u8, ...) c_int;
-pub extern fn igImFormatStringV(buf: [*c]u8, buf_size: usize, fmt: [*c]const u8, args: [*c]struct___va_list_tag) c_int;
+pub extern fn igImFormatStringV(buf: [*c]u8, buf_size: usize, fmt: [*c]const u8, args: [*c]w.struct___va_list_tag) c_int;
 pub extern fn igImParseFormatFindStart(format: [*c]const u8) [*c]const u8;
 pub extern fn igImParseFormatFindEnd(format: [*c]const u8) [*c]const u8;
 pub extern fn igImParseFormatTrimDecorations(format: [*c]const u8, buf: [*c]u8, buf_size: usize) [*c]const u8;
@@ -3396,9 +3396,9 @@ pub extern fn igImTextCountUtf8BytesFromStr(in_text: [*c]const ImWchar, in_text_
 pub extern fn igImFileOpen(filename: [*c]const u8, mode: [*c]const u8) ImFileHandle;
 pub extern fn igImFileClose(file: ImFileHandle) bool;
 pub extern fn igImFileGetSize(file: ImFileHandle) ImU64;
-pub extern fn igImFileRead(data: ?*c_void, size: ImU64, count: ImU64, file: ImFileHandle) ImU64;
-pub extern fn igImFileWrite(data: ?*const c_void, size: ImU64, count: ImU64, file: ImFileHandle) ImU64;
-pub extern fn igImFileLoadToMemory(filename: [*c]const u8, mode: [*c]const u8, out_file_size: [*c]usize, padding_bytes: c_int) ?*c_void;
+pub extern fn igImFileRead(data: ?*anyopaque, size: ImU64, count: ImU64, file: ImFileHandle) ImU64;
+pub extern fn igImFileWrite(data: ?*const anyopaque, size: ImU64, count: ImU64, file: ImFileHandle) ImU64;
+pub extern fn igImFileLoadToMemory(filename: [*c]const u8, mode: [*c]const u8, out_file_size: [*c]usize, padding_bytes: c_int) ?*anyopaque;
 pub extern fn igImPowFloat(x: f32, y: f32) f32;
 pub extern fn igImPowdouble(x: f64, y: f64) f64;
 pub extern fn igImLogFloat(x: f32) f32;
@@ -3515,7 +3515,7 @@ pub extern fn ImGuiNextWindowData_ClearFlags(self: [*c]ImGuiNextWindowData) void
 pub extern fn ImGuiNextItemData_ImGuiNextItemData() [*c]ImGuiNextItemData;
 pub extern fn ImGuiNextItemData_destroy(self: [*c]ImGuiNextItemData) void;
 pub extern fn ImGuiNextItemData_ClearFlags(self: [*c]ImGuiNextItemData) void;
-pub extern fn ImGuiPtrOrIndex_ImGuiPtrOrIndexPtr(ptr: ?*c_void) [*c]ImGuiPtrOrIndex;
+pub extern fn ImGuiPtrOrIndex_ImGuiPtrOrIndexPtr(ptr: ?*anyopaque) [*c]ImGuiPtrOrIndex;
 pub extern fn ImGuiPtrOrIndex_destroy(self: [*c]ImGuiPtrOrIndex) void;
 pub extern fn ImGuiPtrOrIndex_ImGuiPtrOrIndexInt(index: c_int) [*c]ImGuiPtrOrIndex;
 pub extern fn ImGuiColumnData_ImGuiColumnData() [*c]ImGuiColumnData;
@@ -3555,10 +3555,10 @@ pub extern fn ImGuiWindowTempData_destroy(self: [*c]ImGuiWindowTempData) void;
 pub extern fn ImGuiWindow_ImGuiWindow(context: [*c]ImGuiContext, name: [*c]const u8) ?*ImGuiWindow;
 pub extern fn ImGuiWindow_destroy(self: ?*ImGuiWindow) void;
 pub extern fn ImGuiWindow_GetIDStr(self: ?*ImGuiWindow, str: [*c]const u8, str_end: [*c]const u8) ImGuiID;
-pub extern fn ImGuiWindow_GetIDPtr(self: ?*ImGuiWindow, ptr: ?*const c_void) ImGuiID;
+pub extern fn ImGuiWindow_GetIDPtr(self: ?*ImGuiWindow, ptr: ?*const anyopaque) ImGuiID;
 pub extern fn ImGuiWindow_GetIDInt(self: ?*ImGuiWindow, n: c_int) ImGuiID;
 pub extern fn ImGuiWindow_GetIDNoKeepAliveStr(self: ?*ImGuiWindow, str: [*c]const u8, str_end: [*c]const u8) ImGuiID;
-pub extern fn ImGuiWindow_GetIDNoKeepAlivePtr(self: ?*ImGuiWindow, ptr: ?*const c_void) ImGuiID;
+pub extern fn ImGuiWindow_GetIDNoKeepAlivePtr(self: ?*ImGuiWindow, ptr: ?*const anyopaque) ImGuiID;
 pub extern fn ImGuiWindow_GetIDNoKeepAliveInt(self: ?*ImGuiWindow, n: c_int) ImGuiID;
 pub extern fn ImGuiWindow_GetIDFromRectangle(self: ?*ImGuiWindow, r_abs: ImRect) ImGuiID;
 pub extern fn ImGuiWindow_Rect(pOut: [*c]ImRect, self: ?*ImGuiWindow) void;
@@ -3775,27 +3775,27 @@ pub extern fn igGetWindowScrollbarID(window: ?*ImGuiWindow, axis: ImGuiAxis) ImG
 pub extern fn igGetWindowResizeID(window: ?*ImGuiWindow, n: c_int) ImGuiID;
 pub extern fn igSeparatorEx(flags: ImGuiSeparatorFlags) void;
 pub extern fn igButtonBehavior(bb: ImRect, id: ImGuiID, out_hovered: [*c]bool, out_held: [*c]bool, flags: ImGuiButtonFlags) bool;
-pub extern fn igDragBehavior(id: ImGuiID, data_type: ImGuiDataType, p_v: ?*c_void, v_speed: f32, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
-pub extern fn igSliderBehavior(bb: ImRect, id: ImGuiID, data_type: ImGuiDataType, p_v: ?*c_void, p_min: ?*const c_void, p_max: ?*const c_void, format: [*c]const u8, flags: ImGuiSliderFlags, out_grab_bb: [*c]ImRect) bool;
+pub extern fn igDragBehavior(id: ImGuiID, data_type: ImGuiDataType, p_v: ?*anyopaque, v_speed: f32, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags) bool;
+pub extern fn igSliderBehavior(bb: ImRect, id: ImGuiID, data_type: ImGuiDataType, p_v: ?*anyopaque, p_min: ?*const anyopaque, p_max: ?*const anyopaque, format: [*c]const u8, flags: ImGuiSliderFlags, out_grab_bb: [*c]ImRect) bool;
 pub extern fn igSplitterBehavior(bb: ImRect, id: ImGuiID, axis: ImGuiAxis, size1: [*c]f32, size2: [*c]f32, min_size1: f32, min_size2: f32, hover_extend: f32, hover_visibility_delay: f32) bool;
 pub extern fn igTreeNodeBehavior(id: ImGuiID, flags: ImGuiTreeNodeFlags, label: [*c]const u8, label_end: [*c]const u8) bool;
 pub extern fn igTreeNodeBehaviorIsOpen(id: ImGuiID, flags: ImGuiTreeNodeFlags) bool;
 pub extern fn igTreePushOverrideID(id: ImGuiID) void;
 pub extern fn igDataTypeGetInfo(data_type: ImGuiDataType) [*c]const ImGuiDataTypeInfo;
-pub extern fn igDataTypeFormatString(buf: [*c]u8, buf_size: c_int, data_type: ImGuiDataType, p_data: ?*const c_void, format: [*c]const u8) c_int;
-pub extern fn igDataTypeApplyOp(data_type: ImGuiDataType, op: c_int, output: ?*c_void, arg_1: ?*const c_void, arg_2: ?*const c_void) void;
-pub extern fn igDataTypeApplyOpFromText(buf: [*c]const u8, initial_value_buf: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, format: [*c]const u8) bool;
-pub extern fn igDataTypeCompare(data_type: ImGuiDataType, arg_1: ?*const c_void, arg_2: ?*const c_void) c_int;
-pub extern fn igDataTypeClamp(data_type: ImGuiDataType, p_data: ?*c_void, p_min: ?*const c_void, p_max: ?*const c_void) bool;
-pub extern fn igInputTextEx(label: [*c]const u8, hint: [*c]const u8, buf: [*c]u8, buf_size: c_int, size_arg: ImVec2, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*c_void) bool;
+pub extern fn igDataTypeFormatString(buf: [*c]u8, buf_size: c_int, data_type: ImGuiDataType, p_data: ?*const anyopaque, format: [*c]const u8) c_int;
+pub extern fn igDataTypeApplyOp(data_type: ImGuiDataType, op: c_int, output: ?*anyopaque, arg_1: ?*const anyopaque, arg_2: ?*const anyopaque) void;
+pub extern fn igDataTypeApplyOpFromText(buf: [*c]const u8, initial_value_buf: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, format: [*c]const u8) bool;
+pub extern fn igDataTypeCompare(data_type: ImGuiDataType, arg_1: ?*const anyopaque, arg_2: ?*const anyopaque) c_int;
+pub extern fn igDataTypeClamp(data_type: ImGuiDataType, p_data: ?*anyopaque, p_min: ?*const anyopaque, p_max: ?*const anyopaque) bool;
+pub extern fn igInputTextEx(label: [*c]const u8, hint: [*c]const u8, buf: [*c]u8, buf_size: c_int, size_arg: ImVec2, flags: ImGuiInputTextFlags, callback: ImGuiInputTextCallback, user_data: ?*anyopaque) bool;
 pub extern fn igTempInputText(bb: ImRect, id: ImGuiID, label: [*c]const u8, buf: [*c]u8, buf_size: c_int, flags: ImGuiInputTextFlags) bool;
-pub extern fn igTempInputScalar(bb: ImRect, id: ImGuiID, label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*c_void, format: [*c]const u8, p_clamp_min: ?*const c_void, p_clamp_max: ?*const c_void) bool;
+pub extern fn igTempInputScalar(bb: ImRect, id: ImGuiID, label: [*c]const u8, data_type: ImGuiDataType, p_data: ?*anyopaque, format: [*c]const u8, p_clamp_min: ?*const anyopaque, p_clamp_max: ?*const anyopaque) bool;
 pub extern fn igTempInputIsActive(id: ImGuiID) bool;
 pub extern fn igGetInputTextState(id: ImGuiID) [*c]ImGuiInputTextState;
 pub extern fn igColorTooltip(text: [*c]const u8, col: [*c]const f32, flags: ImGuiColorEditFlags) void;
 pub extern fn igColorEditOptionsPopup(col: [*c]const f32, flags: ImGuiColorEditFlags) void;
 pub extern fn igColorPickerOptionsPopup(ref_col: [*c]const f32, flags: ImGuiColorEditFlags) void;
-pub extern fn igPlotEx(plot_type: ImGuiPlotType, label: [*c]const u8, values_getter: ?fn (?*c_void, c_int) callconv(.C) f32, data: ?*c_void, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, frame_size: ImVec2) c_int;
+pub extern fn igPlotEx(plot_type: ImGuiPlotType, label: [*c]const u8, values_getter: ?fn (?*anyopaque, c_int) callconv(.C) f32, data: ?*anyopaque, values_count: c_int, values_offset: c_int, overlay_text: [*c]const u8, scale_min: f32, scale_max: f32, frame_size: ImVec2) c_int;
 pub extern fn igShadeVertsLinearColorGradientKeepAlpha(draw_list: [*c]ImDrawList, vert_start_idx: c_int, vert_end_idx: c_int, gradient_p0: ImVec2, gradient_p1: ImVec2, col0: ImU32, col1: ImU32) void;
 pub extern fn igShadeVertsLinearUV(draw_list: [*c]ImDrawList, vert_start_idx: c_int, vert_end_idx: c_int, a: ImVec2, b: ImVec2, uv_a: ImVec2, uv_b: ImVec2, clamp: bool) void;
 pub extern fn igGcCompactTransientWindowBuffers(window: ?*ImGuiWindow) void;
@@ -3805,7 +3805,7 @@ pub extern fn igDebugStartItemPicker() void;
 pub extern fn igImFontAtlasBuildWithStbTruetype(atlas: [*c]ImFontAtlas) bool;
 pub extern fn igImFontAtlasBuildInit(atlas: [*c]ImFontAtlas) void;
 pub extern fn igImFontAtlasBuildSetupFont(atlas: [*c]ImFontAtlas, font: [*c]ImFont, font_config: [*c]ImFontConfig, ascent: f32, descent: f32) void;
-pub extern fn igImFontAtlasBuildPackCustomRects(atlas: [*c]ImFontAtlas, stbrp_context_opaque: ?*c_void) void;
+pub extern fn igImFontAtlasBuildPackCustomRects(atlas: [*c]ImFontAtlas, stbrp_context_opaque: ?*anyopaque) void;
 pub extern fn igImFontAtlasBuildFinish(atlas: [*c]ImFontAtlas) void;
 pub extern fn igImFontAtlasBuildRender1bppRectFromString(atlas: [*c]ImFontAtlas, atlas_x: c_int, atlas_y: c_int, w: c_int, h: c_int, in_str: [*c]const u8, in_marker_char: u8, in_marker_pixel_value: u8) void;
 pub extern fn igImFontAtlasBuildMultiplyCalcLookupTable(out_table: [*c]u8, in_multiply_factor: f32) void;

@@ -3,7 +3,7 @@ const std = @import("std");
 
 const LibExeObjStep = std.build.LibExeObjStep;
 const Builder = std.build.Builder;
-const Target = std.build.Target;
+const Target = std.zig.CrossTarget;
 const Pkg = std.build.Pkg;
 
 const renderkit_build = @import("aya/deps/renderkit/build.zig");
@@ -13,9 +13,6 @@ var enable_imgui: ?bool = null;
 
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
-
-    // use a different cache folder for macos arm builds
-    b.cache_root = if (std.builtin.os.tag == .macos and std.builtin.arch == std.builtin.Arch.aarch64) "zig-arm-cache" else "zig-cache";
 
     // first item in list will be added as "run" so `zig build run` will always work
     const examples = [_][2][]const u8{
@@ -86,13 +83,13 @@ fn createExe(b: *Builder, target: Target, name: []const u8, source: []const u8) 
 }
 
 /// adds Aya and all dependencies to artifact
-pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.build.Target, comptime prefix_path: []const u8) void {
+pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
 
     // only add the build option once!
     if (enable_imgui == null)
         enable_imgui = b.option(bool, "imgui", "enable imgui") orelse false;
-    artifact.addBuildOption(bool, "enable_imgui", enable_imgui.?);
+    // artifact.addBuildOption(bool, "enable_imgui", enable_imgui.?);
 
     // STB Image, Image Write, Rect Pack
     const stb_build = @import("aya/deps/stb/build.zig");
@@ -121,7 +118,7 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
 
     const aya = Pkg{
         .name = "aya",
-        .path = "aya/aya.zig",
+        .path = .{ .path = "aya/aya.zig" },
         .dependencies = &[_]Pkg{ renderkit_pkg, sdl_pkg, stb_pkg, fontstash_pkg, imgui_pkg },
     };
 

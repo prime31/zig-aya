@@ -132,7 +132,7 @@ pub const Tileset = struct {
 
         igSetCursorPosY(igGetCursorPosY() - 8);
         igSetCursorPosX(igGetWindowContentRegionWidth() - 40);
-        
+
         if (ogButton(icons.adjust)) igOpenPopup("##tileset-definitions", ImGuiPopupFlags_None);
         ogUnformattedTooltip(100, "Tileset definitions");
 

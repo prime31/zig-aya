@@ -3,27 +3,25 @@ const mem = std.mem;
 const Allocator = mem.Allocator;
 
 pub const ScratchAllocator = struct {
-    allocator: Allocator,
-    backup_allocator: *Allocator,
+    backup_allocator: Allocator,
     end_index: usize,
     buffer: []u8,
 
-    pub fn init(allocator: *Allocator) ScratchAllocator {
-        const scratch_buffer = allocator.alloc(u8, 2 * 1024 * 1024) catch unreachable;
+    pub fn init(backing_allocator: Allocator) ScratchAllocator {
+        const scratch_buffer = backing_allocator.alloc(u8, 2 * 1024 * 1024) catch unreachable;
 
         return ScratchAllocator{
-            .allocator = Allocator{
-                .allocFn = alloc,
-                .resizeFn = Allocator.noResize,
-            },
-            .backup_allocator = allocator,
+            .backup_allocator = backing_allocator,
             .buffer = scratch_buffer,
             .end_index = 0,
         };
     }
 
-    fn alloc(allocator: *Allocator, n: usize, ptr_align: u29, len_align: u29, ret_addr: usize) ![]u8 {
-        const self = @fieldParentPtr(ScratchAllocator, "allocator", allocator);
+    pub fn allocator(self: *ScratchAllocator) Allocator {
+        return Allocator.init(self, alloc, Allocator.NoResize(ScratchAllocator).noResize, Allocator.NoOpFree(ScratchAllocator).noOpFree);
+    }
+
+    fn alloc(self: *ScratchAllocator, n: usize, ptr_align: u29, _: u29, _: usize) std.mem.Allocator.Error![]u8 {
         const addr = @ptrToInt(self.buffer.ptr) + self.end_index;
         const adjusted_addr = mem.alignForward(addr, ptr_align);
         const adjusted_index = self.end_index + (adjusted_addr - addr);
@@ -32,8 +30,9 @@ pub const ScratchAllocator = struct {
         if (new_end_index > self.buffer.len) {
             // if more memory is requested then we have in our buffer leak like a sieve!
             if (n > self.buffer.len) {
-                std.debug.warn("\n---------\nwarning: tmp allocated more than is in our temp allocator. This memory WILL leak!\n--------\n", .{});
-                return self.allocator.allocFn(allocator, n, ptr_align, len_align, ret_addr);
+                std.debug.print("\n---------\nwarning: tmp allocated more than is in our temp allocator. This memory WILL leak!\n--------\n", .{});
+                // return self.backup_allocator.alloc(allocator, n, ptr_align, len_align, ret_addr);
+                return std.mem.Allocator.Error.OutOfMemory;
             }
 
             const result = self.buffer[0..n];

@@ -12,9 +12,9 @@ pub const SpatialHash = struct {
     inv_cell_size: f32,
     id_counter: u32 = 0,
     bounds: aya.math.RectI = .{},
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
 
-    pub fn init(allocator: ?*std.mem.Allocator, cell_size: u32) SpatialHash {
+    pub fn init(allocator: ?std.mem.Allocator, cell_size: u32) SpatialHash {
         const alloc = allocator orelse aya.mem.allocator;
 
         return .{

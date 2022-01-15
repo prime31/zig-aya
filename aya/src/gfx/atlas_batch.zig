@@ -15,7 +15,7 @@ pub const AtlasBatch = struct {
     dirty_range: struct { start: i32, end: i32 },
 
     /// AtlasBatch does not take ownership of the texture passed in
-    pub fn init(allocator: ?*std.mem.Allocator, texture: aya.gfx.Texture, max_sprites: usize) !AtlasBatch {
+    pub fn init(allocator: ?std.mem.Allocator, texture: aya.gfx.Texture, max_sprites: usize) !AtlasBatch {
         const alloc = allocator orelse aya.mem.allocator;
 
         return AtlasBatch{
@@ -45,8 +45,8 @@ pub const AtlasBatch = struct {
     }
 
     /// TODO: fills in the IndexBuffer and uploads it to the GPU
-    fn setIndexBufferData(self: *AtlasBatch, max_sprites: usize) !void {
-        var indices = getIndexBufferData(max_sprites);
+    fn setIndexBufferData(_: *AtlasBatch, max_sprites: usize) !void {
+        _ = getIndexBufferData(max_sprites);
         // self.mesh.index_buffer.setData(i16, indices, 0, .none);
         @panic("oh no");
     }
@@ -82,7 +82,7 @@ pub const AtlasBatch = struct {
     /// adds a new quad to the batch returning the index so that it can be updated with set* later
     pub fn add(self: *AtlasBatch, quad: aya.math.Quad, mat: ?aya.math.Mat32, color: aya.math.Color) usize {
         self.ensureCapacity() catch |err| {
-            std.debug.warn("failed to ensureCapacity with error: {}\n", .{err});
+            std.debug.print("failed to ensureCapacity with error: {}\n", .{err});
             return 0;
         };
         self.set(self.sprite_count, quad, mat, color);

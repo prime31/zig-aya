@@ -65,7 +65,7 @@ pub const Events = struct {
     }
 
     pub fn deinit(self: Events) void {
-        if (clipboard_text) |txt| sdl.SDL_free(clipboard_text);
+        if (clipboard_text) |_| sdl.SDL_free(clipboard_text);
 
         // Destroy SDL mouse cursors
         for (self.mouse_cursors) |cursor| {
@@ -73,7 +73,7 @@ pub const Events = struct {
         }
     }
 
-    fn getClipboardTextFn(ctx: ?*c_void) callconv(.C) [*c]const u8 {
+    fn getClipboardTextFn(_: ?*anyopaque) callconv(.C) [*c]const u8 {
         if (clipboard_text) |txt| {
             sdl.SDL_free(txt);
             clipboard_text = null;
@@ -82,11 +82,14 @@ pub const Events = struct {
         return clipboard_text;
     }
 
-    fn setClipboardTextFn(ctx: ?*c_void, text: [*c]const u8) callconv(.C) void {
+    fn setClipboardTextFn(_: ?*anyopaque, text: [*c]const u8) callconv(.C) void {
         _ = sdl.SDL_SetClipboardText(text);
     }
 
-    pub fn newFrame(self: *Events, window: *sdl.SDL_Window, ) void {
+    pub fn newFrame(
+        self: *Events,
+        window: *sdl.SDL_Window,
+    ) void {
         var win_size = aya.window.size();
         var drawable_size = aya.window.drawableSize();
 
@@ -131,7 +134,7 @@ pub const Events = struct {
         _ = sdl.SDL_GetGlobalMouseState(&mouse_x_global, &mouse_y_global);
 
         if (io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable != 0) {
-            std.debug.warn("viewports not implemented\n", .{});
+            std.debug.print("viewports not implemented\n", .{});
         } else if (sdl.SDL_GetWindowFlags(window) | @intCast(u32, @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS)) != 1) {
             var win_x: i32 = undefined;
             var win_y: i32 = undefined;
@@ -190,7 +193,7 @@ pub const Events = struct {
                 io.KeyShift = (mod_state & @enumToInt(sdl.SDL_Keymod.KMOD_SHIFT)) != 0;
                 io.KeyCtrl = (mod_state & @enumToInt(sdl.SDL_Keymod.KMOD_CTRL)) != 0;
                 io.KeyAlt = (mod_state & @enumToInt(sdl.SDL_Keymod.KMOD_ALT)) != 0;
-                if (std.Target.current.os.tag == .windows) io.KeySuper = false else io.KeySuper = (mod_state & @enumToInt(sdl.SDL_Keymod.KMOD_GUI)) != 0;
+                if (@import("builtin").target.os.tag == .windows) io.KeySuper = false else io.KeySuper = (mod_state & @enumToInt(sdl.SDL_Keymod.KMOD_GUI)) != 0;
                 return io.WantCaptureKeyboard;
             },
             sdl.SDL_WINDOWEVENT => {

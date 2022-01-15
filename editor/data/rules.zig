@@ -329,4 +329,3 @@ pub const RuleTile = struct {
         }
     }
 };
-

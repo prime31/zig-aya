@@ -7,7 +7,6 @@ const ts = @import("tileset.zig");
 const Tileset = @import("tileset.zig").Tileset;
 const Animation = @import("tileset.zig").Animation;
 
-
 /// draws a tileset animation editor allowing add/remove of animations. Animations consist of a key tile index and then
 /// multiple tile indices for the animation itself.
 pub fn draw(tileset: *Tileset) void {
