@@ -42,16 +42,16 @@ pub fn uintLessThan(comptime T: type, less_than: T) T {
 
 /// returns true if the next random is less than percent. Percent should be between 0 and 1
 pub fn chance(percent: f32) bool {
-    return rng.random.float(f32) < percent;
+    return rng.random().float(f32) < percent;
 }
 
 pub fn choose(comptime T: type, first: T, second: T) T {
-    if (rng.random.int(u1) == 0) return first;
+    if (rng.random().int(u1) == 0) return first;
     return second;
 }
 
 pub fn choose3(comptime T: type, first: T, second: T, third: T) T {
-    return switch (rng.random.int(u2)) {
+    return switch (rng.random().int(u2)) {
         0 => first,
         1 => second,
         2 => third,
