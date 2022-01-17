@@ -13,7 +13,7 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    checker_tex = aya.gfx.Texture.initCheckerTexture();
+    checker_tex = aya.gfx.Texture.initCheckerTexture(1);
     font_tex = aya.gfx.Texture.initFromFile("examples/assets/textures/font.png", .linear) catch unreachable;
 
     checker_quad = aya.math.Quad.init(0, 0, checker_tex.width, checker_tex.height, checker_tex.width, checker_tex.height);
