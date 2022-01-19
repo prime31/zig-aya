@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 const data = @import("data.zig");
 
@@ -23,10 +23,10 @@ pub const Tilemap = struct {
         };
     }
 
-    pub fn initWithData(data: []const u16, size: Size) Tilemap {
+    pub fn initWithData(the_data: []const u16, size: Size) Tilemap {
         return .{
             .size = size,
-            .data = std.mem.dupe(aya.mem.allocator, u16, data) catch unreachable,
+            .data = std.mem.dupe(aya.mem.allocator, u16, the_data) catch unreachable,
         };
     }
 
@@ -34,7 +34,7 @@ pub const Tilemap = struct {
         aya.mem.allocator.free(self.data);
     }
 
-    pub fn clear(self: TilemapLayer) void {
+    pub fn clear(self: Tilemap) void {
         std.mem.set(u16, self.data, 0);
     }
 

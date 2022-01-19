@@ -25,7 +25,7 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    tex = aya.gfx.Texture.initCheckerTexture();
+    tex = aya.gfx.Texture.initCheckerTexture(1);
 
     var vertices = [_]aya.gfx.Vertex{
         .{ .pos = .{ .x = 10, .y = 110 }, .uv = .{ .x = 1, .y = 0 }, .col = 0xFFFFFFFF }, // bl
@@ -45,7 +45,7 @@ fn init() !void {
     vertices[3].col = 0xFFFFFFFF;
     instanced_mesh = try aya.gfx.InstancedMesh(u16, aya.gfx.Vertex, InstancedVert).init(null, 100, indices[0..], vertices[0..]);
 
-    const instances_per_row = @divTrunc(aya.window.width(), @as(i32, 40));
+    // const instances_per_row = @divTrunc(aya.window.width(), @as(i32, 40));
     var i: usize = 0;
     var y: i32 = 200;
     blk: while (y < aya.window.height() - 50) : (y += 24) {

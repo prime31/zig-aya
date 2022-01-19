@@ -2,7 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 const root = @import("../main.zig"); //@import("root");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
+const icons = imgui.icons;
 
 pub const Scene = struct {
     pass: ?aya.gfx.OffscreenPass = null,
@@ -16,7 +17,7 @@ pub const Scene = struct {
         self.pass.?.deinit();
     }
 
-    pub fn onFileDropped(self: @This(), state: *root.AppState, file: [:0]const u8) void {
+    pub fn onFileDropped(_: @This(), state: *root.AppState, file: [:0]const u8) void {
         // swallow up any project files and load them
         if (std.mem.endsWith(u8, file, ".editor_extension")) {
             std.debug.print("Scene got an editor extension\n", .{});
@@ -26,17 +27,17 @@ pub const Scene = struct {
     }
 
     pub fn draw(self: *@This(), state: *root.AppState) void {
-        ogPushStyleVarVec2(ImGuiStyleVar_WindowPadding, .{});
-        _ = igBegin("Scene", null, ImGuiWindowFlags_NoScrollbar);
-        igPopStyleVar(1);
+        imgui.ogPushStyleVarVec2(imgui.ImGuiStyleVar_WindowPadding, .{});
+        _ = imgui.igBegin("Scene", null, imgui.ImGuiWindowFlags_NoScrollbar);
+        imgui.igPopStyleVar(1);
 
         self.update(state);
-        igEnd();
+        imgui.igEnd();
     }
 
     pub fn update(self: *@This(), state: *root.AppState) void {
         // handle initial creation and resizing of the OffscreenPass
-        var content_region = ogGetContentRegionAvail();
+        var content_region = imgui.ogGetContentRegionAvail();
         if (self.pass) |pass| {
             if (pass.color_texture.width != content_region.x or pass.color_texture.height != content_region.y) {
                 self.pass.?.deinit();
@@ -53,20 +54,20 @@ pub const Scene = struct {
             }
         }
 
-        const tmp = ogGetCursorScreenPos();
-        ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
-        ogSetCursorScreenPos(tmp);
+        const tmp = imgui.ogGetCursorScreenPos();
+        imgui.ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
+        imgui.ogSetCursorScreenPos(tmp);
 
         // allow dragging a texture from Assets if an EntityLayer is selected
-        if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity and igBeginDragDropTarget()) {
-            defer igEndDragDropTarget();
+        if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity and imgui.igBeginDragDropTarget()) {
+            defer imgui.igEndDragDropTarget();
 
-            if (igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+            if (imgui.igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                 std.debug.assert(payload.DataSize == @sizeOf(usize));
                 const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
                 const tex_name = state.asset_man.textures.names[data.*];
 
-                const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
+                const mouse_screen = imgui.igGetIO().MousePos.subtract(imgui.ogGetCursorScreenPos());
                 const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
                 var entity_layer = &state.level.layers.items[state.selected_layer_index].entity;
@@ -79,10 +80,10 @@ pub const Scene = struct {
         self.drawToolBar(state);
 
         // full window button lets us capture any clicks that didnt get used in the toolbar above
-        _ = ogInvisibleButton("##scene_button", ogGetContentRegionAvail(), ImGuiButtonFlags_None);
-        ogSetCursorScreenPos(tmp);
+        _ = imgui.ogInvisibleButton("##scene_button", imgui.ogGetContentRegionAvail(), imgui.ImGuiButtonFlags_None);
+        imgui.ogSetCursorScreenPos(tmp);
 
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) self.handleInput(state);
+        if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) self.handleInput(state);
 
         aya.gfx.beginPass(.{ .color = state.clear_color, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
         // the map area and some decorations
@@ -95,7 +96,7 @@ pub const Scene = struct {
 
     fn render(self: @This(), state: *root.AppState) void {
         // get mouse in world space
-        const mouse_screen = igGetIO().MousePos.subtract(ogGetCursorScreenPos());
+        const mouse_screen = imgui.igGetIO().MousePos.subtract(imgui.ogGetCursorScreenPos());
         const mouse_world = self.cam.igScreenToWorld(mouse_screen);
 
         // self.drawGridLines();
@@ -108,66 +109,66 @@ pub const Scene = struct {
     }
 
     fn drawToolBar(self: *@This(), state: *root.AppState) void {
-        const cursor_start = ogGetCursorPos();
+        const cursor_start = imgui.ogGetCursorPos();
 
         // create a toolbar over the scene view
-        igPushStyleColorU32(ImGuiCol_Button, root.colors.scene_toolbar_btn);
+        imgui.igPushStyleColorU32(imgui.ImGuiCol_Button, root.colors.scene_toolbar_btn);
 
         // reset position to the start of where we want our button bar
-        igSetCursorPosY(igGetCursorPosY() + 5);
-        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 90);
+        imgui.igSetCursorPosY(imgui.igGetCursorPosY() + 5);
+        imgui.igSetCursorPosX(imgui.igGetCursorPosX() + imgui.igGetWindowContentRegionWidth() - 90);
 
-        if (ogButton(icons.search)) igOpenPopup("##zoom-settings", ImGuiPopupFlags_None);
-        igSameLine(0, 10);
-        if (ogButton(icons.border_all)) igOpenPopup("##snap-settings", ImGuiPopupFlags_None);
-        igSameLine(0, 10);
-        if (ogButton(icons.palette)) igOpenPopup("##color-settings", ImGuiPopupFlags_None);
+        if (imgui.ogButton(icons.search)) imgui.igOpenPopup("##zoom-settings", imgui.ImGuiPopupFlags_None);
+        imgui.igSameLine(0, 10);
+        if (imgui.ogButton(icons.border_all)) imgui.igOpenPopup("##snap-settings", imgui.ImGuiPopupFlags_None);
+        imgui.igSameLine(0, 10);
+        if (imgui.ogButton(icons.palette)) imgui.igOpenPopup("##color-settings", imgui.ImGuiPopupFlags_None);
 
-        ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
+        imgui.ogSetCursorPos(cursor_start.add(.{ .x = 5, .y = 5 }));
         if (state.level.layers.items.len > 0) {
             switch (state.level.layers.items[state.selected_layer_index]) {
                 .auto_tilemap => |*map| {
                     const label = if (map.draw_raw_pre_map) "Input Map" else "Final Map";
-                    if (ogButton(label)) map.draw_raw_pre_map = !map.draw_raw_pre_map;
+                    if (imgui.ogButton(label)) map.draw_raw_pre_map = !map.draw_raw_pre_map;
                 },
                 else => {},
             }
         }
 
-        igPopStyleColor(1);
+        imgui.igPopStyleColor(1);
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##snap-settings", ImGuiPopupFlags_None)) {
-            _ = ogDrag(u8, "Snap", &state.snap_size, 0.2, 0, 32);
-            igEndPopup();
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##snap-settings", imgui.ImGuiPopupFlags_None)) {
+            _ = imgui.ogDrag(u8, "Snap", &state.snap_size, 0.2, 0, 32);
+            imgui.igEndPopup();
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##zoom-settings", ImGuiPopupFlags_None)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##zoom-settings", imgui.ImGuiPopupFlags_None)) {
             var zoom = @log2(self.cam.zoom);
-            if (ogDrag(f32, "Zoom", &zoom, 0.1, -1, 2)) {
+            if (imgui.ogDrag(f32, "Zoom", &zoom, 0.1, -1, 2)) {
                 self.cam.zoom = std.math.pow(f32, 2, zoom);
                 self.cam.clampZoom();
                 self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
             }
-            if (ogButtonEx("Reset Zoom", .{ .x = -1 })) self.cam.zoom = 1;
-            igEndPopup();
+            if (imgui.ogButtonEx("Reset Zoom", .{ .x = -1 })) self.cam.zoom = 1;
+            imgui.igEndPopup();
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##color-settings", ImGuiPopupFlags_None)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##color-settings", imgui.ImGuiPopupFlags_None)) {
             var col = state.bg_color.asVec4();
-            if (igColorEdit3("Map Background", &col.x, ImGuiColorEditFlags_NoInputs))
+            if (imgui.igColorEdit3("Map Background", &col.x, imgui.ImGuiColorEditFlags_NoInputs))
                 state.bg_color = math.Color.fromVec4(col);
 
             col = state.clear_color.asVec4();
-            if (igColorEdit3("Clear Color", &col.x, ImGuiColorEditFlags_NoInputs))
+            if (imgui.igColorEdit3("Clear Color", &col.x, imgui.ImGuiColorEditFlags_NoInputs))
                 state.clear_color = math.Color.fromVec4(col);
 
-            if (igColorEdit3("Editor Tint Color", &root.colors.ui_tint.x, ImGuiColorEditFlags_NoInputs))
+            if (imgui.igColorEdit3("Editor Tint Color", &root.colors.ui_tint.x, imgui.ImGuiColorEditFlags_NoInputs))
                 root.colors.setTintColor(root.colors.ui_tint);
 
-            igEndPopup();
+            imgui.igEndPopup();
         }
     }
 
@@ -206,22 +207,22 @@ pub const Scene = struct {
 
     fn handleInput(self: *@This(), state: *root.AppState) void {
         // scrolling via drag with alt or super key down
-        if (igIsMouseDragging(ImGuiMouseButton_Left, 2) and (igGetIO().KeyAlt or igGetIO().KeySuper)) {
-            var scroll_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0);
+        if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 2) and (imgui.igGetIO().KeyAlt or imgui.igGetIO().KeySuper)) {
+            var scroll_delta = imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0);
 
             self.cam.pos.x -= scroll_delta.x * 1 / self.cam.zoom;
             self.cam.pos.y -= scroll_delta.y * 1 / self.cam.zoom;
-            igResetMouseDragDelta(ImGuiMouseButton_Left);
+            imgui.igResetMouseDragDelta(imgui.ImGuiMouseButton_Left);
 
             // dont allow camera to move outside of map bounds
             self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
             return;
         }
 
-        if (igGetIO().MouseWheel != 0) {
-            self.cam.zoom += igGetIO().MouseWheel * 0.1;
+        if (imgui.igGetIO().MouseWheel != 0) {
+            self.cam.zoom += imgui.igGetIO().MouseWheel * 0.1;
             self.cam.clampZoom();
-            igGetIO().MouseWheel = 0;
+            imgui.igGetIO().MouseWheel = 0;
             self.cam.clampToMap(state.level.map_size.w * state.tile_size, state.level.map_size.h * state.tile_size, 80);
         }
     }

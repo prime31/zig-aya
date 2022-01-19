@@ -14,6 +14,7 @@ pub const persistence = @import("persistence.zig");
 
 pub const Camera = @import("camera.zig").Camera;
 pub const AssetManager = @import("asset_manager.zig").AssetManager;
+pub const AppState = @import("data/app_state.zig").AppState;
 
 pub const enable_imgui = true;
 var next_stall_time: f32 = 10;

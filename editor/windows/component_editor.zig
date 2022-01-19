@@ -1,7 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 const root = @import("../main.zig");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
+const icons = imgui.icons;
 
 const Component = root.data.Component;
 const Property = root.data.Property;
@@ -11,110 +12,111 @@ var selected_comp: usize = 0;
 var enum_editor_index: ?usize = null;
 
 pub fn draw(state: *root.AppState) void {
-    igPushStyleColorU32(ImGuiCol_ModalWindowDimBg, root.colors.rgbaToU32(20, 20, 20, 200));
-    defer igPopStyleColor(1);
+    imgui.igPushStyleColorU32(imgui.ImGuiCol_ModalWindowDimBg, root.colors.rgbaToU32(20, 20, 20, 200));
+    defer imgui.igPopStyleColor(1);
 
-    ogSetNextWindowSize(.{ .x = 500, .y = -1 }, ImGuiCond_Always);
+    imgui.ogSetNextWindowSize(.{ .x = 500, .y = -1 }, imgui.ImGuiCond_Always);
     var open: bool = true;
-    if (igBeginPopupModal("Component Editor", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndPopup();
+    if (imgui.igBeginPopupModal("Component Editor", &open, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer imgui.igEndPopup();
 
-        igColumns(2, "id", true);
-        igSetColumnWidth(0, 150);
+        imgui.igColumns(2, "id", true);
+        imgui.igSetColumnWidth(0, 150);
 
-        igPushItemWidth(-1);
-        if (ogListBoxHeaderVec2("", .{})) {
-            defer igListBoxFooter();
+        imgui.igPushItemWidth(-1);
+        if (imgui.ogListBoxHeaderVec2("", .{})) {
+            defer imgui.igListBoxFooter();
 
             for (state.components.items) |*comp, i| {
-                if (ogSelectableBool(&comp.name, selected_comp == i, ImGuiSelectableFlags_DontClosePopups, .{})) {
+                if (imgui.ogSelectableBool(&comp.name, selected_comp == i, imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
                     selected_comp = i;
                 }
             }
         }
-        igPopItemWidth();
+        imgui.igPopItemWidth();
 
-        igNextColumn();
+        imgui.igNextColumn();
 
         if (state.components.items.len > 0)
             drawDetailsPane(state, &state.components.items[selected_comp]);
 
-        igColumns(1, "id", false);
-        if (ogButton("Add Component")) {
-            ogOpenPopup("##new-component");
+        imgui.igColumns(1, "id", false);
+        if (imgui.ogButton("Add Component")) {
+            imgui.ogOpenPopup("##new-component");
             std.mem.set(u8, &name_buf, 0);
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##new-component", ImGuiWindowFlags_None)) {
-            defer igEndPopup();
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##new-component", imgui.ImGuiWindowFlags_None)) {
+            defer imgui.igEndPopup();
 
-            _ = igInputText("", &name_buf, name_buf.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
+            _ = imgui.igInputText("", &name_buf, name_buf.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
 
             const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
-            ogPushDisabled(name.len == 0);
-            defer ogPopDisabled(name.len == 0);
+            imgui.ogPushDisabled(name.len == 0);
+            defer imgui.ogPopDisabled(name.len == 0);
 
-            if (ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Create Component", .{ .x = -1, .y = 0 })) {
+            if (imgui.ogColoredButtonEx(root.colors.rgbToU32(25, 180, 45), "Create Component", .{ .x = -1, .y = 0 })) {
                 _ = state.createComponent(name);
                 selected_comp = state.components.items.len - 1;
-                igCloseCurrentPopup();
+                imgui.igCloseCurrentPopup();
             }
         }
     }
 }
 
 fn drawDetailsPane(state: *root.AppState, component: *Component) void {
-    igText("Name");
-    igSameLine(0, 130);
-    igText("Default Value");
+    imgui.igText("Name");
+    imgui.igSameLine(0, 130);
+    imgui.igText("Default Value");
 
     var delete_index: ?usize = null;
     for (component.props) |*prop, i| {
-        igPushIDPtr(prop);
-        defer igPopID();
+        imgui.igPushIDPtr(prop);
+        defer imgui.igPopID();
 
-        igPushItemWidth(igGetColumnWidth(1) / 2 - 20);
-        _ = igInputText("##name", &prop.name, prop.name.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
-        igSameLine(0, 5);
+        imgui.igPushItemWidth(imgui.igGetColumnWidth(1) / 2 - 20);
+        _ = imgui.igInputText("##name", &prop.name, prop.name.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
+        imgui.igSameLine(0, 5);
 
         switch (prop.value) {
-            .string => |*str| _ = ogInputText("##str", str, str.len),
-            .float => |*flt| _ = ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32)),
-            .int => |*int| _ = ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32)),
-            .bool => |*b| _ = igCheckbox("##bool", b),
-            .vec2 => |*v2| _ = igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", ImGuiSliderFlags_None),
+            .string => |*str| _ = imgui.ogInputText("##str", str, str.len),
+            .float => |*flt| _ = imgui.ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32)),
+            .int => |*int| _ = imgui.ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32)),
+            .bool => |*b| _ = imgui.igCheckbox("##bool", b),
+            .vec2 => |*v2| _ = imgui.igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", imgui.ImGuiSliderFlags_None),
             .enum_values => |*enums| {
-                if (ogButton("Edit Enum Values")) enum_editor_index = i;
+                _ = enums;
+                if (imgui.ogButton("Edit Enum Values")) enum_editor_index = i;
             },
-            .entity_link => igText("No default value"),
+            .entity_link => imgui.igText("No default value"),
         }
-        igSameLine(0, 5);
+        imgui.igSameLine(0, 5);
 
-        igPopItemWidth();
-        if (ogButton(icons.trash)) delete_index = i;
+        imgui.igPopItemWidth();
+        if (imgui.ogButton(icons.trash)) delete_index = i;
     }
 
     if (enum_editor_index) |index| {
-        ogOpenPopup("Enum Values##enum-values");
+        imgui.ogOpenPopup("Enum Values##enum-values");
 
         var enum_delete_index: ?usize = null;
         var open = true;
-        if (igBeginPopupModal("Enum Values##enum-values", &open, ImGuiWindowFlags_AlwaysAutoResize)) {
-            defer igEndPopup();
+        if (imgui.igBeginPopupModal("Enum Values##enum-values", &open, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+            defer imgui.igEndPopup();
 
             var prop_value = &component.props[index].value;
             for (prop_value.enum_values) |*val, i| {
-                igPushIDPtr(val);
-                defer igPopID();
+                imgui.igPushIDPtr(val);
+                defer imgui.igPopID();
 
-                _ = igInputText("##enum_value", val, val.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
+                _ = imgui.igInputText("##enum_value", val, val.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
 
-                igSameLine(0, 5);
-                if (ogButton(icons.trash)) enum_delete_index = i;
+                imgui.igSameLine(0, 5);
+                if (imgui.ogButton(icons.trash)) enum_delete_index = i;
             }
 
-            if (ogButton("Add Enum Value")) {
+            if (imgui.ogButton("Add Enum Value")) {
                 prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len + 1) catch unreachable;
                 std.mem.set(u8, &prop_value.enum_values[prop_value.enum_values.len - 1], 0);
             }
@@ -155,50 +157,50 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
         prop.deinit();
     }
 
-    ogDummy(.{ .y = 5 });
+    imgui.ogDummy(.{ .y = 5 });
 
-    if (ogButton("Add Field"))
-        ogOpenPopup("##add-field");
+    if (imgui.ogButton("Add Field"))
+        imgui.ogOpenPopup("##add-field");
 
     addFieldPopup(state, component);
 }
 
 fn addFieldPopup(state: *root.AppState, component: *Component) void {
-    ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-    if (igBeginPopup("##add-field", ImGuiWindowFlags_None)) {
-        if (ogSelectableBool("bool", false, ImGuiSelectableFlags_None, .{})) {
+    imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+    if (imgui.igBeginPopup("##add-field", imgui.ImGuiWindowFlags_None)) {
+        if (imgui.ogSelectableBool("bool", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .bool = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("string", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("string", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .string = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("float", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("float", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .float = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("int", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("int", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .int = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("Vec2", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("Vec2", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .vec2 = undefined });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("enum", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("enum", false, imgui.ImGuiSelectableFlags_None, .{})) {
             var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
             std.mem.set(u8, &enums[0], 0);
             std.mem.copy(u8, &enums[0], "default_value");
             component.addProperty(.{ .enum_values = enums });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
-        if (ogSelectableBool("Entity Link", false, ImGuiSelectableFlags_None, .{})) {
+        if (imgui.ogSelectableBool("Entity Link", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .entity_link = 0 });
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
 
-        igEndPopup();
+        imgui.igEndPopup();
     }
 }
 

@@ -7,7 +7,7 @@ var map: *Map = undefined;
 var texture: aya.gfx.Texture = undefined;
 var batch: aya.gfx.AtlasBatch = undefined;
 var player: aya.math.RectI = undefined;
-var speed: f32 = 3;
+var speed: f32 = 2;
 
 pub fn main() anyerror!void {
     try aya.run(.{
@@ -24,7 +24,7 @@ pub fn main() anyerror!void {
 
 fn init() !void {
     var bytes = aya.fs.read(aya.mem.tmp_allocator, "examples/assets/platformer.json") catch unreachable;
-    var tokens = std.json.TokenStream.init(bytes);
+    _ = std.json.TokenStream.init(bytes);
 
     map = Map.initFromFile("examples/assets/platformer.json");
     texture = map.loadTexture("examples/assets", .nearest);

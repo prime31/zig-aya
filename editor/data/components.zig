@@ -141,5 +141,5 @@ pub const PropertyInstance = struct {
         return .{ .property_id = id, .value = value };
     }
 
-    pub fn deinit(self: PropertyInstance) void {}
+    pub fn deinit(_: PropertyInstance) void {}
 };

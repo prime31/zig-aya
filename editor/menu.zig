@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const root = @import("main.zig");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 var buffer: [25:0]u8 = undefined;
 var map_width: usize = 0;
@@ -17,43 +17,43 @@ pub fn draw(state: *root.AppState) void {
     var show_new_level_popup = false;
     var show_open_project_popup = false;
 
-    if (igBeginMenuBar()) {
-        defer igEndMenuBar();
+    if (imgui.igBeginMenuBar()) {
+        defer imgui.igEndMenuBar();
 
-        if (igBeginMenu("File", true)) {
-            defer igEndMenu();
+        if (imgui.igBeginMenu("File", true)) {
+            defer imgui.igEndMenu();
 
-            if (igMenuItemBool("New Project...", null, false, true)) show_new_project_popup = true;
-            if (igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
-            igSeparator();
-            if (igMenuItemBool("Open Project...", null, false, true)) show_open_project_popup = true;
-            if (igMenuItemBool("Open Level...", null, false, state.asset_man.levels.len > 1)) show_open_level_popup = true;
-            igSeparator();
-            if (igMenuItemBool("Save Project...", null, false, true))
+            if (imgui.igMenuItemBool("New Project...", null, false, true)) show_new_project_popup = true;
+            if (imgui.igMenuItemBool("New Level...", null, false, true)) show_new_level_popup = true;
+            imgui.igSeparator();
+            if (imgui.igMenuItemBool("Open Project...", null, false, true)) show_open_project_popup = true;
+            if (imgui.igMenuItemBool("Open Level...", null, false, state.asset_man.levels.len > 1)) show_open_level_popup = true;
+            imgui.igSeparator();
+            if (imgui.igMenuItemBool("Save Project...", null, false, true))
                 root.persistence.saveProject(state) catch unreachable;
-            if (igMenuItemBool("Save Level...", null, false, true)) {
+            if (imgui.igMenuItemBool("Save Level...", null, false, true)) {
                 root.persistence.saveLevel(state.level) catch unreachable;
                 state.asset_man.loadLevels();
             }
         }
 
-        if (igBeginMenu("Tools", true)) {
-            defer igEndMenu();
+        if (imgui.igBeginMenu("Tools", true)) {
+            defer imgui.igEndMenu();
 
-            if (igMenuItemBool("Component Editor...", null, false, true)) show_component_editor_popup = true;
-            if (igMenuItemBool("Timeline Editor...", null, false, true)) show_timeline_popup = true;
+            if (imgui.igMenuItemBool("Component Editor...", null, false, true)) show_component_editor_popup = true;
+            if (imgui.igMenuItemBool("Timeline Editor...", null, false, true)) show_timeline_popup = true;
         }
     }
 
     // handle popup toggles
     if (show_new_project_popup) {
-        ogOpenPopup("New Project");
+        imgui.ogOpenPopup("New Project");
         new_project_state = .tile;
         root.utils.file_picker.setup("Create a folder to put your new Aya Edit project in", true, true);
     }
 
     if (show_new_level_popup) {
-        ogOpenPopup("New Level");
+        imgui.ogOpenPopup("New Level");
         std.mem.set(u8, &buffer, 0);
         map_width = 32;
         map_height = 32;
@@ -61,30 +61,30 @@ pub fn draw(state: *root.AppState) void {
 
     if (show_open_project_popup) {
         root.persistence.saveProject(state) catch unreachable;
-        ogOpenPopup("Open Project");
+        imgui.ogOpenPopup("Open Project");
     }
 
     if (show_open_level_popup) {
         root.persistence.saveLevel(state.level) catch unreachable;
-        ogOpenPopup("Open Level");
+        imgui.ogOpenPopup("Open Level");
     }
 
-    if (show_component_editor_popup) ogOpenPopup("Component Editor");
-    if (show_timeline_popup) ogOpenPopup("Timeline Editor");
+    if (show_component_editor_popup) imgui.ogOpenPopup("Component Editor");
+    if (show_timeline_popup) imgui.ogOpenPopup("Timeline Editor");
 
     // we always need to call our popup code
     root.windows.component_editor.draw(state);
     root.windows.timeline.draw(state);
 
-    if (igBeginPopupModal("New Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndPopup();
+    if (imgui.igBeginPopupModal("New Project", null, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer imgui.igEndPopup();
 
         if (new_project_state == .tile) {
-            _ = ogDrag(usize, "Tile Size", &tile_size, 0.5, 8, 128);
-            igSeparator();
-            if (ogButton("Cancel")) igCloseCurrentPopup();
-            igSameLine(igGetWindowContentRegionWidth() - 35, 0);
-            if (ogButton("Next"))
+            _ = imgui.ogDrag(usize, "Tile Size", &tile_size, 0.5, 8, 128);
+            imgui.igSeparator();
+            if (imgui.ogButton("Cancel")) imgui.igCloseCurrentPopup();
+            imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 35, 0);
+            if (imgui.ogButton("Next"))
                 new_project_state = .folder;
         } else if (new_project_state == .folder) {
             if (root.utils.file_picker.draw()) |res| {
@@ -98,45 +98,45 @@ pub fn draw(state: *root.AppState) void {
                     } else {
                         state.startNewProjectInFolder(root.utils.file_picker.selected_dir.?);
                         root.utils.file_picker.cleanup();
-                        igCloseCurrentPopup();
+                        imgui.igCloseCurrentPopup();
                     }
                 } else {
                     root.utils.file_picker.cleanup();
-                    igCloseCurrentPopup();
+                    imgui.igCloseCurrentPopup();
                 }
             }
         } else if (new_project_state == .non_empty_folder) {
-            igText("The project folder must be empty");
-            igSeparator();
-            if (igButton("Go back and try again", .{ .x = -1 })) new_project_state = .folder;
+            imgui.igText("The project folder must be empty");
+            imgui.igSeparator();
+            if (imgui.igButton("Go back and try again", .{ .x = -1 })) new_project_state = .folder;
         }
     }
 
-    if (igBeginPopupModal("New Level", null, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndPopup();
-        _ = igInputText("Name", &buffer, buffer.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
+    if (imgui.igBeginPopupModal("New Level", null, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer imgui.igEndPopup();
+        _ = imgui.igInputText("Name", &buffer, buffer.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
 
-        _ = ogDrag(usize, "Width", &map_width, 0.5, 16, 512);
-        _ = ogDrag(usize, "Height", &map_height, 0.5, 16, 512);
-        igSeparator();
+        _ = imgui.ogDrag(usize, "Width", &map_width, 0.5, 16, 512);
+        _ = imgui.ogDrag(usize, "Height", &map_height, 0.5, 16, 512);
+        imgui.igSeparator();
 
         const label_sentinel_index = std.mem.indexOfScalar(u8, &buffer, 0).?;
         const disabled = label_sentinel_index == 0;
 
-        if (ogButton("Cancel")) igCloseCurrentPopup();
-        igSameLine(igGetWindowContentRegionWidth() - 45, 0);
+        if (imgui.ogButton("Cancel")) imgui.igCloseCurrentPopup();
+        imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 45, 0);
 
-        ogPushDisabled(disabled);
-        if (ogButton("Create")) {
+        imgui.ogPushDisabled(disabled);
+        if (imgui.ogButton("Create")) {
             state.createLevel(buffer[0..label_sentinel_index], map_width, map_height);
-            igCloseCurrentPopup();
+            imgui.igCloseCurrentPopup();
         }
-        ogPopDisabled(disabled);
+        imgui.ogPopDisabled(disabled);
     }
 
-    ogSetNextWindowSize(.{ .x = 200 }, ImGuiCond_Once);
-    if (igBeginPopupModal("Open Level", null, ImGuiWindowFlags_None)) {
-        defer igEndPopup();
+    imgui.ogSetNextWindowSize(.{ .x = 200 }, imgui.ImGuiCond_Once);
+    if (imgui.igBeginPopupModal("Open Level", null, imgui.ImGuiWindowFlags_None)) {
+        defer imgui.igEndPopup();
 
         for (state.asset_man.levels) |level| {
             const base_name = level[0..std.mem.indexOfScalar(u8, level, '.').?];
@@ -144,27 +144,27 @@ pub fn draw(state: *root.AppState) void {
             std.mem.set(u8, &name_buf, 0);
             std.mem.copy(u8, &name_buf, base_name);
 
-            if (ogButtonEx(&name_buf, .{ .x = -1 })) {
+            if (imgui.ogButtonEx(&name_buf, .{ .x = -1 })) {
                 const new_level = root.persistence.loadLevel(level) catch unreachable;
                 state.level.deinit();
                 state.level = new_level;
                 state.selected_layer_index = 0;
-                igCloseCurrentPopup();
+                imgui.igCloseCurrentPopup();
             }
         }
 
-        igSeparator();
-        if (ogButtonEx("Cancel", .{ .x = -1 })) igCloseCurrentPopup();
+        imgui.igSeparator();
+        if (imgui.ogButtonEx("Cancel", .{ .x = -1 })) imgui.igCloseCurrentPopup();
     }
 
-    if (igBeginPopupModal("Open Project", null, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndPopup();
-        igText("some ui to select a project file or folder");
+    if (imgui.igBeginPopupModal("Open Project", null, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer imgui.igEndPopup();
+        imgui.igText("some ui to select a project file or folder");
 
-        if (ogButton("Cancel")) igCloseCurrentPopup();
-        igSameLine(igGetWindowContentRegionWidth() - 45, 0);
+        if (imgui.ogButton("Cancel")) imgui.igCloseCurrentPopup();
+        imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 45, 0);
 
-        if (ogButton("Caxpoo"))
-            igCloseCurrentPopup();
+        if (imgui.ogButton("Caxpoo"))
+            imgui.igCloseCurrentPopup();
     }
 }

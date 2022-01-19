@@ -141,7 +141,7 @@ pub const AppState = struct {
         // textures, atlases, tilesets, levels folders need to be created in the project folder
         for ([_][]const u8{ "textures", "atlases", "tilesets", "levels" }) |sub_folder| {
             const sub = std.fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ folder, sub_folder }) catch unreachable;
-            std.fs.makeDirAbsolute(sub) catch |_| {};
+            std.fs.makeDirAbsolute(sub) catch {};
         }
     }
 

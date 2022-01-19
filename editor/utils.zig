@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 const root = @import("root");
 
 pub const Image = @import("utils/image.zig").Image;
@@ -15,14 +15,14 @@ const Tilemap = root.data.Tilemap;
 const Camera = @import("camera.zig").Camera;
 
 /// given a mouse position returns the tile under it
-pub fn tileIndexUnderMouse(state: *AppState, position: ImVec2, tile_size: usize, camera: Camera) ?Point {
+pub fn tileIndexUnderMouse(state: *AppState, position: imgui.ImVec2, tile_size: usize, camera: Camera) ?Point {
     // mouse positions need to be subtracted from origin of content rect to get into screen space (window space really)
-    const mouse_screen = position.subtract(ogGetCursorScreenPos());
+    const mouse_screen = position.subtract(imgui.ogGetCursorScreenPos());
     return tileIndexUnderPos(state, camera.igScreenToWorld(mouse_screen), tile_size);
 }
 
 /// given a world-space position returns the tile under it or null if position is out of bounds
-pub fn tileIndexUnderPos(state: *AppState, position: ImVec2, tile_size: usize) ?Point {
+pub fn tileIndexUnderPos(state: *AppState, position: imgui.ImVec2, tile_size: usize) ?Point {
     if (position.x < 0 or position.y < 0) return null;
     if (position.x > @intToFloat(f32, state.level.map_size.w * state.tile_size)) return null;
     if (position.y > @intToFloat(f32, state.level.map_size.h * state.tile_size)) return null;
@@ -61,9 +61,11 @@ pub fn bresenham(tilemap: *Tilemap, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f
     while (x <= maxX) : (x += 1) {
         if (steep) {
             const index = @intCast(usize, y) + @intCast(usize, x) * tilemap.size.w;
+            _ = index;
             tilemap.setTile(.{ .x = @intCast(usize, y), .y = @intCast(usize, x) }, color);
         } else {
             const index = @intCast(usize, x) + @intCast(usize, y) * tilemap.size.w;
+            _ = index;
             tilemap.setTile(.{ .x = @intCast(usize, x), .y = @intCast(usize, y) }, color);
         }
 

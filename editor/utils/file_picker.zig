@@ -3,7 +3,7 @@ const fs = std.fs;
 const path = std.fs.path;
 const known_folders = @import("known-folders.zig");
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 var only_dirs = false;
 var hide_hidden_dirs = true;
@@ -19,13 +19,13 @@ var files = std.ArrayList([]const u8).init(aya.mem.allocator);
 var directories = std.ArrayList([]const u8).init(aya.mem.allocator);
 
 // usage:
-//  if (open_picker) { utils.file_picker.setup(..); ogOpenPopup("File Picker");
+//  if (open_picker) { utils.file_picker.setup(..);imgui.ogOpenPopup("File Picker");
 
 // if (igBeginPopupModal("File Picker", null, ImGuiWindowFlags_AlwaysAutoResize)) {
-//     defer igEndPopup();
+//     defer imgui.igEndPopup();
 //     if (utils.file_picker.draw()) |res| {
 //          std.debug.print("done with true\n", .{});
-//          igCloseCurrentPopup();
+//          imgui.igCloseCurrentPopup();
 //     }
 // }
 
@@ -57,77 +57,77 @@ pub fn draw() ?bool {
         changeDir(".");
     }
 
-    ogColoredText(0.2, 0.8, 0.2, picker_description);
-    ogDummy(.{ .y = 5 });
+   imgui.ogColoredText(0.2, 0.8, 0.2, picker_description);
+   imgui.ogDummy(.{ .y = 5 });
 
-    if (ogButton("Home")) changeDirToKnownFolder(.home);
-    igSameLine(0, 15);
-    if (ogButton("Desktop")) changeDirToKnownFolder(.desktop);
-    igSameLine(0, 15);
-    if (ogButton("Documents")) changeDirToKnownFolder(.documents);
-    igSameLine(igGetWindowContentRegionWidth() - 120, 0);
-    if (ogButton("Create Directory")) ogOpenPopup("##create-directory");
+    if (imgui.ogButton("Home")) changeDirToKnownFolder(.home);
+    imgui.igSameLine(0, 15);
+    if (imgui.ogButton("Desktop")) changeDirToKnownFolder(.desktop);
+    imgui.igSameLine(0, 15);
+    if (imgui.ogButton("Documents")) changeDirToKnownFolder(.documents);
+    imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 120, 0);
+    if (imgui.ogButton("Create Directory"))imgui.ogOpenPopup("##create-directory");
 
-    igText(selected_dir.?.ptr);
+    imgui.igText(selected_dir.?.ptr);
 
-    if (ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, ImGuiWindowFlags_AlwaysAutoResize)) {
-        defer igEndChildFrame();
+    if (imgui.ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
+        defer imgui.igEndChildFrame();
 
         if (dir.access("..", .{})) {
-            igPushStyleColorU32(ImGuiCol_Text, aya.math.Color.yellow.value);
-            if (ogSelectableBool("..", false, ImGuiSelectableFlags_DontClosePopups, .{})) {
+            imgui.igPushStyleColorU32(imgui.ImGuiCol_Text, aya.math.Color.yellow.value);
+            if (imgui.ogSelectableBool("..", false, imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
                 changeDir("..");
             }
-            igPopStyleColor(1);
-        } else |err| {}
+            imgui.igPopStyleColor(1);
+        } else |_| {}
 
-        igPushStyleColorU32(ImGuiCol_Text, aya.math.Color.yellow.value);
+        imgui.igPushStyleColorU32(imgui.ImGuiCol_Text, aya.math.Color.yellow.value);
         for (directories.items) |entry_name| {
-            if (ogSelectableBool(entry_name.ptr, false, ImGuiSelectableFlags_DontClosePopups, .{}))
+            if (imgui.ogSelectableBool(entry_name.ptr, false, imgui.ImGuiSelectableFlags_DontClosePopups, .{}))
                 changeDir(entry_name);
         }
-        igPopStyleColor(1);
+        imgui.igPopStyleColor(1);
 
         if (!only_dirs) {
             for (files.items) |entry_name| {
                 const is_selected = selected_file != null and std.mem.eql(u8, entry_name, selected_file.?);
-                if (ogSelectableBool(entry_name.ptr, is_selected, ImGuiSelectableFlags_DontClosePopups, .{}))
+                if (imgui.ogSelectableBool(entry_name.ptr, is_selected, imgui.ImGuiSelectableFlags_DontClosePopups, .{}))
                     selected_file = entry_name;
             }
         }
     }
 
-    if (ogButton("Cancel")) return false;
+    if (imgui.ogButton("Cancel")) return false;
 
     if (only_dirs) {
-        igSameLine(igGetWindowContentRegionWidth() - 30, 0);
-        if (ogButton("Open")) return true;
+        imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 30, 0);
+        if (imgui.ogButton("Open")) return true;
     }
 
     if (selected_file != null) {
-        igSameLine(igGetWindowContentRegionWidth() - 30, 0);
-        if (ogButton("Open")) return true;
+        imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 30, 0);
+        if (imgui.ogButton("Open")) return true;
     }
 
-    ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-    if (igBeginPopup("##create-directory", ImGuiWindowFlags_None)) {
-        defer igEndPopup();
-        _ = igInputText("", &buffer, buffer.len, ImGuiInputTextFlags_CharsNoBlank, null, null);
-        if (ogButton("Cancel")) igCloseCurrentPopup();
-        igSameLine(igGetWindowContentRegionWidth() - 45, 0);
+   imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+    if (imgui.igBeginPopup("##create-directory", imgui.ImGuiWindowFlags_None)) {
+        defer imgui.igEndPopup();
+        _ = imgui.igInputText("", &buffer, buffer.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
+        if (imgui.ogButton("Cancel")) imgui.igCloseCurrentPopup();
+        imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 45, 0);
 
         const label_sentinel_index = std.mem.indexOfScalar(u8, &buffer, 0).?;
         const disabled = label_sentinel_index == 0;
-        ogPushDisabled(disabled);
-        if (ogButtonEx("Create", .{})) {
+       imgui.ogPushDisabled(disabled);
+        if (imgui.ogButtonEx("Create", .{})) {
             if (dir.makeDir(buffer[0..label_sentinel_index])) {
                 changeDir(buffer[0..label_sentinel_index]);
-                igCloseCurrentPopup();
+                imgui.igCloseCurrentPopup();
             } else |err| {
                 std.debug.print("error creating dir: {}\n", .{err});
             }
         }
-        ogPopDisabled(disabled);
+       imgui.ogPopDisabled(disabled);
     }
 
     return null;

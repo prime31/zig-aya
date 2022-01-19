@@ -1,7 +1,8 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
+const icons = imgui.icons;
 
 const root = @import("../main.zig");
 const data = root.data;
@@ -70,7 +71,7 @@ pub const AutoTilemapLayer = struct {
     map_dirty: bool = false,
     shift_dragged: bool = false,
     dragged: bool = false,
-    prev_mouse_pos: ImVec2 = .{},
+    prev_mouse_pos: imgui.ImVec2 = .{},
 
     pub const Randoms = struct {
         float: f32,
@@ -104,7 +105,7 @@ pub const AutoTilemapLayer = struct {
         self.ruleset.deinit();
     }
 
-    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+    pub fn onFileDropped(self: *@This(), _: *AppState, file: []const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
             self.tileset.loadTexture(file) catch |err| {
                 std.debug.print("tileset failed to load image: {}\n", .{err});
@@ -195,7 +196,7 @@ pub const AutoTilemapLayer = struct {
         return 0;
     }
 
-    pub fn draw(self: *@This(), state: *AppState, is_selected: bool) void {
+    pub fn draw(self: *@This(), _: *AppState, is_selected: bool) void {
         if (self.map_dirty and (!is_selected or !self.draw_raw_pre_map)) {
             self.generateFinalMap();
             self.map_dirty = false;
@@ -215,11 +216,11 @@ pub const AutoTilemapLayer = struct {
         }
         self.brushset.draw();
 
-        ogPushStyleVarVec2(ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
-        defer igPopStyleVar(1);
+        imgui.ogPushStyleVarVec2(imgui.ImGuiStyleVar_WindowMinSize, .{ .x = 365 });
+        defer imgui.igPopStyleVar(1);
 
-        defer igEnd();
-        if (!igBegin("Rules###Inspector", null, ImGuiWindowFlags_None)) return;
+        defer imgui.igEnd();
+        if (!imgui.igBegin("Rules###Inspector", null, imgui.ImGuiWindowFlags_None)) return;
 
         var group: u8 = 0;
         var delete_index: usize = std.math.maxInt(usize);
@@ -229,35 +230,35 @@ pub const AutoTilemapLayer = struct {
             if (self.ruleset.rules.items[i].group > 0 and self.ruleset.rules.items[i].group != group) {
                 group = self.ruleset.rules.items[i].group;
 
-                igPushIDInt(@intCast(c_int, group));
+                imgui.igPushIDInt(@intCast(c_int, group));
                 groupDropTarget(group, i);
                 std.mem.set(u8, &group_label_buf, 0);
                 std.mem.copy(u8, &group_label_buf, self.getGroupName(group));
-                const header_open = igCollapsingHeaderBoolPtr(&group_label_buf, null, ImGuiTreeNodeFlags_DefaultOpen);
+                const header_open = imgui.igCollapsingHeaderBoolPtr(&group_label_buf, null, imgui.ImGuiTreeNodeFlags_DefaultOpen);
                 groupDragDrop(group, i);
 
-                if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
-                    ogOpenPopup("##rename-group");
+                if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None) and imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
+                    imgui.ogOpenPopup("##rename-group");
                     std.mem.copy(u8, &rename_group_buf, self.getGroupName(group));
                 }
 
-                ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-                if (igBeginPopup("##rename-group", ImGuiWindowFlags_None)) {
-                    _ = ogInputText("##name", &rename_group_buf, rename_group_buf.len);
+                imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+                if (imgui.igBeginPopup("##rename-group", imgui.ImGuiWindowFlags_None)) {
+                    _ = imgui.ogInputText("##name", &rename_group_buf, rename_group_buf.len);
 
-                    if (ogButtonEx("Rename Group", .{ .x = -1, .y = 0 })) {
-                        igCloseCurrentPopup();
+                    if (imgui.ogButtonEx("Rename Group", .{ .x = -1, .y = 0 })) {
+                        imgui.igCloseCurrentPopup();
                         const label_sentinel_index = std.mem.indexOfScalar(u8, &rename_group_buf, 0).?;
                         self.renameGroup(group, rename_group_buf[0..label_sentinel_index]);
                         std.debug.print("grp: {s}\n", .{rename_group_buf[0..label_sentinel_index]});
                     }
 
-                    igEndPopup();
+                    imgui.igEndPopup();
                 }
-                igPopID();
+                imgui.igPopID();
 
                 if (header_open) {
-                    igIndent(10);
+                    imgui.igIndent(10);
                     drag_drop_state.rendering_group = true;
                 }
                 rulesDragDrop(i, &self.ruleset.rules.items[i], true);
@@ -269,7 +270,7 @@ pub const AutoTilemapLayer = struct {
                 }
 
                 if (header_open) {
-                    igUnindent(10);
+                    imgui.igUnindent(10);
                     drag_drop_state.rendering_group = false;
                 }
 
@@ -297,84 +298,84 @@ pub const AutoTilemapLayer = struct {
             drag_drop_state.handle(&self.ruleset.rules);
         }
 
-        ogDummy(.{ .y = 5 });
+        imgui.ogDummy(.{ .y = 5 });
 
-        if (ogButton("Add Rule")) {
+        if (imgui.ogButton("Add Rule")) {
             self.ruleset.addRule();
         }
-        igSameLine(0, 10);
+        imgui.igSameLine(0, 10);
 
-        if (ogButton("Add 9-Slice")) {
-            ogOpenPopup("nine-slice-wizard");
+        if (imgui.ogButton("Add 9-Slice")) {
+            imgui.ogOpenPopup("nine-slice-wizard");
             // reset temp state
             std.mem.set(u8, &new_rule_label_buf, 0);
             nine_slice_selected = null;
         }
-        igSameLine(0, 10);
+        imgui.igSameLine(0, 10);
 
-        if (ogButton("Add Inner-4")) {
-            ogOpenPopup("inner-four-wizard");
+        if (imgui.ogButton("Add Inner-4")) {
+            imgui.ogOpenPopup("inner-four-wizard");
             // reset temp state
             std.mem.set(u8, &new_rule_label_buf, 0);
             nine_slice_selected = null;
         }
-        igSameLine(0, 10);
+        imgui.igSameLine(0, 10);
 
-        if (ogButton("Random Seed")) {
-            ogOpenPopup("random-seed");
+        if (imgui.ogButton("Random Seed")) {
+            imgui.ogOpenPopup("random-seed");
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.8 });
-        if (igBeginPopup("random-seed", ImGuiWindowFlags_None)) {
-            if (ogDrag(usize, "", &self.ruleset.seed, 1, 0, 1000)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.8 });
+        if (imgui.igBeginPopup("random-seed", imgui.ImGuiWindowFlags_None)) {
+            if (imgui.ogDrag(usize, "", &self.ruleset.seed, 1, 0, 1000)) {
                 self.generateRandomData();
                 self.map_dirty = true;
             }
-            igEndPopup();
+            imgui.igEndPopup();
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("nine-slice-wizard", ImGuiWindowFlags_None)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("nine-slice-wizard", imgui.ImGuiWindowFlags_None)) {
             nineSlicePopup(self, 3);
-            igEndPopup();
+            imgui.igEndPopup();
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("inner-four-wizard", ImGuiWindowFlags_None)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("inner-four-wizard", imgui.ImGuiWindowFlags_None)) {
             nineSlicePopup(self, 2);
-            igEndPopup();
+            imgui.igEndPopup();
         }
     }
 
     pub fn drawRule(self: *@This(), index: usize) bool {
         var rule = &self.ruleset.rules.items[index];
-        igPushIDPtr(rule);
-        defer igPopID();
+        imgui.igPushIDPtr(rule);
+        defer imgui.igPopID();
 
         rulesDragDrop(index, rule, false);
 
         // right-click the move button to add the Rule to a group only if not already in a group
         if (rule.group == 0) {
-            if (igIsItemHovered(ImGuiHoveredFlags_None) and igIsMouseClicked(ImGuiMouseButton_Right, false)) {
-                ogOpenPopup("##group-name");
+            if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None) and imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
+                imgui.ogOpenPopup("##group-name");
                 std.mem.set(u8, &name_buf, 0);
             }
 
-            ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-            if (igBeginPopup("##group-name", ImGuiWindowFlags_None)) {
-                defer igEndPopup();
+            imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+            if (imgui.igBeginPopup("##group-name", imgui.ImGuiWindowFlags_None)) {
+                defer imgui.igEndPopup();
 
-                _ = ogInputText("##group-name", &name_buf, name_buf.len);
+                _ = imgui.ogInputText("##group-name", &name_buf, name_buf.len);
 
                 const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
                 const disabled = label_sentinel_index == 0;
                 if (disabled) {
-                    igPushItemFlag(ImGuiItemFlags_Disabled, true);
-                    igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+                    imgui.igPushItemFlag(imgui.ImGuiItemFlags_Disabled, true);
+                    imgui.igPushStyleVarFloat(imgui.ImGuiStyleVar_Alpha, 0.5);
                 }
 
-                if (ogButtonEx("Add to New Group", .{ .x = -1, .y = 0 })) {
-                    igCloseCurrentPopup();
+                if (imgui.ogButtonEx("Add to New Group", .{ .x = -1, .y = 0 })) {
+                    imgui.igCloseCurrentPopup();
 
                     // get the next available group
                     rule.group = self.ruleset.getNextAvailableGroup(self, name_buf[0..label_sentinel_index]);
@@ -382,40 +383,40 @@ pub const AutoTilemapLayer = struct {
                 }
 
                 if (disabled) {
-                    igPopItemFlag();
-                    igPopStyleVar(1);
+                    imgui.igPopItemFlag();
+                    imgui.igPopStyleVar(1);
                 }
             }
         }
 
-        igPushItemWidth(115);
+        imgui.igPushItemWidth(115);
         std.mem.copy(u8, &rule_label_buf, &rule.name);
-        if (ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
+        if (imgui.ogInputText("##name", &rule_label_buf, rule_label_buf.len)) {
             std.mem.copy(u8, &rule.name, &rule_label_buf);
         }
-        igPopItemWidth();
-        igSameLine(0, 4);
+        imgui.igPopItemWidth();
+        imgui.igSameLine(0, 4);
 
-        if (ogButton("Pattern")) {
-            ogOpenPopup("##pattern_popup");
+        if (imgui.ogButton("Pattern")) {
+            imgui.ogOpenPopup("##pattern_popup");
         }
-        igSameLine(0, 4);
+        imgui.igSameLine(0, 4);
 
-        if (ogButton("Result")) {
-            ogOpenPopup("result_popup");
+        if (imgui.ogButton("Result")) {
+            imgui.ogOpenPopup("result_popup");
         }
-        igSameLine(0, 4);
+        imgui.igSameLine(0, 4);
 
-        igPushItemWidth(50);
-        if (ogDrag(u8, "", &rule.chance, 1, 0, 100)) self.map_dirty = true;
-        igSameLine(0, 4);
+        imgui.igPushItemWidth(50);
+        if (imgui.ogDrag(u8, "", &rule.chance, 1, 0, 100)) self.map_dirty = true;
+        imgui.igSameLine(0, 4);
 
-        if (ogButton(icons.copy)) {
+        if (imgui.ogButton(icons.copy)) {
             self.ruleset.rules.append(rule.clone()) catch unreachable;
         }
-        igSameLine(0, 4);
+        imgui.igSameLine(0, 4);
 
-        if (ogButton(icons.trash)) {
+        if (imgui.ogButton(icons.trash)) {
             return true;
         }
 
@@ -425,69 +426,69 @@ pub const AutoTilemapLayer = struct {
         }
 
         // display the popup a bit to the left to center it under the mouse
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##pattern_popup", ImGuiWindowFlags_None)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##pattern_popup", imgui.ImGuiWindowFlags_None)) {
             self.patternPopup(rule);
 
-            var size = ogGetContentRegionAvail();
-            if (ogButtonEx("Clear", .{ .x = (size.x - 4) / 1.7 })) {
+            var size = imgui.ogGetContentRegionAvail();
+            if (imgui.ogButtonEx("Clear", .{ .x = (size.x - 4) / 1.7 })) {
                 rule.clearPatternData();
                 self.map_dirty = true;
             }
-            igSameLine(0, 4);
+            imgui.igSameLine(0, 4);
 
-            if (ogButtonEx("...", .{ .x = -1, .y = 0 })) {
-                ogOpenPopup("rules_hamburger");
+            if (imgui.ogButtonEx("...", .{ .x = -1, .y = 0 })) {
+                imgui.ogOpenPopup("rules_hamburger");
             }
 
             self.rulesHamburgerPopup(rule);
 
             // quick brush selector
-            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_B)) {
-                if (igIsPopupOpenID(igGetIDStr("##brushes"), ImGuiPopupFlags_None)) {
-                    igClosePopupToLevel(1, true);
+            if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_B)) {
+                if (imgui.igIsPopupOpenID(imgui.igGetIDStr("##brushes"), imgui.ImGuiPopupFlags_None)) {
+                    imgui.igClosePopupToLevel(1, true);
                 } else {
-                    ogOpenPopup("##brushes");
+                    imgui.ogOpenPopup("##brushes");
                 }
             }
 
             // nested popup
-            ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-            if (igBeginPopup("##brushes", ImGuiWindowFlags_NoTitleBar)) {
+            imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+            if (imgui.igBeginPopup("##brushes", imgui.ImGuiWindowFlags_NoTitleBar)) {
                 self.brushset.drawWithoutWindow();
-                igEndPopup();
+                imgui.igEndPopup();
             }
 
-            igEndPopup();
+            imgui.igEndPopup();
         }
 
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("result_popup", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("result_popup", imgui.ImGuiWindowFlags_NoResize | imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
             self.resultPopup(rule);
-            igEndPopup();
+            imgui.igEndPopup();
         }
 
         return false;
     }
 
     fn patternPopup(self: *@This(), rule: *Rule) void {
-        igText("Pattern");
-        igSameLine(0, igGetWindowContentRegionWidth() - 65);
-        igText(icons.question_circle);
-        ogUnformattedTooltip(100, "Left Click: select tile and require\nShift + Left Click: select tile and negate\nRight Click: set as empty required\nShift + Right Click: set as empty negated");
+        imgui.igText("Pattern");
+        imgui.igSameLine(0, imgui.igGetWindowContentRegionWidth() - 65);
+        imgui.igText(icons.question_circle);
+        imgui.ogUnformattedTooltip(100, "Left Click: select tile and require\nShift + Left Click: select tile and negate\nRight Click: set as empty required\nShift + Right Click: set as empty negated");
 
-        const draw_list = igGetWindowDrawList();
+        const draw_list = imgui.igGetWindowDrawList();
 
         const rect_size: f32 = 24;
         const pad: f32 = 4;
         const canvas_size = 5 * rect_size + 4 * pad;
         const thickness: f32 = 2;
 
-        var pos = ImVec2{};
-        igGetCursorScreenPos(&pos);
-        _ = ogInvisibleButton("##pattern_button", .{ .x = canvas_size, .y = canvas_size }, ImGuiButtonFlags_None);
-        const mouse_pos = igGetIO().MousePos;
-        const hovered = igIsItemHovered(ImGuiHoveredFlags_None);
+        var pos = imgui.ImVec2{};
+        imgui.igGetCursorScreenPos(&pos);
+        _ = imgui.ogInvisibleButton("##pattern_button", .{ .x = canvas_size, .y = canvas_size }, imgui.ImGuiButtonFlags_None);
+        const mouse_pos = imgui.igGetIO().MousePos;
+        const hovered = imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None);
 
         var y: usize = 0;
         while (y < 5) : (y += 1) {
@@ -497,14 +498,14 @@ pub const AutoTilemapLayer = struct {
                 const pad_y = @intToFloat(f32, y) * pad;
                 const offset_x = @intToFloat(f32, x) * rect_size;
                 const offset_y = @intToFloat(f32, y) * rect_size;
-                var tl = ImVec2{ .x = pos.x + pad_x + offset_x, .y = pos.y + pad_y + offset_y };
+                var tl = imgui.ImVec2{ .x = pos.x + pad_x + offset_x, .y = pos.y + pad_y + offset_y };
 
                 var rule_tile = rule.get(x, y);
                 if (rule_tile.tile > 0) {
-                    ogAddQuadFilled(draw_list, tl, rect_size, root.colors.brushes[rule_tile.tile - 1]);
+                    imgui.ogAddQuadFilled(draw_list, tl, rect_size, root.colors.brushes[rule_tile.tile - 1]);
                 } else {
                     // if empty rule or just with a modifier
-                    ogAddQuadFilled(draw_list, tl, rect_size, root.colors.rgbToU32(0, 0, 0));
+                    imgui.ogAddQuadFilled(draw_list, tl, rect_size, root.colors.rgbToU32(0, 0, 0));
                 }
 
                 if (x == 2 and y == 2) {
@@ -512,33 +513,33 @@ pub const AutoTilemapLayer = struct {
                     var tl2 = tl;
                     tl2.x += 1;
                     tl2.y += 1;
-                    ogAddQuad(draw_list, tl2, size, root.colors.pattern_center, thickness);
+                    imgui.ogAddQuad(draw_list, tl2, size, root.colors.pattern_center, thickness);
                 }
 
                 tl.x -= 1;
                 tl.y -= 1;
                 if (rule_tile.state == .negated) {
                     const size = rect_size + thickness;
-                    ogAddQuad(draw_list, tl, size, root.colors.brush_negated, thickness);
+                    imgui.ogAddQuad(draw_list, tl, size, root.colors.brush_negated, thickness);
                 } else if (rule_tile.state == .required) {
                     const size = rect_size + thickness;
-                    ogAddQuad(draw_list, tl, size, root.colors.brush_required, thickness);
+                    imgui.ogAddQuad(draw_list, tl, size, root.colors.brush_required, thickness);
                 }
 
                 if (hovered) {
                     if (tl.x <= mouse_pos.x and mouse_pos.x < tl.x + rect_size and tl.y <= mouse_pos.y and mouse_pos.y < tl.y + rect_size) {
-                        if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
+                        if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
                             self.map_dirty = true;
-                            if (igGetIO().KeyShift) {
+                            if (imgui.igGetIO().KeyShift) {
                                 rule_tile.negate(self.brushset.selected.comps.tile_index + 1);
                             } else {
                                 rule_tile.require(self.brushset.selected.comps.tile_index + 1);
                             }
                         }
 
-                        if (igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+                        if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
                             self.map_dirty = true;
-                            rule_tile.toggleState(if (igGetIO().KeyShift) .negated else .required);
+                            rule_tile.toggleState(if (imgui.igGetIO().KeyShift) .negated else .required);
                         }
                     }
                 }
@@ -547,56 +548,56 @@ pub const AutoTilemapLayer = struct {
     }
 
     fn rulesHamburgerPopup(self: *@This(), rule: *Rule) void {
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("rules_hamburger", ImGuiWindowFlags_None)) {
-            defer igEndPopup();
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("rules_hamburger", imgui.ImGuiWindowFlags_None)) {
+            defer imgui.igEndPopup();
             self.map_dirty = true;
 
-            igText("Shift:");
-            igSameLine(0, 10);
-            if (ogButton(icons.arrow_left)) rule.shift(.left);
+            imgui.igText("Shift:");
+            imgui.igSameLine(0, 10);
+            if (imgui.ogButton(icons.arrow_left)) rule.shift(.left);
 
-            igSameLine(0, 7);
-            if (ogButton(icons.arrow_up)) rule.shift(.up);
+            imgui.igSameLine(0, 7);
+            if (imgui.ogButton(icons.arrow_up)) rule.shift(.up);
 
-            igSameLine(0, 7);
-            if (ogButton(icons.arrow_down)) rule.shift(.down);
+            imgui.igSameLine(0, 7);
+            if (imgui.ogButton(icons.arrow_down)) rule.shift(.down);
 
-            igSameLine(0, 7);
-            if (ogButton(icons.arrow_right)) rule.shift(.right);
+            imgui.igSameLine(0, 7);
+            if (imgui.ogButton(icons.arrow_right)) rule.shift(.right);
 
-            igText("Flip: ");
-            igSameLine(0, 10);
-            if (ogButton(icons.arrows_alt_h)) rule.flip(.horizontal);
+            imgui.igText("Flip: ");
+            imgui.igSameLine(0, 10);
+            if (imgui.ogButton(icons.arrows_alt_h)) rule.flip(.horizontal);
 
-            igSameLine(0, 4);
-            if (ogButton(icons.arrows_alt_v)) rule.flip(.vertical);
+            imgui.igSameLine(0, 4);
+            if (imgui.ogButton(icons.arrows_alt_v)) rule.flip(.vertical);
         }
     }
 
     /// shows the tileset allowing multiple tiles to be selected
     fn resultPopup(self: *@This(), ruleset: *Rule) void {
-        var content_start_pos = ogGetCursorScreenPos();
+        var content_start_pos = imgui.ogGetCursorScreenPos();
         const zoom: usize = if (self.tileset.tex.width < 200 and self.tileset.tex.height < 200) 2 else 1;
         const tile_spacing = self.tileset.spacing * zoom;
         const tile_size = self.tileset.tile_size * zoom;
 
-        ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tileset.tex.height) * @intCast(i32, zoom));
+        imgui.ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tileset.tex.height) * @intCast(i32, zoom));
 
-        const draw_list = igGetWindowDrawList();
+        // const draw_list = imgui.igGetWindowDrawList();
 
         // draw selected tiles
         var iter = ruleset.result_tiles.iter();
         while (iter.next()) |index| {
-            const per_row = self.tileset.tiles_per_row;
+            // const per_row = self.tileset.tiles_per_row;
             // TODO: HACK!
             const ts = @import("../data/tileset.zig");
             ts.addTileToDrawList(tile_size, content_start_pos, index, self.tileset.tiles_per_row, tile_spacing);
         }
 
         // check input for toggling state
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-            if (igIsMouseClicked(0, false)) {
+        if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
+            if (imgui.igIsMouseClicked(0, false)) {
                 var tile = tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
                 const per_row = self.tileset.tiles_per_row;
                 ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
@@ -604,26 +605,26 @@ pub const AutoTilemapLayer = struct {
             }
         }
 
-        if (ogButtonEx("Clear", .{ .x = -1 })) {
+        if (imgui.ogButtonEx("Clear", .{ .x = -1 })) {
             ruleset.result_tiles.clear();
             self.map_dirty = true;
         }
     }
 
     /// TODO: duplicated almost exactly in TilemapLayer
-    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        if ((igGetIO().KeyCtrl or igGetIO().KeySuper) and ogKeyPressed(aya.sdl.SDL_SCANCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: imgui.ImVec2) void {
+        if ((imgui.igGetIO().KeyCtrl or imgui.igGetIO().KeySuper) and imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_A)) self.draw_raw_pre_map = !self.draw_raw_pre_map;
 
-        if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
+        if (!imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) return;
 
         // shortcuts for pressing 1-9 to set the brush, only works when hovering the scene view
         var key: usize = 49;
         while (key < 58) : (key += 1) {
-            if (ogKeyPressed(key)) self.brushset.selected.value = @intCast(u16, key - 49);
+            if (imgui.ogKeyPressed(key)) self.brushset.selected.value = @intCast(u16, key - 49);
         }
 
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
-        if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;
+        if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0) and (imgui.igGetIO().KeyAlt or imgui.igGetIO().KeySuper)) return;
 
         if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
@@ -634,24 +635,24 @@ pub const AutoTilemapLayer = struct {
             }
 
             // box selection with left/right mouse + shift
-            if (ogIsAnyMouseDragging() and igGetIO().KeyShift) {
-                var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
+            if (imgui.ogIsAnyMouseDragging() and imgui.igGetIO().KeyShift) {
+                var dragged_pos = imgui.igGetIO().MousePos.subtract(imgui.ogGetAnyMouseDragDelta());
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
                     const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
 
-                    const color = if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
+                    const color = if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
                     aya.draw.hollowRect(.{ .x = min_x, .y = max_y }, max_x - min_x, min_y - max_y, 1, color);
 
                     self.shift_dragged = true;
                 }
-            } else if (ogIsAnyMouseReleased() and self.shift_dragged) {
+            } else if (imgui.ogIsAnyMouseReleased() and self.shift_dragged) {
                 self.shift_dragged = false;
 
-                var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
-                var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
+                var drag_delta = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0) else imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Right, 0);
+                var dragged_pos = imgui.igGetIO().MousePos.subtract(drag_delta);
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     self.map_dirty = true;
                     const min_x = std.math.min(tile.x, tile2.x);
@@ -660,7 +661,7 @@ pub const AutoTilemapLayer = struct {
                     const max_y = std.math.max(tile.y, tile2.y);
 
                     // either set the tile to a brush or 0 depending on mouse button
-                    const tile_value = if (igIsMouseReleased(ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
+                    const tile_value = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
                     while (min_y <= max_y) : (min_y += 1) {
                         var x = min_x;
                         while (x <= max_x) : (x += 1) {
@@ -668,22 +669,22 @@ pub const AutoTilemapLayer = struct {
                         }
                     }
                 }
-            } else if (ogIsAnyMouseDown() and !igGetIO().KeyShift) {
+            } else if (imgui.ogIsAnyMouseDown() and !imgui.igGetIO().KeyShift) {
                 self.map_dirty = true;
 
                 // if the mouse was down last frame, get last mouse pos and ensure we dont skip tiles when drawing
-                const tile_value = if (igIsMouseDown(ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
+                const tile_value = if (imgui.igIsMouseDown(imgui.ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
                 if (self.dragged) {
                     self.commitInBetweenTiles(state, tile, camera, tile_value);
                 }
                 self.dragged = true;
 
                 self.tilemap.setTile(tile, tile_value);
-            } else if (ogIsAnyMouseReleased()) {
+            } else if (imgui.ogIsAnyMouseReleased()) {
                 self.dragged = false;
             }
         }
-        self.prev_mouse_pos = igGetIO().MousePos;
+        self.prev_mouse_pos = imgui.igGetIO().MousePos;
     }
 
     /// TODO: duplicated in TilemapLayer
@@ -701,21 +702,23 @@ pub const AutoTilemapLayer = struct {
 };
 
 fn groupDropTarget(group: u8, index: usize) void {
+    _ = group;
     if (drag_drop_state.active) {
-        var cursor = ogGetCursorPos();
+        var cursor = imgui.ogGetCursorPos();
         const old_pos = cursor;
         cursor.y -= 6;
-        ogSetCursorPos(cursor);
-        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
-        _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
-        igPopStyleColor(1);
-        ogSetCursorPos(old_pos);
+        imgui.ogSetCursorPos(cursor);
+        imgui.igPushStyleColorU32(imgui.ImGuiCol_Button, root.colors.rgbToU32(0, 255, 0));
+        _ = imgui.ogInvisibleButton("", .{ .x = -1, .y = 8 }, imgui.ImGuiButtonFlags_None);
+        imgui.igPopStyleColor(1);
+        imgui.ogSetCursorPos(old_pos);
     }
 
-    if (igBeginDragDropTarget()) {
-        defer igEndDragDropTarget();
+    if (imgui.igBeginDragDropTarget()) {
+        defer imgui.igEndDragDropTarget();
 
-        if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+        if (imgui.igAcceptDragDropPayload("RULESET_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
+            _ = payload;
             drag_drop_state.completed = true;
             drag_drop_state.to = index;
             drag_drop_state.above_group = true;
@@ -725,47 +728,48 @@ fn groupDropTarget(group: u8, index: usize) void {
 }
 
 fn groupDragDrop(group: u8, index: usize) void {
-    if (igBeginDragDropSource(ImGuiDragDropFlags_SourceNoHoldToOpenOthers)) {
+    if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_SourceNoHoldToOpenOthers)) {
         drag_drop_state.active = true;
         drag_drop_state.from = index;
         drag_drop_state.source = .{ .group = group };
-        _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
-        _ = ogButtonEx("group move", .{ .x = ogGetContentRegionAvail().x, .y = 20 });
-        igEndDragDropSource();
+        _ = imgui.igSetDragDropPayload("RULESET_DRAG", null, 0, imgui.ImGuiCond_Once);
+        _ = imgui.ogButtonEx("group move", .{ .x = imgui.ogGetContentRegionAvail().x, .y = 20 });
+        imgui.igEndDragDropSource();
     }
 }
 
 /// handles drag/drop sources and targets
 fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
-    var cursor = ogGetCursorPos();
+    var cursor = imgui.ogGetCursorPos();
 
     if (!drop_only) {
-        _ = ogButton(icons.grip_horizontal);
-        ogUnformattedTooltip(20, if (rule.group > 0) "Click and drag to reorder" else "Click and drag to reorder\nRight-click to add a group");
+        _ = imgui.ogButton(icons.grip_horizontal);
+        imgui.ogUnformattedTooltip(20, if (rule.group > 0) "Click and drag to reorder" else "Click and drag to reorder\nRight-click to add a group");
 
-        igSameLine(0, 4);
-        if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
+        imgui.igSameLine(0, 4);
+        if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_None)) {
             drag_drop_state.active = true;
-            _ = igSetDragDropPayload("RULESET_DRAG", null, 0, ImGuiCond_Once);
+            _ = imgui.igSetDragDropPayload("RULESET_DRAG", null, 0, imgui.ImGuiCond_Once);
             drag_drop_state.from = index;
             drag_drop_state.source = .{ .rule = rule };
-            _ = ogButtonEx(&rule.name, .{ .x = ogGetContentRegionAvail().x, .y = 20 });
-            igEndDragDropSource();
+            _ = imgui.ogButtonEx(&rule.name, .{ .x = imgui.ogGetContentRegionAvail().x, .y = 20 });
+            imgui.igEndDragDropSource();
         }
     }
 
     // if we are dragging a group dont allow dragging it into another group
     if (drag_drop_state.active and !(drag_drop_state.isGroup() and rule.group > 0)) {
-        const old_pos = ogGetCursorPos();
+        const old_pos = imgui.ogGetCursorPos();
         cursor.y -= 6;
-        ogSetCursorPos(cursor);
-        igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
-        _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
-        igPopStyleColor(1);
-        ogSetCursorPos(old_pos);
+        imgui.ogSetCursorPos(cursor);
+        imgui.igPushStyleColorU32(imgui.ImGuiCol_Button, root.colors.rgbToU32(255, 0, 0));
+        _ = imgui.ogInvisibleButton("", .{ .x = -1, .y = 8 }, imgui.ImGuiButtonFlags_None);
+        imgui.igPopStyleColor(1);
+        imgui.ogSetCursorPos(old_pos);
 
-        if (igBeginDragDropTarget()) {
-            if (igAcceptDragDropPayload("RULESET_DRAG", ImGuiDragDropFlags_None)) |payload| {
+        if (imgui.igBeginDragDropTarget()) {
+            if (imgui.igAcceptDragDropPayload("RULESET_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
+                _ = payload;
                 drag_drop_state.dropped_in_group = drag_drop_state.rendering_group;
                 drag_drop_state.completed = true;
                 drag_drop_state.to = index;
@@ -779,7 +783,7 @@ fn rulesDragDrop(index: usize, rule: *Rule, drop_only: bool) void {
                 }
                 drag_drop_state.active = false;
             }
-            igEndDragDropTarget();
+            imgui.igEndDragDropTarget();
         }
     }
 }
@@ -841,8 +845,8 @@ fn swapGroups(rules: *std.ArrayList(Rule)) void {
 }
 
 /// helper to find the tile under the mouse given a top-left position of the grid and a grid size
-pub fn tileIndexUnderMouse(rect_size: usize, origin: ImVec2) struct { x: usize, y: usize } {
-    var pos = igGetIO().MousePos;
+pub fn tileIndexUnderMouse(rect_size: usize, origin: imgui.ImVec2) struct { x: usize, y: usize } {
+    var pos = imgui.igGetIO().MousePos;
     pos.x -= origin.x;
     pos.y -= origin.y;
 
@@ -851,27 +855,27 @@ pub fn tileIndexUnderMouse(rect_size: usize, origin: ImVec2) struct { x: usize, 
 
 fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
     self.brushset.drawWithoutWindow();
-    igSameLine(0, 5);
+    imgui.igSameLine(0, 5);
 
-    var content_start_pos = ogGetCursorScreenPos();
-    ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width), @floatToInt(i32, self.tileset.tex.height));
+    var content_start_pos = imgui.ogGetCursorScreenPos();
+    imgui.ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width), @floatToInt(i32, self.tileset.tex.height));
 
-    const draw_list = igGetWindowDrawList();
+    const draw_list = imgui.igGetWindowDrawList();
 
     if (nine_slice_selected) |index| {
         const x = @mod(index, self.tileset.tiles_per_row);
         const y = @divTrunc(index, self.tileset.tiles_per_row);
 
-        var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing) };
+        var tl = imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing) };
         tl.x += content_start_pos.x + 1 + @intToFloat(f32, self.tileset.spacing);
         tl.y += content_start_pos.y + 1 + @intToFloat(f32, self.tileset.spacing);
-        ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), root.colors.rule_result_selected_fill);
-        ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, root.colors.rule_result_selected_outline, 2);
+        imgui.ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), root.colors.rule_result_selected_fill);
+        imgui.ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, root.colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state
-    if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-        if (igIsMouseClicked(0, false)) {
+    if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
+        if (imgui.igIsMouseClicked(0, false)) {
             var tile = tileIndexUnderMouse(@intCast(usize, self.tileset.tile_size + self.tileset.spacing), content_start_pos);
 
             // does the nine-slice fit?
@@ -881,30 +885,30 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
         }
     }
 
-    var size = ogGetContentRegionAvail();
-    igSetNextItemWidth(size.x * 0.6);
-    _ = ogInputText("##nine-slice-name", &new_rule_label_buf, new_rule_label_buf.len);
-    igSameLine(0, 5);
+    var size = imgui.ogGetContentRegionAvail();
+    imgui.igSetNextItemWidth(size.x * 0.6);
+    _ = imgui.ogInputText("##nine-slice-name", &new_rule_label_buf, new_rule_label_buf.len);
+    imgui.igSameLine(0, 5);
 
     const label_sentinel_index = std.mem.indexOfScalar(u8, &new_rule_label_buf, 0).?;
     const disabled = label_sentinel_index == 0 or nine_slice_selected == null;
     if (disabled) {
-        igPushItemFlag(ImGuiItemFlags_Disabled, true);
-        igPushStyleVarFloat(ImGuiStyleVar_Alpha, 0.5);
+        imgui.igPushItemFlag(imgui.ImGuiItemFlags_Disabled, true);
+        imgui.igPushStyleVarFloat(imgui.ImGuiStyleVar_Alpha, 0.5);
     }
 
-    if (ogButtonEx("Create", ImVec2{ .x = -1, .y = 0 })) {
+    if (imgui.ogButtonEx("Create", imgui.ImVec2{ .x = -1, .y = 0 })) {
         if (selection_size == 3) {
             self.ruleset.addNinceSliceRules(self, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         } else {
             self.ruleset.addInnerFourRules(self, new_rule_label_buf[0..label_sentinel_index], nine_slice_selected.?);
         }
         self.map_dirty = true;
-        igCloseCurrentPopup();
+        imgui.igCloseCurrentPopup();
     }
 
     if (disabled) {
-        igPopItemFlag();
-        igPopStyleVar(1);
+        imgui.igPopItemFlag();
+        imgui.igPopStyleVar(1);
     }
 }

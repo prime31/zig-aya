@@ -1,7 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 const root = @import("main.zig");
 const Atlas = @import("utils/texture_packer.zig").Atlas;
 
@@ -12,8 +12,8 @@ const ThumbnailAtlas = struct {
     uvs: []Uv,
 
     const Uv = struct {
-        tl: ImVec2,
-        br: ImVec2,
+        tl: imgui.ImVec2,
+        br: imgui.ImVec2,
     };
 
     pub fn initEmpty() ThumbnailAtlas {
@@ -143,7 +143,7 @@ pub const AssetManager = struct {
         return .{ .tex = self.textures.tex, .uvs = uv, .rect = rect };
     }
 
-    fn indexOfTexture(self: @This(), haystack: [][:0]const u8, name: [:0]const u8) ?usize {
+    fn indexOfTexture(_: @This(), haystack: [][:0]const u8, name: [:0]const u8) ?usize {
         return for (haystack) |slice, i| {
             if (std.mem.eql(u8, slice, name)) break @as(?usize, i);
         } else @as(?usize, null);

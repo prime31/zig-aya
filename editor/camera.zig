@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 pub const Camera = struct {
     pos: math.Vec2 = .{},
@@ -41,7 +41,7 @@ pub const Camera = struct {
     }
 
     /// calls screenToWorld converting to ImVec2s
-    pub fn igScreenToWorld(self: Camera, pos: ImVec2) ImVec2 {
+    pub fn igScreenToWorld(self: Camera, pos: imgui.ImVec2) imgui.ImVec2 {
         const tmp = self.screenToWorld(math.Vec2{ .x = pos.x, .y = pos.y });
         return .{ .x = tmp.x, .y = tmp.y };
     }

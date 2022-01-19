@@ -3,7 +3,8 @@ const aya = @import("aya");
 const math = aya.math;
 const root = @import("../main.zig");
 const Color = aya.math.Color;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
+const icons = imgui.icons;
 
 const tilset_animations = @import("tileset_animations.zig");
 
@@ -119,37 +120,37 @@ pub const Tileset = struct {
         }
     }
 
-    pub fn draw(self: *Tileset, state: *AppState) void {
+    pub fn draw(self: *Tileset, _: *AppState) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
-        const first_pos = igGetIO().DisplaySize.subtract(.{
+        const first_pos = imgui.igGetIO().DisplaySize.subtract(.{
             .x = 150 + self.tex.width * @intToFloat(f32, zoom),
             .y = 150 + self.tex.height * @intToFloat(f32, zoom),
         });
-        ogSetNextWindowPos(first_pos, ImGuiCond_FirstUseEver, .{});
+        imgui.ogSetNextWindowPos(first_pos, imgui.ImGuiCond_FirstUseEver, .{});
 
-        defer igEnd();
-        if (!igBegin("Palette", null, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking)) return;
+        defer imgui.igEnd();
+        if (!imgui.igBegin("Palette", null, imgui.ImGuiWindowFlags_NoCollapse | imgui.ImGuiWindowFlags_NoResize | imgui.ImGuiWindowFlags_AlwaysAutoResize | imgui.ImGuiWindowFlags_NoFocusOnAppearing | imgui.ImGuiWindowFlags_NoDocking)) return;
 
-        igSetCursorPosY(igGetCursorPosY() - 8);
-        igSetCursorPosX(igGetWindowContentRegionWidth() - 40);
+        imgui.igSetCursorPosY(imgui.igGetCursorPosY() - 8);
+        imgui.igSetCursorPosX(imgui.igGetWindowContentRegionWidth() - 40);
 
-        if (ogButton(icons.adjust)) igOpenPopup("##tileset-definitions", ImGuiPopupFlags_None);
-        ogUnformattedTooltip(100, "Tileset definitions");
+        if (imgui.ogButton(icons.adjust)) imgui.igOpenPopup("##tileset-definitions", imgui.ImGuiPopupFlags_None);
+        imgui.ogUnformattedTooltip(100, "Tileset definitions");
 
-        igSameLine(0, 2);
-        if (ogButton(icons.universal_access)) igOpenPopup("##tileset-animations", ImGuiPopupFlags_None);
-        ogUnformattedTooltip(100, "Animation editor");
+        imgui.igSameLine(0, 2);
+        if (imgui.ogButton(icons.universal_access)) imgui.igOpenPopup("##tileset-animations", imgui.ImGuiPopupFlags_None);
+        imgui.ogUnformattedTooltip(100, "Animation editor");
 
-        var origin = ogGetCursorScreenPos();
-        ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
+        var origin = imgui.ogGetCursorScreenPos();
+        imgui.ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
 
         // draw selected tile
         addTileToDrawList(self.tile_size * zoom, origin, self.selected.comps.tile_index, self.tiles_per_row, self.spacing * zoom);
 
         // check input for toggling selected state
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-            if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
-                var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
+        if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
+            if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
+                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
                 self.selected.value = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
             }
         }
@@ -173,11 +174,11 @@ pub const Tileset = struct {
     /// helper to draw an image button with an image from the tileset
     pub fn tileImageButton(self: Tileset, size: f32, tile: usize) bool {
         const rect = uvsForTile(self, tile);
-        const uv0 = ImVec2{ .x = rect.x, .y = rect.y };
-        const uv1 = ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
+        const uv0 =  imgui.ImVec2{ .x = rect.x, .y = rect.y };
+        const uv1 =  imgui.ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
 
-        const tint = root.colors.rgbToVec4(255, 255, 255);
-        return ogImageButton(self.tex.imTextureID(), .{ .x = size, .y = size }, uv0, uv1, 2);
+        // const tint = root.colors.rgbToVec4(255, 255, 255);
+        return imgui.ogImageButton(self.tex.imTextureID(), .{ .x = size, .y = size }, uv0, uv1, 2);
     }
 
     pub fn uvsForTile(self: Tileset, tile: usize) math.Rect {
@@ -213,36 +214,36 @@ const TileDefinitions = struct {
     }
 
     pub fn drawPopup(self: *@This(), tileset: *Tileset) void {
-        ogSetNextWindowSize(.{ .x = 210, .y = -1 }, ImGuiCond_Always);
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##tileset-definitions", ImGuiWindowFlags_None)) {
-            defer igEndPopup();
+        imgui.ogSetNextWindowSize(.{ .x = 210, .y = -1 }, imgui.ImGuiCond_Always);
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##tileset-definitions", imgui.ImGuiWindowFlags_None)) {
+            defer imgui.igEndPopup();
 
             inline for (@typeInfo(TileDefinitions).Struct.fields) |field, i| {
-                igPushIDInt(@intCast(c_int, i));
-                defer igPopID();
+                imgui.igPushIDInt(@intCast(c_int, i));
+                defer imgui.igPopID();
 
                 drawTileIcon(field.name);
 
-                ogDummy(.{});
-                igSameLine(0, igGetFrameHeight() + 7);
+                imgui.ogDummy(.{});
+                imgui.igSameLine(0, imgui.igGetFrameHeight() + 7);
 
                 // replace underscores with spaces
                 var buffer = aya.mem.tmp_allocator.alloc(u8, field.name.len) catch unreachable;
                 for (field.name) |char, j| buffer[j] = if (char == '_') ' ' else char;
 
-                igAlignTextToFramePadding();
-                igText(buffer.ptr);
+                imgui.igAlignTextToFramePadding();
+                imgui.igText(buffer.ptr);
 
-                igSameLine(0, 0);
-                igSetCursorPosX(igGetWindowContentRegionWidth() - 35);
+                imgui.igSameLine(0, 0);
+                imgui.igSetCursorPosX(imgui.igGetWindowContentRegionWidth() - 35);
 
-                if (ogButton("Tiles"))
-                    igOpenPopup("tag-tiles", ImGuiWindowFlags_None);
+                if (imgui.ogButton("Tiles"))
+                    imgui.igOpenPopup("tag-tiles", imgui.ImGuiWindowFlags_None);
 
-                // igSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 1 });
-                if (igBeginPopup("tag-tiles", ImGuiWindowFlags_None)) {
-                    defer igEndPopup();
+                // imgui.igSetNextWindowPos(imgui.igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 1 });
+                if (imgui.igBeginPopup("tag-tiles", imgui.ImGuiWindowFlags_None)) {
+                    defer imgui.igEndPopup();
                     var list = &@field(self, field.name);
                     tileSelectorPopup(tileset, list);
                 }
@@ -251,40 +252,40 @@ const TileDefinitions = struct {
     }
 
     fn drawTileIcon(comptime name: []const u8) void {
-        var tl = ogGetCursorScreenPos();
+        var tl = imgui.ogGetCursorScreenPos();
         var tr = tl;
-        tr.x += igGetFrameHeight();
+        tr.x += imgui.igGetFrameHeight();
         var bl = tl;
-        bl.y += igGetFrameHeight();
+        bl.y += imgui.igGetFrameHeight();
         var br = bl;
-        br.x += igGetFrameHeight();
+        br.x += imgui.igGetFrameHeight();
 
         var color = root.colors.rgbToU32(252, 186, 3);
 
         if (std.mem.eql(u8, name, "solid")) {
-            ogImDrawList_AddQuadFilled(igGetWindowDrawList(), &tl, &tr, &br, &bl, color);
+            imgui.ogImDrawList_AddQuadFilled(imgui.igGetWindowDrawList(), &tl, &tr, &br, &bl, color);
         } else if (std.mem.eql(u8, name, "slope_down")) {
-            tl.y += igGetFrameHeight() / 2;
-            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+            tl.y += imgui.igGetFrameHeight() / 2;
+            imgui.ogImDrawList_AddTriangleFilled(imgui.igGetWindowDrawList(), tl, bl, br, color);
         } else if (std.mem.eql(u8, name, "slope_down_steep")) {
-            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), tl, bl, br, color);
+            imgui.ogImDrawList_AddTriangleFilled(imgui.igGetWindowDrawList(), tl, bl, br, color);
         } else if (std.mem.eql(u8, name, "slope_up")) {
-            tr.y += igGetFrameHeight() / 2;
-            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+            tr.y += imgui.igGetFrameHeight() / 2;
+            imgui.ogImDrawList_AddTriangleFilled(imgui.igGetWindowDrawList(), bl, br, tr, color);
         } else if (std.mem.eql(u8, name, "slope_up_steep")) {
-            ogImDrawList_AddTriangleFilled(igGetWindowDrawList(), bl, br, tr, color);
+            imgui.ogImDrawList_AddTriangleFilled(imgui.igGetWindowDrawList(), bl, br, tr, color);
         }
     }
 
     fn tileSelectorPopup(tileset: *Tileset, list: anytype) void {
-        var content_start_pos = ogGetCursorScreenPos();
+        var content_start_pos = imgui.ogGetCursorScreenPos();
         const zoom: usize = if (tileset.tex.width < 200 and tileset.tex.height < 200) 2 else 1;
         const tile_spacing = tileset.spacing * zoom;
         const tile_size = tileset.tile_size * zoom;
 
-        ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width * @intToFloat(f32, zoom)), @floatToInt(i32, tileset.tex.height * @intToFloat(f32, zoom)));
+        imgui.ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width * @intToFloat(f32, zoom)), @floatToInt(i32, tileset.tex.height * @intToFloat(f32, zoom)));
 
-        const draw_list = igGetWindowDrawList();
+        // const draw_list = imgui.igGetWindowDrawList();
 
         // draw selected tiles
         var iter = list.iter();
@@ -293,14 +294,14 @@ const TileDefinitions = struct {
         }
 
         // check input for toggling state
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
-            if (igIsMouseClicked(ImGuiMouseButton_Left, false)) {
-                var tile = tileIndexUnderPos(igGetIO().MousePos, @intCast(usize, tile_size + tile_spacing), content_start_pos);
+        if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
+            if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
+                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, tile_size + tile_spacing), content_start_pos);
                 TileDefinitions.toggleSelected(list, @intCast(u16, tile.x + tile.y * tileset.tiles_per_row));
             }
         }
 
-        if (igButton("Clear", .{ .x = -1 })) list.clear();
+        if (imgui.igButton("Clear", .{ .x = -1 })) list.clear();
     }
 };
 
@@ -324,23 +325,23 @@ pub const Animation = struct {
     }
 };
 
-pub fn tileIndexUnderPos(pos: ImVec2, rect_size: usize, origin: ImVec2) struct { x: usize, y: usize } {
+pub fn tileIndexUnderPos(pos:  imgui.ImVec2, rect_size: usize, origin:  imgui.ImVec2) struct { x: usize, y: usize } {
     const final_pos = pos.subtract(origin);
     return .{ .x = @divTrunc(@floatToInt(usize, final_pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, final_pos.y), rect_size) };
 }
 
 /// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
-pub fn addTileToDrawList(tile_size: usize, content_start_pos: ImVec2, tile: u16, per_row: usize, tile_spacing: usize) void {
+pub fn addTileToDrawList(tile_size: usize, content_start_pos:  imgui.ImVec2, tile: u16, per_row: usize, tile_spacing: usize) void {
     const x = @mod(tile, per_row);
     const y = @divTrunc(tile, per_row);
 
-    var tl = ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
+    var tl =  imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
     tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
     tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
-    ogAddQuadFilled(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), root.colors.rgbaToU32(116, 252, 253, 100));
+    imgui.ogAddQuadFilled(imgui.igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), root.colors.rgbaToU32(116, 252, 253, 100));
 
     // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
     tl.x += 1;
     tl.y += 1;
-    ogAddQuad(igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), root.colors.rgbToU32(116, 252, 253), 2);
+    imgui.ogAddQuad(imgui.igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), root.colors.rgbToU32(116, 252, 253), 2);
 }

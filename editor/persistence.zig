@@ -100,7 +100,7 @@ const TilemapLayerJson = struct {
 
     pub fn init(tilemap: root.layers.TilemapLayer) TilemapLayerJson {
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&tilemap.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&tilemap.name)) catch unreachable,
             .visible = tilemap.visible,
             .tilemap = tilemap.tilemap,
             .tileset = aya.mem.tmp_allocator.dupe(u8, std.mem.span(tilemap.tileset.tex_name)) catch unreachable,
@@ -138,12 +138,12 @@ const AutoTilemapLayerJson = struct {
         var i: usize = 0;
         var iter = layer.ruleset_groups.iterator();
         while (iter.next()) |kv| {
-            ruleset_groups[i] = .{ .id = kv.key, .name = kv.value };
+            ruleset_groups[i] = .{ .id = kv.key_ptr.*, .name = kv.value_ptr.* };
             i += 1;
         }
 
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&layer.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&layer.name)) catch unreachable,
             .visible = layer.visible,
             .tilemap = layer.tilemap,
             .tileset = layer.tileset.tex_name,
@@ -216,7 +216,7 @@ const RuleJson = struct {
 
     pub fn init(rule: data.Rule) RuleJson {
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&rule.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&rule.name)) catch unreachable,
             .rule_tiles = rule.rule_tiles,
             .chance = rule.chance,
             .result_tiles = rule.result_tiles.items,
@@ -236,7 +236,7 @@ const EntityLayerJson = struct {
         for (layer.entities.items) |entity, i| entities[i] = EntityJson.init(entity);
 
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&layer.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&layer.name)) catch unreachable,
             .visible = layer.visible,
             .entities = entities,
             .id_counter = layer.id_counter,
@@ -288,7 +288,7 @@ const EntityJson = struct {
 
         return .{
             .id = entity.id,
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.spanZ(&entity.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&entity.name)) catch unreachable,
             .selectable = entity.selectable,
             .components = comps,
             .transform = entity.transform,
@@ -356,6 +356,7 @@ pub fn saveProject(state: *AppState) !void {
 }
 
 pub fn loadProject(path: []const u8) !AppState {
+    _ = path;
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, "project2.json");
     var state = try std.json.parse(AppStateJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
     return state.toOwnedAppState();
@@ -430,7 +431,7 @@ fn writeValue(value: anytype, writer: anytype) !void {
     switch (@typeInfo(T)) {
         .Float, .Int, .ComptimeInt, .ComptimeFloat => try writer.emitNumber(value),
         .Bool => try writer.emitBool(value),
-        .Struct => |S| {
+        .Struct => |_| {
             if (T == aya.math.Vec2) {
                 try writer.beginObject();
                 try writer.objectField("x");
@@ -498,7 +499,7 @@ fn writePropertyValue(writer: anytype, value: components.PropertyValue) !void {
 
 // level save/load
 fn manuallySaveLevel(level: data.Level) !void {
-    try saveLevelFart(level);
+    // try saveLevelFart(level);
     const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
 
     var handle = try std.fs.cwd().createFile(filename, .{});
@@ -542,9 +543,15 @@ fn writeTilemapLayer(writer: anytype, layer: root.layers.TilemapLayer) !void {
     try writeTileset(writer, layer.tileset);
 }
 
-fn writeAutoTilemapLayer(writer: anytype, layer: root.layers.AutoTilemapLayer) !void {}
+fn writeAutoTilemapLayer(writer: anytype, layer: root.layers.AutoTilemapLayer) !void {
+    _ = writer;
+    _ = layer;
+}
 
-fn writeEntityLayer(writer: anytype, layer: root.layers.EntityLayer) !void {}
+fn writeEntityLayer(writer: anytype, layer: root.layers.EntityLayer) !void {
+    _ = writer;
+    _ = layer;
+}
 
 fn writeTilemap(writer: anytype, tilemap: data.Tilemap) !void {
     try writer.beginObject();

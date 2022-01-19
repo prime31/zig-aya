@@ -1,6 +1,6 @@
 const std = @import("std");
 const imgui = @import("imgui.zig");
-pub const icons = @import("font_awesome.zig");
+const icons = imgui.icons;
 
 extern fn _ogImage(user_texture_id: imgui.ImTextureID, size: *const imgui.ImVec2, uv0: *const imgui.ImVec2, uv1: *const imgui.ImVec2) void;
 extern fn _ogImageButton(user_texture_id: imgui.ImTextureID, size: *const imgui.ImVec2, uv0: *const imgui.ImVec2, uv1: *const imgui.ImVec2, frame_padding: c_int) bool;
@@ -94,8 +94,8 @@ pub fn ogDummy(size: imgui.ImVec2) void {
 }
 
 pub fn ogSetCursorPos(cursor: imgui.ImVec2) void {
-    imgui.SetCursorPosX(cursor.x);
-    imgui.SetCursorPosY(cursor.y);
+    imgui.igSetCursorPosX(cursor.x);
+    imgui.igSetCursorPosY(cursor.y);
 }
 
 pub fn ogBeginChildFrame(id: imgui.ImGuiID, size: imgui.ImVec2, flags: imgui.ImGuiWindowFlags) bool {
@@ -140,7 +140,7 @@ pub fn ogListBoxHeaderVec2(label: [*c]const u8, size: imgui.ImVec2) bool {
 
 // just plain helper methods
 pub fn ogOpenPopup(str_id: [*c]const u8) void {
-    imgui.OpenPopup(str_id, imgui.ImGuiPopupFlags_None);
+    imgui.igOpenPopup(str_id, imgui.ImGuiPopupFlags_None);
 }
 
 pub fn ogColoredButton(color: imgui.ImU32, label: [:0]const u8) bool {
@@ -148,84 +148,84 @@ pub fn ogColoredButton(color: imgui.ImU32, label: [:0]const u8) bool {
 }
 
 pub fn ogColoredButtonEx(color: imgui.ImU32, label: [:0]const u8, size: imgui.ImVec2) bool {
-    imgui.PushStyleColorU32(imgui.ImGuiCol_Button, color);
-    defer imgui.PopStyleColor(1);
+    imgui.igPushStyleColorU32(imgui.ImGuiCol_Button, color);
+    defer imgui.igPopStyleColor(1);
     return ogButtonEx(label, size);
 }
 
 pub fn ogPushIDUsize(id: usize) void {
-    imgui.PushIDInt(@intCast(c_int, id));
+    imgui.igPushIDInt(@intCast(c_int, id));
 }
 
 /// helper to shorten disabling controls via ogPushDisabled; defer ogPopDisabled; due to defer not working inside the if block.
 pub fn ogPushDisabled(should_push: bool) void {
     if (should_push) {
-        imgui.PushItemFlag(imgui.ImGuiItemFlags_Disabled, true);
-        imgui.PushStyleVarFloat(imgui.ImGuiStyleVar_Alpha, 0.7);
+        imgui.igPushItemFlag(imgui.ImGuiItemFlags_Disabled, true);
+        imgui.igPushStyleVarFloat(imgui.ImGuiStyleVar_Alpha, 0.7);
     }
 }
 
 pub fn ogPopDisabled(should_pop: bool) void {
     if (should_pop) {
-        imgui.PopItemFlag();
-        imgui.PopStyleVar(1);
+        imgui.igPopItemFlag();
+        imgui.igPopStyleVar(1);
     }
 }
 
 /// only true if down this frame and not down the previous frame
 pub fn ogKeyPressed(key: usize) bool {
-    return imgui.GetIO().KeysDown[key] and imgui.GetIO().KeysDownDuration[key] == 0;
+    return imgui.igGetIO().KeysDown[key] and imgui.igGetIO().KeysDownDuration[key] == 0;
 }
 
 /// true the entire time the key is down
 pub fn ogKeyDown(key: usize) bool {
-    return imgui.GetIO().KeysDown[key];
+    return imgui.igGetIO().KeysDown[key];
 }
 
 /// true only the frame the key is released
 pub fn ogKeyUp(key: usize) bool {
-    return !imgui.igGetIO().KeysDown[key] and imgui.GetIO().KeysDownDuration[key] == -1 and imgui.GetIO().KeysDownDurationPrev[key] >= 0;
+    return !imgui.igGetIO().KeysDown[key] and imgui.igGetIO().KeysDownDuration[key] == -1 and imgui.igGetIO().KeysDownDurationPrev[key] >= 0;
 }
 
 pub fn ogGetCursorScreenPos() imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetCursorScreenPos(&pos);
+    imgui.igGetCursorScreenPos(&pos);
     return pos;
 }
 
 pub fn ogGetCursorPos() imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetCursorPos(&pos);
+    imgui.igGetCursorPos(&pos);
     return pos;
 }
 
 pub fn ogGetWindowSize() imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetWindowSize(&pos);
+    imgui.igGetWindowSize(&pos);
     return pos;
 }
 
 pub fn ogGetWindowPos() imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetWindowPos(&pos);
+    imgui.igGetWindowPos(&pos);
     return pos;
 }
 
 pub fn ogGetItemRectSize() imgui.ImVec2 {
     var size = imgui.ImVec2{};
-    imgui.GetItemRectSize(&size);
+    imgui.igGetItemRectSize(&size);
     return size;
 }
 
 pub fn ogGetItemRectMax() imgui.ImVec2 {
     var size = imgui.ImVec2{};
-    imgui.GetItemRectMax(&size);
+    imgui.igGetItemRectMax(&size);
     return size;
 }
 
 pub fn ogGetMouseDragDelta(button: imgui.ImGuiMouseButton, lock_threshold: f32) imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetMouseDragDelta(&pos, button, lock_threshold);
+    imgui.igGetMouseDragDelta(&pos, button, lock_threshold);
     return pos;
 }
 
@@ -233,9 +233,9 @@ pub fn ogGetMouseDragDelta(button: imgui.ImGuiMouseButton, lock_threshold: f32) 
 pub fn ogGetAnyMouseDragDelta() imgui.ImVec2 {
     var drag_delta = imgui.ImVec2{};
     if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0)) {
-        imgui.GetMouseDragDelta(&drag_delta, imgui.ImGuiMouseButton_Left, 0);
+        imgui.igGetMouseDragDelta(&drag_delta, imgui.ImGuiMouseButton_Left, 0);
     } else {
-        imgui.GetMouseDragDelta(&drag_delta, imgui.ImGuiMouseButton_Right, 0);
+        imgui.igGetMouseDragDelta(&drag_delta, imgui.ImGuiMouseButton_Right, 0);
     }
     return drag_delta;
 }
@@ -255,13 +255,13 @@ pub fn ogIsAnyMouseReleased() bool {
 
 pub fn ogGetContentRegionAvail() imgui.ImVec2 {
     var pos = imgui.ImVec2{};
-    imgui.GetContentRegionAvail(&pos);
+    imgui.igGetContentRegionAvail(&pos);
     return pos;
 }
 
 pub fn ogGetWindowContentRegionMax() imgui.ImVec2 {
     var max = imgui.ImVec2{};
-    imgui.GetWindowContentRegionMax(&max);
+    imgui.igGetWindowContentRegionMax(&max);
     return max;
 }
 
@@ -286,7 +286,7 @@ pub fn ogAddRectFilled(draw_list: [*c]imgui.ImDrawList, tl: imgui.ImVec2, size: 
 }
 
 pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
-    return imgui.InputText(label, buf, buf_size, imgui.ImGuiInputTextFlags_None, null, null);
+    return imgui.igInputText(label, buf, buf_size, imgui.ImGuiInputTextFlags_None, null, null);
 }
 
 /// adds an unformatted (igTextUnformatted) tooltip with a specific wrap width
@@ -351,7 +351,7 @@ pub fn ogDragSignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_s
 
 pub fn ogColorConvertU32ToFloat4(in: imgui.ImU32) imgui.ImVec4 {
     var col = imgui.ImVec4{};
-    imgui.ColorConvertU32ToFloat4(&col, in);
+    imgui.igColorConvertU32ToFloat4(&col, in);
     return col;
 }
 
