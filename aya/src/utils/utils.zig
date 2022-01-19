@@ -137,7 +137,7 @@ test "test cstr" {
     // const std = @import("std");
     const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
     defer std.testing.allocator.free(slice);
-    const span = std.mem.spanZ(slice);
+    const span = std.mem.span(slice);
 
     std.testing.expect(cstr_u8_cmp(slice, span) == 0);
     std.testing.expect(cstr_u8_cmp(slice, "hell") == 0);

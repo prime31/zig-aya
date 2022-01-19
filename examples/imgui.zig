@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 pub const renderer: aya.renderkit.Renderer = .opengl;
 pub const enable_imgui = true;
@@ -21,7 +21,7 @@ pub fn main() !void {
 fn init() !void {}
 
 fn update() !void {
-    igShowDemoWindow(&demo_open);
+    imgui.igShowDemoWindow(&demo_open);
 }
 
 fn render() !void {

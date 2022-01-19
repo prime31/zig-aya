@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 const root = @import("../main.zig");
 const data = root.data;
@@ -97,7 +97,7 @@ pub const Layer = union(LayerType) {
 
     /// used for the editing UI, called after all other drawing so it can render on top of everything. Called only for the selected Layer.
     /// Shortcut keys can be handled here.
-    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: imgui.ImVec2) void {
         switch (self.*) {
             .tilemap => |*layer| layer.handleSceneInput(state, camera, mouse_world),
             .auto_tilemap => |*layer| layer.handleSceneInput(state, camera, mouse_world),

@@ -2,7 +2,8 @@ const std = @import("std");
 const root = @import("../main.zig");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
+const icons = imgui.icons;
 
 const data = root.data;
 const inspectors = @import("../inspectors.zig");
@@ -26,6 +27,7 @@ pub const EntityLayer = struct {
     showing_entity_ctx_menu: bool = false,
 
     pub fn init(name: []const u8, size: Size) EntityLayer {
+        _ = size;
         var layer = EntityLayer{
             .entities = std.ArrayList(Entity).init(aya.mem.allocator),
         };
@@ -37,7 +39,7 @@ pub const EntityLayer = struct {
         self.entities.deinit();
     }
 
-    pub fn onFileDropped(self: *@This(), state: *AppState, file: [:0]const u8) void {
+    pub fn onFileDropped(self: *@This(), _: *AppState, file: [:0]const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
             if (self.selected_index) |selected_index| {
                 var texture = aya.gfx.Texture.initFromFile(file, .nearest) catch |err| {
@@ -93,7 +95,7 @@ pub const EntityLayer = struct {
     }
 
     /// handles input from the Scene view and does aya rendering of entities
-    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: imgui.ImVec2) void {
         for (self.entities.items) |entity, i| {
             if (entity.sprite) |sprite| {
                 aya.draw.texViewport(sprite.tex, sprite.rect, entity.transformMatrix());
@@ -131,17 +133,17 @@ pub const EntityLayer = struct {
         }
 
         // object picking and dragging
-        if (!igIsMouseDown(ImGuiMouseButton_Left)) self.dragged_index = null;
+        if (!imgui.igIsMouseDown(imgui.ImGuiMouseButton_Left)) self.dragged_index = null;
 
-        if (igIsItemHovered(ImGuiHoveredFlags_None)) {
+        if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
             // make sure alt/super isnt pressed since that is a Scene drag!
-            if (self.dragged_index != null and igIsMouseDragging(ImGuiMouseButton_Left, 2) and !(igGetIO().KeyAlt or igGetIO().KeySuper)) {
+            if (self.dragged_index != null and imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 2) and !(imgui.igGetIO().KeyAlt or imgui.igGetIO().KeySuper)) {
                 // if we are dragging an entity, move it taking into account the snap set
-                const drag_delta = ogGetMouseDragDelta(ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
+                const drag_delta = imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
                 const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
                 const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
                 self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@intToFloat(f32, state.snap_size));
-            } else if (igIsMouseClicked(ImGuiMouseButton_Left, false) or igIsMouseClicked(ImGuiMouseButton_Right, false)) {
+            } else if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false) or imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels
                 var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
                 self.selected_index = for (self.entities.items) |entity, i| {
@@ -161,19 +163,19 @@ pub const EntityLayer = struct {
             const move_amt = if (state.snap_size > 0) @intToFloat(f32, state.snap_size) else 1;
             var delta = aya.math.Vec2{};
 
-            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_LEFT)) {
+            if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_LEFT)) {
                 delta.x -= move_amt;
                 moved = true;
             }
-            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_RIGHT)) {
+            if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_RIGHT)) {
                 delta.x = move_amt;
                 moved = true;
             }
-            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_UP)) {
+            if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_UP)) {
                 delta.y -= move_amt;
                 moved = true;
             }
-            if (ogKeyPressed(aya.sdl.SDL_SCANCODE_DOWN)) {
+            if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_DOWN)) {
                 delta.y = move_amt;
                 moved = true;
             }
@@ -185,33 +187,33 @@ pub const EntityLayer = struct {
         }
 
         // context menu for entity commands
-        if (self.selected_index != null and igBeginPopupContextItem("##entity-scene-context-menu", ImGuiMouseButton_Right)) {
-            if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(self.entities.items[self.selected_index.?], state);
-            igEndPopup();
+        if (self.selected_index != null and imgui.igBeginPopupContextItem("##entity-scene-context-menu", imgui.ImGuiMouseButton_Right)) {
+            if (imgui.igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(self.entities.items[self.selected_index.?], state);
+            imgui.igEndPopup();
         }
     }
 
     /// draws all the entities in the scene allowing one to be selected which will be displayed in a separate inspector
     fn drawEntitiesWindow(self: *@This(), state: *AppState) void {
-        defer igEnd();
+        defer imgui.igEnd();
         var win_name: [150:0]u8 = undefined;
-        const tmp_name = std.fmt.bufPrintZ(&win_name, "{s}###Entities", .{std.mem.spanZ(&self.name)}) catch unreachable;
-        if (!igBegin(tmp_name, null, ImGuiWindowFlags_None)) return;
+        const tmp_name = std.fmt.bufPrintZ(&win_name, "{s}###Entities", .{std.mem.span(&self.name)}) catch unreachable;
+        if (!imgui.igBegin(tmp_name, null, imgui.ImGuiWindowFlags_None)) return;
 
         var delete_index: ?usize = null;
         for (self.entities.items) |*entity, i| {
-            igPushIDPtr(entity);
+            imgui.igPushIDPtr(entity);
             var rename_index: ?usize = null;
 
             // make a drop zone above each entity
-            const cursor = ogGetCursorPos();
-            ogSetCursorPos(cursor.subtract(.{ .y = 6 }));
-            _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+            const cursor = imgui.ogGetCursorPos();
+            imgui.ogSetCursorPos(cursor.subtract(.{ .y = 6 }));
+            _ = imgui.ogInvisibleButton("", .{ .x = -1, .y = 8 }, imgui.ImGuiButtonFlags_None);
 
-            if (igBeginDragDropTarget()) {
-                defer igEndDragDropTarget();
+            if (imgui.igBeginDragDropTarget()) {
+                defer imgui.igEndDragDropTarget();
 
-                if (igAcceptDragDropPayload("ENTITY_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                     std.debug.assert(payload.DataSize == @sizeOf(usize));
                     const dragged_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
                     if (i > dragged_index.* and i - dragged_index.* > 1) {
@@ -221,66 +223,66 @@ pub const EntityLayer = struct {
                     }
                 }
             }
-            ogSetCursorPos(cursor);
+            imgui.ogSetCursorPos(cursor);
 
-            _ = ogButton(icons.grip_horizontal);
-            if (igBeginDragDropSource(ImGuiDragDropFlags_None)) {
-                defer igEndDragDropSource();
+            _ = imgui.ogButton(icons.grip_horizontal);
+            if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_None)) {
+                defer imgui.igEndDragDropSource();
 
-                _ = igSetDragDropPayload("ENTITY_DRAG", &i, @sizeOf(usize), ImGuiCond_Once);
-                igText(std.mem.spanZ(&entity.name));
+                _ = imgui.igSetDragDropPayload("ENTITY_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
+                imgui.igText(std.mem.span(&entity.name));
             }
 
-            const drag_grip_w = ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
-            ogUnformattedTooltip(-1, "Click and drag to reorder");
-            igSameLine(0, 10);
+            const drag_grip_w = imgui.ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
+            imgui.ogUnformattedTooltip(-1, "Click and drag to reorder");
+            imgui.igSameLine(0, 10);
 
-            if (ogSelectableBool(&entity.name, self.selected_index == i, ImGuiSelectableFlags_None, .{ .x = igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
+            if (imgui.ogSelectableBool(&entity.name, self.selected_index == i, imgui.ImGuiSelectableFlags_None, .{ .x = imgui.igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
                 self.selected_index = i;
             }
 
-            if (igBeginPopupContextItem("##entity-context-menu", ImGuiMouseButton_Right)) {
-                if (igMenuItemBool("Rename", null, false, true)) rename_index = i;
-                if (igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(entity.*, state);
-                igEndPopup();
+            if (imgui.igBeginPopupContextItem("##entity-context-menu", imgui.ImGuiMouseButton_Right)) {
+                if (imgui.igMenuItemBool("Rename", null, false, true)) rename_index = i;
+                if (imgui.igMenuItemBool("Clone Entity", null, false, true)) _ = self.cloneEntity(entity.*, state);
+                imgui.igEndPopup();
             }
 
-            igSameLine(igGetWindowContentRegionWidth() - 35, 0);
-            if (ogButtonEx(if (entity.selectable) icons.lock_open else icons.lock, .{ .x = 23 }))
+            imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 35, 0);
+            if (imgui.ogButtonEx(if (entity.selectable) icons.lock_open else icons.lock, .{ .x = 23 }))
                 entity.selectable = !entity.selectable;
-            ogUnformattedTooltip(100, "Entity selectable in scene view state");
+            imgui.ogUnformattedTooltip(100, "Entity selectable in scene view state");
 
             // make some room for the delete button
-            igSameLine(igGetWindowContentRegionWidth() - 8, 0);
-            if (ogButton(icons.trash))
+            imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 8, 0);
+            if (imgui.ogButton(icons.trash))
                 delete_index = i;
 
             // make a drop zone below only the last layer
             if (self.entities.items.len - 1 == i) {
-                const cursor2 = ogGetCursorPos();
-                ogSetCursorPos(cursor.add(.{ .y = igGetFrameHeight() - 6 }));
-                _ = ogInvisibleButton("", .{ .x = -1, .y = 8 }, ImGuiButtonFlags_None);
+                const cursor2 = imgui.ogGetCursorPos();
+                imgui.ogSetCursorPos(cursor.add(.{ .y = imgui.igGetFrameHeight() - 6 }));
+                _ = imgui.ogInvisibleButton("", .{ .x = -1, .y = 8 }, imgui.ImGuiButtonFlags_None);
 
-                if (igBeginDragDropTarget()) {
-                    defer igEndDragDropTarget();
+                if (imgui.igBeginDragDropTarget()) {
+                    defer imgui.igEndDragDropTarget();
 
-                    if (igAcceptDragDropPayload("ENTITY_DRAG", ImGuiDragDropFlags_None)) |payload| {
+                    if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                         std.debug.assert(payload.DataSize == @sizeOf(usize));
                         const dropped_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
                         if (dropped_index.* != i)
                             dnd_swap = .{ .remove_from = dropped_index.*, .insert_into = i };
                     }
                 }
-                ogSetCursorPos(cursor2);
+                imgui.ogSetCursorPos(cursor2);
             }
 
             if (rename_index != null) {
                 std.mem.copy(u8, &name_buf, entity.name[0..]);
-                ogOpenPopup("##rename-entity");
+                imgui.ogOpenPopup("##rename-entity");
             }
 
             self.renameEntityPopup(entity);
-            igPopID();
+            imgui.igPopID();
         }
 
         if (dnd_swap) |swapper| {
@@ -323,12 +325,12 @@ pub const EntityLayer = struct {
             }
         }
 
-        if (self.entities.items.len > 0) ogDummy(.{ .y = 5 });
+        if (self.entities.items.len > 0) imgui.ogDummy(.{ .y = 5 });
 
         // right-align the button
-        igSetCursorPosX(igGetCursorPosX() + igGetWindowContentRegionWidth() - 75);
-        if (ogButton("Add Entity")) {
-            ogOpenPopup("##add-entity");
+        imgui.igSetCursorPosX(imgui.igGetCursorPosX() + imgui.igGetWindowContentRegionWidth() - 75);
+        if (imgui.ogButton("Add Entity")) {
+            imgui.ogOpenPopup("##add-entity");
             std.mem.set(u8, &name_buf, 0);
         }
 
@@ -336,67 +338,67 @@ pub const EntityLayer = struct {
     }
 
     fn drawInspectorWindow(self: *@This(), state: *AppState, entity: *Entity) void {
-        igPushIDPtr(entity);
-        defer igPopID();
+        imgui.igPushIDPtr(entity);
+        defer imgui.igPopID();
 
-        defer igEnd();
-        if (!igBegin("Inspector###Inspector", null, ImGuiWindowFlags_None)) return;
+        defer imgui.igEnd();
+        if (!imgui.igBegin("Inspector###Inspector", null, imgui.ImGuiWindowFlags_None)) return;
 
         inspectors.inspectString("Name", &entity.name, entity.name.len, null);
-        ogDummy(.{ .y = 5 });
+        imgui.ogDummy(.{ .y = 5 });
 
-        if (igCollapsingHeaderBoolPtr("Transform", null, ImGuiTreeNodeFlags_DefaultOpen)) {
-            igIndent(10);
+        if (imgui.igCollapsingHeaderBoolPtr("Transform", null, imgui.ImGuiTreeNodeFlags_DefaultOpen)) {
+            imgui.igIndent(10);
             inspectors.inspectTransform(&entity.transform);
-            igUnindent(10);
+            imgui.igUnindent(10);
         }
-        ogDummy(.{ .y = 5 });
+        imgui.ogDummy(.{ .y = 5 });
 
         if (entity.sprite) |*sprite| {
             var is_open = true;
-            if (igCollapsingHeaderBoolPtr("Sprite", &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
-                igIndent(10);
+            if (imgui.igCollapsingHeaderBoolPtr("Sprite", &is_open, imgui.ImGuiTreeNodeFlags_DefaultOpen)) {
+                imgui.igIndent(10);
                 inspectors.inspectSprite(state, sprite);
-                igUnindent(10);
+                imgui.igUnindent(10);
             }
 
             if (!is_open) {
                 entity.sprite.?.deinit();
                 entity.sprite = null;
             }
-            ogDummy(.{ .y = 5 });
+            imgui.ogDummy(.{ .y = 5 });
         }
 
         if (entity.collider) |*collider| {
             var is_open = true;
             const collider_name = if (collider.* == .box) "Box Collider" else "Circle Collider";
-            if (igCollapsingHeaderBoolPtr(collider_name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
-                igIndent(10);
+            if (imgui.igCollapsingHeaderBoolPtr(collider_name, &is_open, imgui.ImGuiTreeNodeFlags_DefaultOpen)) {
+                imgui.igIndent(10);
                 inspectors.inspectCollider(collider);
 
                 if (entity.sprite != null) {
-                    igSetCursorPosX(igGetCursorPosX() + 100);
-                    if (ogButtonEx("Autofit Collider " ++ icons.arrows_alt, .{ .x = -1 }))
+                    imgui.igSetCursorPosX(imgui.igGetCursorPosX() + 100);
+                    if (imgui.ogButtonEx("Autofit Collider " ++ icons.arrows_alt, .{ .x = -1 }))
                         entity.autoFitCollider();
                 }
-                igUnindent(10);
+                imgui.igUnindent(10);
             }
 
             if (!is_open) entity.collider = null;
-            ogDummy(.{ .y = 5 });
+            imgui.ogDummy(.{ .y = 5 });
         }
 
         // component editor
         var delete_index: ?usize = null;
         for (entity.components.items) |*comp, i| {
-            igPushIDPtr(comp);
-            defer igPopID();
+            imgui.igPushIDPtr(comp);
+            defer imgui.igPopID();
 
             var is_open = true;
             var src_comp = state.componentWithId(comp.component_id);
-            if (igCollapsingHeaderBoolPtr(&src_comp.name, &is_open, ImGuiTreeNodeFlags_DefaultOpen)) {
-                igIndent(10);
-                defer igUnindent(10);
+            if (imgui.igCollapsingHeaderBoolPtr(&src_comp.name, &is_open, imgui.ImGuiTreeNodeFlags_DefaultOpen)) {
+                imgui.igIndent(10);
+                defer imgui.igUnindent(10);
 
                 for (comp.props.items) |*prop| {
                     var src_prop = src_comp.propertyWithId(prop.property_id);
@@ -415,31 +417,31 @@ pub const EntityLayer = struct {
 
             if (!is_open) delete_index = i;
 
-            ogDummy(.{ .y = 5 });
+            imgui.ogDummy(.{ .y = 5 });
         }
 
         if (delete_index) |index| entity.components.orderedRemove(index).deinit();
 
         // add component
-        if (ogButton("Add Component"))
-            ogOpenPopup("add-component");
+        if (imgui.ogButton("Add Component"))
+            imgui.ogOpenPopup("add-component");
 
-        if (igBeginPopup("add-component", ImGuiWindowFlags_None)) {
-            if (entity.sprite == null and igMenuItemBool("Sprite", null, false, true)) {
+        if (imgui.igBeginPopup("add-component", imgui.ImGuiWindowFlags_None)) {
+            if (entity.sprite == null and imgui.igMenuItemBool("Sprite", null, false, true)) {
                 entity.sprite = root.data.Sprite.initNoTexture(state);
             }
 
             if (entity.collider == null) {
-                if (igMenuItemBool("Box Collider", null, false, true)) {
+                if (imgui.igMenuItemBool("Box Collider", null, false, true)) {
                     entity.collider = .{ .box = .{ .w = 10, .h = 10 } };
                     entity.autoFitCollider();
                 }
-                if (igMenuItemBool("Circle Collider", null, false, true)) {
+                if (imgui.igMenuItemBool("Circle Collider", null, false, true)) {
                     entity.collider = .{ .circle = .{ .r = 10 } };
                     entity.autoFitCollider();
                 }
             }
-            igSeparator();
+            imgui.igSeparator();
 
             // only show components that havent already been added
             for (state.components.items) |comp| blk: {
@@ -447,48 +449,48 @@ pub const EntityLayer = struct {
                     if (comp_instance.component_id == comp.id) break :blk;
                 }
 
-                if (igMenuItemBool(&comp.name, null, false, true)) {
+                if (imgui.igMenuItemBool(&comp.name, null, false, true)) {
                     entity.addComponent(comp.spawnInstance());
                 }
             }
 
-            igEndPopup();
+            imgui.igEndPopup();
         }
     }
 
     fn addEntityPopup(self: *@This()) void {
-        ogSetNextWindowPos(igGetIO().MousePos, ImGuiCond_Appearing, .{ .x = 0.5 });
-        if (igBeginPopup("##add-entity", ImGuiWindowFlags_None)) {
-            defer igEndPopup();
+        imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+        if (imgui.igBeginPopup("##add-entity", imgui.ImGuiWindowFlags_None)) {
+            defer imgui.igEndPopup();
 
-            _ = ogInputText("##entity-name", &name_buf, name_buf.len);
+            _ = imgui.ogInputText("##entity-name", &name_buf, name_buf.len);
 
             const label_sentinel_index = std.mem.indexOfScalar(u8, &name_buf, 0).?;
             const disabled = label_sentinel_index == 0;
-            ogPushDisabled(disabled);
+            imgui.ogPushDisabled(disabled);
 
-            igPushStyleColorU32(ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
-            if (ogButtonEx("Add Entity", .{ .x = -1, .y = 0 })) {
+            imgui.igPushStyleColorU32(imgui.ImGuiCol_Button, root.colors.rgbToU32(25, 180, 45));
+            if (imgui.ogButtonEx("Add Entity", .{ .x = -1, .y = 0 })) {
                 _ = self.addEntity(name_buf[0..label_sentinel_index], root.scene.cam.pos);
-                igCloseCurrentPopup();
+                imgui.igCloseCurrentPopup();
             }
-            igPopStyleColor(1);
+            imgui.igPopStyleColor(1);
 
-            ogPopDisabled(disabled);
+            imgui.ogPopDisabled(disabled);
         }
     }
 
-    fn renameEntityPopup(self: *@This(), entity: *Entity) void {
-        if (igBeginPopup("##rename-entity", ImGuiWindowFlags_None)) {
-            _ = ogInputText("", &name_buf, name_buf.len);
+    fn renameEntityPopup(_: *@This(), entity: *Entity) void {
+        if (imgui.igBeginPopup("##rename-entity", imgui.ImGuiWindowFlags_None)) {
+            _ = imgui.ogInputText("", &name_buf, name_buf.len);
 
             const name = name_buf[0..std.mem.indexOfScalar(u8, &name_buf, 0).?];
-            if (ogButtonEx("Rename Entity", .{ .x = -1, .y = 0 }) and name.len > 0) {
+            if (imgui.ogButtonEx("Rename Entity", .{ .x = -1, .y = 0 }) and name.len > 0) {
                 aya.mem.copyZ(u8, &entity.name, name);
-                igCloseCurrentPopup();
+                imgui.igCloseCurrentPopup();
             }
 
-            igEndPopup();
+            imgui.igEndPopup();
         }
     }
 };

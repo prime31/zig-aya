@@ -32,7 +32,7 @@ pub const Atlas = struct {
         }
 
         for (files) |file, i| {
-            res_atlas.names[i] = std.mem.dupeZ(aya.mem.allocator, u8, fs.path.basename(file)) catch unreachable;
+            res_atlas.names[i] = aya.mem.allocator.dupeZ(u8, fs.path.basename(file)) catch unreachable;
         }
 
         // generate the atlas
@@ -120,7 +120,7 @@ fn getFramesForPngs(pngs: [][]const u8) []stb.stbrp_rect {
         if (std.mem.indexOfScalar(u8, png, 0) != null) @panic("------ wtf man");
         var w: c_int = undefined;
         var h: c_int = undefined;
-        const tex_size = Image.getTextureSize(png, &w, &h);
+        // const tex_size = Image.getTextureSize(png, &w, &h);
         frames.append(.{
             .id = @intCast(c_int, i),
             .w = @intCast(u16, w),
@@ -135,7 +135,7 @@ fn runRectPacker(frames: []stb.stbrp_rect) ?Size {
     if (frames.len == 0) return Size{ .width = 0, .height = 0 };
 
     var ctx: stb.stbrp_context = undefined;
-    const rects_size = @sizeOf(stb.stbrp_rect) * frames.len;
+    // const rects_size = @sizeOf(stb.stbrp_rect) * frames.len;
     const node_count = 4096 * 2;
     var nodes: [node_count]stb.stbrp_node = undefined;
 

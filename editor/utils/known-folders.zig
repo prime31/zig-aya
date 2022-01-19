@@ -67,7 +67,7 @@ pub fn getPath(allocator: std.mem.Allocator, folder: KnownFolder) Error!?[]const
                     )) {
                         std.os.windows.S_OK => {
                             defer std.os.windows.ole32.CoTaskMemFree(@ptrCast(*anyopaque, dir_path_ptr));
-                            const global_dir = std.unicode.utf16leToUtf8Alloc(allocator, std.mem.spanZ(dir_path_ptr)) catch |err| switch (err) {
+                            const global_dir = std.unicode.utf16leToUtf8Alloc(allocator, std.mem.span(dir_path_ptr)) catch |err| switch (err) {
                                 error.UnexpectedSecondSurrogateHalf => return null,
                                 error.ExpectedSecondSurrogateHalf => return null,
                                 error.DanglingSurrogateHalf => return null,
@@ -231,7 +231,7 @@ fn KnownFolderSpec(comptime T: type) type {
 }
 
 /// Stores how to find each known folder on windows.
-const windows_folder_spec = comptime blk: {
+const windows_folder_spec = blk: {
     // workaround for zig eval branch quota when parsing the GUIDs
     @setEvalBranchQuota(10_000);
     break :blk KnownFolderSpec(WindowsFolderSpec){

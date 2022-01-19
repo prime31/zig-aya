@@ -1,5 +1,6 @@
 const w = @import("wrapper.zig");
 pub usingnamespace w;
+pub const icons = @import("font_awesome.zig");
 
 // uncomment to generate a cimport.zig file
 // pub usingnamespace @cImport({

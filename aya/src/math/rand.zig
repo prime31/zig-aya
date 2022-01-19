@@ -8,17 +8,17 @@ pub fn seed(new_seed: u64) void {
 }
 
 pub fn boolean() bool {
-    return rng.random.boolean();
+    return rng.random().boolean();
 }
 
 /// Returns a random int `i` such that `0 <= i <= maxInt(T)`
 pub fn int(comptime T: type) T {
-    return rng.random.int(T);
+    return rng.random().int(T);
 }
 
 /// Return a floating point value evenly distributed in the range [0, 1).
 pub fn float(comptime T: type) T {
-    return rng.random.float(T);
+    return rng.random().float(T);
 }
 
 pub fn color() Color {

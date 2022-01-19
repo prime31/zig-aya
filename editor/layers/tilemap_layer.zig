@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
-usingnamespace @import("imgui");
+const imgui = @import("imgui");
 
 const root = @import("root");
 const data = root.data;
@@ -21,7 +21,7 @@ pub const TilemapLayer = struct {
     tileset: Tileset,
     shift_dragged: bool = false,
     dragged: bool = false,
-    prev_mouse_pos: ImVec2 = .{},
+    prev_mouse_pos: imgui.ImVec2 = .{},
 
     pub fn init(name: []const u8, size: Size, tile_size: usize) TilemapLayer {
         var layer = TilemapLayer{
@@ -37,7 +37,7 @@ pub const TilemapLayer = struct {
         self.tileset.deinit();
     }
 
-    pub fn onFileDropped(self: *@This(), state: *AppState, file: []const u8) void {
+    pub fn onFileDropped(self: *@This(), _: *AppState, file: []const u8) void {
         if (std.mem.endsWith(u8, file, ".png")) {
             self.tileset.loadTexture(file) catch |err| {
                 std.debug.print("tileset failed to load image: {}\n", .{err});
@@ -50,15 +50,15 @@ pub const TilemapLayer = struct {
         if (is_selected) self.tileset.draw(state);
     }
 
-    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: ImVec2) void {
-        if (!igIsItemHovered(ImGuiHoveredFlags_None)) return;
+    pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: imgui.ImVec2) void {
+        if (!imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) return;
 
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
-        if (igIsMouseDragging(ImGuiMouseButton_Left, 0) and (igGetIO().KeyAlt or igGetIO().KeySuper)) return;
+        if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0) and (imgui.igGetIO().KeyAlt or imgui.igGetIO().KeySuper)) return;
 
-        if (ogKeyUp(aya.sdl.SDL_SCANCODE_H)) self.tileset.selected.flipH();
-        if (ogKeyUp(aya.sdl.SDL_SCANCODE_V)) self.tileset.selected.flipV();
-        if (ogKeyUp(aya.sdl.SDL_SCANCODE_R)) self.tileset.selected.flipD();
+        if (imgui.ogKeyUp(aya.sdl.SDL_SCANCODE_H)) self.tileset.selected.flipH();
+        if (imgui.ogKeyUp(aya.sdl.SDL_SCANCODE_V)) self.tileset.selected.flipV();
+        if (imgui.ogKeyUp(aya.sdl.SDL_SCANCODE_R)) self.tileset.selected.flipD();
 
         if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
             const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
@@ -68,24 +68,24 @@ pub const TilemapLayer = struct {
                 TileRenderInfo.init(self.tileset.selected.value, self.tileset.tile_size).draw(self.tileset, pos);
             }
 
-            if (ogIsAnyMouseDragging() and igGetIO().KeyShift) { // box selection with left/right mouse + shift
-                var dragged_pos = igGetIO().MousePos.subtract(ogGetAnyMouseDragDelta());
+            if (imgui.ogIsAnyMouseDragging() and imgui.igGetIO().KeyShift) { // box selection with left/right mouse + shift
+                var dragged_pos = imgui.igGetIO().MousePos.subtract(imgui.ogGetAnyMouseDragDelta());
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
                     const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
                     const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
 
-                    const color = if (igIsMouseDragging(ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
+                    const color = if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
                     aya.draw.hollowRect(.{ .x = min_x, .y = max_y }, max_x - min_x, min_y - max_y, 1, color);
 
                     self.shift_dragged = true;
                 }
-            } else if (ogIsAnyMouseReleased() and self.shift_dragged) {
+            } else if (imgui.ogIsAnyMouseReleased() and self.shift_dragged) {
                 self.shift_dragged = false;
 
-                var drag_delta = if (igIsMouseReleased(ImGuiMouseButton_Left)) ogGetMouseDragDelta(ImGuiMouseButton_Left, 0) else ogGetMouseDragDelta(ImGuiMouseButton_Right, 0);
-                var dragged_pos = igGetIO().MousePos.subtract(drag_delta);
+                var drag_delta = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0) else imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Right, 0);
+                var dragged_pos = imgui.igGetIO().MousePos.subtract(drag_delta);
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     const min_x = std.math.min(tile.x, tile2.x);
                     var min_y = std.math.min(tile.y, tile2.y);
@@ -93,7 +93,7 @@ pub const TilemapLayer = struct {
                     const max_y = std.math.max(tile.y, tile2.y);
 
                     // either set the tile to a brush or 0 depending on mouse button
-                    const tile_value = if (igIsMouseReleased(ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
+                    const tile_value = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
                     while (min_y <= max_y) : (min_y += 1) {
                         var x = min_x;
                         while (x <= max_x) : (x += 1) {
@@ -101,17 +101,17 @@ pub const TilemapLayer = struct {
                         }
                     }
                 }
-            } else if (ogIsAnyMouseDown() and !igGetIO().KeyShift) {
+            } else if (imgui.ogIsAnyMouseDown() and !imgui.igGetIO().KeyShift) {
                 // if the mouse was down last frame, get last mouse pos and ensure we dont skip tiles when drawing
-                const tile_value = if (igIsMouseDown(ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
+                const tile_value = if (imgui.igIsMouseDown(imgui.ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
                 if (self.dragged) {
                     self.commitInBetweenTiles(state, tile, camera, tile_value);
                 }
                 self.dragged = true;
-                self.prev_mouse_pos = igGetIO().MousePos;
+                self.prev_mouse_pos = imgui.igGetIO().MousePos;
 
                 self.tilemap.setTile(tile, tile_value);
-            } else if (ogIsAnyMouseReleased()) {
+            } else if (imgui.ogIsAnyMouseReleased()) {
                 self.dragged = false;
             }
         }

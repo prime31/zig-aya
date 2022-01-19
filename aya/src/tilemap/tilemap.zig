@@ -25,6 +25,7 @@ pub const Map = struct {
         var tokens = std.json.TokenStream.init(bytes);
 
         const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
+        @setEvalBranchQuota(10000);
         const map = std.json.parse(*Map, &tokens, options) catch unreachable;
         for (map.tilesets) |ts| {
             ts.initializeTiles();
