@@ -344,6 +344,7 @@ pub fn saveProject(state: *AppState) !void {
     handle.close();
 
     // and back
+    @setEvalBranchQuota(2000);
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, "project2.json");
     var res = try std.json.parse(AppStateJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
 
@@ -374,6 +375,7 @@ pub fn saveLevel(level: data.Level) !void {
 pub fn loadLevel(name: []const u8) !data.Level {
     const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}", .{name});
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
+    @setEvalBranchQuota(2000);
     var level_json = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
     return level_json.toOwnedLevel();
 }
