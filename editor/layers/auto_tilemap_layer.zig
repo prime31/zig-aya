@@ -132,7 +132,7 @@ pub const AutoTilemapLayer = struct {
     }
 
     pub fn renameGroup(self: *@This(), group: u8, name: []const u8) void {
-        if (self.ruleset_groups.remove(group)) |entry| {
+        if (self.ruleset_groups.fetchRemove(group)) |entry| {
             aya.mem.allocator.free(entry.value);
         }
         self.ruleset_groups.put(group, aya.mem.allocator.dupe(u8, name) catch unreachable) catch unreachable;
@@ -142,7 +142,7 @@ pub const AutoTilemapLayer = struct {
         for (self.ruleset.rules.items) |rule| {
             if (rule.group == group) return;
         }
-        if (self.ruleset_groups.remove(group)) |entry| {
+        if (self.ruleset_groups.fetchRemove(group)) |entry| {
             aya.mem.allocator.free(entry.value);
         }
     }

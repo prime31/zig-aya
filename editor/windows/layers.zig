@@ -30,8 +30,8 @@ pub fn draw(state: *root.AppState) void {
                 defer imgui.igEndDragDropTarget();
 
                 if (imgui.igAcceptDragDropPayload("LAYER_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
-                    std.debug.assert(payload.DataSize == @sizeOf(usize));
-                    const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                    std.debug.assert(payload[0].DataSize == @sizeOf(usize));
+                    const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
                     if (i > data.* and i - data.* > 1) {
                         dnd_swap = .{ .remove_from = data.*, .insert_into = i - 1 };
                     } else if (i < data.*) {
@@ -41,7 +41,7 @@ pub fn draw(state: *root.AppState) void {
             }
             imgui.ogSetCursorPos(cursor);
 
-            _ = imgui.ogButton(root.scene.icons.grip_horizontal);
+            _ = imgui.ogButton(imgui.icons.grip_horizontal);
             if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_None)) {
                 defer imgui.igEndDragDropSource();
 
@@ -53,7 +53,7 @@ pub fn draw(state: *root.AppState) void {
             imgui.ogUnformattedTooltip(-1, "Click and drag to reorder");
             imgui.igSameLine(0, 10);
 
-            if (imgui.ogSelectableBool(std.mem.span(&layer.name()), state.selected_layer_index == i, imgui.ImGuiSelectableFlags_None, .{ .x = imgui.igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
+            if (imgui.ogSelectableBool(std.mem.sliceTo(&layer.name(), 0), state.selected_layer_index == i, imgui.ImGuiSelectableFlags_None, .{ .x = imgui.igGetWindowContentRegionWidth() - drag_grip_w - 55 })) {
                 state.selected_layer_index = i;
             }
 
@@ -81,8 +81,8 @@ pub fn draw(state: *root.AppState) void {
                     defer imgui.igEndDragDropTarget();
 
                     if (imgui.igAcceptDragDropPayload("LAYER_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
-                        std.debug.assert(payload.DataSize == @sizeOf(usize));
-                        const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                        std.debug.assert(payload[0].DataSize == @sizeOf(usize));
+                        const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
                         if (data.* != i)
                             dnd_swap = .{ .remove_from = data.*, .insert_into = i };
                     }

@@ -63,8 +63,8 @@ pub const Scene = struct {
             defer imgui.igEndDragDropTarget();
 
             if (imgui.igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
-                std.debug.assert(payload.DataSize == @sizeOf(usize));
-                const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                std.debug.assert(payload[0].DataSize == @sizeOf(usize));
+                const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
                 const tex_name = state.asset_man.textures.names[data.*];
 
                 const mouse_screen = imgui.igGetIO().MousePos.subtract(imgui.ogGetCursorScreenPos());

@@ -197,7 +197,7 @@ pub const EntityLayer = struct {
     fn drawEntitiesWindow(self: *@This(), state: *AppState) void {
         defer imgui.igEnd();
         var win_name: [150:0]u8 = undefined;
-        const tmp_name = std.fmt.bufPrintZ(&win_name, "{s}###Entities", .{std.mem.span(&self.name)}) catch unreachable;
+        const tmp_name = std.fmt.bufPrintZ(&win_name, "{s}###Entities", .{std.mem.sliceTo(&self.name, 0)}) catch unreachable;
         if (!imgui.igBegin(tmp_name, null, imgui.ImGuiWindowFlags_None)) return;
 
         var delete_index: ?usize = null;
@@ -214,8 +214,8 @@ pub const EntityLayer = struct {
                 defer imgui.igEndDragDropTarget();
 
                 if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
-                    std.debug.assert(payload.DataSize == @sizeOf(usize));
-                    const dragged_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                    std.debug.assert(payload[0].DataSize == @sizeOf(usize));
+                    const dragged_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
                     if (i > dragged_index.* and i - dragged_index.* > 1) {
                         dnd_swap = .{ .remove_from = dragged_index.*, .insert_into = i - 1 };
                     } else if (i < dragged_index.*) {
@@ -267,8 +267,8 @@ pub const EntityLayer = struct {
                     defer imgui.igEndDragDropTarget();
 
                     if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
-                        std.debug.assert(payload.DataSize == @sizeOf(usize));
-                        const dropped_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload.Data.?));
+                        std.debug.assert(payload[0].DataSize == @sizeOf(usize));
+                        const dropped_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
                         if (dropped_index.* != i)
                             dnd_swap = .{ .remove_from = dropped_index.*, .insert_into = i };
                     }

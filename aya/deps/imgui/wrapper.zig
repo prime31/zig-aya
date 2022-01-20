@@ -242,15 +242,15 @@ pub fn ogGetAnyMouseDragDelta() imgui.ImVec2 {
 
 /// returns true if any mouse is dragging
 pub fn ogIsAnyMouseDragging() bool {
-    return imgui.IsMouseDragging(imgui.ImGuiMouseButton_Left, 0) or imgui.IsMouseDragging(imgui.ImGuiMouseButton_Right, 0);
+    return imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0) or imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Right, 0);
 }
 
 pub fn ogIsAnyMouseDown() bool {
-    return imgui.IsMouseDown(imgui.ImGuiMouseButton_Left) or imgui.IsMouseDown(imgui.ImGuiMouseButton_Right);
+    return imgui.igIsMouseDown(imgui.ImGuiMouseButton_Left) or imgui.igIsMouseDown(imgui.ImGuiMouseButton_Right);
 }
 
 pub fn ogIsAnyMouseReleased() bool {
-    return imgui.IsMouseReleased(imgui.ImGuiMouseButton_Left) or imgui.IsMouseReleased(imgui.ImGuiMouseButton_Right);
+    return imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left) or imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Right);
 }
 
 pub fn ogGetContentRegionAvail() imgui.ImVec2 {
@@ -292,12 +292,12 @@ pub fn ogInputText(label: [*c]const u8, buf: [*c]u8, buf_size: usize) bool {
 /// adds an unformatted (igTextUnformatted) tooltip with a specific wrap width
 pub fn ogUnformattedTooltip(text_wrap_pos: f32, text: [*c]const u8) void {
     if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
-        imgui.BeginTooltip();
-        defer imgui.EndTooltip();
+        imgui.igBeginTooltip();
+        defer imgui.igEndTooltip();
 
-        imgui.PushTextWrapPos(imgui.igGetFontSize() * text_wrap_pos);
-        imgui.TextUnformatted(text, null);
-        imgui.PopTextWrapPos();
+        imgui.igPushTextWrapPos(imgui.igGetFontSize() * text_wrap_pos);
+        imgui.igTextUnformatted(text, null);
+        imgui.igPopTextWrapPos();
     }
 }
 
@@ -346,7 +346,7 @@ pub fn ogDragSignedFormat(comptime T: type, label: [*c]const u8, p_data: *T, v_s
         else => unreachable,
     };
 
-    return imgui.DragScalar(label, data_type, p_data, v_speed, &min, &max, format, 1);
+    return imgui.igDragScalar(label, data_type, p_data, v_speed, &min, &max, format, 1);
 }
 
 pub fn ogColorConvertU32ToFloat4(in: imgui.ImU32) imgui.ImVec4 {
