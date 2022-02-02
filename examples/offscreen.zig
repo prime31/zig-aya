@@ -24,7 +24,7 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    checker_tex = aya.gfx.Texture.initCheckerTexture();
+    checker_tex = aya.gfx.Texture.initCheckerTexture(1);
     font_tex = aya.gfx.Texture.initFromFile("examples/assets/textures/font.png", .linear) catch unreachable;
     pass = aya.gfx.OffscreenPass.init(52, 52);
 
