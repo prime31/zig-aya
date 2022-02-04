@@ -171,7 +171,10 @@ pub const Texture = struct {
         std.debug.print("----- TODO: recreate render textures correctly with depth/stencil\n", .{});
     }
 
+    /// if openGL, returns the tid else returns the Image as a ptr
     pub fn imTextureID(self: Texture) aya.imgui.ImTextureID {
+        if (renderkit.current_renderer == .opengl)
+            return @intToPtr(*anyopaque, renderer.getNativeTid(self.img));
         return @intToPtr(*anyopaque, self.img);
     }
 };
