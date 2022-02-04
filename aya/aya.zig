@@ -41,7 +41,7 @@ blk: {
 
 pub const Config = struct {
     init: fn () anyerror!void,
-    update: ?fn () anyerror!void,
+    update: ?fn () anyerror!void = null,
     render: fn () anyerror!void,
     shutdown: ?fn () anyerror!void = null,
     onFileDropped: ?fn ([:0]const u8) void = null,
@@ -51,7 +51,7 @@ pub const Config = struct {
 
     update_rate: f64 = 60, // desired fps
     imgui_icon_font: bool = true,
-    imgui_viewports: bool = false, // whether imgui viewports should be enabled
+    imgui_viewports: bool = true, // whether imgui viewports should be enabled
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
 
@@ -82,7 +82,7 @@ pub fn run(config: Config) !void {
     debug = try Debug.init();
     defer debug.deinit();
 
-    if (enable_imgui) imgui_impl.init(window.sdl_window, config.imgui_docking, config.imgui_viewports, config.imgui_icon_font);
+    if (enable_imgui) imgui_impl.init(window, config.imgui_docking, config.imgui_viewports, config.imgui_icon_font);
 
     try config.init();
 
@@ -95,9 +95,7 @@ pub fn run(config: Config) !void {
 
         if (enable_imgui) {
             gfx.blitToScreen(math.Color.black);
-            gfx.beginPass(.{ .color_action = .load });
             imgui_impl.render();
-            gfx.endPass();
             if (renderkit.current_renderer == .opengl) _ = sdl.SDL_GL_MakeCurrent(window.sdl_window, window.gl_ctx);
         }
 

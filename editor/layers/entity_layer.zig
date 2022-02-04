@@ -230,7 +230,7 @@ pub const EntityLayer = struct {
                 defer imgui.igEndDragDropSource();
 
                 _ = imgui.igSetDragDropPayload("ENTITY_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
-                imgui.igText(std.mem.span(&entity.name));
+                imgui.igText(std.mem.sliceTo(&entity.name, 0));
             }
 
             const drag_grip_w = imgui.ogGetItemRectSize().x + 5; // 5 is for the SameLine pad

@@ -48,6 +48,23 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui_widgets.cpp", &cpp_args);
     exe.addCSourceFile(base_path ++ "cimgui/cimgui.cpp", &cpp_args);
     exe.addCSourceFile(base_path ++ "temporary_hacks.cpp", &cpp_args);
+
+    addImGuiGlImplementation(b, exe, target, prefix_path);
+}
+
+fn addImGuiGlImplementation(_: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
+    const base_path = prefix_path ++ "aya/deps/imgui/";
+    const cpp_args = [_][]const u8{ "-Wno-return-type-c-linkage", "-DIMGUI_IMPL_API=extern \"C\"", "-DIMGUI_IMPL_OPENGL_LOADER_GL3W" };
+
+    // what we actually want to work but for some reason on macos it doesnt
+    exe.linkSystemLibrary("SDL2");
+    exe.addIncludeDir(base_path ++ "cimgui/imgui/examples/libs/gl3w");
+    exe.addIncludeDir("/usr/local/include/SDL2");
+    exe.addIncludeDir("/opt/homebrew/include/SDL2");
+
+    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/libs/gl3w/GL/gl3w.c", &cpp_args);
+    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/imgui_impl_opengl3.cpp", &cpp_args);
+    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/imgui_impl_sdl.cpp", &cpp_args);
 }
 
 /// helper function to get SDK path on Mac
@@ -67,5 +84,12 @@ pub fn getImGuiPackage(comptime prefix_path: []const u8) std.build.Pkg {
     return .{
         .name = "imgui",
         .path = .{ .path = prefix_path ++ "aya/deps/imgui/imgui.zig" },
+    };
+}
+
+pub fn getImGuiGlPackage(comptime prefix_path: []const u8) std.build.Pkg {
+    return .{
+        .name = "imgui_gl",
+        .path = .{ .path = prefix_path ++ "aya/deps/imgui/imgui_gl.zig" },
     };
 }
