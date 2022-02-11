@@ -100,10 +100,10 @@ const TilemapLayerJson = struct {
 
     pub fn init(tilemap: root.layers.TilemapLayer) TilemapLayerJson {
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&tilemap.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&tilemap.name, 0)) catch unreachable,
             .visible = tilemap.visible,
             .tilemap = tilemap.tilemap,
-            .tileset = aya.mem.tmp_allocator.dupe(u8, std.mem.span(tilemap.tileset.tex_name)) catch unreachable,
+            .tileset = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(tilemap.tileset.tex_name, 0)) catch unreachable,
         };
     }
 
@@ -143,7 +143,7 @@ const AutoTilemapLayerJson = struct {
         }
 
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&layer.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&layer.name, 0)) catch unreachable,
             .visible = layer.visible,
             .tilemap = layer.tilemap,
             .tileset = layer.tileset.tex_name,
@@ -216,7 +216,7 @@ const RuleJson = struct {
 
     pub fn init(rule: data.Rule) RuleJson {
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&rule.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&rule.name, 0)) catch unreachable,
             .rule_tiles = rule.rule_tiles,
             .chance = rule.chance,
             .result_tiles = rule.result_tiles.items,
@@ -236,7 +236,7 @@ const EntityLayerJson = struct {
         for (layer.entities.items) |entity, i| entities[i] = EntityJson.init(entity);
 
         return .{
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&layer.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&layer.name, 0)) catch unreachable,
             .visible = layer.visible,
             .entities = entities,
             .id_counter = layer.id_counter,
@@ -288,7 +288,7 @@ const EntityJson = struct {
 
         return .{
             .id = entity.id,
-            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.span(&entity.name)) catch unreachable,
+            .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&entity.name, 0)) catch unreachable,
             .selectable = entity.selectable,
             .components = comps,
             .transform = entity.transform,
@@ -364,7 +364,7 @@ pub fn loadProject(path: []const u8) !AppState {
 }
 
 pub fn saveLevel(level: data.Level) !void {
-    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.sliceTo(level.name, 0)});
 
     var handle = try std.fs.cwd().createFile(filename, .{});
     const level_json = LevelJson.init(level);
@@ -502,7 +502,7 @@ fn writePropertyValue(writer: anytype, value: components.PropertyValue) !void {
 // level save/load
 fn manuallySaveLevel(level: data.Level) !void {
     // try saveLevelFart(level);
-    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.span(level.name)});
+    const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}.json", .{std.mem.sliceTo(level.name, 0)});
 
     var handle = try std.fs.cwd().createFile(filename, .{});
     defer handle.close();

@@ -46,7 +46,7 @@ pub fn draw(state: *root.AppState) void {
                 defer imgui.igEndDragDropSource();
 
                 _ = imgui.igSetDragDropPayload("LAYER_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
-                imgui.igText(std.mem.span(&layer.name()));
+                imgui.igText(std.mem.sliceTo(&layer.name(), 0));
             }
 
             const drag_grip_w = imgui.ogGetItemRectSize().x + 5; // 5 is for the SameLine pad
