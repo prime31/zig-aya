@@ -22,6 +22,7 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     } else if (target.isDarwin()) {
         const frameworks_dir = macosFrameworksDir(b) catch unreachable;
         exe.addFrameworkDir(frameworks_dir);
+        macosAddSdkDirs(b, exe) catch unreachable;
         exe.linkFramework("Foundation");
         exe.linkFramework("Cocoa");
         exe.linkFramework("Quartz");
@@ -78,6 +79,18 @@ fn macosFrameworksDir(b: *Builder) ![]u8 {
     }
     framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ str, "/System/Library/Frameworks" });
     return framework_dir.?;
+}
+
+fn macosAddSdkDirs(b: *Builder, step: *std.build.LibExeObjStep) !void {
+    var sdk_dir = try b.exec(&[_][]const u8 { "xcrun", "--show-sdk-path" });
+    const newline_index = std.mem.lastIndexOf(u8, sdk_dir, "\n");
+    if (newline_index) |idx| {
+        sdk_dir = sdk_dir[0..idx];
+    }
+    framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8 { sdk_dir, "/System/Library/Frameworks" });
+    const usrinclude_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8 { sdk_dir, "/usr/include"});
+    step.addFrameworkDir(framework_dir.?);
+    step.addIncludeDir(usrinclude_dir);
 }
 
 pub fn getImGuiPackage(comptime prefix_path: []const u8) std.build.Pkg {

@@ -120,7 +120,7 @@ fn getFramesForPngs(pngs: [][]const u8) []stb.stbrp_rect {
         if (std.mem.indexOfScalar(u8, png, 0) != null) @panic("------ wtf man");
         var w: c_int = undefined;
         var h: c_int = undefined;
-        // const tex_size = Image.getTextureSize(png, &w, &h);
+        _ = Image.getTextureSize(png, &w, &h);
         frames.append(.{
             .id = @intCast(c_int, i),
             .w = @intCast(u16, w),
