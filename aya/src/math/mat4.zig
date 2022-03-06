@@ -3,7 +3,7 @@ const Vec3 = @import("vec3.zig").Vec3;
 
 // sourced from https://github.com/jeffkdev/sokol-zig-examples
 pub const Mat4 = extern struct {
-    fields: [4][4]f32, // [col][row]
+    fields: [4][4]f32 = undefined, // [col][row]
 
     pub const zero = Mat4{
         .fields = [4][4]f32{
@@ -143,6 +143,11 @@ pub const Mat4 = extern struct {
         result.fields[3][1] = -(top + bottom) / (top - bottom);
         result.fields[3][2] = -near / (far - near);
         return result;
+    }
+
+    pub fn createRotate(angle: f32, axis: Vec3) Mat4 {
+        const rot = createAngleAxis(axis, angle);
+        return identity.mul(rot);
     }
 
     pub fn rotate(self: Mat4, angle: f32, axis: Vec3) Mat4 {

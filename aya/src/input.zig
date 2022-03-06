@@ -163,9 +163,8 @@ pub const Input = struct {
         return .{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
     }
 
-    pub fn mouseRelMotion(self: Input, x: *i32, y: *i32) void {
-        x.* = self.mouse_rel_x;
-        y.* = self.mouse_rel_y;
+    pub fn mouseRelMotion(self: Input) math.Vec2 {
+        return .{ .x = @intToFloat(f32, self.mouse_rel_x), .y = @intToFloat(f32, self.mouse_rel_y) };
     }
 };
 

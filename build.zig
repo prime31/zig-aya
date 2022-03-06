@@ -14,29 +14,9 @@ var enable_imgui: ?bool = null;
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
 
-    // first item in list will be added as "run" so `zig build run` will always work
-    const examples = [_][2][]const u8{
-        [_][]const u8{ "editor", "editor/main.zig" },
-        [_][]const u8{ "mode7", "examples/mode7.zig" },
-        [_][]const u8{ "markov", "examples/markov.zig" },
-        [_][]const u8{ "clipper", "examples/clipped_sprite.zig" },
-        [_][]const u8{ "primitives", "examples/primitives.zig" },
-        [_][]const u8{ "entities", "examples/entities.zig" },
-        [_][]const u8{ "shaders", "examples/shaders.zig" },
-        [_][]const u8{ "flames", "examples/flames.zig" },
-        [_][]const u8{ "atlas_batch", "examples/atlas_batch.zig" },
-        [_][]const u8{ "tilemap", "examples/tilemap.zig" },
-        [_][]const u8{ "fonts", "examples/fonts.zig" },
-        [_][]const u8{ "batcher", "examples/batcher.zig" },
-        [_][]const u8{ "offscreen", "examples/offscreen.zig" },
-        [_][]const u8{ "dynamic_mesh", "examples/dynamic_mesh.zig" },
-        [_][]const u8{ "instanced_mesh", "examples/instanced_mesh.zig" },
-        [_][]const u8{ "mesh", "examples/mesh.zig" },
-        [_][]const u8{ "imgui", "examples/imgui.zig" },
-        [_][]const u8{ "empty", "examples/empty.zig" },
-    };
+    const examples = getAllExamples(b, "examples");
 
-    const examples_step = b.step("examples", "build all examples");
+    const examples_step = b.step("all_examples", "build all examples");
     b.default_step.dependOn(examples_step);
 
     for (examples) |example, i| {
@@ -135,4 +115,37 @@ pub fn addTests(b: *Builder, target: Target, comptime prefix_path: []const u8) v
     addAyaToArtifact(b, tst, target, prefix_path);
     const test_step = b.step("test", "Run tests in tests.zig");
     test_step.dependOn(&tst.step);
+}
+
+fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {
+    var list = std.ArrayList([2][]const u8).init(b.allocator);
+    list.append([2][]const u8 {"editor", "editor/main.zig"}) catch unreachable;
+
+    var recursor = struct {
+        fn search(alloc: std.mem.Allocator, directory: []const u8, filelist: *std.ArrayList([2][]const u8)) void {
+            if (std.mem.eql(u8, directory, "assets")) return;
+
+            var dir = std.fs.cwd().openDir(directory, .{ .iterate = true }) catch unreachable;
+            defer dir.close();
+
+            var iter = dir.iterate();
+            while (iter.next() catch unreachable) |entry| {
+                if (entry.kind == .File) {
+                    if (std.mem.endsWith(u8, entry.name, ".zig")) {
+                        const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
+                        const name = std.fs.path.basename(abs_path);
+
+                        filelist.append([2][]const u8 {name[0..name.len - 4], abs_path}) catch unreachable;
+                    }
+                } else if (entry.kind == .Directory) {
+                    const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
+                    search(alloc, abs_path, filelist);
+                }
+            }
+        }
+    }.search;
+
+    recursor(b.allocator, root_directory, &list);
+
+    return list.toOwnedSlice();
 }
