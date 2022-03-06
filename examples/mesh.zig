@@ -29,7 +29,7 @@ fn init() !void {
 
     mesh = aya.gfx.Mesh.init(u16, indices[0..], aya.gfx.Vertex, vertices[0..]);
 
-    tex = aya.gfx.Texture.initCheckerTexture();
+    tex = aya.gfx.Texture.initCheckerTexture(1);
     mesh.bindImage(tex.img, 0);
 }
 

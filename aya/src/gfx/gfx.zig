@@ -49,8 +49,8 @@ pub const PassConfig = struct {
     color: math.Color = math.Color.aya,
     stencil_action: renderkit.ClearAction = .dont_care,
     stencil: u8 = 0,
-    depth_action: renderkit.ClearAction = .dont_care,
-    depth: f64 = 0,
+    depth_action: renderkit.ClearAction = .clear,
+    depth: f64 = 1,
 
     trans_mat: ?math.Mat32 = null,
     shader: ?*Shader = null,

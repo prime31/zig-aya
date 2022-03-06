@@ -1,5 +1,6 @@
 @ctype vec2 math.Vec2
 @ctype vec3 math.Vec3
+@ctype mat4 math.Mat4
 
 // reusable blocks
 @block rand
@@ -399,3 +400,67 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program instanced instanced_vs instanced_fs
+
+
+
+@vs cube_vs
+uniform CubeParamsVS {
+	mat4 mvp;
+};
+
+layout(location = 0) in vec4 pos;
+layout(location = 1) in vec4 color0;
+layout(location = 2) in vec2 texcoord0;
+
+out vec4 color;
+out vec2 uv;
+
+void main() {
+    gl_Position = mvp * pos;
+    color = color0;
+    uv = texcoord0;
+}
+@end
+
+
+@fs cube_fs
+uniform sampler2D tex;
+
+in vec4 color;
+in vec2 uv;
+out vec4 frag_color;
+
+void main() {
+    frag_color = texture(tex, uv) * color;
+}
+@end
+
+@program cube cube_vs cube_fs
+
+
+
+
+
+
+@fs depth_fs
+uniform DepthParamsFS {
+	float near;
+	float far;
+};
+
+in vec2 uv_out;
+in vec4 color_out;
+out vec4 frag_color;
+
+float linearizeDepth(float depth) {
+    float z = depth * 2.0 - 1.0; // back to NDC
+    return (2.0 * near * far) / (far + near - z * (far - near));
+}
+
+void main() {
+	float depth = linearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration
+    frag_color = vec4(vec3(depth), 1.0);
+}
+@end
+
+@program depth sprite_vs depth_fs

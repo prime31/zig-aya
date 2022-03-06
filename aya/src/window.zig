@@ -107,6 +107,18 @@ pub const Window = struct {
         return self.size().h;
     }
 
+    pub fn widthf(self: Window) f32 {
+        return @intToFloat(f32, self.size().w);
+    }
+
+    pub fn heightf(self: Window) f32 {
+        return @intToFloat(f32, self.size().h);
+    }
+
+    pub fn aspectRatio(self: Window) f32 {
+        return self.widthf() / self.heightf();
+    }
+
     pub fn drawableSize(self: Window) struct { w: c_int, h: c_int } {
         var w: c_int = 0;
         var h: c_int = 0;
