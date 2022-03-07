@@ -27,8 +27,6 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
         exe.linkFramework("Cocoa");
         exe.linkFramework("Quartz");
         exe.linkFramework("QuartzCore");
-        exe.linkFramework("Metal");
-        exe.linkFramework("MetalKit");
         exe.linkFramework("OpenGL");
         exe.linkFramework("Audiotoolbox");
         exe.linkFramework("CoreAudio");

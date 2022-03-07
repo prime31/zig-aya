@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("../../aya.zig");
 const rk = @import("renderkit");
-const renderer = rk.renderer;
 const gfx = @import("gfx.zig");
 
 pub const OffscreenPass = struct {
@@ -16,7 +15,7 @@ pub const OffscreenPass = struct {
     pub fn initWithOptions(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) OffscreenPass {
         const color_tex = gfx.Texture.initOffscreen(width, height, filter, wrap);
 
-        const pass = renderer.createPass(.{
+        const pass = rk.createPass(.{
             .color_img = color_tex.img,
         });
         return .{ .pass = pass, .color_texture = color_tex };
@@ -26,7 +25,7 @@ pub const OffscreenPass = struct {
         const color_tex = gfx.Texture.initOffscreen(width, height, filter, wrap);
         const depth_stencil_img = gfx.Texture.initStencil(width, height, filter, wrap);
 
-        const pass = renderer.createPass(.{
+        const pass = rk.createPass(.{
             .color_img = color_tex.img,
             .depth_stencil_img = depth_stencil_img.img,
         });
@@ -35,7 +34,7 @@ pub const OffscreenPass = struct {
 
     pub fn deinit(self: *const OffscreenPass) void {
         // Pass MUST be destroyed first! It relies on the Textures being present.
-        renderer.destroyPass(self.pass);
+        rk.destroyPass(self.pass);
         self.color_texture.deinit();
         if (self.depth_stencil_texture) |depth_stencil| {
             depth_stencil.deinit();

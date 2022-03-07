@@ -6,7 +6,6 @@ usingnamespace @import("imgui");
 const Shader = aya.gfx.Shader;
 const effects = @import("assets/effects.zig");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
 pub const enable_imgui = true;
 
 pub const Flames = struct {

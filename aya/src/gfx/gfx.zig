@@ -127,7 +127,7 @@ pub fn beginFrame() void {
 
 pub fn setRenderState(rk_state: renderkit.RenderState) void {
     draw.batcher.flush();
-    renderkit.renderer.setRenderState(rk_state);
+    renderkit.setRenderState(rk_state);
 }
 
 /// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
@@ -147,17 +147,13 @@ pub fn beginPass(config: PassConfig) void {
 
     if (state.blitted_to_screen) {
         const size = aya.window.drawableSize();
-        renderkit.renderer.beginDefaultPass(clear_command, size.w, size.h);
+        renderkit.beginDefaultPass(clear_command, size.w, size.h);
         proj_mat = math.Mat32.initOrtho(@intToFloat(f32, size.w), @intToFloat(f32, size.h));
     } else {
         const pass = config.pass orelse state.default_pass.pass;
-        renderkit.renderer.beginPass(pass.pass, clear_command);
+        renderkit.beginPass(pass.pass, clear_command);
         // inverted for OpenGL offscreen passes
-        if (renderkit.current_renderer == .opengl) {
-            proj_mat = math.Mat32.initOrthoInverted(pass.color_texture.width, pass.color_texture.height);
-        } else {
-            proj_mat = math.Mat32.initOrtho(pass.color_texture.width, pass.color_texture.height);
-        }
+        proj_mat = math.Mat32.initOrthoInverted(pass.color_texture.width, pass.color_texture.height);
     }
 
     // if we were given a transform matrix multiply it here
@@ -175,7 +171,7 @@ pub fn endPass() void {
     // setting the shader will flush the batch
     setShader(null);
     aya.debug.render(state.debug_render_enabled);
-    renderkit.renderer.endPass();
+    renderkit.endPass();
 }
 
 pub fn flush() void {
@@ -207,5 +203,5 @@ pub fn commitFrame() void {
 
     draw.batcher.end();
     state.blitted_to_screen = false;
-    renderkit.renderer.commitFrame();
+    renderkit.commitFrame();
 }

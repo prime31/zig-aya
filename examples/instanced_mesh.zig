@@ -2,8 +2,6 @@ const std = @import("std");
 const aya = @import("aya");
 const shaders = @import("assets/shaders/shaders.zig");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 var tex: aya.gfx.Texture = undefined;
 var instanced_mesh: aya.gfx.InstancedMesh(u16, aya.gfx.Vertex, InstancedVert) = undefined;
 var shader: aya.gfx.Shader = undefined;

@@ -2,8 +2,6 @@ const std = @import("std");
 const aya = @import("aya");
 const math = aya.math;
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 const Sepia = @import("assets/effects.zig").Sepia;
 
 var checker_tex: aya.gfx.Texture = undefined;

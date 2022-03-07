@@ -3,12 +3,10 @@ const aya = @import("aya");
 const imgui = @import("imgui");
 const shaders = @import("assets/shaders/shaders.zig");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 const Shader = aya.gfx.Shader;
 const effects = @import("assets/effects.zig");
 
-pub const enable_imgui = renderer == .opengl;
+pub const enable_imgui = true;
 
 var post_process = false;
 var tex: aya.gfx.Texture = undefined;
@@ -63,8 +61,6 @@ fn shutdown() !void {
 }
 
 fn update() !void {
-    if (aya.renderkit.current_renderer != .opengl) return;
-
     _ = imgui.igCheckbox("Enable PostProcessing", &post_process);
 
     var pixel_glitch = stack.processors.items[0].getParent(effects.PixelGlitch);

@@ -2,7 +2,6 @@ const std = @import("std");
 const aya = @import("../../aya.zig");
 const math = aya.math;
 const rk = @import("renderkit");
-const renderer = rk.renderer;
 const fs = aya.fs;
 
 /// default params for the sprite shader. Translates the Mat32 into 2 arrays of f32 for the shader uniform slot.
@@ -22,19 +21,11 @@ pub const VertexParams = extern struct {
 };
 
 fn defaultVertexShader() [:0]const u8 {
-    return switch (rk.current_renderer) {
-        .opengl => @embedFile("assets/sprite_vs.glsl"),
-        .metal => @embedFile("assets/sprite_vs.metal"),
-        else => @panic("no default vert shader for renderer: " ++ rk.current_renderer),
-    };
+    return @embedFile("assets/sprite_vs.glsl");
 }
 
 fn defaultFragmentShader() [:0]const u8 {
-    return switch (rk.current_renderer) {
-        .opengl => @embedFile("assets/sprite_fs.glsl"),
-        .metal => @embedFile("assets/sprite_fs.metal"),
-        else => @panic("no default vert shader for renderer: " ++ rk.current_renderer),
-    };
+    return @embedFile("assets/sprite_fs.glsl");
 }
 
 pub const Shader = struct {
@@ -82,7 +73,7 @@ pub const Shader = struct {
             if (options.vert) |vert| {
                 // if we were provided an allocator that means this is a file
                 if (options.allocator) |allocator| {
-                    const vert_path = try std.mem.concat(allocator, u8, &[_][]const u8{ vert, rk.shaderFileExtension(), "\x00" });
+                    const vert_path = try std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" });
                     defer allocator.free(vert_path);
                     break :blk try fs.readZ(allocator, vert_path);
                 }
@@ -93,7 +84,7 @@ pub const Shader = struct {
         };
         const frag = blk: {
             if (options.allocator) |allocator| {
-                const frag_path = try std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, rk.shaderFileExtension() });
+                const frag_path = try std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" });
                 defer allocator.free(frag_path);
                 break :blk try fs.readZ(allocator, frag_path);
             }
@@ -101,18 +92,18 @@ pub const Shader = struct {
         };
 
         return Shader{
-            .shader = renderer.createShaderProgram(VertUniformT, FragUniformT, .{ .vs = vert, .fs = frag }),
+            .shader = rk.createShaderProgram(VertUniformT, FragUniformT, .{ .vs = vert, .fs = frag }),
             .onPostBind = options.onPostBind,
             .onSetTransformMatrix = options.onSetTransformMatrix,
         };
     }
 
     pub fn deinit(self: Shader) void {
-        renderer.destroyShaderProgram(self.shader);
+        rk.destroyShaderProgram(self.shader);
     }
 
     pub fn bind(self: *Shader) void {
-        renderer.useShaderProgram(self.shader);
+        rk.useShaderProgram(self.shader);
         if (self.onPostBind) |onPostBind| onPostBind(self);
     }
 
@@ -126,11 +117,11 @@ pub const Shader = struct {
     }
 
     pub fn setVertUniform(self: Shader, comptime VertUniformT: type, value: *VertUniformT) void {
-        renderer.setShaderProgramUniformBlock(VertUniformT, self.shader, .vs, value);
+        rk.setShaderProgramUniformBlock(VertUniformT, self.shader, .vs, value);
     }
 
     pub fn setFragUniform(self: Shader, comptime FragUniformT: type, value: *FragUniformT) void {
-        renderer.setShaderProgramUniformBlock(FragUniformT, self.shader, .fs, value);
+        rk.setShaderProgramUniformBlock(FragUniformT, self.shader, .fs, value);
     }
 };
 

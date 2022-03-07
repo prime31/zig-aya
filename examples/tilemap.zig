@@ -7,7 +7,7 @@ var map: *Map = undefined;
 var texture: aya.gfx.Texture = undefined;
 var batch: aya.gfx.AtlasBatch = undefined;
 var player: aya.math.RectI = undefined;
-var speed: f32 = 2;
+var speed: f32 = 1.0;
 
 pub fn main() anyerror!void {
     try aya.run(.{

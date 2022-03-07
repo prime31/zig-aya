@@ -1,8 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 var checker_tex: aya.gfx.Texture = undefined;
 var font_tex: aya.gfx.Texture = undefined;
 var checker_quad: aya.math.Quad = undefined;
