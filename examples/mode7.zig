@@ -4,8 +4,6 @@ const gfx = aya.gfx;
 const math = aya.math;
 const shaders = @import("assets/shaders/shaders.zig");
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
-
 const Texture = aya.gfx.Texture;
 const Color = aya.math.Color;
 
@@ -157,7 +155,7 @@ fn shutdown() !void {
 }
 
 fn update() !void {
-    const move_speed = 140.0;
+    const move_speed = 4.0;
     if (aya.input.keyDown(.w)) {
         camera.x += std.math.cos(camera.r) * move_speed * aya.time.dt();
         camera.y += std.math.sin(camera.r) * move_speed * aya.time.dt();
@@ -193,9 +191,9 @@ fn update() !void {
     }
 
     if (aya.input.keyDown(.q)) {
-        camera.setRotation(@mod(camera.r, std.math.tau) - aya.time.dt());
+        camera.setRotation(@mod(camera.r, std.math.tau) - aya.time.rawDeltaTime());
     } else if (aya.input.keyDown(.e)) {
-        camera.setRotation(@mod(camera.r, std.math.tau) + aya.time.dt());
+        camera.setRotation(@mod(camera.r, std.math.tau) + aya.time.rawDeltaTime());
     }
 
     if (aya.input.mousePressed(.left)) {

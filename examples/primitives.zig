@@ -3,7 +3,6 @@ const aya = @import("aya");
 const math = aya.math;
 const Color = math.Color;
 
-pub const renderer: aya.renderkit.Renderer = .opengl;
 var tri_batch: aya.gfx.TriangleBatcher = undefined;
 
 pub fn main() !void {
@@ -23,7 +22,7 @@ fn update() !void {}
 
 fn render() !void {
     aya.gfx.beginPass(.{});
-    aya.draw.line(aya.math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
+    aya.draw.line(math.Vec2.init(0, 0), aya.math.Vec2.init(640, 480), 2, aya.math.Color.blue);
     aya.draw.point(math.Vec2.init(350, 350), 10, math.Color.sky_blue);
     aya.draw.point(math.Vec2.init(380, 380), 15, math.Color.magenta);
     aya.draw.rect(math.Vec2.init(387, 372), 40, 15, math.Color.dark_brown);

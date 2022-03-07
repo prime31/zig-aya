@@ -16,64 +16,64 @@ pub const SepiaShader = gfx.ShaderState(SepiaParams);
 pub const VignetteShader = gfx.ShaderState(VignetteParams);
 
 pub fn createCubeShader() !gfx.Shader {
-    const vert = if (renderkit.current_renderer == .opengl) @embedFile("cube_vs.glsl") else @embedFile("cube_vs.metal");
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("cube_fs.glsl") else @embedFile("cube_fs.metal");
+    const vert = @embedFile("cube_vs.glsl");
+    const frag = @embedFile("cube_fs.glsl");
     return try gfx.Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDepthShader() DepthShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("depth_fs.glsl") else @embedFile("depth_fs.metal");
+    const frag = @embedFile("depth_fs.glsl");
     return DepthShader.init(.{ .frag = frag, .onPostBind = DepthShader.onPostBind });
 }
 
 pub fn createDissolveShader() DissolveShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("dissolve_fs.glsl") else @embedFile("dissolve_fs.metal");
+    const frag = @embedFile("dissolve_fs.glsl");
     return DissolveShader.init(.{ .frag = frag, .onPostBind = DissolveShader.onPostBind });
 }
 
 pub fn createInstancedShader() !gfx.Shader {
-    const vert = if (renderkit.current_renderer == .opengl) @embedFile("instanced_vs.glsl") else @embedFile("instanced_vs.metal");
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("instanced_fs.glsl") else @embedFile("instanced_fs.metal");
+    const vert = @embedFile("instanced_vs.glsl");
+    const frag = @embedFile("instanced_fs.glsl");
     return try gfx.Shader.initWithVertFrag(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createLinesShader() LinesShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("lines_fs.glsl") else @embedFile("lines_fs.metal");
+    const frag = @embedFile("lines_fs.glsl");
     return LinesShader.init(.{ .frag = frag, .onPostBind = LinesShader.onPostBind });
 }
 
 pub fn createMetaFlamesShader() MetaFlamesShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("meta_flames_fs.glsl") else @embedFile("meta_flames_fs.metal");
+    const frag = @embedFile("meta_flames_fs.glsl");
     return MetaFlamesShader.init(.{ .frag = frag, .onPostBind = MetaFlamesShader.onPostBind });
 }
 
 pub fn createMode7Shader() Mode7Shader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("mode7_fs.glsl") else @embedFile("mode7_fs.metal");
+    const frag = @embedFile("mode7_fs.glsl");
     return Mode7Shader.init(.{ .frag = frag, .onPostBind = Mode7Shader.onPostBind });
 }
 
 pub fn createNoiseShader() NoiseShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("noise_fs.glsl") else @embedFile("noise_fs.metal");
+    const frag = @embedFile("noise_fs.glsl");
     return NoiseShader.init(.{ .frag = frag, .onPostBind = NoiseShader.onPostBind });
 }
 
 pub fn createPixelGlitchShader() PixelGlitchShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("pixel_glitch_fs.glsl") else @embedFile("pixel_glitch_fs.metal");
+    const frag = @embedFile("pixel_glitch_fs.glsl");
     return PixelGlitchShader.init(.{ .frag = frag, .onPostBind = PixelGlitchShader.onPostBind });
 }
 
 pub fn createRgbShiftShader() RgbShiftShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("rgb_shift_fs.glsl") else @embedFile("rgb_shift_fs.metal");
+    const frag = @embedFile("rgb_shift_fs.glsl");
     return RgbShiftShader.init(.{ .frag = frag, .onPostBind = RgbShiftShader.onPostBind });
 }
 
 pub fn createSepiaShader() SepiaShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("sepia_fs.glsl") else @embedFile("sepia_fs.metal");
+    const frag = @embedFile("sepia_fs.glsl");
     return SepiaShader.init(.{ .frag = frag, .onPostBind = SepiaShader.onPostBind });
 }
 
 pub fn createVignetteShader() VignetteShader {
-    const frag = if (renderkit.current_renderer == .opengl) @embedFile("vignette_fs.glsl") else @embedFile("vignette_fs.metal");
+    const frag = @embedFile("vignette_fs.glsl");
     return VignetteShader.init(.{ .frag = frag, .onPostBind = VignetteShader.onPostBind });
 }
 
