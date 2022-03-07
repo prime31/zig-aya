@@ -145,6 +145,8 @@ fn render() !void {
         .cull_mode = .back,
     });
 
+    std.debug.print("dt: {d}, raw dt: {d}\n", .{ aya.time.dt(), aya.time.rawDeltaTime() });
+
     aya.gfx.beginNullPass();
     aya.gfx.beginPass(.{ .color = aya.math.Color.gold, .shader = &shader });
 
