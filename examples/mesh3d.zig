@@ -125,8 +125,8 @@ fn update() !void {
 }
 
 fn render() !void {
-    cube_rot_x += aya.time.rawDeltaTime() * 100;
-    cube_rot_y += aya.time.rawDeltaTime() * 200;
+    cube_rot_x += aya.time.dt();
+    cube_rot_y += aya.time.dt() * 2;
 
     const proj = Mat4.createPerspective(55, aya.window.aspectRatio(), 0.1, 10);
     const view = Mat4.createLookAt(Vec3.init(0, 1.5, 3), Vec3.init(0.0, 0.0, 0.0), Vec3.init(0.0, 1.0, 0.0));
@@ -144,8 +144,6 @@ fn render() !void {
         },
         .cull_mode = .back,
     });
-
-    std.debug.print("dt: {d}, raw dt: {d}\n", .{ aya.time.dt(), aya.time.rawDeltaTime() });
 
     aya.gfx.beginNullPass();
     aya.gfx.beginPass(.{ .color = aya.math.Color.gold, .shader = &shader });
