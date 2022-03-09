@@ -72,7 +72,7 @@ fn render() !void {
     aya.gfx.blitToScreen(aya.math.Color.black);
 
     // now render directly to the backbuffer
-    aya.gfx.beginPass(.{ .color_action = .load });
+    aya.gfx.beginPass(.{ .clear_color = false });
     aya.debug.drawPoint(.{ .x = 40, .y = 400 }, 60, aya.math.Color.yellow);
     aya.draw.texScale(pass.color_texture, 20, 200, 2);
     aya.gfx.endPass();
