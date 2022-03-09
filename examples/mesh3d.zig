@@ -110,6 +110,14 @@ fn init() !void {
 
     shader = shaders.createCubeShader() catch unreachable;
     depth_shader = shaders.createDepthShader();
+
+    aya.gfx.setRenderState(.{
+        .depth = .{
+            .enabled = true,
+            .compare_func = .less_equal,
+        },
+        .cull_mode = .back,
+    });
 }
 
 fn shutdown() !void {
@@ -128,7 +136,7 @@ fn render() !void {
     cube_rot_x += aya.time.dt();
     cube_rot_y += aya.time.dt() * 2;
 
-    const proj = Mat4.createPerspective(55, aya.window.aspectRatio(), 0.1, 10);
+    const proj = Mat4.createPerspective(58, aya.window.aspectRatio(), 0.1, 10);
     const view = Mat4.createLookAt(Vec3.init(0, 1.5, 3), Vec3.init(0.0, 0.0, 0.0), Vec3.init(0.0, 1.0, 0.0));
     const view_proj = Mat4.mul(proj, view);
 
@@ -137,16 +145,8 @@ fn render() !void {
     const model = Mat4.mul(rxm, rym);
     const mvp = Mat4.mul(view_proj, model);
 
-    aya.gfx.setRenderState(.{
-        .depth = .{
-            .enabled = true,
-            .compare_func = .less_equal,
-        },
-        .cull_mode = .back,
-    });
-
     aya.gfx.beginNullPass();
-    aya.gfx.beginPass(.{ .color = aya.math.Color.gold, .shader = &shader });
+    aya.gfx.beginPass(.{ .color = aya.math.Color.gold, .clear_depth = true, .shader = &shader });
 
     var params = shaders.CubeParamsVS{ .mvp = mvp };
     shader.setVertUniform(shaders.CubeParamsVS, &params);
