@@ -61,7 +61,7 @@ pub const PostProcessStack = struct {
 
         // if there was an odd number of post processors blit to the OffscreenPass that was passed in so it gets blitted to the backbuffer
         if (!aya.math.isEven(self.processors.items.len)) {
-            aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass });
+            aya.gfx.beginPass(.{ .clear_color = false, .pass = pass });
             aya.draw.tex(self.pass.color_texture, 0, 0);
             aya.gfx.endPass();
         }
@@ -82,7 +82,7 @@ pub const PostProcessor = struct {
     // helper method for taking the final texture from a postprocessor and blitting it. Simple postprocessors
     // can get away with just calling this method directly.
     pub fn blit(_: *PostProcessor, pass: OffscreenPass, tex: aya.gfx.Texture, shader: *aya.gfx.Shader) void {
-        aya.gfx.beginPass(.{ .color_action = .dont_care, .pass = pass, .shader = shader });
+        aya.gfx.beginPass(.{ .clear_color = false, .pass = pass, .shader = shader });
         aya.draw.tex(tex, 0, 0);
         aya.gfx.endPass();
     }

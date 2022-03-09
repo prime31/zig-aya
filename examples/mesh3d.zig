@@ -159,7 +159,7 @@ fn render() !void {
     // depth_shader.frag_uniform.near = 0.1;
     // depth_shader.frag_uniform.far = 10;
 
-    // aya.gfx.beginPass(.{ .depth_action = .load, .color_action = .load, .shader = &depth_shader.shader });
+    // aya.gfx.beginPass(.{ .clear_depth = false, .clear_color = false, .shader = &depth_shader.shader });
     // aya.draw.rect(.{}, aya.window.widthf(), aya.window.heightf(), aya.math.Color.white);
     // aya.gfx.endPass();
 }

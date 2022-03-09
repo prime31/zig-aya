@@ -123,7 +123,7 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
 
     var recursor = struct {
         fn search(alloc: std.mem.Allocator, directory: []const u8, filelist: *std.ArrayList([2][]const u8)) void {
-            if (std.mem.eql(u8, directory, "assets")) return;
+            if (std.mem.eql(u8, directory, "examples/assets")) return;
 
             var dir = std.fs.cwd().openDir(directory, .{ .iterate = true }) catch unreachable;
             defer dir.close();
