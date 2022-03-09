@@ -56,7 +56,7 @@ pub const PassConfig = struct {
     clear_stencil: bool = false,
     stencil: u8 = 0,
     clear_depth: bool = false,
-    depth: f64 = 0,
+    depth: f64 = 1,
 
     trans_mat: ?math.Mat32 = null,
     shader: ?*Shader = null,
