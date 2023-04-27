@@ -168,7 +168,7 @@ pub const FontBook = struct {
         };
         const source = data[0..tex_area];
 
-        for (source) |alpha, i| {
+        for (source, 0..) |alpha, i| {
             pixels[i * 4 + 0] = 255;
             pixels[i * 4 + 1] = 255;
             pixels[i * 4 + 2] = 255;

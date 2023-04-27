@@ -62,12 +62,12 @@ pub const PassConfig = struct {
     shader: ?*Shader = null,
     pass: ?OffscreenPass = null,
 
-    pub fn asClearCommand(self: PassConfig) renderkit.ClearCommand {
+    pub fn asClearCommand(comptime self: PassConfig) renderkit.ClearCommand {
         var cmd = renderkit.ClearCommand{};
         cmd.colors[0].clear = self.clear_color;
         cmd.colors[0].color = self.color.asArray();
 
-        for (self.mrt_colors) |mrt_color, i| {
+        for (self.mrt_colors, 0..) |mrt_color, i| {
             cmd.colors[i + 1] = .{
                 .clear = mrt_color.clear,
                 .color = mrt_color.color.asArray(),
@@ -127,7 +127,7 @@ pub fn createPostProcessStack() PostProcessStack {
     return PostProcessStack.init(null, state.default_pass.design_w, state.default_pass.design_h);
 }
 
-pub fn setShader(shader: ?*Shader) void {
+pub fn setShader(comptime shader: ?*Shader) void {
     const new_shader = shader orelse &state.shader;
 
     draw.batcher.flush();
@@ -155,7 +155,7 @@ pub fn beginNullPass() void {
 // OffscreenPasses should be rendered first. If no pass is in the PassConfig rendering will be done to the
 // DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
 // If another pass is run after blitToScreen rendering will be to the backbuffer.
-pub fn beginPass(config: PassConfig) void {
+pub fn beginPass(comptime config: PassConfig) void {
     var proj_mat: math.Mat32 = math.Mat32.init();
     var clear_command = config.asClearCommand();
 

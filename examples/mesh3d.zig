@@ -154,8 +154,6 @@ fn render() !void {
     mesh.draw();
     aya.gfx.endPass();
 
-
-
     // depth_shader.frag_uniform.near = 0.1;
     // depth_shader.frag_uniform.far = 10;
 

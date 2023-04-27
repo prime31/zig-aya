@@ -12,10 +12,9 @@ const sdlAllocator_vtable = std.mem.Allocator.VTable{
     .free = sdlFree,
 };
 
-
-fn sdlAlloc(_: *anyopaque, len: usize, ptr_align: u29, len_align: u29, _: usize) ![]u8 {
+fn sdlAlloc(_: *anyopaque, len: usize, ptr_align: u8, len_align: usize) ?[*]u8 {
     std.debug.assert(ptr_align <= @alignOf(c_longdouble));
-    const ptr = @ptrCast([*]u8, sdl.SDL_malloc(len) orelse return error.OutOfMemory);
+    const ptr = @ptrCast([*]u8, sdl.SDL_malloc(len);
 
     if (len_align == 0) {
         return ptr[0..len];
@@ -24,7 +23,7 @@ fn sdlAlloc(_: *anyopaque, len: usize, ptr_align: u29, len_align: u29, _: usize)
     return ptr[0..std.mem.alignBackwardAnyAlign(len, len_align)];
 }
 
-fn sdlResize(_: *anyopaque, old_mem: []u8, _: u29, new_len: usize, len_align: u29, _: usize) ?usize {
+fn sdlResize(_: *anyopaque, old_mem: []u8, _: u8, new_len: usize, len_align: usize) ?usize {
     if (new_len == 0) {
         sdl.SDL_free(old_mem.ptr);
         return 0;

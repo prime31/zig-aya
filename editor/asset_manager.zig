@@ -25,7 +25,7 @@ const ThumbnailAtlas = struct {
 
     pub fn init(atlas: Atlas) ThumbnailAtlas {
         var uvs = aya.mem.allocator.alloc(Uv, atlas.rects.len) catch unreachable;
-        for (uvs) |*uv, i| {
+        for (uvs, 0..) |*uv, i| {
             const rect = atlas.rects[i];
             uv.tl.x = @intToFloat(f32, rect.x) / @intToFloat(f32, atlas.image.w);
             uv.tl.y = @intToFloat(f32, rect.y) / @intToFloat(f32, atlas.image.h);
@@ -83,7 +83,7 @@ pub const TextureAtlas = struct {
     }
 
     pub fn indexOfTexture(self: @This(), tex_name: [:0]const u8) usize {
-        for (self.names) |name, i| {
+        for (self.names, 0..) |name, i| {
             if (std.mem.eql(u8, name, tex_name)) return i;
         }
         unreachable;
@@ -144,7 +144,7 @@ pub const AssetManager = struct {
     }
 
     fn indexOfTexture(_: @This(), haystack: [][:0]const u8, name: [:0]const u8) ?usize {
-        return for (haystack) |slice, i| {
+        return for (haystack, 0..) |slice, i| {
             if (std.mem.eql(u8, slice, name)) break @as(?usize, i);
         } else @as(?usize, null);
     }
@@ -189,7 +189,7 @@ pub const AssetManager = struct {
 
         aya.mem.allocator.free(self.tilesets);
         self.tilesets = aya.mem.allocator.alloc([:0]u8, pngs.len) catch unreachable;
-        for (pngs) |png, i| self.tilesets[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(png)) catch unreachable;
+        for (pngs, 0..) |png, i| self.tilesets[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(png)) catch unreachable;
     }
 
     pub fn loadLevels(self: *@This()) void {
@@ -199,6 +199,6 @@ pub const AssetManager = struct {
 
         aya.mem.allocator.free(self.levels);
         self.levels = aya.mem.allocator.alloc([:0]u8, levels.len) catch unreachable;
-        for (levels) |level, i| self.levels[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(level)) catch unreachable;
+        for (levels, 0..) |level, i| self.levels[i] = aya.mem.allocator.dupeZ(u8, std.fs.path.basename(level)) catch unreachable;
     }
 };

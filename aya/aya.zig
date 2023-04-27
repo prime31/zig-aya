@@ -55,7 +55,7 @@ pub const Config = struct {
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
 
-pub fn run(config: Config) !void {
+pub fn run(comptime config: Config) !void {
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMECONTROLLER) != 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         return error.SDLInitializationFailed;

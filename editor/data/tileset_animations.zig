@@ -16,7 +16,7 @@ pub fn draw(tileset: *Tileset) void {
         defer imgui.igEndPopup();
 
         var delete_index: usize = std.math.maxInt(usize);
-        for (tileset.animations.items) |*anim, i| {
+        for (tileset.animations.items, 0..) |*anim, i| {
             imgui.igPushIDPtr(anim);
 
             if (tileset.tileImageButton(16, anim.tile))

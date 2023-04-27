@@ -225,7 +225,7 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
         imgui.igPopItemWidth();
 
         var displayed_count: usize = 0;
-        for (state.asset_man.thumbnails.names) |asset_name, i| {
+        for (state.asset_man.thumbnails.names, 0..) |asset_name, i| {
             if (filter_entities) {
                 const null_index = std.mem.indexOfScalar(u8, &filter_buffer, 0) orelse 0;
                 if (std.mem.indexOf(u8, asset_name, filter_buffer[0..null_index]) == null)
@@ -376,7 +376,7 @@ pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25:0]u8) voi
     } else if (imgui.igBeginCombo("##enum", &enum_values[value.*], imgui.ImGuiComboFlags_None)) {
         defer imgui.igEndCombo();
 
-        for (enum_values) |enum_label, i| {
+        for (enum_values, 0..) |enum_label, i| {
             if (imgui.igSelectableBool(&enum_label, value.* == i, imgui.ImGuiSelectableFlags_None, .{ .y = line_height }))
                 value.* = @intCast(u8, i);
         }

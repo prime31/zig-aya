@@ -26,7 +26,7 @@ pub const Image = struct {
 
         var img = init(@intCast(usize, w), @intCast(usize, h));
         var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
-        for (pixels) |p, i| {
+        for (pixels, 0..) |p, i| {
             img.pixels[i] = p;
         }
 

@@ -20,7 +20,7 @@ pub fn draw(state: *root.AppState) void {
         if (imgui.ogListBoxHeaderVec2("", .{ .y = 110 })) {
             defer imgui.igListBoxFooter();
 
-            for (asset_types) |asset_type, i| {
+            for (asset_types, 0..) |asset_type, i| {
                 if (imgui.ogSelectableBool(asset_type.ptr, selected_comp == i, imgui.ImGuiSelectableFlags_None, .{}))
                     selected_comp = i;
             }
@@ -57,7 +57,7 @@ fn drawTextures(state: *root.AppState) void {
     // we only drag/drop if the entity layer is active
     const entity_layer = if (state.level.layers.items.len > 0 and state.level.layers.items[state.selected_layer_index] == .entity) state.level.layers.items[state.selected_layer_index].entity else null;
 
-    for (state.asset_man.thumbnails.names) |asset_name, i| {
+    for (state.asset_man.thumbnails.names, 0..) |asset_name, i| {
         imgui.ogPushIDUsize(i);
         defer imgui.igPopID();
 
@@ -117,7 +117,7 @@ fn drawLevels(state: *root.AppState) void {
     _ = imgui.ogBeginChildID(777, .{ .x = w }, false, imgui.ImGuiWindowFlags_None);
     defer imgui.igEndChildFrame();
 
-    for (state.asset_man.levels) |level, i| {
+    for (state.asset_man.levels, 0..) |level, i| {
         imgui.ogPushIDUsize(i);
         defer imgui.igPopID();
 

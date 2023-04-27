@@ -164,7 +164,7 @@ pub const AutoTilemapLayer = struct {
             if (rule.result_tiles.len == 0) continue;
 
             // at least one rule must pass to have a result
-            for (rule.rule_tiles) |rule_tile, i| {
+            for (rule.rule_tiles, 0..) |rule_tile, i| {
                 if (rule_tile.state == .none) continue;
                 const x_offset = @intCast(i32, @mod(i, 5)) - 2;
                 const y_offset = @intCast(i32, @divTrunc(i, 5)) - 2;

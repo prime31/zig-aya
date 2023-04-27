@@ -20,7 +20,7 @@ pub fn orderedRemove(comptime T: type, slice: *[]T, i: usize) T {
     if (newlen == i) return pop(T, slice);
 
     const old_item = slice.*[i];
-    for (slice.*[i..newlen]) |*b, j| b.* = slice.*[i + 1 + j];
+    for (slice.*[i..newlen], 0..) |*b, j| b.* = slice.*[i + 1 + j];
     slice.* = aya.mem.allocator.shrink(slice.*, newlen);
     return old_item;
 }

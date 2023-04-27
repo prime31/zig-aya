@@ -19,7 +19,7 @@ pub const ResolutionPolicy = enum {
     best_fit,
 
     pub fn getScaler(self: ResolutionPolicy, design_w: i32, design_h: i32) ResolutionScaler {
-        if (self == .none) return .{.w = 0, .h = 0};
+        if (self == .none) return .{ .w = 0, .h = 0 };
 
         // non-default policy requires a design size
         std.debug.assert((self != .default and design_w > 0 and design_h > 0) or self == .default);

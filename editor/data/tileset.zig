@@ -174,8 +174,8 @@ pub const Tileset = struct {
     /// helper to draw an image button with an image from the tileset
     pub fn tileImageButton(self: Tileset, size: f32, tile: usize) bool {
         const rect = uvsForTile(self, tile);
-        const uv0 =  imgui.ImVec2{ .x = rect.x, .y = rect.y };
-        const uv1 =  imgui.ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
+        const uv0 = imgui.ImVec2{ .x = rect.x, .y = rect.y };
+        const uv1 = imgui.ImVec2{ .x = rect.x + rect.w, .y = rect.y + rect.h };
 
         // const tint = root.colors.rgbToVec4(255, 255, 255);
         return imgui.ogImageButton(self.tex.imTextureID(), .{ .x = size, .y = size }, uv0, uv1, 2);
@@ -219,7 +219,7 @@ const TileDefinitions = struct {
         if (imgui.igBeginPopup("##tileset-definitions", imgui.ImGuiWindowFlags_None)) {
             defer imgui.igEndPopup();
 
-            inline for (@typeInfo(TileDefinitions).Struct.fields) |field, i| {
+            inline for (@typeInfo(TileDefinitions).Struct.fields, 0..) |field, i| {
                 imgui.igPushIDInt(@intCast(c_int, i));
                 defer imgui.igPopID();
 
@@ -230,7 +230,7 @@ const TileDefinitions = struct {
 
                 // replace underscores with spaces
                 var buffer = aya.mem.tmp_allocator.alloc(u8, field.name.len) catch unreachable;
-                for (field.name) |char, j| buffer[j] = if (char == '_') ' ' else char;
+                for (field.name, 0..) |char, j| buffer[j] = if (char == '_') ' ' else char;
 
                 imgui.igAlignTextToFramePadding();
                 imgui.igText(buffer.ptr);
@@ -325,17 +325,17 @@ pub const Animation = struct {
     }
 };
 
-pub fn tileIndexUnderPos(pos:  imgui.ImVec2, rect_size: usize, origin:  imgui.ImVec2) struct { x: usize, y: usize } {
+pub fn tileIndexUnderPos(pos: imgui.ImVec2, rect_size: usize, origin: imgui.ImVec2) struct { x: usize, y: usize } {
     const final_pos = pos.subtract(origin);
     return .{ .x = @divTrunc(@floatToInt(usize, final_pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, final_pos.y), rect_size) };
 }
 
 /// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
-pub fn addTileToDrawList(tile_size: usize, content_start_pos:  imgui.ImVec2, tile: u16, per_row: usize, tile_spacing: usize) void {
+pub fn addTileToDrawList(tile_size: usize, content_start_pos: imgui.ImVec2, tile: u16, per_row: usize, tile_spacing: usize) void {
     const x = @mod(tile, per_row);
     const y = @divTrunc(tile, per_row);
 
-    var tl =  imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
+    var tl = imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
     tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
     tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
     imgui.ogAddQuadFilled(imgui.igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), root.colors.rgbaToU32(116, 252, 253, 100));

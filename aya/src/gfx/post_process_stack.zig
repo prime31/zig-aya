@@ -53,7 +53,7 @@ pub const PostProcessStack = struct {
             self.pass.resize(@floatToInt(i32, pass.color_texture.width), @floatToInt(i32, pass.color_texture.height));
         }
 
-        for (self.processors.items) |p, i| {
+        for (self.processors.items, 0..) |p, i| {
             const offscreen_pass = if (!aya.math.isEven(i)) pass else self.pass;
             const tex = if (aya.math.isEven(i)) pass.color_texture else self.pass.color_texture;
             p.process(p, offscreen_pass, tex);
