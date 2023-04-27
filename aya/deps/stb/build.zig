@@ -8,20 +8,19 @@ pub fn build(b: *Builder) void {
     exe.install();
 }
 
-pub fn linkArtifact(_: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
-    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
-    exe.addPackage(getPackage(prefix_path));
-
+pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
+    _ = b;
+    _ = target;
     exe.linkLibC();
-    exe.addIncludeDir(prefix_path ++ "aya/deps/stb/src");
+    exe.addIncludePath(prefix_path ++ "aya/deps/stb/src");
 
-    const lib_cflags = &[_][]const u8{ "-std=c99", "-O3" };
+    const lib_cflags = &[_][]const u8{ "-std=c99", "-03" };
     exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_impl.c", lib_cflags);
 }
 
-pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {
-    return .{
-        .name = "stb",
-        .path = .{ .path = prefix_path ++ "aya/deps/stb/stb.zig" },
-    };
+pub fn getModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+    return b.createModule(.{
+        .source_file = .{ .path = prefix_path ++ "aya/deps/stb/stb.zig" },
+    });
 }

@@ -14,14 +14,12 @@ pub fn build(b: *std.build.Builder) anyerror!void {
 /// prefix_path is used to add package paths. It should be the the same path used to include this build file
 pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
-    exe.addPackage(getImGuiPackage(prefix_path));
+    exe.addModule("imgui_gl", getImGuiModule(b, prefix_path));
 
     if (target.isWindows()) {
         exe.linkSystemLibrary("user32");
         exe.linkSystemLibrary("gdi32");
     } else if (target.isDarwin()) {
-        const frameworks_dir = macosFrameworksDir(b) catch unreachable;
-        exe.addFrameworkDir(frameworks_dir);
         macosAddSdkDirs(b, exe) catch unreachable;
         exe.linkFramework("Foundation");
         exe.linkFramework("Cocoa");
@@ -37,8 +35,8 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     }
 
     const base_path = prefix_path ++ "aya/deps/imgui/";
-    exe.addIncludeDir(base_path ++ "cimgui/imgui");
-    exe.addIncludeDir(base_path ++ "cimgui/imgui/examples");
+    exe.addIncludePath(base_path ++ "cimgui/imgui");
+    exe.addIncludePath(base_path ++ "cimgui/imgui/examples");
 
     const cpp_args = [_][]const u8{"-Wno-return-type-c-linkage"};
     exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui.cpp", &cpp_args);
@@ -57,9 +55,9 @@ fn addImGuiGlImplementation(_: *Builder, exe: *std.build.LibExeObjStep, _: std.z
 
     // what we actually want to work but for some reason on macos it doesnt
     exe.linkSystemLibrary("SDL2");
-    exe.addIncludeDir(base_path ++ "cimgui/imgui/examples/libs/gl3w");
-    exe.addIncludeDir("/usr/local/include/SDL2");
-    exe.addIncludeDir("/opt/homebrew/include/SDL2");
+    exe.addIncludePath(base_path ++ "cimgui/imgui/examples/libs/gl3w");
+    exe.addIncludePath("/usr/local/include/SDL2");
+    exe.addIncludePath("/opt/homebrew/include/SDL2");
 
     exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/libs/gl3w/GL/gl3w.c", &cpp_args);
     exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/imgui_impl_opengl3.cpp", &cpp_args);
@@ -70,7 +68,7 @@ fn addImGuiGlImplementation(_: *Builder, exe: *std.build.LibExeObjStep, _: std.z
 fn macosFrameworksDir(b: *Builder) ![]u8 {
     if (framework_dir) |dir| return dir;
 
-    var str = try b.exec(&[_][]const u8{ "xcrun", "--show-sdk-path" });
+    var str = b.exec(&[_][]const u8{ "xcrun", "--show-sdk-path" });
     const strip_newline = std.mem.lastIndexOf(u8, str, "\n");
     if (strip_newline) |index| {
         str = str[0..index];
@@ -80,27 +78,27 @@ fn macosFrameworksDir(b: *Builder) ![]u8 {
 }
 
 fn macosAddSdkDirs(b: *Builder, step: *std.build.LibExeObjStep) !void {
-    var sdk_dir = try b.exec(&[_][]const u8 { "xcrun", "--show-sdk-path" });
+    var sdk_dir = b.exec(&[_][]const u8{ "xcrun", "--show-sdk-path" });
     const newline_index = std.mem.lastIndexOf(u8, sdk_dir, "\n");
     if (newline_index) |idx| {
         sdk_dir = sdk_dir[0..idx];
     }
-    framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8 { sdk_dir, "/System/Library/Frameworks" });
-    const usrinclude_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8 { sdk_dir, "/usr/include"});
-    step.addFrameworkDir(framework_dir.?);
-    step.addIncludeDir(usrinclude_dir);
+    framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ sdk_dir, "/System/Library/Frameworks" });
+    const usrinclude_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ sdk_dir, "/usr/include" });
+    step.addFrameworkPath(framework_dir.?);
+    step.addIncludePath(usrinclude_dir);
 }
 
-pub fn getImGuiPackage(comptime prefix_path: []const u8) std.build.Pkg {
-    return .{
-        .name = "imgui",
-        .path = .{ .path = prefix_path ++ "aya/deps/imgui/imgui.zig" },
-    };
+pub fn getImGuiModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+    return b.createModule(.{
+        .source_file = .{ .path = prefix_path ++ "aya/deps/imgui/imgui.zig" },
+    });
 }
 
-pub fn getImGuiGlPackage(comptime prefix_path: []const u8) std.build.Pkg {
-    return .{
-        .name = "imgui_gl",
-        .path = .{ .path = prefix_path ++ "aya/deps/imgui/imgui_gl.zig" },
-    };
+pub fn getImGuiGlModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+    return b.createModule(.{
+        .source_file = .{ .path = prefix_path ++ "aya/deps/imgui/imgui_gl.zig" },
+    });
 }
