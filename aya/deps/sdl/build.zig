@@ -7,7 +7,7 @@ pub fn build(_: *Builder) void {}
 pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.CrossTarget, comptime prefix_path: []const u8) void {
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
     exe.linkSystemLibrary("c");
-    exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("sdl2");
 
     if (@import("builtin").os.tag == .windows) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2
@@ -22,12 +22,12 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, _: std.zig.Cross
         src_dir.copyFile("SDL2.dll", std.fs.cwd(), "zig-cache\\bin\\SDL2.dll", .{}) catch unreachable;
     }
 
-    exe.addPackage(getPackage(prefix_path));
+    exe.addModule("sdl", getModule(b, prefix_path));
 }
 
-pub fn getPackage(comptime prefix_path: []const u8) std.build.Pkg {
-    return .{
-        .name = "sdl",
-        .path = .{ .path = prefix_path ++ "aya/deps/sdl/sdl.zig" },
-    };
+pub fn getModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
+    if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
+    return b.createModule(.{
+        .source_file = .{ .path = prefix_path ++ "aya/deps/sdl/sdl.zig" },
+    });
 }
