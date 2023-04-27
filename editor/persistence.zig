@@ -52,7 +52,7 @@ const LevelJson = struct {
 
     pub fn init(level: data.Level) LevelJson {
         var layers = aya.mem.tmp_allocator.alloc(LayerJson, level.layers.items.len) catch unreachable;
-        for (level.layers.items) |src_level, i| {
+        for (level.layers.items, 0..) |src_level, i| {
             layers[i] = switch (src_level) {
                 .tilemap => |layer| .{ .tilemap = TilemapLayerJson.init(layer) },
                 .auto_tilemap => |layer| .{ .auto_tilemap = AutoTilemapLayerJson.init(layer) },
@@ -69,7 +69,7 @@ const LevelJson = struct {
 
     pub fn toOwnedLevel(self: @This()) data.Level {
         var layers = aya.mem.allocator.alloc(root.layers.Layer, self.layers.len) catch unreachable;
-        for (self.layers) |src_layer, i| {
+        for (self.layers, 0..) |src_layer, i| {
             layers[i] = switch (src_layer) {
                 .tilemap => |layer| .{ .tilemap = TilemapLayerJson.toOwnedTilemapLayer(layer) },
                 .auto_tilemap => |layer| .{ .auto_tilemap = AutoTilemapLayerJson.toOwnedAutoTilemapLayer(layer) },
@@ -182,7 +182,7 @@ const RuleSetJson = struct {
 
     pub fn init(ruleset: data.RuleSet) RuleSetJson {
         var rules = aya.mem.tmp_allocator.alloc(RuleJson, ruleset.rules.items.len) catch unreachable;
-        for (ruleset.rules.items) |rule, i| rules[i] = RuleJson.init(rule);
+        for (ruleset.rules.items, 0..) |rule, i| rules[i] = RuleJson.init(rule);
 
         return .{
             .seed = ruleset.seed,
@@ -233,7 +233,7 @@ const EntityLayerJson = struct {
 
     pub fn init(layer: root.layers.EntityLayer) EntityLayerJson {
         var entities = aya.mem.tmp_allocator.alloc(EntityJson, layer.entities.items.len) catch unreachable;
-        for (layer.entities.items) |entity, i| entities[i] = EntityJson.init(entity);
+        for (layer.entities.items, 0..) |entity, i| entities[i] = EntityJson.init(entity);
 
         return .{
             .name = aya.mem.tmp_allocator.dupe(u8, std.mem.sliceTo(&layer.name, 0)) catch unreachable,
@@ -284,7 +284,7 @@ const EntityJson = struct {
 
     pub fn init(entity: data.Entity) EntityJson {
         var comps = aya.mem.tmp_allocator.alloc(ComponentInstanceJson, entity.components.items.len) catch unreachable;
-        for (entity.components.items) |comp, i| comps[i] = ComponentInstanceJson.init(comp);
+        for (entity.components.items, 0..) |comp, i| comps[i] = ComponentInstanceJson.init(comp);
 
         return .{
             .id = entity.id,

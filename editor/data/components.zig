@@ -115,12 +115,12 @@ pub const ComponentInstance = struct {
     pub fn clone(self: ComponentInstance, state: *data.AppState) ComponentInstance {
         var src_component = state.componentWithId(self.component_id);
         var comp = init(src_component.*);
-        for (self.props.items) |prop, i| comp.props.items[i] = prop;
+        for (self.props.items, 0..) |prop, i| comp.props.items[i] = prop;
         return comp;
     }
 
     pub fn removeProperty(self: *@This(), property_id: u8) void {
-        var id = for (self.props.items) |prop, i| {
+        var id = for (self.props.items, 0..) |prop, i| {
             if (prop.property_id == property_id) {
                 break i;
             }

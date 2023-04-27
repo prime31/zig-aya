@@ -57,8 +57,8 @@ pub fn draw() ?bool {
         changeDir(".");
     }
 
-   imgui.ogColoredText(0.2, 0.8, 0.2, picker_description);
-   imgui.ogDummy(.{ .y = 5 });
+    imgui.ogColoredText(0.2, 0.8, 0.2, picker_description);
+    imgui.ogDummy(.{ .y = 5 });
 
     if (imgui.ogButton("Home")) changeDirToKnownFolder(.home);
     imgui.igSameLine(0, 15);
@@ -66,7 +66,7 @@ pub fn draw() ?bool {
     imgui.igSameLine(0, 15);
     if (imgui.ogButton("Documents")) changeDirToKnownFolder(.documents);
     imgui.igSameLine(imgui.igGetWindowContentRegionWidth() - 120, 0);
-    if (imgui.ogButton("Create Directory"))imgui.ogOpenPopup("##create-directory");
+    if (imgui.ogButton("Create Directory")) imgui.ogOpenPopup("##create-directory");
 
     imgui.igText(selected_dir.?.ptr);
 
@@ -109,7 +109,7 @@ pub fn draw() ?bool {
         if (imgui.ogButton("Open")) return true;
     }
 
-   imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
+    imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
     if (imgui.igBeginPopup("##create-directory", imgui.ImGuiWindowFlags_None)) {
         defer imgui.igEndPopup();
         _ = imgui.igInputText("", &buffer, buffer.len, imgui.ImGuiInputTextFlags_CharsNoBlank, null, null);
@@ -118,7 +118,7 @@ pub fn draw() ?bool {
 
         const label_sentinel_index = std.mem.indexOfScalar(u8, &buffer, 0).?;
         const disabled = label_sentinel_index == 0;
-       imgui.ogPushDisabled(disabled);
+        imgui.ogPushDisabled(disabled);
         if (imgui.ogButtonEx("Create", .{})) {
             if (dir.makeDir(buffer[0..label_sentinel_index])) {
                 changeDir(buffer[0..label_sentinel_index]);
@@ -127,7 +127,7 @@ pub fn draw() ?bool {
                 std.debug.print("error creating dir: {}\n", .{err});
             }
         }
-       imgui.ogPopDisabled(disabled);
+        imgui.ogPopDisabled(disabled);
     }
 
     return null;

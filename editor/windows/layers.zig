@@ -16,7 +16,7 @@ pub fn draw(state: *root.AppState) void {
     if (imgui.igBegin("Layers", null, imgui.ImGuiWindowFlags_None)) {
         var delete_index: usize = std.math.maxInt(usize);
 
-        for (state.level.layers.items) |*layer, i| {
+        for (state.level.layers.items, 0..) |*layer, i| {
             var rename_index: ?usize = null;
             imgui.ogPushIDUsize(i);
             defer imgui.igPopID();
@@ -181,7 +181,7 @@ fn addLayerPopup(state: *root.AppState) void {
                 if (imgui.igBeginCombo("Tileset", state.asset_man.tilesets[new_layer_tileset_index], imgui.ImGuiComboFlags_None)) {
                     defer imgui.igEndCombo();
 
-                    for (state.asset_man.tilesets) |tileset, i| {
+                    for (state.asset_man.tilesets, 0..) |tileset, i| {
                         if (imgui.ogSelectableBool(tileset, new_layer_tileset_index == i, imgui.ImGuiSelectableFlags_None, .{})) new_layer_tileset_index = i;
                     }
                 }

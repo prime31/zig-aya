@@ -21,7 +21,7 @@ pub fn initTmpAllocator() void {
 /// Compares two slices and returns whether they are equal up to the index of the smallest slice.
 pub fn eqlSub(comptime T: type, base: []const T, b: []const T) bool {
     if (base.ptr == b.ptr) return true;
-    for (base) |item, index| {
+    for (base, 0..) |item, index| {
         if (b[index] != item) return false;
     }
     return true;
@@ -31,7 +31,7 @@ pub fn eqlSub(comptime T: type, base: []const T, b: []const T) bool {
 pub fn copyZ(comptime T: type, dest: []T, source: []const T) void {
     @setRuntimeSafety(false);
     std.debug.assert(dest.len >= source.len);
-    for (source) |s, i|
+    for (source, 0..) |s, i|
         dest[i] = s;
     dest[source.len] = 0;
 }

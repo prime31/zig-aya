@@ -96,7 +96,7 @@ pub const EntityLayer = struct {
 
     /// handles input from the Scene view and does aya rendering of entities
     pub fn handleSceneInput(self: *@This(), state: *AppState, camera: Camera, mouse_world: imgui.ImVec2) void {
-        for (self.entities.items) |entity, i| {
+        for (self.entities.items, 0..) |entity, i| {
             if (entity.sprite) |sprite| {
                 aya.draw.texViewport(sprite.tex, sprite.rect, entity.transformMatrix());
             } else {
@@ -146,7 +146,7 @@ pub const EntityLayer = struct {
             } else if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false) or imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels
                 var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
-                self.selected_index = for (self.entities.items) |entity, i| {
+                self.selected_index = for (self.entities.items, 0..) |entity, i| {
                     if (entity.selectable and entity.intersects(rect)) {
                         // store off our dragged_index and the position so we can snap it as its dragged around
                         self.dragged_index = i;
@@ -201,7 +201,7 @@ pub const EntityLayer = struct {
         if (!imgui.igBegin(tmp_name, null, imgui.ImGuiWindowFlags_None)) return;
 
         var delete_index: ?usize = null;
-        for (self.entities.items) |*entity, i| {
+        for (self.entities.items, 0..) |*entity, i| {
             imgui.igPushIDPtr(entity);
             var rename_index: ?usize = null;
 
@@ -390,7 +390,7 @@ pub const EntityLayer = struct {
 
         // component editor
         var delete_index: ?usize = null;
-        for (entity.components.items) |*comp, i| {
+        for (entity.components.items, 0..) |*comp, i| {
             imgui.igPushIDPtr(comp);
             defer imgui.igPopID();
 

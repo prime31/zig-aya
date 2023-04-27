@@ -27,7 +27,7 @@ pub fn draw(state: *root.AppState) void {
         if (imgui.ogListBoxHeaderVec2("", .{})) {
             defer imgui.igListBoxFooter();
 
-            for (state.components.items) |*comp, i| {
+            for (state.components.items, 0..) |*comp, i| {
                 if (imgui.ogSelectableBool(&comp.name, selected_comp == i, imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
                     selected_comp = i;
                 }
@@ -71,7 +71,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
     imgui.igText("Default Value");
 
     var delete_index: ?usize = null;
-    for (component.props) |*prop, i| {
+    for (component.props, 0..) |*prop, i| {
         imgui.igPushIDPtr(prop);
         defer imgui.igPopID();
 
@@ -106,7 +106,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
             defer imgui.igEndPopup();
 
             var prop_value = &component.props[index].value;
-            for (prop_value.enum_values) |*val, i| {
+            for (prop_value.enum_values, 0..) |*val, i| {
                 imgui.igPushIDPtr(val);
                 defer imgui.igPopID();
 
@@ -128,7 +128,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 
             // if this isnt the last element, copy each element after the one we remove back one to fill the gap
             if (newlen != i)
-                for (prop_value.enum_values[i..newlen]) |*b, j| std.mem.copy(u8, b, &prop_value.enum_values[i + 1 + j]);
+                for (prop_value.enum_values[i..newlen], 0..) |*b, j| std.mem.copy(u8, b, &prop_value.enum_values[i + 1 + j]);
 
             prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len - 1) catch unreachable;
             ensureLiveEnumValueIsValid(state, component, prop_value.enum_values.len);

@@ -86,7 +86,7 @@ pub const EntityManager = struct {
         }
 
         pub fn findEmpty(self: EntityBatch) ?usize {
-            for (self.occupied) |occupied, i| {
+            for (self.occupied, 0..) |occupied, i| {
                 if (!occupied) {
                     return i;
                 }
@@ -109,7 +109,7 @@ pub const EntityManager = struct {
 
     pub fn create(self: *EntityManager, comptime T: type) *T {
         var index: usize = std.math.maxInt(usize);
-        for (self.occupied.items) |occupied, i| {
+        for (self.occupied.items, 0..) |occupied, i| {
             if (!occupied) {
                 index = i;
                 break;

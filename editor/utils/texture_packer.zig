@@ -27,11 +27,11 @@ pub const Atlas = struct {
         };
 
         // convert to aya rects
-        for (frames) |frame, i| {
+        for (frames, 0..) |frame, i| {
             res_atlas.rects[i] = .{ .x = frame.x, .y = frame.y, .w = frame.w, .h = frame.h };
         }
 
-        for (files) |file, i| {
+        for (files, 0..) |file, i| {
             res_atlas.names[i] = aya.mem.allocator.dupeZ(u8, fs.path.basename(file)) catch unreachable;
         }
 
@@ -39,7 +39,7 @@ pub const Atlas = struct {
         var image = Image.init(size.width, size.height);
         image.fillRect(.{ .w = size.width, .h = size.height }, aya.math.Color.transparent);
 
-        for (files) |file, i| {
+        for (files, 0..) |file, i| {
             var sub_image = Image.initFromFile(file);
             defer sub_image.deinit();
 
@@ -115,7 +115,7 @@ pub fn packThumbnails(folder: []const u8, max_width_or_height: usize) !Atlas {
 
 fn getFramesForPngs(pngs: [][]const u8) []stb.stbrp_rect {
     var frames = std.ArrayList(stb.stbrp_rect).init(aya.mem.allocator);
-    for (pngs) |png, i| {
+    for (pngs, 0..) |png, i| {
         // TODO: why the fuck is this memory all jacked up?
         if (std.mem.indexOfScalar(u8, png, 0) != null) @panic("------ wtf man");
         var w: c_int = undefined;

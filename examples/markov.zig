@@ -254,7 +254,7 @@ pub const Markov = struct {
         }
 
         incrementItemCount(&self.firsts, all_rows[0]);
-        for (all_rows) |row, i| {
+        for (all_rows, 0..) |row, i| {
             if (i == 0) continue;
             self.updateItem(all_rows[i - 1], row);
         }

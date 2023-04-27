@@ -101,7 +101,7 @@ pub const Scene = struct {
 
         // self.drawGridLines();
 
-        for (state.level.layers.items) |*layer, i| {
+        for (state.level.layers.items, 0..) |*layer, i| {
             layer.draw(state, state.selected_layer_index == i);
             if (state.selected_layer_index == i)
                 state.level.layers.items[i].handleSceneInput(state, self.cam, mouse_world);

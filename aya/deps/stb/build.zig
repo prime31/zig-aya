@@ -14,7 +14,7 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     exe.linkLibC();
     exe.addIncludePath(prefix_path ++ "aya/deps/stb/src");
 
-    const lib_cflags = &[_][]const u8{ "-std=c99", "-03" };
+    const lib_cflags = &[_][]const u8{"-std=c99"};
     exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_impl.c", lib_cflags);
 }
 
