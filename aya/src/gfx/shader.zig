@@ -31,7 +31,7 @@ fn defaultFragmentShader() [:0]const u8 {
 pub const Shader = struct {
     shader: rk.ShaderProgram,
     onPostBind: *const fn (*Shader) void,
-    onSetTransformMatrix: ?fn (*math.Mat32) void,
+    onSetTransformMatrix: ?const fn (*math.Mat32) void,
 
     const Empty = struct {};
 
