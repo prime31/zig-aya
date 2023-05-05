@@ -18,10 +18,23 @@ pub const ScratchAllocator = struct {
     }
 
     pub fn allocator(self: *ScratchAllocator) Allocator {
-        return Allocator.init(self, alloc, Allocator.NoResize(ScratchAllocator).noResize, Allocator.NoOpFree(ScratchAllocator).noOpFree);
+        return .{
+            .ptr = self,
+            .vtable = &.{
+                .alloc = alloc,
+                .resize = Allocator.noResize,
+                .free = Allocator.noFree,
+            },
+        };
+        // return Allocator.init(self, alloc, Allocator.NoResize(ScratchAllocator).noResize, Allocator.NoOpFree(ScratchAllocator).noOpFree);
     }
 
-    fn alloc(self: *ScratchAllocator, n: usize, ptr_align: u29, _: u29, _: usize) std.mem.Allocator.Error![]u8 {
+    // fn alloc(self: *ScratchAllocator, n: usize, ptr_align: u29, _: u29, _: usize) std.mem.Allocator.Error![]u8 {
+    fn alloc(ctx: *anyopaque, n: usize, log2_ptr_align: u8, ra: usize) ?[*]u8 {
+        const self = @ptrCast(*ScratchAllocator, @alignCast(@alignOf(ScratchAllocator), ctx));
+        _ = ra;
+
+        const ptr_align = @as(usize, 1) << @intCast(Allocator.Log2Align, log2_ptr_align);
         const addr = @ptrToInt(self.buffer.ptr) + self.end_index;
         const adjusted_addr = mem.alignForward(addr, ptr_align);
         const adjusted_index = self.end_index + (adjusted_addr - addr);
@@ -32,17 +45,17 @@ pub const ScratchAllocator = struct {
             if (n > self.buffer.len) {
                 std.debug.print("\n---------\nwarning: tmp allocated more than is in our temp allocator. This memory WILL leak!\n--------\n", .{});
                 // return self.backup_allocator.alloc(allocator, n, ptr_align, len_align, ret_addr);
-                return std.mem.Allocator.Error.OutOfMemory;
+                return null;
             }
 
             const result = self.buffer[0..n];
             self.end_index = n;
-            return result;
+            return result.ptr;
         }
         const result = self.buffer[adjusted_index..new_end_index];
         self.end_index = new_end_index;
 
-        return result;
+        return result.ptr;
     }
 };
 
