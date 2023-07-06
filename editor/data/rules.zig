@@ -22,7 +22,7 @@ pub const RuleSet = struct {
     pub fn getNextAvailableGroup(self: RuleSet, layer: *AutoTilemapLayer, name: []const u8) u8 {
         var group: u8 = 0;
         for (self.rules.items) |rule| {
-            group = std.math.max(group, rule.group);
+            group = @max(group, rule.group);
         }
         layer.ruleset_groups.put(group + 1, aya.mem.allocator.dupe(u8, name) catch unreachable) catch unreachable;
         return group + 1;
@@ -43,7 +43,7 @@ pub const RuleSet = struct {
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + y * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + y * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -53,7 +53,7 @@ pub const RuleSet = struct {
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 2 + y * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 2 + y * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -63,7 +63,7 @@ pub const RuleSet = struct {
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + (y + 2) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + (y + 2) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -73,7 +73,7 @@ pub const RuleSet = struct {
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 2 + (y + 2) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 2 + (y + 2) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -82,7 +82,7 @@ pub const RuleSet = struct {
         std.mem.copy(u8, &rule.name, t_name);
         rule.get(2, 1).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 1 + y * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 1 + y * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -91,7 +91,7 @@ pub const RuleSet = struct {
         std.mem.copy(u8, &rule.name, b_name);
         rule.get(2, 3).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 1 + (y + 2) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 1 + (y + 2) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -100,7 +100,7 @@ pub const RuleSet = struct {
         std.mem.copy(u8, &rule.name, l_name);
         rule.get(1, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + (y + 1) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + (y + 1) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -109,7 +109,7 @@ pub const RuleSet = struct {
         std.mem.copy(u8, &rule.name, r_name);
         rule.get(3, 2).negate(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, (x + 2) + (y + 1) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast((x + 2) + (y + 1) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -117,7 +117,7 @@ pub const RuleSet = struct {
         const c_name = std.mem.concat(aya.mem.tmp_allocator, u8, &[_][]const u8{ name_prefix, "-c" }) catch unreachable;
         std.mem.copy(u8, &rule.name, c_name);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 1 + (y + 1) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
     }
 
@@ -136,7 +136,7 @@ pub const RuleSet = struct {
         rule.get(1, 2).require(selected_brush_index + 1);
         rule.get(2, 1).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + y * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + y * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -147,7 +147,7 @@ pub const RuleSet = struct {
         rule.get(3, 2).require(selected_brush_index + 1);
         rule.get(2, 1).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 1 + y * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 1 + y * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -158,7 +158,7 @@ pub const RuleSet = struct {
         rule.get(2, 3).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(1, 3).negate(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + (y + 1) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + (y + 1) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
 
         rule = Rule.init();
@@ -169,7 +169,7 @@ pub const RuleSet = struct {
         rule.get(3, 2).require(selected_brush_index + 1);
         rule.get(2, 2).require(selected_brush_index + 1);
         rule.get(3, 3).negate(selected_brush_index + 1);
-        rule.toggleSelected(@intCast(u8, x + 1 + (y + 1) * tiles_per_row));
+        rule.toggleSelected(@as(u8, @intCast(x + 1 + (y + 1) * tiles_per_row)));
         self.rules.append(rule) catch unreachable;
     }
 };
@@ -248,13 +248,13 @@ pub const Rule = struct {
         if (dir == .left or dir == .right) {
             for (y_vals) |y| {
                 for (x_vals) |x| {
-                    self.swap(x, y, @intCast(i32, x) + x_incr, @intCast(i32, y));
+                    self.swap(x, y, @as(i32, @intCast(x)) + x_incr, @as(i32, @intCast(y)));
                 }
             }
         } else {
             for (x_vals) |x| {
                 for (y_vals) |y| {
-                    self.swap(x, y, @intCast(i32, x), @intCast(i32, y) + y_incr);
+                    self.swap(x, y, @as(i32, @intCast(x)), @as(i32, @intCast(y)) + y_incr);
                 }
             }
         }
@@ -263,7 +263,7 @@ pub const Rule = struct {
     fn swap(self: *Rule, x: usize, y: usize, new_x: i32, new_y: i32) void {
         // destinations can be invalid and when they are we just reset the source values
         if (new_x >= 0 and new_x < 5 and new_y >= 0 and new_y < 5) {
-            self.rule_tiles[@intCast(usize, new_x + new_y * 5)] = self.rule_tiles[x + y * 5].clone();
+            self.rule_tiles[@as(usize, @intCast(new_x + new_y * 5))] = self.rule_tiles[x + y * 5].clone();
         }
         self.rule_tiles[x + y * 5].reset();
     }
@@ -279,7 +279,7 @@ pub const RuleTile = struct {
         required,
 
         pub fn jsonStringify(self: RuleState, _: std.json.StringifyOptions, writer: anytype) !void {
-            try writer.print("{d}", .{@enumToInt(self)});
+            try writer.print("{d}", .{@intFromEnum(self)});
         }
     };
 

@@ -94,17 +94,17 @@ pub const TexturePolygon = struct {
     var epsilon: f32 = 0;
 
     fn generateMesh(file: []const u8, epsilon_: f32, threshold_: f32) void {
-        threshold = @floatToInt(u8, threshold_ * 255);
+        threshold = @as(u8, @intFromFloat(threshold_ * 255));
         epsilon = epsilon_;
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var channels: c_int = undefined;
-        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb.STBI_grey_alpha);
+        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, stb.STBI_grey_alpha);
         if (load_res == null) return;
         defer stb.stbi_image_free(load_res);
 
         // var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
-        pixels = load_res[0..@intCast(usize, w * h * 2)];
+        pixels = load_res[0..@as(usize, @intCast(w * h * 2))];
 
         // find first non-transparent pixel
         var pixel: struct { x: usize, y: usize } = undefined;
@@ -126,16 +126,16 @@ pub const TexturePolygon = struct {
     }
 
     fn generateMesh2(file: []const u8, epsilon_: f32, threshold_: f32) []math.Vec2 {
-        threshold = @floatToInt(u8, threshold_ * 255);
+        threshold = @as(u8, @intFromFloat(threshold_ * 255));
         epsilon = epsilon_;
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var channels: c_int = undefined;
-        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, stb.STBI_grey_alpha);
+        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, stb.STBI_grey_alpha);
         defer stb.stbi_image_free(load_res);
 
         // var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
-        pixels = load_res[0..@intCast(usize, w * h * 2)];
+        pixels = load_res[0..@as(usize, @intCast(w * h * 2))];
 
         // find first non-transparent pixel
         var pixel: struct { x: usize, y: usize } = undefined;
@@ -156,7 +156,7 @@ pub const TexturePolygon = struct {
     }
 
     fn isOpaque(x: anytype, y: anytype) bool {
-        return pixels[(@intCast(usize, x) + @intCast(usize, y) * @intCast(usize, w)) * 2 + 1] > threshold;
+        return pixels[(@as(usize, @intCast(x)) + @as(usize, @intCast(y)) * @as(usize, @intCast(w))) * 2 + 1] > threshold;
     }
 
     fn getSquareValue(x: i32, y: i32, rect: math.RectI) u32 {
@@ -181,8 +181,8 @@ pub const TexturePolygon = struct {
         var step_y: i32 = 0;
         var prev_x: i32 = 0;
         var prev_y: i32 = 0;
-        var start_x: i32 = @intCast(i32, x);
-        var start_y: i32 = @intCast(i32, y);
+        var start_x: i32 = @as(i32, @intCast(x));
+        var start_y: i32 = @as(i32, @intCast(y));
         var cur_x: i32 = start_x;
         var cur_y: i32 = start_y;
         var count: u32 = 0;
@@ -212,7 +212,7 @@ pub const TexturePolygon = struct {
                     step_y = 0;
                 },
                 9 => {
-                    const i = @intCast(usize, x) + @intCast(usize, y) * @intCast(usize, w);
+                    const i = @as(usize, @intCast(x)) + @as(usize, @intCast(y)) * @as(usize, @intCast(w));
                     if (std.mem.indexOfScalar(usize, case9s.items, i)) |_| {
                         step_x = 0;
                         step_y = 1;
@@ -224,7 +224,7 @@ pub const TexturePolygon = struct {
                     }
                 },
                 6 => {
-                    const i = @intCast(usize, x) + @intCast(usize, y) * @intCast(usize, w);
+                    const i = @as(usize, @intCast(x)) + @as(usize, @intCast(y)) * @as(usize, @intCast(w));
                     if (std.mem.indexOfScalar(usize, case6s.items, i)) |_| {
                         step_x = -1;
                         step_y = 0;
@@ -242,12 +242,12 @@ pub const TexturePolygon = struct {
             cur_y += step_y;
             if (step_x == prev_x and step_y == prev_y) {
                 var last = &points.items[points.items.len - 1];
-                last.x = @intToFloat(f32, cur_x);
-                last.y = @intToFloat(f32, rect.h - cur_y);
+                last.x = @as(f32, @floatFromInt(cur_x));
+                last.y = @as(f32, @floatFromInt(rect.h - cur_y));
             } else {
                 points.append(.{
-                    .x = @intToFloat(f32, cur_x),
-                    .y = @intToFloat(f32, rect.h - cur_y + rect.x),
+                    .x = @as(f32, @floatFromInt(cur_x)),
+                    .y = @as(f32, @floatFromInt(rect.h - cur_y + rect.x)),
                 }) catch unreachable;
             }
 
@@ -266,7 +266,7 @@ pub const TexturePolygon = struct {
         if (pts.items.len < 3) @panic("less than 3 points");
         if (pts.items.len < 9) return pts.*;
 
-        const max_ep = @intToFloat(f32, std.math.max(w, h));
+        const max_ep = @as(f32, @floatFromInt(@max(w, h)));
         var ep = std.math.clamp(epsilon, 0, max_ep * 2);
 
         var result = rdp(pts.*.items, ep);

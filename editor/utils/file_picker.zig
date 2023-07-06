@@ -12,7 +12,7 @@ var picker_description: [:0]const u8 = undefined;
 pub var selected_dir: ?[]const u8 = undefined;
 pub var selected_file: ?[]const u8 = undefined;
 
-var dir: fs.Dir = undefined;
+var dir: fs.IterableDir = undefined;
 var buffer: [25:0]u8 = undefined;
 
 var files = std.ArrayList([]const u8).init(aya.mem.allocator);
@@ -53,7 +53,7 @@ pub fn draw() ?bool {
     if (selected_dir == null) {
         const tmp_dir = std.process.getCwdAlloc(aya.mem.tmp_allocator) catch unreachable;
         selected_dir = aya.mem.allocator.dupeZ(u8, tmp_dir) catch unreachable;
-        dir = fs.cwd().openDir(selected_dir.?, .{ .iterate = true }) catch unreachable;
+        dir = fs.cwd().openIterableDir(selected_dir.?, .{ .access_sub_paths = true }) catch unreachable;
         changeDir(".");
     }
 
@@ -73,7 +73,7 @@ pub fn draw() ?bool {
     if (imgui.ogBeginChildFrame(1, .{ .x = 400, .y = 300 }, imgui.ImGuiWindowFlags_AlwaysAutoResize)) {
         defer imgui.igEndChildFrame();
 
-        if (dir.access("..", .{})) {
+        if (dir.dir.access("..", .{})) {
             imgui.igPushStyleColorU32(imgui.ImGuiCol_Text, aya.math.Color.yellow.value);
             if (imgui.ogSelectableBool("..", false, imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
                 changeDir("..");
@@ -120,11 +120,11 @@ pub fn draw() ?bool {
         const disabled = label_sentinel_index == 0;
         imgui.ogPushDisabled(disabled);
         if (imgui.ogButtonEx("Create", .{})) {
-            if (dir.makeDir(buffer[0..label_sentinel_index])) {
+            if (dir.dir.makeDir(buffer[0..label_sentinel_index])) {
                 changeDir(buffer[0..label_sentinel_index]);
                 imgui.igCloseCurrentPopup();
             } else |err| {
-                std.debug.print("error creating dir: {}\n", .{err});
+                std.debug.print("error creating dir: {any}\n", .{err});
             }
         }
         imgui.ogPopDisabled(disabled);
@@ -139,7 +139,7 @@ fn changeDirToKnownFolder(known: known_folders.KnownFolder) void {
             changeDir(folder);
         }
     } else |err| {
-        std.debug.print("couldnt get folder {s}: {s}\n", .{ known, err });
+        std.debug.print("couldnt get folder {any}: {any}\n", .{ known, err });
     }
 }
 
@@ -151,10 +151,10 @@ fn changeDir(new_dir: []const u8) void {
     aya.mem.allocator.free(selected_dir.?);
     selected_dir = tmp_dir;
 
-    if (fs.cwd().openDir(selected_dir.?, .{ .iterate = true })) |next_dir| {
+    if (fs.cwd().openIterableDir(selected_dir.?, .{ .access_sub_paths = true })) |next_dir| {
         dir = next_dir;
     } else |err| {
-        std.debug.print("couldnt open dir ../: {s}\n", .{err});
+        std.debug.print("couldnt open dir ../: {any}\n", .{err});
         return;
     }
 
@@ -166,10 +166,10 @@ fn changeDir(new_dir: []const u8) void {
 
     var iter = dir.iterate();
     while (iter.next() catch unreachable) |entry| {
-        if (entry.kind == .File) {
+        if (entry.kind == .file) {
             if (!std.mem.startsWith(u8, entry.name, "."))
                 files.append(aya.mem.allocator.dupeZ(u8, entry.name) catch unreachable) catch unreachable;
-        } else if (entry.kind == .Directory) {
+        } else if (entry.kind == .directory) {
             if (!hide_hidden_dirs or (hide_hidden_dirs and !std.mem.startsWith(u8, entry.name, ".")))
                 directories.append(aya.mem.allocator.dupeZ(u8, entry.name) catch unreachable) catch unreachable;
         }

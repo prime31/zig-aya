@@ -17,7 +17,7 @@ pub const Mesh = struct {
 
         return .{
             .bindings = renderkit.BufferBindings.init(ibuffer, &[_]renderkit.Buffer{vbuffer}),
-            .element_count = @intCast(c_int, indices.len),
+            .element_count = @as(c_int, @intCast(indices.len)),
         };
     }
 
@@ -57,13 +57,15 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
             });
             var vertex_buffer = renderkit.createBuffer(VertT, .{
                 .usage = .stream,
-                .size = @intCast(c_long, vertex_count * @sizeOf(VertT)),
+                .size = @as(c_long, @intCast(vertex_count * @sizeOf(VertT))),
             });
 
+            var buffer = [_]renderkit.Buffer{vertex_buffer};
+
             return Self{
-                .bindings = renderkit.BufferBindings.init(ibuffer, &[_]renderkit.Buffer{vertex_buffer}),
+                .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
                 .verts = try alloc.alloc(VertT, vertex_count),
-                .element_count = @intCast(c_int, indices.len),
+                .element_count = @as(c_int, @intCast(indices.len)),
                 .allocator = alloc,
             };
         }
@@ -107,7 +109,7 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         }
 
         pub fn drawAllVerts(self: Self) void {
-            self.draw(0, @intCast(c_int, self.element_count));
+            self.draw(0, @as(c_int, @intCast(self.element_count)));
         }
     };
 }
@@ -136,14 +138,14 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
             });
             var instance_buffer = renderkit.createBuffer(InstanceT, .{
                 .usage = .stream,
-                .size = @intCast(c_long, instance_count * @sizeOf(InstanceT)),
+                .size = @as(c_long, @intCast(instance_count * @sizeOf(InstanceT))),
                 .step_func = .per_instance,
             });
 
             return Self{
                 .bindings = renderkit.BufferBindings.init(ibuffer, &[_]renderkit.Buffer{ vertex_buffer, instance_buffer }),
                 .instance_data = try alloc.alloc(InstanceT, instance_count),
-                .element_count = @intCast(c_int, indices.len),
+                .element_count = @as(c_int, @intCast(indices.len)),
                 .allocator = alloc,
             };
         }
@@ -178,7 +180,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         }
 
         pub fn drawAll(self: Self) void {
-            self.draw(0, @intCast(c_int, self.element_count), @intCast(c_int, self.instance_data.len));
+            self.draw(0, @as(c_int, @intCast(self.element_count)), @as(c_int, @intCast(self.instance_data.len)));
         }
     };
 }

@@ -53,15 +53,15 @@ pub const Tile = extern union {
     }
 
     pub fn flipH(self: *Tile) void {
-        self.comps.horizontal = @boolToInt(self.comps.horizontal != 1);
+        self.comps.horizontal = @intFromBool(self.comps.horizontal != 1);
     }
 
     pub fn flipV(self: *Tile) void {
-        self.comps.vertical = @boolToInt(self.comps.vertical != 1);
+        self.comps.vertical = @intFromBool(self.comps.vertical != 1);
     }
 
     pub fn flipD(self: *Tile) void {
-        self.comps.diagonal = @boolToInt(self.comps.diagonal != 1);
+        self.comps.diagonal = @intFromBool(self.comps.diagonal != 1);
     }
 };
 
@@ -83,8 +83,8 @@ pub const TileRenderInfo = struct {
         // deal with flipping/rotating if necessary
         if (flip_h or flip_v or tile.comps.diagonal == 1) {
             // set the origin based on the tile_size if we are rotated
-            info.ox = @intToFloat(f32, tile_size) / 2.0;
-            info.oy = @intToFloat(f32, tile_size) / 2.0;
+            info.ox = @as(f32, @floatFromInt(tile_size)) / 2.0;
+            info.oy = @as(f32, @floatFromInt(tile_size)) / 2.0;
 
             if (flip_h) info.sx *= -1;
             if (flip_v) info.sy *= -1;

@@ -65,11 +65,11 @@ pub fn draw(tileset: *Tileset) void {
 fn addAnimationPopup(tileset: *Tileset) void {
     var content_start_pos = imgui.ogGetCursorScreenPos();
     const zoom: usize = if (tileset.tex.width < 200 and tileset.tex.height < 200) 2 else 1;
-    imgui.ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, tileset.tex.height) * @intCast(i32, zoom));
+    imgui.ogImage(tileset.tex.imTextureID(), @as(i32, @intFromFloat(tileset.tex.width)) * @as(i32, @intCast(zoom)), @as(i32, @intFromFloat(tileset.tex.height)) * @as(i32, @intCast(zoom)));
 
     if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None) and imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
-        var tile = ts.tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, tileset.tile_size * zoom), content_start_pos);
-        var tile_index = @intCast(u8, tile.x + tile.y * tileset.tiles_per_row);
+        var tile = ts.tileIndexUnderPos(imgui.igGetIO().MousePos, @as(usize, @intCast(tileset.tile_size * zoom)), content_start_pos);
+        var tile_index = @as(u8, @intCast(tile.x + tile.y * tileset.tiles_per_row));
         tileset.animations.append(Animation.init(tile_index)) catch unreachable;
         imgui.igCloseCurrentPopup();
     }
@@ -83,7 +83,7 @@ fn animTileSelectorPopup(tileset: *Tileset, anim: *Animation, selection_type: en
     const tile_spacing = tileset.spacing * zoom;
     const tile_size = tileset.tile_size * zoom;
 
-    imgui.ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, tileset.tex.height) * @intCast(i32, zoom));
+    imgui.ogImage(tileset.tex.imTextureID(), @as(i32, @intFromFloat(tileset.tex.width)) * @as(i32, @intCast(zoom)), @as(i32, @intFromFloat(tileset.tex.height)) * @as(i32, @intCast(zoom)));
 
     // const draw_list = imgui.igGetWindowDrawList();
 
@@ -100,8 +100,8 @@ fn animTileSelectorPopup(tileset: *Tileset, anim: *Animation, selection_type: en
     // check input for toggling state
     if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
         if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
-            var tile = ts.tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, tile_size + tile_spacing), content_start_pos);
-            var tile_index = @intCast(u8, tile.x + tile.y * per_row);
+            var tile = ts.tileIndexUnderPos(imgui.igGetIO().MousePos, @as(usize, @intCast(tile_size + tile_spacing)), content_start_pos);
+            var tile_index = @as(u8, @intCast(tile.x + tile.y * per_row));
             if (selection_type == .multi) {
                 anim.toggleSelected(tile_index);
             } else {

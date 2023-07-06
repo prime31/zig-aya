@@ -43,7 +43,7 @@ pub fn draw(state: *root.AppState) void {
         imgui.igColumns(1, "id", false);
         if (imgui.ogButton("Add Component")) {
             imgui.ogOpenPopup("##new-component");
-            std.mem.set(u8, &name_buf, 0);
+            @memset(&name_buf, 0);
         }
 
         imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
@@ -84,7 +84,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
             .float => |*flt| _ = imgui.ogDragSigned(f32, "##flt", flt, 1, std.math.minInt(i32), std.math.maxInt(i32)),
             .int => |*int| _ = imgui.ogDragSigned(i32, "##int", int, 1, std.math.minInt(i32), std.math.maxInt(i32)),
             .bool => |*b| _ = imgui.igCheckbox("##bool", b),
-            .vec2 => |*v2| _ = imgui.igDragFloat2("##vec2", &v2.x, 1, -std.math.f32_max, std.math.f32_max, "%.2f", imgui.ImGuiSliderFlags_None),
+            .vec2 => |*v2| _ = imgui.igDragFloat2("##vec2", &v2.x, 1, -std.math.floatMax(f32), std.math.floatMax(f32), "%.2f", imgui.ImGuiSliderFlags_None),
             .enum_values => |*enums| {
                 _ = enums;
                 if (imgui.ogButton("Edit Enum Values")) enum_editor_index = i;
@@ -118,7 +118,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
 
             if (imgui.ogButton("Add Enum Value")) {
                 prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len + 1) catch unreachable;
-                std.mem.set(u8, &prop_value.enum_values[prop_value.enum_values.len - 1], 0);
+                @memset(&prop_value.enum_values[prop_value.enum_values.len - 1], 0);
             }
         }
 
@@ -190,7 +190,7 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
         }
         if (imgui.ogSelectableBool("enum", false, imgui.ImGuiSelectableFlags_None, .{})) {
             var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
-            std.mem.set(u8, &enums[0], 0);
+            @memset(&enums[0], 0);
             std.mem.copy(u8, &enums[0], "default_value");
             component.addProperty(.{ .enum_values = enums });
             addLastPropertyToEntitiesContainingComponent(state, component);

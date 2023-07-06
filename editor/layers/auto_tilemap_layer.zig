@@ -80,7 +80,7 @@ pub const AutoTilemapLayer = struct {
 
     pub fn init(name: []const u8, size: Size, tile_size: usize) AutoTilemapLayer {
         var tmp_data = aya.mem.allocator.alloc(u16, size.w * size.h) catch unreachable;
-        std.mem.set(u16, tmp_data, 0);
+        @memset(tmp_data, 0);
 
         var layer = AutoTilemapLayer{
             .tilemap = Tilemap.init(size),
@@ -166,14 +166,14 @@ pub const AutoTilemapLayer = struct {
             // at least one rule must pass to have a result
             for (rule.rule_tiles, 0..) |rule_tile, i| {
                 if (rule_tile.state == .none) continue;
-                const x_offset = @intCast(i32, @mod(i, 5)) - 2;
-                const y_offset = @intCast(i32, @divTrunc(i, 5)) - 2;
+                const x_offset = @as(i32, @intCast(@mod(i, 5))) - 2;
+                const y_offset = @as(i32, @intCast(@divTrunc(i, 5))) - 2;
 
                 // stay in bounds! We could be looking for a tile 2 away from x,y in any direction
-                const actual_x = @intCast(i32, x) + x_offset;
-                const actual_y = @intCast(i32, y) + y_offset;
+                const actual_x = @as(i32, @intCast(x)) + x_offset;
+                const actual_y = @as(i32, @intCast(y)) + y_offset;
                 const processed_tile = if (actual_x < 0 or actual_y < 0 or actual_x >= self.tilemap.size.w or actual_y >= self.tilemap.size.h) 0 else blk: {
-                    const index = @intCast(usize, actual_x) + @intCast(usize, actual_y) * self.tilemap.size.w;
+                    const index = @as(usize, @intCast(actual_x)) + @as(usize, @intCast(actual_y)) * self.tilemap.size.w;
                     break :blk self.tilemap.data[index];
                 };
 
@@ -187,9 +187,9 @@ pub const AutoTilemapLayer = struct {
 
             // a Rule passed. we use the chance to decide if we will return a tile
             const random = self.random_map_data[x + y * self.tilemap.size.w];
-            const chance = random.float < @intToFloat(f32, rule.chance) / 100;
+            const chance = random.float < @as(f32, @floatFromInt(rule.chance)) / 100;
             if (rule_passed and chance) {
-                return @intCast(u8, rule.resultTile(random.int) + 1);
+                return @as(u8, @intCast(rule.resultTile(random.int) + 1));
             }
         }
 
@@ -230,9 +230,9 @@ pub const AutoTilemapLayer = struct {
             if (self.ruleset.rules.items[i].group > 0 and self.ruleset.rules.items[i].group != group) {
                 group = self.ruleset.rules.items[i].group;
 
-                imgui.igPushIDInt(@intCast(c_int, group));
+                imgui.igPushIDInt(@as(c_int, @intCast(group)));
                 groupDropTarget(group, i);
-                std.mem.set(u8, &group_label_buf, 0);
+                @memset(&group_label_buf, 0);
                 std.mem.copy(u8, &group_label_buf, self.getGroupName(group));
                 const header_open = imgui.igCollapsingHeaderBoolPtr(&group_label_buf, null, imgui.ImGuiTreeNodeFlags_DefaultOpen);
                 groupDragDrop(group, i);
@@ -308,7 +308,7 @@ pub const AutoTilemapLayer = struct {
         if (imgui.ogButton("Add 9-Slice")) {
             imgui.ogOpenPopup("nine-slice-wizard");
             // reset temp state
-            std.mem.set(u8, &new_rule_label_buf, 0);
+            @memset(&new_rule_label_buf, 0);
             nine_slice_selected = null;
         }
         imgui.igSameLine(0, 10);
@@ -316,7 +316,7 @@ pub const AutoTilemapLayer = struct {
         if (imgui.ogButton("Add Inner-4")) {
             imgui.ogOpenPopup("inner-four-wizard");
             // reset temp state
-            std.mem.set(u8, &new_rule_label_buf, 0);
+            @memset(&new_rule_label_buf, 0);
             nine_slice_selected = null;
         }
         imgui.igSameLine(0, 10);
@@ -358,7 +358,7 @@ pub const AutoTilemapLayer = struct {
         if (rule.group == 0) {
             if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None) and imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
                 imgui.ogOpenPopup("##group-name");
-                std.mem.set(u8, &name_buf, 0);
+                @memset(&name_buf, 0);
             }
 
             imgui.ogSetNextWindowPos(imgui.igGetIO().MousePos, imgui.ImGuiCond_Appearing, .{ .x = 0.5 });
@@ -379,7 +379,7 @@ pub const AutoTilemapLayer = struct {
 
                     // get the next available group
                     rule.group = self.ruleset.getNextAvailableGroup(self, name_buf[0..label_sentinel_index]);
-                    std.mem.set(u8, &name_buf, 0);
+                    @memset(&name_buf, 0);
                 }
 
                 if (disabled) {
@@ -494,10 +494,10 @@ pub const AutoTilemapLayer = struct {
         while (y < 5) : (y += 1) {
             var x: usize = 0;
             while (x < 5) : (x += 1) {
-                const pad_x = @intToFloat(f32, x) * pad;
-                const pad_y = @intToFloat(f32, y) * pad;
-                const offset_x = @intToFloat(f32, x) * rect_size;
-                const offset_y = @intToFloat(f32, y) * rect_size;
+                const pad_x = @as(f32, @floatFromInt(x)) * pad;
+                const pad_y = @as(f32, @floatFromInt(y)) * pad;
+                const offset_x = @as(f32, @floatFromInt(x)) * rect_size;
+                const offset_y = @as(f32, @floatFromInt(y)) * rect_size;
                 var tl = imgui.ImVec2{ .x = pos.x + pad_x + offset_x, .y = pos.y + pad_y + offset_y };
 
                 var rule_tile = rule.get(x, y);
@@ -582,7 +582,7 @@ pub const AutoTilemapLayer = struct {
         const tile_spacing = self.tileset.spacing * zoom;
         const tile_size = self.tileset.tile_size * zoom;
 
-        imgui.ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tileset.tex.height) * @intCast(i32, zoom));
+        imgui.ogImage(self.tileset.tex.imTextureID(), @as(i32, @intFromFloat(self.tileset.tex.width)) * @as(i32, @intCast(zoom)), @as(i32, @intFromFloat(self.tileset.tex.height)) * @as(i32, @intCast(zoom)));
 
         // const draw_list = imgui.igGetWindowDrawList();
 
@@ -598,9 +598,9 @@ pub const AutoTilemapLayer = struct {
         // check input for toggling state
         if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
             if (imgui.igIsMouseClicked(0, false)) {
-                var tile = tileIndexUnderMouse(@intCast(usize, tile_size + tile_spacing), content_start_pos);
+                var tile = tileIndexUnderMouse(@as(usize, @intCast(tile_size + tile_spacing)), content_start_pos);
                 const per_row = self.tileset.tiles_per_row;
-                ruleset.toggleSelected(@intCast(u8, tile.x + tile.y * per_row));
+                ruleset.toggleSelected(@as(u8, @intCast(tile.x + tile.y * per_row)));
                 self.map_dirty = true;
             }
         }
@@ -620,14 +620,14 @@ pub const AutoTilemapLayer = struct {
         // shortcuts for pressing 1-9 to set the brush, only works when hovering the scene view
         var key: usize = 49;
         while (key < 58) : (key += 1) {
-            if (imgui.ogKeyPressed(key)) self.brushset.selected.value = @intCast(u16, key - 49);
+            if (imgui.ogKeyPressed(key)) self.brushset.selected.value = @as(u16, @intCast(key - 49));
         }
 
         // TODO: this check below really exists in Scene and shouldnt be here. Somehow propograte that data here.
         if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0) and (imgui.igGetIO().KeyAlt or imgui.igGetIO().KeySuper)) return;
 
         if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
-            const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
+            const pos = math.Vec2{ .x = @as(f32, @floatFromInt(tile.x * self.tileset.tile_size)), .y = @as(f32, @floatFromInt(tile.y * self.tileset.tile_size)) };
 
             // dont draw the current tile brush under the mouse if we are shift-dragging
             if (!self.shift_dragged) {
@@ -638,10 +638,10 @@ pub const AutoTilemapLayer = struct {
             if (imgui.ogIsAnyMouseDragging() and imgui.igGetIO().KeyShift) {
                 var dragged_pos = imgui.igGetIO().MousePos.subtract(imgui.ogGetAnyMouseDragDelta());
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
-                    const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
-                    const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
-                    const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
-                    const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
+                    const min_x = @as(f32, @floatFromInt(@min(tile.x, tile2.x) * self.tileset.tile_size));
+                    const min_y = @as(f32, @floatFromInt(@max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size));
+                    const max_x = @as(f32, @floatFromInt(@max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size));
+                    const max_y = @as(f32, @floatFromInt(@min(tile.y, tile2.y) * self.tileset.tile_size));
 
                     const color = if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
                     aya.draw.hollowRect(.{ .x = min_x, .y = max_y }, max_x - min_x, min_y - max_y, 1, color);
@@ -655,10 +655,10 @@ pub const AutoTilemapLayer = struct {
                 var dragged_pos = imgui.igGetIO().MousePos.subtract(drag_delta);
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
                     self.map_dirty = true;
-                    const min_x = std.math.min(tile.x, tile2.x);
-                    var min_y = std.math.min(tile.y, tile2.y);
-                    const max_x = std.math.max(tile.x, tile2.x);
-                    const max_y = std.math.max(tile.y, tile2.y);
+                    const min_x = @min(tile.x, tile2.x);
+                    var min_y = @min(tile.y, tile2.y);
+                    const max_x = @max(tile.x, tile2.x);
+                    const max_y = @max(tile.y, tile2.y);
 
                     // either set the tile to a brush or 0 depending on mouse button
                     const tile_value = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) self.brushset.selected.value + 1 else 0;
@@ -690,13 +690,13 @@ pub const AutoTilemapLayer = struct {
     /// TODO: duplicated in TilemapLayer
     fn commitInBetweenTiles(self: *@This(), state: *AppState, tile: Point, camera: Camera, color: u16) void {
         if (root.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
-            const abs_x = std.math.absInt(@intCast(i32, tile.x) - @intCast(i32, prev_tile.x)) catch unreachable;
-            const abs_y = std.math.absInt(@intCast(i32, tile.y) - @intCast(i32, prev_tile.y)) catch unreachable;
+            const abs_x = std.math.absInt(@as(i32, @intCast(tile.x)) - @as(i32, @intCast(prev_tile.x))) catch unreachable;
+            const abs_y = std.math.absInt(@as(i32, @intCast(tile.y)) - @as(i32, @intCast(prev_tile.y))) catch unreachable;
             if (abs_x <= 1 and abs_y <= 1) {
                 return;
             }
 
-            root.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
+            root.utils.bresenham(&self.tilemap, @as(f32, @floatFromInt(prev_tile.x)), @as(f32, @floatFromInt(prev_tile.y)), @as(f32, @floatFromInt(tile.x)), @as(f32, @floatFromInt(tile.y)), color);
         }
     }
 };
@@ -850,7 +850,7 @@ pub fn tileIndexUnderMouse(rect_size: usize, origin: imgui.ImVec2) struct { x: u
     pos.x -= origin.x;
     pos.y -= origin.y;
 
-    return .{ .x = @divTrunc(@floatToInt(usize, pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, pos.y), rect_size) };
+    return .{ .x = @divTrunc(@as(usize, @intFromFloat(pos.x)), rect_size), .y = @divTrunc(@as(usize, @intFromFloat(pos.y)), rect_size) };
 }
 
 fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
@@ -858,7 +858,7 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
     imgui.igSameLine(0, 5);
 
     var content_start_pos = imgui.ogGetCursorScreenPos();
-    imgui.ogImage(self.tileset.tex.imTextureID(), @floatToInt(i32, self.tileset.tex.width), @floatToInt(i32, self.tileset.tex.height));
+    imgui.ogImage(self.tileset.tex.imTextureID(), @as(i32, @intFromFloat(self.tileset.tex.width)), @as(i32, @intFromFloat(self.tileset.tex.height)));
 
     const draw_list = imgui.igGetWindowDrawList();
 
@@ -866,21 +866,21 @@ fn nineSlicePopup(self: *AutoTilemapLayer, selection_size: usize) void {
         const x = @mod(index, self.tileset.tiles_per_row);
         const y = @divTrunc(index, self.tileset.tiles_per_row);
 
-        var tl = imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, self.tileset.tile_size + self.tileset.spacing) };
-        tl.x += content_start_pos.x + 1 + @intToFloat(f32, self.tileset.spacing);
-        tl.y += content_start_pos.y + 1 + @intToFloat(f32, self.tileset.spacing);
-        imgui.ogAddQuadFilled(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size), root.colors.rule_result_selected_fill);
-        imgui.ogAddQuad(draw_list, tl, @intToFloat(f32, (self.tileset.tile_size + self.tileset.spacing) * selection_size) - 1, root.colors.rule_result_selected_outline, 2);
+        var tl = imgui.ImVec2{ .x = @as(f32, @floatFromInt(x)) * @as(f32, @floatFromInt(self.tileset.tile_size + self.tileset.spacing)), .y = @as(f32, @floatFromInt(y)) * @as(f32, @floatFromInt(self.tileset.tile_size + self.tileset.spacing)) };
+        tl.x += content_start_pos.x + 1 + @as(f32, @floatFromInt(self.tileset.spacing));
+        tl.y += content_start_pos.y + 1 + @as(f32, @floatFromInt(self.tileset.spacing));
+        imgui.ogAddQuadFilled(draw_list, tl, @as(f32, @floatFromInt((self.tileset.tile_size + self.tileset.spacing) * selection_size)), root.colors.rule_result_selected_fill);
+        imgui.ogAddQuad(draw_list, tl, @as(f32, @floatFromInt((self.tileset.tile_size + self.tileset.spacing) * selection_size)) - 1, root.colors.rule_result_selected_outline, 2);
     }
 
     // check input for toggling state
     if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
         if (imgui.igIsMouseClicked(0, false)) {
-            var tile = tileIndexUnderMouse(@intCast(usize, self.tileset.tile_size + self.tileset.spacing), content_start_pos);
+            var tile = tileIndexUnderMouse(@as(usize, @intCast(self.tileset.tile_size + self.tileset.spacing)), content_start_pos);
 
             // does the nine-slice fit?
             if (tile.x + selection_size <= self.tileset.tiles_per_row and tile.y + selection_size <= self.tileset.tiles_per_col) {
-                nine_slice_selected = @intCast(usize, tile.x + tile.y * self.tileset.tiles_per_row);
+                nine_slice_selected = @as(usize, @intCast(tile.x + tile.y * self.tileset.tiles_per_row));
             }
         }
     }

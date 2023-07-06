@@ -28,12 +28,12 @@ fn init() !void {
     const scale = 0.3;
     while (y < 10) : (y += 1) {
         while (x < 10) : (x += 1) {
-            const x_pos = @intToFloat(f32, x * w);
-            const y_pos = @intToFloat(f32, y * h);
-            const x_gap = @intToFloat(f32, x);
-            const y_gap = @intToFloat(f32, y);
+            const x_pos = @as(f32, @floatFromInt(x * w));
+            const y_pos = @as(f32, @floatFromInt(y * h));
+            const x_gap = @as(f32, @floatFromInt(x));
+            const y_gap = @as(f32, @floatFromInt(y));
             mat.setTransform(.{ .x = x_pos * scale + x_gap, .y = y_pos * scale + y_gap, .sx = scale, .sy = scale });
-            _ = batch.addViewport(.{ .x = @floatToInt(i32, x_pos), .y = @floatToInt(i32, y_pos), .w = w, .h = h }, mat, aya.math.Color.white);
+            _ = batch.addViewport(.{ .x = @as(i32, @intFromFloat(x_pos)), .y = @as(i32, @intFromFloat(y_pos)), .w = w, .h = h }, mat, aya.math.Color.white);
             mat.translate(w * scale, 0);
         }
         x = 0;

@@ -30,8 +30,8 @@ pub const Texture = struct {
         });
         return .{
             .img = img,
-            .width = @intToFloat(f32, width),
-            .height = @intToFloat(f32, height),
+            .width = @as(f32, @floatFromInt(width)),
+            .height = @as(f32, @floatFromInt(height)),
         };
     }
 
@@ -41,11 +41,11 @@ pub const Texture = struct {
         var w: c_int = undefined;
         var h: c_int = undefined;
         var channels: c_int = undefined;
-        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
+        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, 4);
         if (load_res == null) return error.ImageLoadFailed;
         defer stb_image.stbi_image_free(load_res);
 
-        return initWithDataOptions(u8, w, h, load_res[0..@intCast(usize, w * h * channels)], filter, .clamp);
+        return initWithDataOptions(u8, w, h, load_res[0..@as(usize, @intCast(w * h * channels))], filter, .clamp);
     }
 
     pub fn initWithData(comptime T: type, width: i32, height: i32, pixels: []T) Texture {
@@ -64,8 +64,8 @@ pub const Texture = struct {
         });
         return .{
             .img = img,
-            .width = @intToFloat(f32, width),
-            .height = @intToFloat(f32, height),
+            .width = @as(f32, @floatFromInt(width)),
+            .height = @as(f32, @floatFromInt(height)),
         };
     }
 
@@ -86,12 +86,12 @@ pub const Texture = struct {
             }
         }
 
-        return initWithData(u32, 4 * @intCast(i32, scale), 4 * @intCast(i32, scale), &pixels);
+        return initWithData(u32, 4 * @as(i32, @intCast(scale)), 4 * @as(i32, @intCast(scale)), &pixels);
     }
 
     pub fn initSingleColor(color: u32) Texture {
         var pixels: [16]u32 = undefined;
-        std.mem.set(u32, &pixels, color);
+        @memset(&pixels, color);
         return initWithData(u32, 4, 4, pixels[0..]);
     }
 
@@ -107,8 +107,8 @@ pub const Texture = struct {
         });
         return .{
             .img = img,
-            .width = @intToFloat(f32, width),
-            .height = @intToFloat(f32, height),
+            .width = @as(f32, @floatFromInt(width)),
+            .height = @as(f32, @floatFromInt(height)),
         };
     }
 
@@ -125,8 +125,8 @@ pub const Texture = struct {
         });
         return .{
             .img = img,
-            .width = @intToFloat(f32, width),
-            .height = @intToFloat(f32, height),
+            .width = @as(f32, @floatFromInt(width)),
+            .height = @as(f32, @floatFromInt(height)),
         };
     }
 
@@ -137,11 +137,11 @@ pub const Texture = struct {
         var w: c_int = undefined;
         var h: c_int = undefined;
         var channels: c_int = undefined;
-        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
+        const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, 4);
         if (load_res == null) return error.ImageLoadFailed;
 
-        width.* = @intCast(usize, w);
-        height.* = @intCast(usize, h);
+        width.* = @as(usize, @intCast(w));
+        height.* = @as(usize, @intCast(h));
         return load_res[0 .. width.* * height.* * 4];
     }
 
@@ -149,7 +149,7 @@ pub const Texture = struct {
     pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
         const image_contents = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
         var comp: c_int = undefined;
-        if (stb_image.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+        if (stb_image.stbi_info_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), w, h, &comp) == 1) {
             return true;
         }
 
@@ -172,6 +172,6 @@ pub const Texture = struct {
 
     /// if openGL, returns the tid else returns the Image as a ptr
     pub fn imTextureID(self: Texture) *anyopaque {
-        return @intToPtr(*anyopaque, renderkit.getNativeTid(self.img));
+        return @as(*anyopaque, @ptrFromInt(renderkit.getNativeTid(self.img)));
     }
 };

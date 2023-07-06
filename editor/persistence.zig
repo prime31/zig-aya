@@ -160,7 +160,7 @@ const AutoTilemapLayerJson = struct {
         for (self.ruleset_groups) |group| ruleset_groups.put(group.id, group.name) catch unreachable;
 
         var tmp_data = aya.mem.allocator.alloc(u16, self.tilemap.data.len) catch unreachable;
-        std.mem.set(u16, tmp_data, 0);
+        @memset(tmp_data, 0);
 
         return .{
             .name = name,
@@ -346,12 +346,14 @@ pub fn saveProject(state: *AppState) !void {
     // and back
     @setEvalBranchQuota(2000);
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, "project2.json");
-    var res = try std.json.parse(AppStateJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+    var parse = try std.json.parseFromSlice(AppStateJson, aya.mem.allocator, bytes, .{});
+    defer parse.deinit();
+    var res = parse.value;
 
     for (res.components) |comp| {
         std.log.info("{s}", .{comp.name});
         for (comp.props) |prop| {
-            std.log.info("    name: {s}, val: {s}", .{ prop.name, prop.value });
+            std.log.info("    name: {s}, val: {any}", .{ prop.name, prop.value });
         }
     }
 }
@@ -376,7 +378,10 @@ pub fn loadLevel(name: []const u8) !data.Level {
     const filename = try std.fmt.allocPrint(aya.mem.tmp_allocator, "levels/{s}", .{name});
     var bytes = try aya.fs.read(aya.mem.tmp_allocator, filename);
     @setEvalBranchQuota(2000);
-    var level_json = try std.json.parse(LevelJson, &std.json.TokenStream.init(bytes), .{ .allocator = aya.mem.allocator });
+
+    var parse = try std.json.parseFromSlice(LevelJson, aya.mem.allocator, bytes, .{});
+    defer parse.deinit();
+    var level_json = parse.value;
     return level_json.toOwnedLevel();
 }
 

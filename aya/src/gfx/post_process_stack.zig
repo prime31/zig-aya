@@ -50,7 +50,7 @@ pub const PostProcessStack = struct {
     pub fn process(self: *PostProcessStack, pass: OffscreenPass) void {
         // keep our OffscreenPass size in sync with the default pass
         if (pass.color_texture.width != self.pass.color_texture.width or pass.color_texture.height != self.pass.color_texture.height) {
-            self.pass.resize(@floatToInt(i32, pass.color_texture.width), @floatToInt(i32, pass.color_texture.height));
+            self.pass.resize(@as(i32, @intFromFloat(pass.color_texture.width)), @as(i32, @intFromFloat(pass.color_texture.height)));
         }
 
         for (self.processors.items, 0..) |p, i| {

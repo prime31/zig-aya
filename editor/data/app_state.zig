@@ -95,8 +95,8 @@ pub const AppState = struct {
         aya.mem.copyZ(u8, &comp2.props[comp2.props.len - 1].name, "link");
 
         var enums = aya.mem.allocator.alloc([25:0]u8, 2) catch unreachable;
-        std.mem.set(u8, &enums[0], 0);
-        std.mem.set(u8, &enums[1], 0);
+        @memset(&enums[0], 0);
+        @memset(&enums[1], 0);
         std.mem.copy(u8, &enums[0], "default_value");
         std.mem.copy(u8, &enums[1], "second_value");
         comp2.addProperty(.{ .enum_values = enums });

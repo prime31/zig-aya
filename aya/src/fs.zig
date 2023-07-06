@@ -85,19 +85,19 @@ pub fn freePrefsJson(data: anytype) void {
 
 /// returns a slice of all the files with extension. The caller owns the slice AND each path in the slice.
 pub fn getAllFilesOfType(allocator: std.mem.Allocator, root_directory: []const u8, extension: []const u8, recurse: bool) [][]const u8 {
-    var recursor = struct {
+    const recursor = struct {
         fn search(directory: []const u8, recursive: bool, filelist: *std.ArrayList([]const u8), ext: []const u8) void {
-            var dir = fs.cwd().openDir(directory, .{ .iterate = true }) catch unreachable;
+            var dir = fs.cwd().openIterableDir(directory, .{ .access_sub_paths = true }) catch unreachable;
             defer dir.close();
 
             var iter = dir.iterate();
             while (iter.next() catch unreachable) |entry| {
-                if (entry.kind == .File) {
+                if (entry.kind == .file) {
                     if (std.mem.endsWith(u8, entry.name, ext)) {
                         const abs_path = fs.path.join(filelist.allocator, &[_][]const u8{ directory, entry.name }) catch unreachable;
                         filelist.append(abs_path) catch unreachable;
                     }
-                } else if (entry.kind == .Directory) {
+                } else if (entry.kind == .directory) {
                     const abs_path = fs.path.join(aya.mem.tmp_allocator, &[_][]const u8{ directory, entry.name }) catch unreachable;
                     search(abs_path, recursive, filelist, ext);
                 }
@@ -108,7 +108,7 @@ pub fn getAllFilesOfType(allocator: std.mem.Allocator, root_directory: []const u
     var list = std.ArrayList([]const u8).init(allocator);
     recursor(root_directory, recurse, &list, extension);
 
-    return list.toOwnedSlice();
+    return list.toOwnedSlice() catch unreachable;
 }
 
 test "test fs read" {

@@ -54,7 +54,7 @@ pub fn draw(state: *root.AppState) void {
 
     if (show_new_level_popup) {
         imgui.ogOpenPopup("New Level");
-        std.mem.set(u8, &buffer, 0);
+        @memset(&buffer, 0);
         map_width = 32;
         map_height = 32;
     }
@@ -89,8 +89,9 @@ pub fn draw(state: *root.AppState) void {
         } else if (new_project_state == .folder) {
             if (root.utils.file_picker.draw()) |res| {
                 if (res) {
-                    var dir = std.fs.cwd().openDir(root.utils.file_picker.selected_dir.?, .{ .iterate = true }) catch unreachable;
-                    const is_empty = dir.iterate().next() catch unreachable == null;
+                    var dir = std.fs.cwd().openIterableDir(root.utils.file_picker.selected_dir.?, .{ .access_sub_paths = true }) catch unreachable;
+                    var iterator = dir.iterate();
+                    const is_empty = iterator.next() catch unreachable == null;
                     dir.close();
 
                     if (!is_empty) {
@@ -141,7 +142,7 @@ pub fn draw(state: *root.AppState) void {
         for (state.asset_man.levels) |level| {
             const base_name = level[0..std.mem.indexOfScalar(u8, level, '.').?];
             var name_buf: [25:0]u8 = undefined;
-            std.mem.set(u8, &name_buf, 0);
+            @memset(&name_buf, 0);
             std.mem.copy(u8, &name_buf, base_name);
 
             if (imgui.ogButtonEx(&name_buf, .{ .x = -1 })) {

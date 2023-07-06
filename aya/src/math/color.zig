@@ -95,15 +95,15 @@ pub const Color = extern union {
     }
 
     pub fn fromRgb(r: f32, g: f32, b: f32) Color {
-        return fromBytes(@floatToInt(u8, @round(r * 255)), @floatToInt(u8, @round(g * 255)), @floatToInt(u8, @round(b * 255)), @as(u8, 255));
+        return fromBytes(@as(u8, @intFromFloat(@round(r * 255))), @as(u8, @intFromFloat(@round(g * 255))), @as(u8, @intFromFloat(@round(b * 255))), @as(u8, 255));
     }
 
     pub fn fromRgba(r: f32, g: f32, b: f32, a: f32) Color {
-        return fromBytes(@floatToInt(u8, @round(r * 255)), @floatToInt(u8, @round(g * 255)), @floatToInt(u8, @round(b * 255)), @floatToInt(u8, @round(a * 255)));
+        return fromBytes(@as(u8, @intFromFloat(@round(r * 255))), @as(u8, @intFromFloat(@round(g * 255))), @as(u8, @intFromFloat(@round(b * 255))), @as(u8, @intFromFloat(@round(a * 255))));
     }
 
     pub fn fromI32(r: i32, g: i32, b: i32, a: i32) Color {
-        return fromBytes(@truncate(u8, @intCast(u32, r)), @truncate(u8, @intCast(u32, g)), @truncate(u8, @intCast(u32, b)), @truncate(u8, @intCast(u32, a)));
+        return fromBytes(@as(u8, @truncate(@as(u32, @intCast(r)))), @as(u8, @truncate(@as(u32, @intCast(g)))), @as(u8, @truncate(@as(u32, @intCast(b)))), @as(u8, @truncate(@as(u32, @intCast(a)))));
     }
 
     pub fn fromVec4(col: Vec4) Color {
@@ -111,19 +111,19 @@ pub const Color = extern union {
     }
 
     pub fn r_val(self: Color) u8 {
-        return @truncate(u8, self.value);
+        return @as(u8, @truncate(self.value));
     }
 
     pub fn g_val(self: Color) u8 {
-        return @truncate(u8, self.value >> 8);
+        return @as(u8, @truncate(self.value >> 8));
     }
 
     pub fn b_val(self: Color) u8 {
-        return @truncate(u8, self.value >> 16);
+        return @as(u8, @truncate(self.value >> 16));
     }
 
     pub fn a_val(self: Color) u8 {
-        return @truncate(u8, self.value >> 24);
+        return @as(u8, @truncate(self.value >> 24));
     }
 
     pub fn set_r(self: *Color, r: u8) void {
@@ -144,27 +144,27 @@ pub const Color = extern union {
 
     pub fn asVec4(self: Color) Vec4 {
         return .{
-            .x = @intToFloat(f32, self.comps.r) / 255,
-            .y = @intToFloat(f32, self.comps.g) / 255,
-            .z = @intToFloat(f32, self.comps.b) / 255,
-            .w = @intToFloat(f32, self.comps.a) / 255,
+            .x = @as(f32, @floatFromInt(self.comps.r)) / 255,
+            .y = @as(f32, @floatFromInt(self.comps.g)) / 255,
+            .z = @as(f32, @floatFromInt(self.comps.b)) / 255,
+            .w = @as(f32, @floatFromInt(self.comps.a)) / 255,
         };
     }
 
     pub fn asArray(self: Color) [4]f32 {
         return [_]f32{
-            @intToFloat(f32, self.comps.r) / 255,
-            @intToFloat(f32, self.comps.g) / 255,
-            @intToFloat(f32, self.comps.b) / 255,
-            @intToFloat(f32, self.comps.a) / 255,
+            @as(f32, @floatFromInt(self.comps.r)) / 255,
+            @as(f32, @floatFromInt(self.comps.g)) / 255,
+            @as(f32, @floatFromInt(self.comps.b)) / 255,
+            @as(f32, @floatFromInt(self.comps.a)) / 255,
         };
     }
 
     pub fn scale(self: Color, s: f32) Color {
-        const r = @floatToInt(i32, @intToFloat(f32, self.r_val()) * s);
-        const g = @floatToInt(i32, @intToFloat(f32, self.g_val()) * s);
-        const b = @floatToInt(i32, @intToFloat(f32, self.b_val()) * s);
-        const a = @floatToInt(i32, @intToFloat(f32, self.a_val()) * s);
+        const r = @as(i32, @intFromFloat(@as(f32, @floatFromInt(self.r_val())) * s));
+        const g = @as(i32, @intFromFloat(@as(f32, @floatFromInt(self.g_val())) * s));
+        const b = @as(i32, @intFromFloat(@as(f32, @floatFromInt(self.b_val())) * s));
+        const a = @as(i32, @intFromFloat(@as(f32, @floatFromInt(self.a_val())) * s));
         return fromI32(r, g, b, a);
     }
 
@@ -200,8 +200,8 @@ test "test color" {
     const ColorConverter = extern struct { r: u8, g: u8, b: u8, a: u8 };
 
     // const c = Color{ .value = @as(u32, 0xFF9900FF) };
-    const cc = Color{ .value = @bitCast(u32, [4]u8{ 10, 45, 34, 255 }) };
-    const ccc = Color{ .value = @bitCast(u32, ColorConverter{ .r = 10, .g = 45, .b = 34, .a = 255 }) };
+    const cc = Color{ .value = @as(u32, @bitCast([4]u8{ 10, 45, 34, 255 })) };
+    const ccc = Color{ .value = @as(u32, @bitCast(ColorConverter{ .r = 10, .g = 45, .b = 34, .a = 255 })) };
     // const c = @bitCast(Color, @as(u32, 0xFF9900FF));
     // const cc = @bitCast(Color, [4]u8{ 10, 45, 34, 255 });
     // const ccc = @bitCast(Color, ColorConverter{ .r = 10, .g = 45, .b = 34, .a = 255 });

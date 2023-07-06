@@ -14,7 +14,7 @@ const sdlAllocator_vtable = std.mem.Allocator.VTable{
 
 fn sdlAlloc(_: *anyopaque, len: usize, ptr_align: u8, len_align: usize) ?[*]u8 {
     std.debug.assert(ptr_align <= @alignOf(c_longdouble));
-    const ptr = @ptrCast([*]u8, sdl.SDL_malloc(len));
+    const ptr = @as([*]u8, @ptrCast(sdl.SDL_malloc(len)));
 
     if (len_align == 0) {
         return ptr;

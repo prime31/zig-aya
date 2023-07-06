@@ -24,10 +24,10 @@ pub fn tileIndexUnderMouse(state: *AppState, position: imgui.ImVec2, tile_size: 
 /// given a world-space position returns the tile under it or null if position is out of bounds
 pub fn tileIndexUnderPos(state: *AppState, position: imgui.ImVec2, tile_size: usize) ?Point {
     if (position.x < 0 or position.y < 0) return null;
-    if (position.x > @intToFloat(f32, state.level.map_size.w * state.tile_size)) return null;
-    if (position.y > @intToFloat(f32, state.level.map_size.h * state.tile_size)) return null;
+    if (position.x > @as(f32, @floatFromInt(state.level.map_size.w * state.tile_size))) return null;
+    if (position.y > @as(f32, @floatFromInt(state.level.map_size.h * state.tile_size))) return null;
 
-    return Point{ .x = @divTrunc(@floatToInt(usize, position.x), tile_size), .y = @divTrunc(@floatToInt(usize, position.y), tile_size) };
+    return Point{ .x = @divTrunc(@as(usize, @intFromFloat(position.x)), tile_size), .y = @divTrunc(@as(usize, @intFromFloat(position.y)), tile_size) };
 }
 
 /// fill in all the tiles between the two mouse positions using bresenham's line algo
@@ -37,7 +37,7 @@ pub fn bresenham(tilemap: *Tilemap, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f
     var x2 = in_x2;
     var y2 = in_y2;
 
-    const steep = std.math.absFloat(y2 - y1) > std.math.absFloat(x2 - x1);
+    const steep = @fabs(y2 - y1) > @fabs(x2 - x1);
     if (steep) {
         std.mem.swap(f32, &x1, &y1);
         std.mem.swap(f32, &x2, &y2);
@@ -49,24 +49,24 @@ pub fn bresenham(tilemap: *Tilemap, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f
     }
 
     const dx: f32 = x2 - x1;
-    const dy: f32 = std.math.absFloat(y2 - y1);
+    const dy: f32 = @fabs(y2 - y1);
 
     var err: f32 = dx / 2.0;
     var ystep: i32 = if (y1 < y2) 1 else -1;
-    var y: i32 = @floatToInt(i32, y1);
+    var y: i32 = @as(i32, @intFromFloat(y1));
 
-    const maxX: i32 = @floatToInt(i32, x2);
+    const maxX: i32 = @as(i32, @intFromFloat(x2));
 
-    var x: i32 = @floatToInt(i32, x1);
+    var x: i32 = @as(i32, @intFromFloat(x1));
     while (x <= maxX) : (x += 1) {
         if (steep) {
-            const index = @intCast(usize, y) + @intCast(usize, x) * tilemap.size.w;
+            const index = @as(usize, @intCast(y)) + @as(usize, @intCast(x)) * tilemap.size.w;
             _ = index;
-            tilemap.setTile(.{ .x = @intCast(usize, y), .y = @intCast(usize, x) }, color);
+            tilemap.setTile(.{ .x = @as(usize, @intCast(y)), .y = @as(usize, @intCast(x)) }, color);
         } else {
-            const index = @intCast(usize, x) + @intCast(usize, y) * tilemap.size.w;
+            const index = @as(usize, @intCast(x)) + @as(usize, @intCast(y)) * tilemap.size.w;
             _ = index;
-            tilemap.setTile(.{ .x = @intCast(usize, x), .y = @intCast(usize, y) }, color);
+            tilemap.setTile(.{ .x = @as(usize, @intCast(x)), .y = @as(usize, @intCast(y)) }, color);
         }
 
         err -= dy;
