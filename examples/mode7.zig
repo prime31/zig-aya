@@ -98,7 +98,7 @@ const Camera = struct {
 
     pub fn renderSprites(self: *Camera) void {
         if (self.sprites.items.len > 0) {
-            std.sort.sort(Block, self.sprites.items, {}, sort);
+            std.sort.insertion(Block, self.sprites.items, {}, sort);
         }
 
         for (self.sprites.items) |sprite| {

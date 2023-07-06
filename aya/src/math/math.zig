@@ -51,7 +51,7 @@ pub fn repeat(t: f32, len: f32) f32 {
 
 pub fn pingpong(t: f32, len: f32) f32 {
     const tt = repeat(t, len * 2);
-    return len - std.math.absFloat(tt - len);
+    return len - std.math.fabs(tt - len);
 }
 
 test "test math.rand" {

@@ -48,7 +48,7 @@ pub fn inspect(comptime T: type, comptime label: []const u8, comptime value: *T)
         var changed = false;
         inline for (info.fields) |*field_info| {
             const name = field_info.name;
-            const FieldType = field_info.field_type;
+            const FieldType = field_info.type;
             if (comptime std.meta.trait.is(.Pointer)(FieldType)) {
                 std.debug.print("skipping field " ++ name ++ " of struct " ++ @typeName(T) ++ " because it is of pointer-type " ++ @typeName(FieldType), .{});
                 continue;
@@ -114,14 +114,12 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         .Int => {
             var min_max = getMinMax(i32, std.meta.Child(@TypeOf(parent)), label);
             if (imgui.igDragInt(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
-                value.* = @ptrCast(@alignCast(value));
                 return true;
             }
         },
         .Float => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
             if (imgui.igDragFloat(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
-                value.* = @ptrCast(@alignCast(value));
                 return true;
             }
         },

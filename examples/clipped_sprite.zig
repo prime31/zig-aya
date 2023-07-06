@@ -32,7 +32,7 @@ fn update() !void {
     if (imgui.ogButton("go " ++ imgui.icons.inbox)) {
         var poly = TexturePolygon.generateMesh2("examples/assets/textures/sword_dude.png", 2, 0);
         for (poly) |pt| {
-            std.debug.print("{d}\n", .{pt});
+            std.debug.print("{any}\n", .{pt});
         }
     }
 }

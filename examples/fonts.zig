@@ -1,6 +1,6 @@
 const std = @import("std");
-const sdl = @import("sdl");
 const aya = @import("aya");
+const sdl = aya.sdl;
 const math = aya.math;
 const Color = math.Color;
 

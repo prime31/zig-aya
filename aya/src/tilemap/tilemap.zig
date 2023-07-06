@@ -22,15 +22,13 @@ pub const Map = struct {
 
     pub fn initFromFile(file: []const u8) *Map {
         var bytes = aya.fs.read(aya.mem.tmp_allocator, file) catch unreachable;
-        var tokens = std.json.TokenStream.init(bytes);
+        const map = std.json.parseFromSlice(*Map, aya.mem.allocator, bytes, .{}) catch unreachable;
 
-        const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };
         @setEvalBranchQuota(10000);
-        const map = std.json.parse(*Map, &tokens, options) catch unreachable;
-        for (map.tilesets) |ts| {
+        for (map.value.tilesets) |ts| {
             ts.initializeTiles();
         }
-        return map;
+        return map.value;
     }
 
     pub fn deinit(self: *Map) void {
