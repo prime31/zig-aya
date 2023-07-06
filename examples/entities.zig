@@ -31,16 +31,16 @@ fn generational() void {
     _ = manager.create();
 
     var player_id = player.id;
-    std.debug.print("get player before dead: {}\n", .{manager.getEntity(player_id)});
+    std.debug.print("get player before dead: {any}\n", .{manager.getEntity(player_id)});
     manager.destroy(player);
-    std.debug.print("get player after dead: {}\n", .{manager.getEntity(player_id)});
+    std.debug.print("get player after dead: {any}\n", .{manager.getEntity(player_id)});
 
     player = manager.create();
 
     player_id = player.id;
-    std.debug.print("get player before dead: {}\n", .{manager.getEntity(player_id)});
+    std.debug.print("get player before dead: {any}\n", .{manager.getEntity(player_id)});
     manager.destroy(player);
-    std.debug.print("get player after dead: {}\n", .{manager.getEntity(player_id)});
+    std.debug.print("get player after dead: {any}\n", .{manager.getEntity(player_id)});
 }
 
 fn update() !void {}
@@ -138,7 +138,7 @@ pub const EntityManager = struct {
     }
 };
 
-pub const GenerationalEntity = struct {
+pub const GenerationalEntity = extern struct {
     id: u32,
     pos: math.Vec2 = .{},
 };
@@ -147,7 +147,7 @@ pub const GenerationalEntityManager = struct {
     entities: []GenerationalEntity,
     handles: []EntityHandle,
 
-    const EntityHandle = struct {
+    const EntityHandle = extern struct {
         index: u16,
         generation: u16 = 0,
     };

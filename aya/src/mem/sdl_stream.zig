@@ -12,7 +12,7 @@ pub const SdlBufferStream = struct {
     pub const Writer = io.Writer(*SdlBufferStream, WriteError, write);
 
     pub fn init(file: []const u8, mode: enum { read, write }) SdlBufferStream {
-        const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, file) catch unreachable;
+        const c_file = aya.mem.tmp_allocator.dupeZ(u8, file) catch unreachable;
         var rw = sdl.SDL_RWFromFile(c_file, if (mode == .read) "rb" else "w");
 
         return .{ .rw = rw };

@@ -15,8 +15,10 @@ pub const Mesh = struct {
             .content = verts,
         });
 
+        var buffer = [_]renderkit.Buffer{vbuffer};
+
         return .{
-            .bindings = renderkit.BufferBindings.init(ibuffer, &[_]renderkit.Buffer{vbuffer}),
+            .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
             .element_count = @as(c_int, @intCast(indices.len)),
         };
     }
@@ -142,8 +144,10 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
                 .step_func = .per_instance,
             });
 
+            var buffer = [_]renderkit.Buffer{ vertex_buffer, instance_buffer };
+
             return Self{
-                .bindings = renderkit.BufferBindings.init(ibuffer, &[_]renderkit.Buffer{ vertex_buffer, instance_buffer }),
+                .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
                 .instance_data = try alloc.alloc(InstanceT, instance_count),
                 .element_count = @as(c_int, @intCast(indices.len)),
                 .allocator = alloc,

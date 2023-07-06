@@ -71,8 +71,8 @@ pub const PostProcessStack = struct {
 /// implementors must have initialize, deinit and process methods defined and a postprocessor: *PostProcessor field.
 /// The initialize method is where default values should be set since this will be a heap allocated object.
 pub const PostProcessor = struct {
-    process: fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
-    deinit: fn (self: *PostProcessor, allocator: std.mem.Allocator) void = undefined,
+    process: *const fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,
+    deinit: *const fn (self: *PostProcessor, allocator: std.mem.Allocator) void = undefined,
 
     /// can be used externally, to get the original PostProcessor by Type or by the PostProcessor to get itself interface methods.
     pub fn getParent(self: *PostProcessor, comptime T: type) *T {

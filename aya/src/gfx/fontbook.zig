@@ -48,7 +48,7 @@ pub const FontBook = struct {
 
     // add fonts
     pub fn addFont(self: *FontBook, file: []const u8) c_int {
-        const c_file = std.cstr.addNullByte(aya.mem.tmp_allocator, file) catch unreachable;
+        const c_file = aya.mem.tmp_allocator.dupeZ(u8, file) catch unreachable;
         const data = aya.fs.read(self.allocator, file) catch unreachable;
 
         // we can let FONS free the data since we are using the c_allocator here

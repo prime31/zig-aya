@@ -290,16 +290,16 @@ pub const Tilemap = struct {
         return .{
             .w = width,
             .h = height,
-            .map = std.testing.allocator.dupe(u8, data) catch unreachable,
+            .map = aya.mem.allocator.dupe(u8, data) catch unreachable,
         };
     }
 
     pub fn deinit(self: Tilemap) void {
-        std.testing.allocator.free(self.map);
+        aya.mem.allocator.free(self.map);
     }
 
     pub fn rotate(self: *Tilemap) void {
-        var rotated = std.testing.allocator.alloc(u8, self.map.len) catch unreachable;
+        var rotated = aya.mem.allocator.alloc(u8, self.map.len) catch unreachable;
 
         var y: usize = 0;
         while (y < self.h) : (y += 1) {
@@ -309,7 +309,7 @@ pub const Tilemap = struct {
             }
         }
 
-        std.testing.allocator.free(self.map);
+        aya.mem.allocator.free(self.map);
         self.map = rotated;
         std.mem.swap(usize, &self.w, &self.h);
     }
