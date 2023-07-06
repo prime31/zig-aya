@@ -16,7 +16,7 @@ pub const Tilemap = struct {
 
     pub fn init(size: Size) Tilemap {
         var tmp_data = aya.mem.allocator.alloc(u16, size.w * size.h) catch unreachable;
-        std.mem.set(u16, tmp_data, 0);
+        @memset(tmp_data, 0);
         return .{
             .size = size,
             .data = tmp_data,
@@ -35,7 +35,7 @@ pub const Tilemap = struct {
     }
 
     pub fn clear(self: Tilemap) void {
-        std.mem.set(u16, self.data, 0);
+        @memset(self.data, 0);
     }
 
     pub fn getTile(self: Tilemap, tile: Point) u16 {
@@ -62,7 +62,7 @@ pub const Tilemap = struct {
                 if (tile == 0) continue;
 
                 var info = TileRenderInfo.init(tile - 1, tileset.tile_size);
-                info.draw(tileset, .{ .x = @intToFloat(f32, x * tileset.tile_size), .y = @intToFloat(f32, y * tileset.tile_size) });
+                info.draw(tileset, .{ .x = @as(f32, @floatFromInt(x * tileset.tile_size)), .y = @as(f32, @floatFromInt(y * tileset.tile_size)) });
             }
         }
     }

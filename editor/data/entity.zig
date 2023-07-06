@@ -101,7 +101,7 @@ pub const Entity = struct {
                 box.offset = bound_pos.subtract(self.transform.pos);
             },
             .circle => |*circle| {
-                circle.r = std.math.max(spr_bounds.w, spr_bounds.h) * 0.5;
+                circle.r = @max(spr_bounds.w, spr_bounds.h) * 0.5;
                 circle.offset = spr_bounds.center().subtract(self.transform.pos);
             },
         }
@@ -126,13 +126,13 @@ pub const Sprite = struct {
             .tex = tex,
             .rect = rect,
             .tex_name = aya.mem.allocator.dupeZ(u8, name) catch unreachable,
-            .origin = .{ .x = @intToFloat(f32, rect.w) * 0.5, .y = @intToFloat(f32, rect.h) * 0.5 },
+            .origin = .{ .x = @as(f32, @floatFromInt(rect.w)) * 0.5, .y = @as(f32, @floatFromInt(rect.h)) * 0.5 },
         };
     }
 
     pub fn initNoTexture(state: *data.AppState) Sprite {
         const tex = state.asset_man.default_tex;
-        return Sprite.init(tex, .{ .w = @floatToInt(i32, tex.width), .h = @floatToInt(i32, tex.height) }, "def");
+        return Sprite.init(tex, .{ .w = @as(i32, @intFromFloat(tex.width)), .h = @as(i32, @intFromFloat(tex.height)) }, "def");
     }
 
     pub fn deinit(self: @This()) void {
@@ -149,7 +149,7 @@ pub const Sprite = struct {
     pub fn bounds(self: Sprite, transform: Transform) math.Rect {
         // TODO: take rotation into account when calculating the bounds of the sprite texture
         const tl = transform.pos.subtract(self.origin.mul(transform.scale));
-        return .{ .x = tl.x, .y = tl.y, .w = @intToFloat(f32, self.rect.w) * transform.scale.x, .h = @intToFloat(f32, self.rect.h) * transform.scale.y };
+        return .{ .x = tl.x, .y = tl.y, .w = @as(f32, @floatFromInt(self.rect.w)) * transform.scale.x, .h = @as(f32, @floatFromInt(self.rect.h)) * transform.scale.y };
     }
 };
 

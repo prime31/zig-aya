@@ -20,12 +20,12 @@ pub const Image = struct {
         var w: c_int = undefined;
         var h: c_int = undefined;
         var channels: c_int = undefined;
-        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), &w, &h, &channels, 4);
+        const load_res = stb.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, 4);
         if (load_res == null) unreachable;
         defer stb.stbi_image_free(load_res);
 
-        var img = init(@intCast(usize, w), @intCast(usize, h));
-        var pixels = std.mem.bytesAsSlice(u32, load_res[0..@intCast(usize, w * h * channels)]);
+        var img = init(@as(usize, @intCast(w)), @as(usize, @intCast(h)));
+        var pixels = std.mem.bytesAsSlice(u32, load_res[0..@as(usize, @intCast(w * h * channels))]);
         for (pixels, 0..) |p, i| {
             img.pixels[i] = p;
         }
@@ -38,10 +38,10 @@ pub const Image = struct {
     }
 
     pub fn fillRect(self: *Image, rect: aya.math.RectI, color: aya.math.Color) void {
-        const x = @intCast(usize, rect.x);
-        var y = @intCast(usize, rect.y);
-        const w = @intCast(usize, rect.w);
-        var h = @intCast(usize, rect.h);
+        const x = @as(usize, @intCast(rect.x));
+        var y = @as(usize, @intCast(rect.y));
+        const w = @as(usize, @intCast(rect.w));
+        var h = @as(usize, @intCast(rect.h));
 
         var data = self.pixels[x + y * self.w ..];
         while (h > 0) : (h -= 1) {
@@ -74,8 +74,8 @@ pub const Image = struct {
 
     /// resizes the Image taking the max dimension and constraining it to max_width_or_height
     pub fn resizeConstrainedToMaxSize(self: *Image, max_width_or_height: usize) void {
-        const scale = @intToFloat(f32, max_width_or_height) / @intToFloat(f32, std.math.max(self.w, self.h));
-        self.resize(@floatToInt(usize, scale * @intToFloat(f32, self.w)), @floatToInt(usize, scale * @intToFloat(f32, self.h)));
+        const scale = @as(f32, @floatFromInt(max_width_or_height)) / @as(f32, @floatFromInt(@max(self.w, self.h)));
+        self.resize(@as(usize, @intFromFloat(scale * @as(f32, @floatFromInt(self.w)))), @as(usize, @intFromFloat(scale * @as(f32, @floatFromInt(self.h)))));
     }
 
     /// extremely lossy image resizing, really useful only for quicky thumbnail creation
@@ -83,15 +83,15 @@ pub const Image = struct {
         if (self.w == w and self.h == h) return;
 
         var img = init(w, h);
-        const scale_w = @intToFloat(f32, self.w) / @intToFloat(f32, w);
-        const scale_h = @intToFloat(f32, self.h) / @intToFloat(f32, h);
+        const scale_w = @as(f32, @floatFromInt(self.w)) / @as(f32, @floatFromInt(w));
+        const scale_h = @as(f32, @floatFromInt(self.h)) / @as(f32, @floatFromInt(h));
 
         var y: usize = 0;
         while (y < img.h) : (y += 1) {
             var x: usize = 0;
             while (x < img.w) : (x += 1) {
-                const src_x = @floatToInt(usize, @intToFloat(f32, x) * scale_w);
-                const src_y = @floatToInt(usize, @intToFloat(f32, y) * scale_h);
+                const src_x = @as(usize, @intFromFloat(@as(f32, @floatFromInt(x)) * scale_w));
+                const src_y = @as(usize, @intFromFloat(@as(f32, @floatFromInt(y)) * scale_h));
                 img.pixels[x + y * img.w] = self.pixels[src_x + src_y * self.w];
             }
         }
@@ -101,20 +101,20 @@ pub const Image = struct {
     }
 
     pub fn asTexture(self: Image) Texture {
-        return Texture.initWithData(u32, @intCast(i32, self.w), @intCast(i32, self.h), self.pixels);
+        return Texture.initWithData(u32, @as(i32, @intCast(self.w)), @as(i32, @intCast(self.h)), self.pixels);
     }
 
     pub fn save(self: Image, file: []const u8) void {
         var bytes = std.mem.sliceAsBytes(self.pixels);
         const file_posix = std.os.toPosixPath(file) catch unreachable;
-        _ = stb.stbi_write_png(&file_posix, @intCast(c_int, self.w), @intCast(c_int, self.h), 4, bytes.ptr, @intCast(c_int, self.w * 4));
+        _ = stb.stbi_write_png(&file_posix, @as(c_int, @intCast(self.w)), @as(c_int, @intCast(self.h)), 4, bytes.ptr, @as(c_int, @intCast(self.w * 4)));
     }
 
     /// returns true if the image was loaded successfully
     pub fn getTextureSize(file: []const u8, w: *c_int, h: *c_int) bool {
         if (aya.fs.read(aya.mem.tmp_allocator, file)) |image_contents| {
             var comp: c_int = undefined;
-            if (stb.stbi_info_from_memory(image_contents.ptr, @intCast(c_int, image_contents.len), w, h, &comp) == 1) {
+            if (stb.stbi_info_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), w, h, &comp) == 1) {
                 return true;
             }
         } else |err| {

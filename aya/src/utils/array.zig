@@ -21,12 +21,12 @@ pub fn orderedRemove(comptime T: type, slice: *[]T, i: usize) T {
 
     const old_item = slice.*[i];
     for (slice.*[i..newlen], 0..) |*b, j| b.* = slice.*[i + 1 + j];
-    slice.* = aya.mem.allocator.shrink(slice.*, newlen);
+    _ = aya.mem.allocator.resize(slice.*, newlen);
     return old_item;
 }
 
 pub fn pop(comptime T: type, slice: *[]T) T {
     const val = slice.*[slice.len - 1];
-    slice.* = aya.mem.allocator.shrink(slice.*, slice.len - 1);
+    _ = aya.mem.allocator.resize(slice.*, slice.len - 1);
     return val;
 }

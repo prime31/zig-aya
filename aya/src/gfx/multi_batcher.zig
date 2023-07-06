@@ -25,12 +25,12 @@ pub const MultiBatcher = struct {
         var indices = allocator.alloc(u16, max_sprites * 6) catch unreachable;
         var i: usize = 0;
         while (i < max_sprites) : (i += 1) {
-            indices[i * 3 * 2 + 0] = @intCast(u16, i) * 4 + 0;
-            indices[i * 3 * 2 + 1] = @intCast(u16, i) * 4 + 1;
-            indices[i * 3 * 2 + 2] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 3] = @intCast(u16, i) * 4 + 0;
-            indices[i * 3 * 2 + 4] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 5] = @intCast(u16, i) * 4 + 3;
+            indices[i * 3 * 2 + 0] = @as(u16, @intCast(i)) * 4 + 0;
+            indices[i * 3 * 2 + 1] = @as(u16, @intCast(i)) * 4 + 1;
+            indices[i * 3 * 2 + 2] = @as(u16, @intCast(i)) * 4 + 2;
+            indices[i * 3 * 2 + 3] = @as(u16, @intCast(i)) * 4 + 0;
+            indices[i * 3 * 2 + 4] = @as(u16, @intCast(i)) * 4 + 2;
+            indices[i * 3 * 2 + 5] = @as(u16, @intCast(i)) * 4 + 3;
         }
 
         return .{
@@ -60,17 +60,17 @@ pub const MultiBatcher = struct {
         // bind textures
         for (self.textures, 0..) |tid, slot| {
             if (slot == self.last_texture) break;
-            self.mesh.bindImage(tid, @intCast(c_uint, slot));
+            self.mesh.bindImage(tid, @as(c_uint, @intCast(slot)));
         }
 
         // draw
         const quads = @divExact(self.vert_index, 4);
-        self.mesh.draw(@intCast(c_int, quads * 6));
+        self.mesh.draw(@as(c_int, @intCast(quads * 6)));
 
         // reset state
         for (self.textures, 0..) |*tid, slot| {
             if (slot == self.last_texture) break;
-            self.mesh.bindImage(tid.*, @intCast(c_uint, slot));
+            self.mesh.bindImage(tid.*, @as(c_uint, @intCast(slot)));
             tid.* = 0;
         }
 
@@ -79,11 +79,11 @@ pub const MultiBatcher = struct {
     }
 
     inline fn submitTexture(self: *MultiBatcher, img: rk.Image) f32 {
-        if (std.mem.indexOfScalar(rk.Image, &self.textures, img)) |index| return @intToFloat(f32, index);
+        if (std.mem.indexOfScalar(rk.Image, &self.textures, img)) |index| return @as(f32, @floatFromInt(index));
 
         self.textures[self.last_texture] = img;
         self.last_texture += 1;
-        return @intToFloat(f32, self.last_texture - 1);
+        return @as(f32, @floatFromInt(self.last_texture - 1));
     }
 
     pub fn drawTex(self: *MultiBatcher, pos: math.Vec2, col: u32, texture: aya.gfx.Texture) void {

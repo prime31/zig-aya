@@ -73,7 +73,7 @@ pub const PixelGlitch = struct {
         self.shader = shaders.createPixelGlitchShader();
 
         const size = aya.window.size();
-        self.shader.frag_uniform.screen_size = .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) };
+        self.shader.frag_uniform.screen_size = .{ .x = @as(f32, @floatFromInt(size.w)), .y = @as(f32, @floatFromInt(size.h)) };
         self.shader.frag_uniform.vertical_size = 0.5;
         self.shader.frag_uniform.horizontal_offset = 10;
     }
@@ -87,7 +87,7 @@ pub const PixelGlitch = struct {
         _ = vertical_size;
         _ = horizontal_offset;
         const size = aya.window.size();
-        self.params.screen_size = .{ .x = @intToFloat(f32, size.w), .y = @intToFloat(f32, size.h) };
+        self.params.screen_size = .{ .x = @as(f32, @floatFromInt(size.w)), .y = @as(f32, @floatFromInt(size.h)) };
         self.shader.frag_uniform.vertical_size = 0.5;
         self.shader.frag_uniform.horizontal_offset = 10;
     }

@@ -61,7 +61,7 @@ pub const TilemapLayer = struct {
         if (imgui.ogKeyUp(aya.sdl.SDL_SCANCODE_R)) self.tileset.selected.flipD();
 
         if (root.utils.tileIndexUnderPos(state, mouse_world, 16)) |tile| {
-            const pos = math.Vec2{ .x = @intToFloat(f32, tile.x * self.tileset.tile_size), .y = @intToFloat(f32, tile.y * self.tileset.tile_size) };
+            const pos = math.Vec2{ .x = @as(f32, @floatFromInt(tile.x * self.tileset.tile_size)), .y = @as(f32, @floatFromInt(tile.y * self.tileset.tile_size)) };
 
             // dont draw the current tile brush under the mouse if we are shift-dragging
             if (!self.shift_dragged) {
@@ -71,10 +71,10 @@ pub const TilemapLayer = struct {
             if (imgui.ogIsAnyMouseDragging() and imgui.igGetIO().KeyShift) { // box selection with left/right mouse + shift
                 var dragged_pos = imgui.igGetIO().MousePos.subtract(imgui.ogGetAnyMouseDragDelta());
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
-                    const min_x = @intToFloat(f32, std.math.min(tile.x, tile2.x) * self.tileset.tile_size);
-                    const min_y = @intToFloat(f32, std.math.max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size);
-                    const max_x = @intToFloat(f32, std.math.max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size);
-                    const max_y = @intToFloat(f32, std.math.min(tile.y, tile2.y) * self.tileset.tile_size);
+                    const min_x = @as(f32, @floatFromInt(@min(tile.x, tile2.x) * self.tileset.tile_size));
+                    const min_y = @as(f32, @floatFromInt(@max(tile.y, tile2.y) * self.tileset.tile_size + self.tileset.tile_size));
+                    const max_x = @as(f32, @floatFromInt(@max(tile.x, tile2.x) * self.tileset.tile_size + self.tileset.tile_size));
+                    const max_y = @as(f32, @floatFromInt(@min(tile.y, tile2.y) * self.tileset.tile_size));
 
                     const color = if (imgui.igIsMouseDragging(imgui.ImGuiMouseButton_Left, 0)) math.Color.white else math.Color.red;
                     aya.draw.hollowRect(.{ .x = min_x, .y = max_y }, max_x - min_x, min_y - max_y, 1, color);
@@ -87,10 +87,10 @@ pub const TilemapLayer = struct {
                 var drag_delta = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0) else imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Right, 0);
                 var dragged_pos = imgui.igGetIO().MousePos.subtract(drag_delta);
                 if (root.utils.tileIndexUnderMouse(state, dragged_pos, self.tileset.tile_size, camera)) |tile2| {
-                    const min_x = std.math.min(tile.x, tile2.x);
-                    var min_y = std.math.min(tile.y, tile2.y);
-                    const max_x = std.math.max(tile.x, tile2.x);
-                    const max_y = std.math.max(tile.y, tile2.y);
+                    const min_x = @min(tile.x, tile2.x);
+                    var min_y = @min(tile.y, tile2.y);
+                    const max_x = @max(tile.x, tile2.x);
+                    const max_y = @max(tile.y, tile2.y);
 
                     // either set the tile to a brush or 0 depending on mouse button
                     const tile_value = if (imgui.igIsMouseReleased(imgui.ImGuiMouseButton_Left)) self.tileset.selected.value + 1 else 0;
@@ -119,13 +119,13 @@ pub const TilemapLayer = struct {
 
     fn commitInBetweenTiles(self: *@This(), state: *AppState, tile: Point, camera: Camera, color: u16) void {
         if (root.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
-            const abs_x = std.math.absInt(@intCast(i32, tile.x) - @intCast(i32, prev_tile.x)) catch unreachable;
-            const abs_y = std.math.absInt(@intCast(i32, tile.y) - @intCast(i32, prev_tile.y)) catch unreachable;
+            const abs_x = std.math.absInt(@as(i32, @intCast(tile.x)) - @as(i32, @intCast(prev_tile.x))) catch unreachable;
+            const abs_y = std.math.absInt(@as(i32, @intCast(tile.y)) - @as(i32, @intCast(prev_tile.y))) catch unreachable;
             if (abs_x <= 1 and abs_y <= 1) {
                 return;
             }
 
-            root.utils.bresenham(&self.tilemap, @intToFloat(f32, prev_tile.x), @intToFloat(f32, prev_tile.y), @intToFloat(f32, tile.x), @intToFloat(f32, tile.y), color);
+            root.utils.bresenham(&self.tilemap, @as(f32, @floatFromInt(prev_tile.x)), @as(f32, @floatFromInt(prev_tile.y)), @as(f32, @floatFromInt(tile.x)), @as(f32, @floatFromInt(tile.y)), color);
         }
     }
 };

@@ -49,7 +49,7 @@ fn init() !void {
     blk: while (y < aya.window.height() - 50) : (y += 24) {
         var x: i32 = 18;
         while (x < aya.window.width() - 50) : (x += 50) {
-            instanced_mesh.instance_data[i].pos = .{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
+            instanced_mesh.instance_data[i].pos = .{ .x = @as(f32, @floatFromInt(x)), .y = @as(f32, @floatFromInt(y)) };
             i += 1;
             if (i == 100) break :blk;
         }

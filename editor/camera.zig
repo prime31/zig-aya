@@ -60,7 +60,7 @@ pub const Camera = struct {
         half_screen.scale(0.5);
         half_screen = half_screen.subtract(.{ .x = padding, .y = padding });
 
-        const max = math.Vec2{ .x = @intToFloat(f32, width) - half_screen.x, .y = @intToFloat(f32, height) - half_screen.y };
+        const max = math.Vec2{ .x = @as(f32, @floatFromInt(width)) - half_screen.x, .y = @as(f32, @floatFromInt(height)) - half_screen.y };
         // ensure we dont zoom out so far that our clamp becomes pointless
         if (half_screen.x > max.x or half_screen.y > max.y) {
             self.pos = half_screen;

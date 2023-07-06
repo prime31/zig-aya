@@ -26,8 +26,8 @@ const TileRenderInfo = struct {
         // deal with flipping/rotating if necessary
         if (id > flipped_d) {
             // set the origin based on the tile_size if we are rotated
-            info.ox = @intToFloat(f32, tile_size) / 2.0;
-            info.oy = @intToFloat(f32, tile_size) / 2.0;
+            info.ox = @as(f32, @floatFromInt(tile_size)) / 2.0;
+            info.oy = @as(f32, @floatFromInt(tile_size)) / 2.0;
 
             if (flip_h) info.sx *= -1;
             if (flip_v) info.sy *= -1;
@@ -91,8 +91,8 @@ pub fn renderTileLayer(map: *Map, layer: tilemap.TileLayer, texture: gfx.Texture
                 const info = TileRenderInfo.init(tile_id, map.tile_size);
                 const vp = map.tilesets[0].viewportForTile(info.id);
 
-                const tx = @intToFloat(f32, @intCast(i32, x) * map.tile_size) + info.ox;
-                const ty = @intToFloat(f32, @intCast(i32, y) * map.tile_size) + info.oy;
+                const tx = @as(f32, @floatFromInt(@as(i32, @intCast(x)) * map.tile_size)) + info.ox;
+                const ty = @as(f32, @floatFromInt(@as(i32, @intCast(y)) * map.tile_size)) + info.oy;
                 const mat = info.transformMatrix(tx, ty);
 
                 if (atlas_batch) |batch| {

@@ -31,7 +31,7 @@ pub fn draw(state: *root.AppState) void {
 
                 if (imgui.igAcceptDragDropPayload("LAYER_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                     std.debug.assert(payload[0].DataSize == @sizeOf(usize));
-                    const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
+                    const data = @as(*usize, @ptrCast(@alignCast(payload[0].Data.?)));
                     if (i > data.* and i - data.* > 1) {
                         dnd_swap = .{ .remove_from = data.*, .insert_into = i - 1 };
                     } else if (i < data.*) {
@@ -45,7 +45,7 @@ pub fn draw(state: *root.AppState) void {
             if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_None)) {
                 defer imgui.igEndDragDropSource();
 
-                _ = imgui.igSetDragDropPayload("LAYER_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
+                _ = imgui.igSetDragDropPayload("LAYER_DRAG", &.{i}, @sizeOf(usize), imgui.ImGuiCond_Once);
                 imgui.igText(std.mem.sliceTo(&layer.name(), 0));
             }
 
@@ -82,7 +82,7 @@ pub fn draw(state: *root.AppState) void {
 
                     if (imgui.igAcceptDragDropPayload("LAYER_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                         std.debug.assert(payload[0].DataSize == @sizeOf(usize));
-                        const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
+                        const data = @as(*usize, @ptrCast(@alignCast(payload[0].Data.?)));
                         if (data.* != i)
                             dnd_swap = .{ .remove_from = data.*, .insert_into = i };
                     }
@@ -91,7 +91,7 @@ pub fn draw(state: *root.AppState) void {
             }
 
             if (rename_index != null) {
-                aya.mem.copyZ(u8, &name_buf, std.mem.span(&layer.name()));
+                aya.mem.copyZ(u8, &name_buf, &layer.name());
                 imgui.ogOpenPopup("##rename-layer");
             }
 
@@ -128,7 +128,7 @@ pub fn draw(state: *root.AppState) void {
         // right-align the button
         imgui.igSetCursorPosX(imgui.igGetCursorPosX() + imgui.igGetWindowContentRegionWidth() - 75);
         if (imgui.ogButtonEx("Add Layer", .{ .x = 75 })) {
-            std.mem.set(u8, &name_buf, 0);
+            @memset(&name_buf, 0);
             new_layer_type = .tilemap;
             new_layer_tileset_index = 0;
             imgui.ogOpenPopup("##add-layer");
@@ -166,8 +166,8 @@ fn addLayerPopup(state: *root.AppState) void {
         inline for (@typeInfo(root.layers.LayerType).Enum.fields) |field| {
             var buf: [15]u8 = undefined;
             _ = std.mem.replace(u8, field.name, "_", " ", buf[0..]);
-            if (imgui.ogSelectableBool(&buf[0], new_layer_type == @intToEnum(root.layers.LayerType, field.value), imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
-                new_layer_type = @intToEnum(root.layers.LayerType, field.value);
+            if (imgui.ogSelectableBool(&buf[0], new_layer_type == @as(root.layers.LayerType, @enumFromInt(field.value)), imgui.ImGuiSelectableFlags_DontClosePopups, .{})) {
+                new_layer_type = @as(root.layers.LayerType, @enumFromInt(field.value));
             }
         }
         imgui.igEndChild();

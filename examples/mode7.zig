@@ -127,7 +127,7 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    camera = Camera.init(@intToFloat(f32, aya.window.width()), @intToFloat(f32, aya.window.height()));
+    camera = Camera.init(@as(f32, @floatFromInt(aya.window.width())), @as(f32, @floatFromInt(aya.window.height())));
 
     map = Texture.initFromFile("examples/assets/textures/mario_kart.png", .nearest) catch unreachable;
     block = Texture.initFromFile("examples/assets/textures/block.png", .nearest) catch unreachable;
@@ -256,6 +256,6 @@ fn drawPlane() void {
     // bind out map to the second texture slot and we need a full screen render for the shader so we just draw a full screen rect
     gfx.draw.bindTexture(map, 1);
     const drawable_size = aya.window.size();
-    gfx.draw.rect(.{}, @intToFloat(f32, drawable_size.w), @intToFloat(f32, drawable_size.h), math.Color.white);
+    gfx.draw.rect(.{}, @as(f32, @floatFromInt(drawable_size.w)), @as(f32, @floatFromInt(drawable_size.h)), math.Color.white);
     gfx.setShader(null);
 }

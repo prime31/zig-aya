@@ -11,7 +11,7 @@ pub const Component = struct {
 
     pub fn init(id: u8, name: []const u8) Component {
         var comp = Component{ .id = id };
-        std.mem.set(u8, &comp.name, 0);
+        @memset(&comp.name, 0);
         aya.mem.copyZ(u8, &comp.name, name);
         return comp;
     }
