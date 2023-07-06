@@ -31,7 +31,7 @@ fn init() !void {
     batch = aya.tilemap.renderer.renderTileLayerIntoAtlasBatch(map, map.tile_layers[0], texture);
 
     const spawn = map.object_layers[0].getObject("spawn");
-    player = aya.math.RectI{ .x = @floatToInt(i32, spawn.x), .y = @floatToInt(i32, spawn.y), .w = @floatToInt(i32, spawn.w), .h = @floatToInt(i32, spawn.h) };
+    player = aya.math.RectI{ .x = @as(i32, @intFromFloat(spawn.x)), .y = @as(i32, @intFromFloat(spawn.y)), .w = @as(i32, @intFromFloat(spawn.w)), .h = @as(i32, @intFromFloat(spawn.h)) };
 }
 
 fn update() !void {
@@ -51,14 +51,14 @@ fn update() !void {
 
     if (move.x != 0 or move.y != 0) {
         aya.tilemap.move(map, player, &move);
-        player.x += @floatToInt(i32, move.x);
-        player.y += @floatToInt(i32, move.y);
+        player.x += @as(i32, @intFromFloat(move.x));
+        player.y += @as(i32, @intFromFloat(move.y));
     }
 }
 
 fn render() !void {
     aya.gfx.beginPass(.{});
     batch.draw();
-    aya.draw.hollowRect(.{ .x = @intToFloat(f32, player.x), .y = @intToFloat(f32, player.y) }, @intToFloat(f32, player.w), @intToFloat(f32, player.h), 1, aya.math.Color.white);
+    aya.draw.hollowRect(.{ .x = @as(f32, @floatFromInt(player.x)), .y = @as(f32, @floatFromInt(player.y)) }, @as(f32, @floatFromInt(player.w)), @as(f32, @floatFromInt(player.h)), 1, aya.math.Color.white);
     aya.gfx.endPass();
 }

@@ -184,7 +184,7 @@ pub fn inspectEntityLink(label: [:0]const u8, entity_id: u8, link: *u8, entities
 
             if (imgui.igSelectableBool(&entity.name, entity.id == link.*, imgui.ImGuiSelectableFlags_None, .{})) {
                 link.* = entity.id;
-                std.mem.set(u8, &filter_buffer, 0);
+                @memset(&filter_buffer, 0);
                 filter_entities = false;
                 imgui.igCloseCurrentPopup();
             }
@@ -198,14 +198,14 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
 
     imgui.igPushItemWidth(-1);
 
-    // const max_dim = std.math.max(sprite.tex.width, sprite.tex.height);
+    // const max_dim = @max(sprite.tex.width, sprite.tex.height);
     // const multiplier = 50 / max_dim;
 
     const thumb_uvs = state.asset_man.getUvsForThumbnail(sprite.tex_name);
     const thumb_tex = if (sprite.tex.img == state.asset_man.default_tex.img) sprite.tex else state.asset_man.thumbnails.tex;
     if (imgui.ogImageButton(thumb_tex.imTextureID(), .{ .x = 75, .y = 75 }, thumb_uvs.tl, thumb_uvs.br, 5)) {
         imgui.igOpenPopup("##texture-chooser", imgui.ImGuiPopupFlags_None);
-        std.mem.set(u8, &filter_buffer, 0);
+        @memset(&filter_buffer, 0);
     }
     imgui.igPopItemWidth();
 
@@ -232,7 +232,7 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
                     continue;
             }
 
-            imgui.igPushIDInt(@intCast(c_int, i));
+            imgui.igPushIDInt(@as(c_int, @intCast(i)));
             defer imgui.igPopID();
             displayed_count += 1;
 
@@ -247,7 +247,7 @@ pub fn inspectSpriteTexture(state: *AppState, sprite: *root.data.Sprite) void {
 
             const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
             var name_buf: [12:0]u8 = undefined;
-            std.mem.set(u8, &name_buf, 0);
+            @memset(&name_buf, 0);
 
             if (base_name.len > 11) {
                 std.mem.copy(u8, &name_buf, base_name[0..11]);
@@ -331,7 +331,7 @@ pub fn inspectOrigin(label: [:0]const u8, vec: *aya.math.Vec2, image_size: aya.m
 
 pub fn inspectSprite(state: *AppState, sprite: *root.data.Sprite) void {
     inspectSpriteTexture(state, sprite);
-    inspectOrigin("Origin", &sprite.origin, .{ .x = @intToFloat(f32, sprite.rect.w), .y = @intToFloat(f32, sprite.rect.h) });
+    inspectOrigin("Origin", &sprite.origin, .{ .x = @as(f32, @floatFromInt(sprite.rect.w)), .y = @as(f32, @floatFromInt(sprite.rect.h)) });
 }
 
 pub fn inspectCollider(collider: *root.data.Collider) void {
@@ -339,13 +339,13 @@ pub fn inspectCollider(collider: *root.data.Collider) void {
         .box => |*box| {
             inspectBool("Trigger", &box.trigger, false);
             inspectVec2("Offset", &box.offset, .{});
-            inspectFloatMinMax("Width", &box.w, 25, 1, std.math.f32_max);
-            inspectFloatMinMax("Height", &box.h, 25, 1, std.math.f32_max);
+            inspectFloatMinMax("Width", &box.w, 25, 1, std.math.floatMax(f32));
+            inspectFloatMinMax("Height", &box.h, 25, 1, std.math.floatMax(f32));
         },
         .circle => |*circle| {
             inspectBool("Trigger", &circle.trigger, false);
             inspectVec2("Offset", &circle.offset, .{});
-            inspectFloatMinMax("Radius", &circle.r, 25, 5, std.math.f32_max);
+            inspectFloatMinMax("Radius", &circle.r, 25, 5, std.math.floatMax(f32));
         },
     }
 }
@@ -378,7 +378,7 @@ pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25:0]u8) voi
 
         for (enum_values, 0..) |enum_label, i| {
             if (imgui.igSelectableBool(&enum_label, value.* == i, imgui.ImGuiSelectableFlags_None, .{ .y = line_height }))
-                value.* = @intCast(u8, i);
+                value.* = @as(u8, @intCast(i));
         }
     }
 }

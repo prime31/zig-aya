@@ -33,11 +33,11 @@ pub fn isEven(val: anytype) bool {
 }
 
 pub fn ifloor(comptime T: type, val: f32) T {
-    return @floatToInt(T, @floor(val));
+    return @as(T, @intFromFloat(@floor(val)));
 }
 
 pub fn iclamp(x: i32, a: i32, b: i32) i32 {
-    return std.math.max(a, std.math.min(b, x));
+    return @max(a, @min(b, x));
 }
 
 // returns true if val is between start and end

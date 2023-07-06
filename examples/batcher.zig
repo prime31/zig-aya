@@ -32,7 +32,7 @@ fn render() !void {
     var y = @as(usize, 0);
     while (x < 640 / 40) : (x += 1) {
         while (y < 480 / 40) : (y += 1) {
-            aya.draw.tex(checker_tex, @intToFloat(f32, x * 5), @intToFloat(f32, y * 5));
+            aya.draw.tex(checker_tex, @as(f32, @floatFromInt(x * 5)), @as(f32, @floatFromInt(y * 5)));
         }
         y = 0;
     }

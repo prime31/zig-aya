@@ -52,10 +52,10 @@ pub const Rect = struct {
 
     pub fn unionRect(self: Rect, r2: Rect) Rect {
         var res = Rect{};
-        res.x = std.math.min(self.x, r2.x);
-        res.y = std.math.min(self.y, r2.y);
-        res.w = std.math.max(self.right(), r2.right()) - res.x;
-        res.h = std.math.max(self.bottom(), r2.bottom()) - res.y;
+        res.x = @min(self.x, r2.x);
+        res.y = @min(self.y, r2.y);
+        res.w = @max(self.right(), r2.right()) - res.x;
+        res.h = @max(self.bottom(), r2.bottom()) - res.y;
         return res;
     }
 };
@@ -146,10 +146,10 @@ pub const RectI = struct {
 
     pub fn unionRect(self: RectI, r2: RectI) RectI {
         var res = RectI{};
-        res.x = std.math.min(self.x, r2.x);
-        res.y = std.math.min(self.y, r2.y);
-        res.w = std.math.max(self.right(), r2.right()) - res.x;
-        res.h = std.math.max(self.bottom(), r2.bottom()) - res.y;
+        res.x = @min(self.x, r2.x);
+        res.y = @min(self.y, r2.y);
+        res.w = @max(self.right(), r2.right()) - res.x;
+        res.h = @max(self.bottom(), r2.bottom()) - res.y;
         return res;
     }
 

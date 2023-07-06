@@ -49,7 +49,7 @@ pub const EntityLayer = struct {
 
                 var selected_entity = &self.entities.items[selected_index];
                 // TODO: dont leak the sprite texture if we already have a sprite here
-                selected_entity.sprite = root.data.Sprite.init(texture, .{ .w = @floatToInt(i32, texture.width), .h = @floatToInt(i32, texture.height) }, file);
+                selected_entity.sprite = root.data.Sprite.init(texture, .{ .w = @as(i32, @intFromFloat(texture.width)), .h = @as(i32, @intFromFloat(texture.height)) }, file);
                 if (selected_entity.collider != null) selected_entity.autoFitCollider();
             }
         }
@@ -141,8 +141,8 @@ pub const EntityLayer = struct {
                 // if we are dragging an entity, move it taking into account the snap set
                 const drag_delta = imgui.ogGetMouseDragDelta(imgui.ImGuiMouseButton_Left, 0).scale(1 / camera.zoom);
                 const new_pos = self.dragged_start_pos.add(.{ .x = drag_delta.x, .y = drag_delta.y });
-                const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
-                self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@intToFloat(f32, state.snap_size));
+                const max_pos = math.Vec2.init(@as(f32, @floatFromInt(state.level.map_size.w * state.tile_size)), @as(f32, @floatFromInt(state.level.map_size.h * state.tile_size)));
+                self.entities.items[self.dragged_index.?].transform.pos = new_pos.clamp(.{}, max_pos).snapTo(@as(f32, @floatFromInt(state.snap_size)));
             } else if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false) or imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Right, false)) {
                 // get a world-space rect for object picking with a fudge-factor size of 6 pixels
                 var rect = aya.math.Rect{ .x = mouse_world.x - 3, .y = mouse_world.y - 3, .w = 6, .h = 6 };
@@ -160,7 +160,7 @@ pub const EntityLayer = struct {
         // allow moving the selected entity with the arrow keys
         if (self.selected_index) |index| {
             var moved = false;
-            const move_amt = if (state.snap_size > 0) @intToFloat(f32, state.snap_size) else 1;
+            const move_amt = if (state.snap_size > 0) @as(f32, @floatFromInt(state.snap_size)) else 1;
             var delta = aya.math.Vec2{};
 
             if (imgui.ogKeyPressed(aya.sdl.SDL_SCANCODE_LEFT)) {
@@ -181,7 +181,7 @@ pub const EntityLayer = struct {
             }
             if (moved) {
                 delta = delta.add(self.entities.items[index].transform.pos);
-                const max_pos = math.Vec2.init(@intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size));
+                const max_pos = math.Vec2.init(@as(f32, @floatFromInt(state.level.map_size.w * state.tile_size)), @as(f32, @floatFromInt(state.level.map_size.h * state.tile_size)));
                 self.entities.items[index].transform.pos = delta.clamp(.{}, max_pos); //.snapTo(@intToFloat(f32, state.snap_size));
             }
         }
@@ -215,7 +215,7 @@ pub const EntityLayer = struct {
 
                 if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                     std.debug.assert(payload[0].DataSize == @sizeOf(usize));
-                    const dragged_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
+                    const dragged_index = @as(*usize, @ptrCast(@alignCast(payload[0].Data.?)));
                     if (i > dragged_index.* and i - dragged_index.* > 1) {
                         dnd_swap = .{ .remove_from = dragged_index.*, .insert_into = i - 1 };
                     } else if (i < dragged_index.*) {
@@ -229,7 +229,7 @@ pub const EntityLayer = struct {
             if (imgui.igBeginDragDropSource(imgui.ImGuiDragDropFlags_None)) {
                 defer imgui.igEndDragDropSource();
 
-                _ = imgui.igSetDragDropPayload("ENTITY_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
+                _ = imgui.igSetDragDropPayload("ENTITY_DRAG", &.{i}, @sizeOf(usize), imgui.ImGuiCond_Once);
                 imgui.igText(std.mem.sliceTo(&entity.name, 0));
             }
 
@@ -268,7 +268,7 @@ pub const EntityLayer = struct {
 
                     if (imgui.igAcceptDragDropPayload("ENTITY_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                         std.debug.assert(payload[0].DataSize == @sizeOf(usize));
-                        const dropped_index = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
+                        const dropped_index = @as(*usize, @ptrCast(@alignCast(payload[0].Data.?)));
                         if (dropped_index.* != i)
                             dnd_swap = .{ .remove_from = dropped_index.*, .insert_into = i };
                     }
@@ -331,7 +331,7 @@ pub const EntityLayer = struct {
         imgui.igSetCursorPosX(imgui.igGetCursorPosX() + imgui.igGetWindowContentRegionWidth() - 75);
         if (imgui.ogButton("Add Entity")) {
             imgui.ogOpenPopup("##add-entity");
-            std.mem.set(u8, &name_buf, 0);
+            @memset(&name_buf, 0);
         }
 
         self.addEntityPopup();

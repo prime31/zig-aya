@@ -108,7 +108,7 @@ fn drawMap(data: []const u8, w: usize, h: usize, x_pos: f32, y_pos: f32, scale: 
             } else {
                 continue;
             }
-            aya.draw.rect(.{ .x = x_pos + @intToFloat(f32, x) * scale, .y = y_pos + @intToFloat(f32, y) * scale }, scale, scale, color);
+            aya.draw.rect(.{ .x = x_pos + @as(f32, @floatFromInt(x)) * scale, .y = y_pos + @as(f32, @floatFromInt(y)) * scale }, scale, scale, color);
         }
     }
 }
@@ -161,7 +161,7 @@ pub const Markov = struct {
         var n: i32 = 0;
         var iter = hashmap.iterator();
         while (iter.next()) |entry| {
-            n += @intCast(i32, entry.value_ptr.*);
+            n += @as(i32, @intCast(entry.value_ptr.*));
         }
 
         if (n <= 1) {
@@ -172,7 +172,7 @@ pub const Markov = struct {
         n = aya.math.rand.range(i32, 0, n);
         iter = hashmap.iterator();
         while (iter.next()) |entry| {
-            n = n - @intCast(i32, entry.value_ptr.*);
+            n = n - @as(i32, @intCast(entry.value_ptr.*));
             if (n < 0) return entry.key_ptr.*;
         }
 
@@ -180,7 +180,7 @@ pub const Markov = struct {
     }
 
     pub fn generateChain(self: *Markov, data: []const u8, width: usize, height: usize) []const u8 {
-        aya.math.rand.seed(@intCast(u64, std.time.milliTimestamp()));
+        aya.math.rand.seed(@as(u64, @intCast(std.time.milliTimestamp())));
 
         var markov = Markov.init();
         defer markov.deinit();

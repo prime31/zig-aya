@@ -28,12 +28,12 @@ pub const Batcher = struct {
         var indices = aya.mem.tmp_allocator.alloc(u16, max_sprites * 6) catch unreachable;
         var i: usize = 0;
         while (i < max_sprites) : (i += 1) {
-            indices[i * 3 * 2 + 0] = @intCast(u16, i) * 4 + 0;
-            indices[i * 3 * 2 + 1] = @intCast(u16, i) * 4 + 1;
-            indices[i * 3 * 2 + 2] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 3] = @intCast(u16, i) * 4 + 0;
-            indices[i * 3 * 2 + 4] = @intCast(u16, i) * 4 + 2;
-            indices[i * 3 * 2 + 5] = @intCast(u16, i) * 4 + 3;
+            indices[i * 3 * 2 + 0] = @as(u16, @intCast(i)) * 4 + 0;
+            indices[i * 3 * 2 + 1] = @as(u16, @intCast(i)) * 4 + 1;
+            indices[i * 3 * 2 + 2] = @as(u16, @intCast(i)) * 4 + 2;
+            indices[i * 3 * 2 + 3] = @as(u16, @intCast(i)) * 4 + 0;
+            indices[i * 3 * 2 + 4] = @as(u16, @intCast(i)) * 4 + 2;
+            indices[i * 3 * 2 + 5] = @as(u16, @intCast(i)) * 4 + 3;
         }
 
         return try gfx.DynamicMesh(u16, Vertex).init(allocator, max_sprites * 4, indices);
@@ -76,7 +76,7 @@ pub const Batcher = struct {
     pub fn flush(self: *Batcher) void {
         if (self.quad_count == 0) return;
 
-        self.mesh.appendVertSlice(@intCast(usize, self.buffer_offset), @intCast(usize, self.quad_count * 4));
+        self.mesh.appendVertSlice(@as(usize, @intCast(self.buffer_offset)), @as(usize, @intCast(self.quad_count * 4)));
 
         // run through all our accumulated draw calls
         var base_element: i32 = 0;

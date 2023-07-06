@@ -46,7 +46,7 @@ pub const Scene = struct {
         }
 
         if (self.pass == null) {
-            self.pass = aya.gfx.OffscreenPass.init(@floatToInt(i32, content_region.x), @floatToInt(i32, content_region.y));
+            self.pass = aya.gfx.OffscreenPass.init(@as(i32, @intFromFloat(content_region.x)), @as(i32, @intFromFloat(content_region.y)));
             self.cam.window_size = .{ .x = content_region.x, .y = content_region.y };
             if (self.cam.pos.x == 0 and self.cam.pos.y == 0) {
                 // TODO: center cam at startup? seems we get odd imgui content sizes first 2 frames so here is a hack
@@ -55,7 +55,7 @@ pub const Scene = struct {
         }
 
         const tmp = imgui.ogGetCursorScreenPos();
-        imgui.ogImage(self.pass.?.color_texture.imTextureID(), @floatToInt(i32, self.pass.?.color_texture.width), @floatToInt(i32, self.pass.?.color_texture.height));
+        imgui.ogImage(self.pass.?.color_texture.imTextureID(), @as(i32, @intFromFloat(self.pass.?.color_texture.width)), @as(i32, @intFromFloat(self.pass.?.color_texture.height)));
         imgui.ogSetCursorScreenPos(tmp);
 
         // allow dragging a texture from Assets if an EntityLayer is selected
@@ -64,7 +64,7 @@ pub const Scene = struct {
 
             if (imgui.igAcceptDragDropPayload("TEXTURE_ASSET_DRAG", imgui.ImGuiDragDropFlags_None)) |payload| {
                 std.debug.assert(payload[0].DataSize == @sizeOf(usize));
-                const data = @ptrCast(*usize, @alignCast(@alignOf(usize), payload[0].Data.?));
+                const data = @as(*usize, @ptrCast(@alignCast(payload[0].Data.?)));
                 const tex_name = state.asset_man.textures.names[data.*];
 
                 const mouse_screen = imgui.igGetIO().MousePos.subtract(imgui.ogGetCursorScreenPos());
@@ -87,8 +87,8 @@ pub const Scene = struct {
 
         aya.gfx.beginPass(.{ .color = state.clear_color, .pass = self.pass.?, .trans_mat = self.cam.transMat() });
         // the map area and some decorations
-        aya.draw.rect(.{}, @intToFloat(f32, state.level.map_size.w * state.tile_size), @intToFloat(f32, state.level.map_size.h * state.tile_size), state.bg_color);
-        aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @intToFloat(f32, state.level.map_size.w * state.tile_size) + 4, @intToFloat(f32, state.level.map_size.h * state.tile_size) + 4, 2, math.Color.light_gray);
+        aya.draw.rect(.{}, @as(f32, @floatFromInt(state.level.map_size.w * state.tile_size)), @as(f32, @floatFromInt(state.level.map_size.h * state.tile_size)), state.bg_color);
+        aya.draw.hollowRect(.{ .x = -2, .y = -2 }, @as(f32, @floatFromInt(state.level.map_size.w * state.tile_size)) + 4, @as(f32, @floatFromInt(state.level.map_size.h * state.tile_size)) + 4, 2, math.Color.light_gray);
 
         self.render(state);
         aya.gfx.endPass();
@@ -178,28 +178,28 @@ pub const Scene = struct {
         const bounds = self.cam.bounds();
 
         // get our first visible grid lines
-        const grid_size = @intCast(i32, grid_major_size);
+        const grid_size = @as(i32, @intCast(grid_major_size));
         const grid_size_cutoff = grid_size - 1;
-        const first_grid_x = @divTrunc(@floatToInt(i32, bounds.x) - grid_size_cutoff, grid_size_cutoff) * grid_size;
-        const first_grid_y = @divTrunc(@floatToInt(i32, bounds.y) - grid_size_cutoff, grid_size_cutoff) * grid_size;
+        const first_grid_x = @divTrunc(@as(i32, @intFromFloat(bounds.x)) - grid_size_cutoff, grid_size_cutoff) * grid_size;
+        const first_grid_y = @divTrunc(@as(i32, @intFromFloat(bounds.y)) - grid_size_cutoff, grid_size_cutoff) * grid_size;
 
         // TODO: when zoomed out far enough, double the grid lines and only display every other one
         var x = first_grid_x;
         var y = first_grid_y;
-        while (@intToFloat(f32, y) < bounds.h) : (y += grid_size) {
-            while (@intToFloat(f32, x) < bounds.w) : (x += grid_size) {
-                var top = math.Vec2{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
-                var bottom = top.add(.{ .y = bounds.h + @intToFloat(f32, grid_size) });
+        while (@as(f32, @floatFromInt(y)) < bounds.h) : (y += grid_size) {
+            while (@as(f32, @floatFromInt(x)) < bounds.w) : (x += grid_size) {
+                var top = math.Vec2{ .x = @as(f32, @floatFromInt(x)), .y = @as(f32, @floatFromInt(y)) };
+                var bottom = top.add(.{ .y = bounds.h + @as(f32, @floatFromInt(grid_size)) });
                 aya.draw.line(top, bottom, 1, grid_major_color);
             }
         }
 
         x = first_grid_x;
         y = first_grid_y;
-        while (@intToFloat(f32, x) < bounds.w) : (x += grid_size) {
-            while (@intToFloat(f32, y) < bounds.h) : (y += grid_size) {
-                var left = math.Vec2{ .x = @intToFloat(f32, x), .y = @intToFloat(f32, y) };
-                var right = left.add(.{ .x = bounds.w + @intToFloat(f32, grid_size) });
+        while (@as(f32, @floatFromInt(x)) < bounds.w) : (x += grid_size) {
+            while (@as(f32, @floatFromInt(y)) < bounds.h) : (y += grid_size) {
+                var left = math.Vec2{ .x = @as(f32, @floatFromInt(x)), .y = @as(f32, @floatFromInt(y)) };
+                var right = left.add(.{ .x = bounds.w + @as(f32, @floatFromInt(grid_size)) });
                 aya.draw.line(left, right, 1, grid_major_color);
             }
         }

@@ -45,12 +45,12 @@ pub const Map = struct {
     }
 
     pub fn worldToTileX(self: Map, x: f32) i32 {
-        const tile_x = aya.math.ifloor(i32, x / @intToFloat(f32, self.tile_size));
+        const tile_x = aya.math.ifloor(i32, x / @as(f32, @floatFromInt(self.tile_size)));
         return aya.math.iclamp(tile_x, 0, self.width - 1);
     }
 
     pub fn worldToTileY(self: Map, y: f32) i32 {
-        const tile_y = aya.math.ifloor(i32, y / @intToFloat(f32, self.tile_size));
+        const tile_y = aya.math.ifloor(i32, y / @as(f32, @floatFromInt(self.tile_size)));
         return aya.math.iclamp(tile_y, 0, self.height - 1);
     }
 
@@ -133,11 +133,11 @@ pub const TilesetTile = struct {
         const flip_h = (tid & flipped_h) != 0;
         const s_tr = if (flip_h) self.slope_tl else self.slope_tr;
         const s_tl = if (flip_h) self.slope_tr else self.slope_tl;
-        const s = @intToFloat(f32, s_tr - s_tl) / @intToFloat(f32, tile_size);
+        const s = @as(f32, @floatFromInt(s_tr - s_tl)) / @as(f32, @floatFromInt(tile_size));
 
         // s_tl is the slope position on the left side of the tile. b in the y = mx + b equation
-        const y = s * @intToFloat(f32, perp_pos - tile_world_x) + @intToFloat(f32, s_tl + tile_world_y);
-        return @floatToInt(i32, y);
+        const y = s * @as(f32, @floatFromInt(perp_pos - tile_world_x)) + @as(f32, @floatFromInt(s_tl + tile_world_y));
+        return @as(i32, @intFromFloat(y));
     }
 };
 
@@ -174,11 +174,11 @@ pub const TileLayer = struct {
     }
 
     pub fn hasTile(self: TileLayer, x: i32, y: i32) bool {
-        return self.tiles[@intCast(usize, x + y * self.width)] >= 0;
+        return self.tiles[@as(usize, @intCast(x + y * self.width))] >= 0;
     }
 
     pub fn getTileId(self: TileLayer, x: i32, y: i32) TileId {
-        return self.tiles[@intCast(usize, x + y * self.width)];
+        return self.tiles[@as(usize, @intCast(x + y * self.width))];
     }
 };
 
