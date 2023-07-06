@@ -69,7 +69,7 @@ pub const TriangleBatcher = struct {
 
         // draw
         const tris = self.vert_index / 3;
-        self.mesh.draw(0, @intCast(c_int, tris * 3));
+        self.mesh.draw(0, @as(c_int, @intCast(tris * 3)));
 
         self.vert_index = 0;
     }

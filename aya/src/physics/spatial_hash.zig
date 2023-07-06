@@ -21,7 +21,7 @@ pub const SpatialHash = struct {
             .cells = CellMap.init(alloc),
             .colliders = std.AutoHashMap(u32, physics.Collider).init(alloc),
             .cell_size = cell_size,
-            .inv_cell_size = 1 / @intToFloat(f32, cell_size),
+            .inv_cell_size = 1 / @as(f32, @floatFromInt(cell_size)),
             .allocator = alloc,
         };
     }
@@ -44,8 +44,8 @@ pub const SpatialHash = struct {
     /// gets the cell x,y values for a world-space x,y value
     fn cellCoords(self: SpatialHash, x: f32, y: f32) struct { x: i32, y: i32 } {
         return .{
-            .x = @floatToInt(i32, @trunc(x * self.inv_cell_size)),
-            .y = @floatToInt(i32, @trunc(y * self.inv_cell_size)),
+            .x = @as(i32, @intFromFloat(@trunc(x * self.inv_cell_size))),
+            .y = @as(i32, @intFromFloat(@trunc(y * self.inv_cell_size))),
         };
     }
 

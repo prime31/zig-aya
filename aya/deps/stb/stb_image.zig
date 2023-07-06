@@ -1,8 +1,8 @@
-pub const STBI_default = @enumToInt(enum_unnamed_1.STBI_default);
-pub const STBI_grey = @enumToInt(enum_unnamed_1.STBI_grey);
-pub const STBI_grey_alpha = @enumToInt(enum_unnamed_1.STBI_grey_alpha);
-pub const STBI_rgb = @enumToInt(enum_unnamed_1.STBI_rgb);
-pub const STBI_rgb_alpha = @enumToInt(enum_unnamed_1.STBI_rgb_alpha);
+pub const STBI_default = @intFromEnum(enum_unnamed_1.STBI_default);
+pub const STBI_grey = @intFromEnum(enum_unnamed_1.STBI_grey);
+pub const STBI_grey_alpha = @intFromEnum(enum_unnamed_1.STBI_grey_alpha);
+pub const STBI_rgb = @intFromEnum(enum_unnamed_1.STBI_rgb);
+pub const STBI_rgb_alpha = @intFromEnum(enum_unnamed_1.STBI_rgb_alpha);
 const enum_unnamed_1 = enum(c_int) {
     STBI_default = 0,
     STBI_grey = 1,

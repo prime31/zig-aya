@@ -8,7 +8,7 @@ var c_allocator_state = std.mem.Allocator{
 
 fn cAlloc(allocator: std.mem.Allocator, len: usize, ptr_align: u29, len_align: u29, ret_addr: usize) ![]u8 {
     std.debug.assert(ptr_align <= @alignOf(c_longdouble));
-    const ptr = @ptrCast([*]u8, std.c.malloc(len) orelse return error.OutOfMemory);
+    const ptr = @as([*]u8, @ptrCast(std.c.malloc(len) orelse return error.OutOfMemory));
 
     if (len_align == 0) {
         return ptr[0..len];

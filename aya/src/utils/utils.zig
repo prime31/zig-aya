@@ -24,14 +24,14 @@ pub fn cstr_u8_cmp(a: [*:0]const u8, b: []const u8) i8 {
 fn getMinMax(comptime T: type, comptime P: type, comptime name: []const u8) struct { min: T, max: T, speed: f32 } {
     if (@hasDecl(P, "inspect") and @hasField(@TypeOf(P.inspect), name)) {
         const data = @field(P.inspect, name);
-        const min = if (@hasField(@TypeOf(data), "min")) @field(data, "min") else -std.math.f32_max;
-        const max = if (@hasField(@TypeOf(data), "max")) @field(data, "max") else std.math.f32_max;
-        const speed = std.math.min(1.0, (max - min) / 100.0);
+        const min = if (@hasField(@TypeOf(data), "min")) @field(data, "min") else -std.math.floatMax(f32);
+        const max = if (@hasField(@TypeOf(data), "max")) @field(data, "max") else std.math.floatMax(f32);
+        const speed = @min(1.0, (max - min) / 100.0);
         return .{ .min = min, .max = max, .speed = speed };
     }
 
     switch (T) {
-        f32 => return .{ .min = -std.math.f32_max, .max = std.math.f32_max, .speed = 1 },
+        f32 => return .{ .min = -std.math.floatMax(f32), .max = std.math.floatMax(f32), .speed = 1 },
         else => unreachable,
     }
 }
@@ -84,14 +84,14 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Mat32, aya.math.Mat4 => return false,
         aya.math.Vec2 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragFloat2(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat2(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
         },
         aya.math.Vec3 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragFloat3(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat3(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -99,7 +99,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Vec4 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
             // should be able to use @ptrCast([*c]f32, &value.x) but when the Vec4 is padded with align(n) it doesnt work
-            if (imgui.igDragFloat4(@as([*c]const u8, label.ptr), @ptrCast([*c]f32, &value.x), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat4(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -113,17 +113,15 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         .Bool => return imgui.igCheckbox(@as([*c]const u8, label.ptr), value),
         .Int => {
             var min_max = getMinMax(i32, std.meta.Child(@TypeOf(parent)), label);
-            var tmp = @alignCast(@alignOf(i32), value);
-            if (imgui.igDragInt(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
-                value.* = tmp.*;
+            if (imgui.igDragInt(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
+                value.* = @ptrCast(@alignCast(value));
                 return true;
             }
         },
         .Float => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            var tmp = @alignCast(@alignOf(f32), value);
-            if (imgui.igDragFloat(@as([*c]const u8, label.ptr), tmp, min_max.speed, min_max.min, min_max.max, null, 1)) {
-                value.* = tmp.*;
+            if (imgui.igDragFloat(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
+                value.* = @ptrCast(@alignCast(value));
                 return true;
             }
         },

@@ -67,7 +67,7 @@ pub const Entity = struct {
     derivied_pointer: usize = 0,
 
     pub fn cast(self: Entity, comptime T: type) *T {
-        return @intToPtr(*T, self.derivied_pointer);
+        return @as(*T, @ptrFromInt(self.derivied_pointer));
     }
 };
 
@@ -128,7 +128,7 @@ pub const EntityManager = struct {
 
         var derived = aya.mem.allocator.create(T) catch unreachable;
         derived.entity = &self.entities.items[index];
-        entity.derivied_pointer = @ptrToInt(derived);
+        entity.derivied_pointer = @intFromPtr(derived);
         return derived;
     }
 
@@ -156,7 +156,7 @@ pub const GenerationalEntityManager = struct {
         var handles = aya.mem.allocator.alloc(EntityHandle, count) catch unreachable;
         var i = count - 1;
         while (count >= 0) : (i -= 1) {
-            handles[i] = .{ .index = @intCast(u16, count - 1 - i) };
+            handles[i] = .{ .index = @as(u16, @intCast(count - 1 - i)) };
             if (i == 0) break;
         }
 
@@ -178,20 +178,20 @@ pub const GenerationalEntityManager = struct {
 
         var entity = &self.entities[slot.index];
         entity.* = std.mem.zeroes(GenerationalEntity);
-        entity.id = @bitCast(u32, slot);
+        entity.id = @as(u32, @bitCast(slot));
 
         return entity;
     }
 
     pub fn destroy(self: *GenerationalEntityManager, entity: *GenerationalEntity) void {
-        const slot = @bitCast(EntityHandle, entity.id);
+        const slot = @as(EntityHandle, @bitCast(entity.id));
         self.handles.len += 1;
         self.handles[self.handles.len - 1] = slot;
         entity.*.id = std.math.maxInt(u32);
     }
 
     pub fn getEntity(self: *GenerationalEntityManager, id: u32) ?*GenerationalEntity {
-        const slot = @bitCast(EntityHandle, id);
+        const slot = @as(EntityHandle, @bitCast(id));
         var entity = &self.entities[slot.index];
 
         if (entity.id == id) return entity;

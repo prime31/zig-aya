@@ -55,7 +55,7 @@ pub const Tileset = struct {
         var w: c_int = 0;
         var h: c_int = 0;
         if (aya.gfx.Texture.getTextureSize(file, &w, &h)) {
-            const max_tiles = @intCast(usize, w) / tile_size;
+            const max_tiles = @as(usize, @intCast(w)) / tile_size;
 
             while (spacing.* <= 4) : (spacing.* += 1) {
                 var i: usize = 3;
@@ -105,7 +105,7 @@ pub const Tileset = struct {
         while (true) {
             self.tiles_per_row += 1;
             accum += self.tile_size + self.spacing;
-            if (accum >= @floatToInt(usize, self.tex.width)) {
+            if (accum >= @as(usize, @intFromFloat(self.tex.width))) {
                 break;
             }
         }
@@ -114,7 +114,7 @@ pub const Tileset = struct {
         while (true) {
             self.tiles_per_col += 1;
             accum += self.tile_size + 2 * self.spacing;
-            if (accum >= @floatToInt(usize, self.tex.height)) {
+            if (accum >= @as(usize, @intFromFloat(self.tex.height))) {
                 break;
             }
         }
@@ -123,8 +123,8 @@ pub const Tileset = struct {
     pub fn draw(self: *Tileset, _: *AppState) void {
         const zoom: usize = if (self.tex.width < 200 and self.tex.height < 200) 2 else 1;
         const first_pos = imgui.igGetIO().DisplaySize.subtract(.{
-            .x = 150 + self.tex.width * @intToFloat(f32, zoom),
-            .y = 150 + self.tex.height * @intToFloat(f32, zoom),
+            .x = 150 + self.tex.width * @as(f32, @floatFromInt(zoom)),
+            .y = 150 + self.tex.height * @as(f32, @floatFromInt(zoom)),
         });
         imgui.ogSetNextWindowPos(first_pos, imgui.ImGuiCond_FirstUseEver, .{});
 
@@ -142,7 +142,7 @@ pub const Tileset = struct {
         imgui.ogUnformattedTooltip(100, "Animation editor");
 
         var origin = imgui.ogGetCursorScreenPos();
-        imgui.ogImage(self.tex.imTextureID(), @floatToInt(i32, self.tex.width) * @intCast(i32, zoom), @floatToInt(i32, self.tex.height) * @intCast(i32, zoom));
+        imgui.ogImage(self.tex.imTextureID(), @as(i32, @intFromFloat(self.tex.width)) * @as(i32, @intCast(zoom)), @as(i32, @intFromFloat(self.tex.height)) * @as(i32, @intCast(zoom)));
 
         // draw selected tile
         addTileToDrawList(self.tile_size * zoom, origin, self.selected.comps.tile_index, self.tiles_per_row, self.spacing * zoom);
@@ -150,8 +150,8 @@ pub const Tileset = struct {
         // check input for toggling selected state
         if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
             if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
-                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, self.tile_size * zoom + self.spacing * zoom), origin);
-                self.selected.value = @intCast(u8, tile.x + tile.y * self.tiles_per_row);
+                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @as(usize, @intCast(self.tile_size * zoom + self.spacing * zoom)), origin);
+                self.selected.value = @as(u8, @intCast(tile.x + tile.y * self.tiles_per_row));
             }
         }
 
@@ -164,10 +164,10 @@ pub const Tileset = struct {
         const y = @divTrunc(tile, self.tiles_per_row);
 
         return .{
-            .x = @intCast(i32, (x * self.tile_size + self.spacing) + self.spacing),
-            .y = @intCast(i32, (y * self.tile_size + self.spacing) + self.spacing),
-            .w = @intCast(i32, self.tile_size),
-            .h = @intCast(i32, self.tile_size),
+            .x = @as(i32, @intCast((x * self.tile_size + self.spacing) + self.spacing)),
+            .y = @as(i32, @intCast((y * self.tile_size + self.spacing) + self.spacing)),
+            .w = @as(i32, @intCast(self.tile_size)),
+            .h = @as(i32, @intCast(self.tile_size)),
         };
     }
 
@@ -182,17 +182,17 @@ pub const Tileset = struct {
     }
 
     pub fn uvsForTile(self: Tileset, tile: usize) math.Rect {
-        const x = @intToFloat(f32, @mod(tile, self.tiles_per_row));
-        const y = @intToFloat(f32, @divTrunc(tile, self.tiles_per_row));
+        const x = @as(f32, @floatFromInt(@mod(tile, self.tiles_per_row)));
+        const y = @as(f32, @floatFromInt(@divTrunc(tile, self.tiles_per_row)));
 
         const inv_w = 1.0 / self.tex.width;
         const inv_h = 1.0 / self.tex.height;
 
         return .{
-            .x = (x * @intToFloat(f32, self.tile_size + self.spacing) + @intToFloat(f32, self.spacing)) * inv_w,
-            .y = (y * @intToFloat(f32, self.tile_size + self.spacing) + @intToFloat(f32, self.spacing)) * inv_h,
-            .w = @intToFloat(f32, self.tile_size) * inv_w,
-            .h = @intToFloat(f32, self.tile_size) * inv_h,
+            .x = (x * @as(f32, @floatFromInt(self.tile_size + self.spacing)) + @as(f32, @floatFromInt(self.spacing))) * inv_w,
+            .y = (y * @as(f32, @floatFromInt(self.tile_size + self.spacing)) + @as(f32, @floatFromInt(self.spacing))) * inv_h,
+            .w = @as(f32, @floatFromInt(self.tile_size)) * inv_w,
+            .h = @as(f32, @floatFromInt(self.tile_size)) * inv_h,
         };
     }
 };
@@ -220,7 +220,7 @@ const TileDefinitions = struct {
             defer imgui.igEndPopup();
 
             inline for (@typeInfo(TileDefinitions).Struct.fields, 0..) |field, i| {
-                imgui.igPushIDInt(@intCast(c_int, i));
+                imgui.igPushIDInt(@as(c_int, @intCast(i)));
                 defer imgui.igPopID();
 
                 drawTileIcon(field.name);
@@ -283,7 +283,7 @@ const TileDefinitions = struct {
         const tile_spacing = tileset.spacing * zoom;
         const tile_size = tileset.tile_size * zoom;
 
-        imgui.ogImage(tileset.tex.imTextureID(), @floatToInt(i32, tileset.tex.width * @intToFloat(f32, zoom)), @floatToInt(i32, tileset.tex.height * @intToFloat(f32, zoom)));
+        imgui.ogImage(tileset.tex.imTextureID(), @as(i32, @intFromFloat(tileset.tex.width * @as(f32, @floatFromInt(zoom)))), @as(i32, @intFromFloat(tileset.tex.height * @as(f32, @floatFromInt(zoom)))));
 
         // const draw_list = imgui.igGetWindowDrawList();
 
@@ -296,8 +296,8 @@ const TileDefinitions = struct {
         // check input for toggling state
         if (imgui.igIsItemHovered(imgui.ImGuiHoveredFlags_None)) {
             if (imgui.igIsMouseClicked(imgui.ImGuiMouseButton_Left, false)) {
-                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @intCast(usize, tile_size + tile_spacing), content_start_pos);
-                TileDefinitions.toggleSelected(list, @intCast(u16, tile.x + tile.y * tileset.tiles_per_row));
+                var tile = tileIndexUnderPos(imgui.igGetIO().MousePos, @as(usize, @intCast(tile_size + tile_spacing)), content_start_pos);
+                TileDefinitions.toggleSelected(list, @as(u16, @intCast(tile.x + tile.y * tileset.tiles_per_row)));
             }
         }
 
@@ -327,7 +327,7 @@ pub const Animation = struct {
 
 pub fn tileIndexUnderPos(pos: imgui.ImVec2, rect_size: usize, origin: imgui.ImVec2) struct { x: usize, y: usize } {
     const final_pos = pos.subtract(origin);
-    return .{ .x = @divTrunc(@floatToInt(usize, final_pos.x), rect_size), .y = @divTrunc(@floatToInt(usize, final_pos.y), rect_size) };
+    return .{ .x = @divTrunc(@as(usize, @intFromFloat(final_pos.x)), rect_size), .y = @divTrunc(@as(usize, @intFromFloat(final_pos.y)), rect_size) };
 }
 
 /// adds a tile selection indicator to the draw list with an outline rectangle and a fill rectangle. Works for both tilesets and palettes.
@@ -335,13 +335,13 @@ pub fn addTileToDrawList(tile_size: usize, content_start_pos: imgui.ImVec2, tile
     const x = @mod(tile, per_row);
     const y = @divTrunc(tile, per_row);
 
-    var tl = imgui.ImVec2{ .x = @intToFloat(f32, x) * @intToFloat(f32, tile_size + tile_spacing), .y = @intToFloat(f32, y) * @intToFloat(f32, tile_size + tile_spacing) };
-    tl.x += content_start_pos.x + @intToFloat(f32, tile_spacing);
-    tl.y += content_start_pos.y + @intToFloat(f32, tile_spacing);
-    imgui.ogAddQuadFilled(imgui.igGetWindowDrawList(), tl, @intToFloat(f32, tile_size), root.colors.rgbaToU32(116, 252, 253, 100));
+    var tl = imgui.ImVec2{ .x = @as(f32, @floatFromInt(x)) * @as(f32, @floatFromInt(tile_size + tile_spacing)), .y = @as(f32, @floatFromInt(y)) * @as(f32, @floatFromInt(tile_size + tile_spacing)) };
+    tl.x += content_start_pos.x + @as(f32, @floatFromInt(tile_spacing));
+    tl.y += content_start_pos.y + @as(f32, @floatFromInt(tile_spacing));
+    imgui.ogAddQuadFilled(imgui.igGetWindowDrawList(), tl, @as(f32, @floatFromInt(tile_size)), root.colors.rgbaToU32(116, 252, 253, 100));
 
     // offset by 1 extra pixel because quad outlines are drawn larger than the size passed in and we shrink the size by our outline width
     tl.x += 1;
     tl.y += 1;
-    imgui.ogAddQuad(imgui.igGetWindowDrawList(), tl, @intToFloat(f32, tile_size - 2), root.colors.rgbToU32(116, 252, 253), 2);
+    imgui.ogAddQuad(imgui.igGetWindowDrawList(), tl, @as(f32, @floatFromInt(tile_size - 2)), root.colors.rgbToU32(116, 252, 253), 2);
 }

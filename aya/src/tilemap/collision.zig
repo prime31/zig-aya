@@ -15,12 +15,12 @@ pub fn move(map: *Map, rect: math.RectI, movement: *math.Vec2) void {
     var local_rect = rect;
 
     if (movement.x != 0) {
-        var x = moveX(map, layer, rect, @floatToInt(i32, movement.x));
-        movement.x = @intToFloat(f32, x);
+        var x = moveX(map, layer, rect, @as(i32, @intFromFloat(movement.x)));
+        movement.x = @as(f32, @floatFromInt(x));
         local_rect.x += x;
     }
 
-    movement.y = @intToFloat(f32, moveY(map, layer, local_rect, @floatToInt(i32, movement.y)));
+    movement.y = @as(f32, @floatFromInt(moveY(map, layer, local_rect, @as(i32, @intFromFloat(movement.y)))));
 }
 
 pub fn moveX(map: *Map, layer: tilemap.TileLayer, rect: math.RectI, move_x: i32) i32 {
@@ -127,7 +127,7 @@ pub fn moveY(map: *Map, layer: tilemap.TileLayer, rect: math.RectI, move_y: i32)
 
 fn debugOverlaps(map: *Map, bounds: math.RectI, edge: math.Edge) void {
     var tile_cnt: i32 = 0;
-    const tile_size = @intToFloat(f32, map.tile_size);
+    const tile_size = @as(f32, @floatFromInt(map.tile_size));
 
     var iter = CollisionIterator.init(map, bounds, edge);
     while (iter.next()) |pt| {
@@ -140,7 +140,7 @@ fn debugOverlaps(map: *Map, bounds: math.RectI, edge: math.Edge) void {
             3 => math.Color.black,
             else => math.Color.orange,
         };
-        aya.debug.drawHollowRect(.{ .x = @intToFloat(f32, xw), .y = @intToFloat(f32, yw) }, tile_size, tile_size, 1, color);
+        aya.debug.drawHollowRect(.{ .x = @as(f32, @floatFromInt(xw)), .y = @as(f32, @floatFromInt(yw)) }, tile_size, tile_size, 1, color);
         tile_cnt += 1;
     }
 }

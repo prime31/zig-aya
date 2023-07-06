@@ -99,10 +99,10 @@ pub fn packThumbnails(folder: []const u8, max_width_or_height: usize) !Atlas {
 
     // process the frames so they fit our constraints
     for (frames) |*frame| {
-        const scale = @intToFloat(f32, max_width_or_height) / @intToFloat(f32, std.math.max(frame.w, frame.h));
+        const scale = @as(f32, @floatFromInt(max_width_or_height)) / @as(f32, @floatFromInt(@max(frame.w, frame.h)));
         if (scale < 1) {
-            frame.w = @floatToInt(c_ushort, scale * @intToFloat(f32, frame.w));
-            frame.h = @floatToInt(c_ushort, scale * @intToFloat(f32, frame.h));
+            frame.w = @as(c_ushort, @intFromFloat(scale * @as(f32, @floatFromInt(frame.w))));
+            frame.h = @as(c_ushort, @intFromFloat(scale * @as(f32, @floatFromInt(frame.h))));
         }
     }
 
@@ -122,13 +122,13 @@ fn getFramesForPngs(pngs: [][]const u8) []stb.stbrp_rect {
         var h: c_int = undefined;
         _ = Image.getTextureSize(png, &w, &h);
         frames.append(.{
-            .id = @intCast(c_int, i),
-            .w = @intCast(u16, w),
-            .h = @intCast(u16, h),
+            .id = @as(c_int, @intCast(i)),
+            .w = @as(u16, @intCast(w)),
+            .h = @as(u16, @intCast(h)),
         }) catch unreachable;
     }
 
-    return frames.toOwnedSlice();
+    return frames.toOwnedSlice() catch unreachable;
 }
 
 fn runRectPacker(frames: []stb.stbrp_rect) ?Size {
@@ -150,8 +150,8 @@ fn runRectPacker(frames: []stb.stbrp_rect) ?Size {
     for (texture_sizes) |tex_size| {
         stb.stbrp_init_target(&ctx, tex_size[0], tex_size[1], &nodes, node_count);
         stb.stbrp_setup_heuristic(&ctx, stb.STBRP_HEURISTIC_Skyline_default);
-        if (stb.stbrp_pack_rects(&ctx, frames.ptr, @intCast(c_int, frames.len)) == 1) {
-            return Size{ .width = @intCast(u16, tex_size[0]), .height = @intCast(u16, tex_size[1]) };
+        if (stb.stbrp_pack_rects(&ctx, frames.ptr, @as(c_int, @intCast(frames.len))) == 1) {
+            return Size{ .width = @as(u16, @intCast(tex_size[0])), .height = @as(u16, @intCast(tex_size[1])) };
         }
     }
 

@@ -95,7 +95,8 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
     const imgui_build = @import("aya/deps/imgui/build.zig");
     imgui_build.linkArtifact(b, artifact, target, prefix_path);
     const imgui_pkg = imgui_build.getImGuiModule(b, prefix_path);
-    const imgui_gl_pkg = imgui_build.getImGuiGlModule(b, prefix_path);
+    var imgui_gl_pkg = imgui_build.getImGuiGlModule(b, prefix_path);
+    imgui_gl_pkg.dependencies.put("imgui", imgui_pkg) catch unreachable;
 
     // RenderKit
     renderkit_build.addRenderKitToArtifact(b, artifact, target, prefix_path ++ "aya/deps/renderkit/");
@@ -126,6 +127,9 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
 
     // export aya to userland
     artifact.addModule("aya", aya_module);
+    artifact.addModule("imgui", imgui_pkg);
+    artifact.addModule("imgui_gl", imgui_gl_pkg);
+    artifact.addModule("stb", stb_pkg);
 }
 
 // add tests.zig file runnable via "zig build test"
@@ -153,14 +157,14 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
 
             var iter = dir.iterate();
             while (iter.next() catch unreachable) |entry| {
-                if (entry.kind == .File) {
+                if (entry.kind == .file) {
                     if (std.mem.endsWith(u8, entry.name, ".zig")) {
                         const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
                         const name = std.fs.path.basename(abs_path);
 
                         filelist.append([2][]const u8{ name[0 .. name.len - 4], abs_path }) catch unreachable;
                     }
-                } else if (entry.kind == .Directory) {
+                } else if (entry.kind == .directory) {
                     const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
                     search(alloc, abs_path, filelist);
                 }

@@ -31,7 +31,7 @@ extern fn _ogBeginChildID(id: imgui.ImGuiID, size: *const imgui.ImVec2, border: 
 
 // implementations for ABI incompatibility bugs
 pub fn ogImage(texture: imgui.ImTextureID, width: i32, height: i32) void {
-    var size = imgui.ImVec2{ .x = @intToFloat(f32, width), .y = @intToFloat(f32, height) };
+    var size = imgui.ImVec2{ .x = @as(f32, @floatFromInt(width)), .y = @as(f32, @floatFromInt(height)) };
     _ogImage(texture, &size, &imgui.ImVec2{}, &imgui.ImVec2{ .x = 1, .y = 1 });
 }
 
@@ -154,7 +154,7 @@ pub fn ogColoredButtonEx(color: imgui.ImU32, label: [:0]const u8, size: imgui.Im
 }
 
 pub fn ogPushIDUsize(id: usize) void {
-    imgui.igPushIDInt(@intCast(c_int, id));
+    imgui.igPushIDInt(@as(c_int, @intCast(id)));
 }
 
 /// helper to shorten disabling controls via ogPushDisabled; defer ogPopDisabled; due to defer not working inside the if block.
@@ -273,11 +273,19 @@ pub fn ogGetWindowCenter() imgui.ImVec2 {
 }
 
 pub fn ogAddQuad(draw_list: [*c]imgui.ImDrawList, tl: imgui.ImVec2, size: f32, col: imgui.ImU32, thickness: f32) void {
-    ogImDrawList_AddQuad(draw_list, &imgui.ImVec2{ .x = tl.x, .y = tl.y }, &imgui.ImVec2{ .x = tl.x + size, .y = tl.y }, &imgui.ImVec2{ .x = tl.x + size, .y = tl.y + size }, &imgui.ImVec2{ .x = tl.x, .y = tl.y + size }, col, thickness);
+    var p1 = imgui.ImVec2{ .x = tl.x, .y = tl.y };
+    var p2 = imgui.ImVec2{ .x = tl.x + size, .y = tl.y };
+    var p3 = imgui.ImVec2{ .x = tl.x + size, .y = tl.y + size };
+    var p4 = imgui.ImVec2{ .x = tl.x, .y = tl.y + size };
+    ogImDrawList_AddQuad(draw_list, &p1, &p2, &p3, &p4, col, thickness);
 }
 
 pub fn ogAddQuadFilled(draw_list: [*c]imgui.ImDrawList, tl: imgui.ImVec2, size: f32, col: imgui.ImU32) void {
-    ogImDrawList_AddQuadFilled(draw_list, &imgui.ImVec2{ .x = tl.x, .y = tl.y }, &imgui.ImVec2{ .x = tl.x + size, .y = tl.y }, &imgui.ImVec2{ .x = tl.x + size, .y = tl.y + size }, &imgui.ImVec2{ .x = tl.x, .y = tl.y + size }, col);
+    var p1 = imgui.ImVec2{ .x = tl.x, .y = tl.y };
+    var p2 = imgui.ImVec2{ .x = tl.x + size, .y = tl.y };
+    var p3 = imgui.ImVec2{ .x = tl.x + size, .y = tl.y + size };
+    var p4 = imgui.ImVec2{ .x = tl.x, .y = tl.y + size };
+    ogImDrawList_AddQuadFilled(draw_list, &p1, &p2, &p3, &p4, col);
 }
 
 /// adds a rect with possibly non-matched width/height to the draw list

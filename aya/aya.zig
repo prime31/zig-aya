@@ -106,7 +106,7 @@ pub fn run(comptime config: Config) !void {
     sdl.SDL_Quit();
 }
 
-fn pollEvents(onFileDropped: ?fn ([:0]const u8) void) bool {
+fn pollEvents(comptime onFileDropped: ?fn ([:0]const u8) void) bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         if (enable_imgui and imgui_impl.handleEvent(&event)) continue;

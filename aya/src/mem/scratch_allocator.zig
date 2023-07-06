@@ -31,12 +31,12 @@ pub const ScratchAllocator = struct {
 
     // fn alloc(self: *ScratchAllocator, n: usize, ptr_align: u29, _: u29, _: usize) std.mem.Allocator.Error![]u8 {
     fn alloc(ctx: *anyopaque, n: usize, log2_ptr_align: u8, ra: usize) ?[*]u8 {
-        const self = @ptrCast(*ScratchAllocator, @alignCast(@alignOf(ScratchAllocator), ctx));
+        const self = @as(*ScratchAllocator, @ptrCast(@alignCast(ctx)));
         _ = ra;
 
-        const ptr_align = @as(usize, 1) << @intCast(Allocator.Log2Align, log2_ptr_align);
-        const addr = @ptrToInt(self.buffer.ptr) + self.end_index;
-        const adjusted_addr = mem.alignForward(addr, ptr_align);
+        const ptr_align = @as(usize, 1) << @as(Allocator.Log2Align, @intCast(log2_ptr_align));
+        const addr = @intFromPtr(self.buffer.ptr) + self.end_index;
+        const adjusted_addr = mem.alignForward(usize, addr, ptr_align);
         const adjusted_index = self.end_index + (adjusted_addr - addr);
         const new_end_index = adjusted_index + n;
 

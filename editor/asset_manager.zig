@@ -27,10 +27,10 @@ const ThumbnailAtlas = struct {
         var uvs = aya.mem.allocator.alloc(Uv, atlas.rects.len) catch unreachable;
         for (uvs, 0..) |*uv, i| {
             const rect = atlas.rects[i];
-            uv.tl.x = @intToFloat(f32, rect.x) / @intToFloat(f32, atlas.image.w);
-            uv.tl.y = @intToFloat(f32, rect.y) / @intToFloat(f32, atlas.image.h);
-            uv.br.x = uv.tl.x + @intToFloat(f32, rect.w) / @intToFloat(f32, atlas.image.w);
-            uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / @intToFloat(f32, atlas.image.h);
+            uv.tl.x = @as(f32, @floatFromInt(rect.x)) / @as(f32, @floatFromInt(atlas.image.w));
+            uv.tl.y = @as(f32, @floatFromInt(rect.y)) / @as(f32, @floatFromInt(atlas.image.h));
+            uv.br.x = uv.tl.x + @as(f32, @floatFromInt(rect.w)) / @as(f32, @floatFromInt(atlas.image.w));
+            uv.br.y = uv.tl.y + @as(f32, @floatFromInt(rect.h)) / @as(f32, @floatFromInt(atlas.image.h));
         }
 
         defer aya.mem.allocator.free(atlas.rects);
@@ -135,10 +135,10 @@ pub const AssetManager = struct {
     pub fn getTextureAndUvs(self: @This(), name: [:0]const u8) struct { tex: aya.gfx.Texture, uvs: ThumbnailAtlas.Uv, rect: aya.math.RectI } {
         const rect = self.textures.rects[self.indexOfTexture(self.textures.names, name).?];
         var uv = ThumbnailAtlas.Uv{ .tl = .{}, .br = .{} };
-        uv.tl.x = @intToFloat(f32, rect.x) / self.textures.tex.width;
-        uv.tl.y = @intToFloat(f32, rect.y) / self.textures.tex.height;
-        uv.br.x = uv.tl.x + @intToFloat(f32, rect.w) / self.textures.tex.width;
-        uv.br.y = uv.tl.y + @intToFloat(f32, rect.h) / self.textures.tex.height;
+        uv.tl.x = @as(f32, @floatFromInt(rect.x)) / self.textures.tex.width;
+        uv.tl.y = @as(f32, @floatFromInt(rect.y)) / self.textures.tex.height;
+        uv.br.x = uv.tl.x + @as(f32, @floatFromInt(rect.w)) / self.textures.tex.width;
+        uv.br.y = uv.tl.y + @as(f32, @floatFromInt(rect.h)) / self.textures.tex.height;
 
         return .{ .tex = self.textures.tex, .uvs = uv, .rect = rect };
     }

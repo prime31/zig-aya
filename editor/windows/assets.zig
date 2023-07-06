@@ -1,5 +1,6 @@
 const std = @import("std");
 const root = @import("../main.zig");
+const aya = @import("aya");
 const imgui = @import("imgui");
 const icons = imgui.icons;
 
@@ -70,13 +71,13 @@ fn drawTextures(state: *root.AppState) void {
             const tex_uvs = state.asset_man.getTextureAndUvs(asset_name);
 
             // const scale = root.scene.cam.zoom;
-            const tex_w = @intToFloat(f32, tex_uvs.rect.w) * root.scene.cam.zoom;
-            const tex_h = @intToFloat(f32, tex_uvs.rect.h) * root.scene.cam.zoom;
+            const tex_w = @as(f32, @floatFromInt(tex_uvs.rect.w)) * root.scene.cam.zoom;
+            const tex_h = @as(f32, @floatFromInt(tex_uvs.rect.h)) * root.scene.cam.zoom;
 
             const cursor_pos = imgui.igGetIO().MousePos.subtract(.{ .x = tex_w / 2, .y = tex_h / 2 });
             const cursor_bl = cursor_pos.add(.{ .x = tex_w, .y = tex_h });
             imgui.ogImDrawList_AddImage(imgui.igGetForegroundDrawListNil(), tex_uvs.tex.imTextureID(), cursor_pos, cursor_bl, tex_uvs.uvs.tl, tex_uvs.uvs.br, 0xFFFFFFFF);
-            _ = imgui.igSetDragDropPayload("TEXTURE_ASSET_DRAG", &i, @sizeOf(usize), imgui.ImGuiCond_Once);
+            _ = imgui.igSetDragDropPayload("TEXTURE_ASSET_DRAG", &.{i}, @sizeOf(usize), imgui.ImGuiCond_Once);
             imgui.igText(asset_name);
         }
 
@@ -85,7 +86,7 @@ fn drawTextures(state: *root.AppState) void {
 
         const base_name = asset_name[0..std.mem.indexOfScalar(u8, asset_name, '.').?];
         var name_buf: [max_thumb_chars + 1:0]u8 = undefined;
-        std.mem.set(u8, &name_buf, 0);
+        @memset(&name_buf, 0);
 
         if (base_name.len > max_thumb_chars) {
             std.mem.copy(u8, &name_buf, base_name[0..max_thumb_chars]);
@@ -123,7 +124,7 @@ fn drawLevels(state: *root.AppState) void {
 
         const base_name = level[0..std.mem.indexOfScalar(u8, level, '.').?];
         var name_buf: [25:0]u8 = undefined;
-        std.mem.set(u8, &name_buf, 0);
+        @memset(&name_buf, 0);
         std.mem.copy(u8, &name_buf, base_name);
 
         if (imgui.ogButtonEx(&name_buf, .{ .x = -1 })) state.level = root.persistence.loadLevel(level) catch unreachable;

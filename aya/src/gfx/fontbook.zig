@@ -52,12 +52,12 @@ pub const FontBook = struct {
         const data = aya.fs.read(self.allocator, file) catch unreachable;
 
         // we can let FONS free the data since we are using the c_allocator here
-        return fons.fonsAddFontMem(self.stash, c_file, @ptrCast([*c]const u8, data), @intCast(i32, data.len), 1);
+        return fons.fonsAddFontMem(self.stash, c_file, @as([*c]const u8, @ptrCast(data)), @as(i32, @intCast(data.len)), 1);
     }
 
     pub fn addFontMem(self: *FontBook, name: [:0]const u8, data: []const u8, free_data: bool) c_int {
         const free: c_int = if (free_data) 1 else 0;
-        return fons.fonsAddFontMem(self.stash, name, @ptrCast([*c]const u8, data), @intCast(i32, data.len), free);
+        return fons.fonsAddFontMem(self.stash, name, @as([*c]const u8, @ptrCast(data)), @as(i32, @intCast(data.len)), free);
     }
 
     // state setting
@@ -119,7 +119,7 @@ pub const FontBook = struct {
     // text iter
     pub fn getTextIterator(self: *FontBook, str: []const u8) fons.TextIter {
         var iter = std.mem.zeroes(fons.TextIter);
-        const res = fons.fonsTextIterInit(self.stash, &iter, 0, 0, str.ptr, @intCast(c_int, str.len));
+        const res = fons.fonsTextIterInit(self.stash, &iter, 0, 0, str.ptr, @as(c_int, @intCast(str.len)));
         if (res == 0) std.debug.print("getTextIterator failed! Make sure you have added a font.\n", .{});
         return iter;
     }
@@ -133,9 +133,9 @@ pub const FontBook = struct {
     }
 
     fn renderCreate(ctx: ?*anyopaque, width: c_int, height: c_int) callconv(.C) c_int {
-        var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
+        var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
 
-        if (self.texture != null and (self.texture.?.width != @intToFloat(f32, width) or self.texture.?.height != @intToFloat(f32, height))) {
+        if (self.texture != null and (self.texture.?.width != @as(f32, @floatFromInt(width)) or self.texture.?.height != @as(f32, @floatFromInt(height)))) {
             self.texture.?.deinit();
             self.texture = null;
         }
@@ -155,13 +155,13 @@ pub const FontBook = struct {
 
     fn renderUpdate(ctx: ?*anyopaque, _: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
         // TODO: only update the rect that changed
-        var self = @ptrCast(*FontBook, @alignCast(@alignOf(FontBook), ctx));
+        var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
         if (!self.tex_dirty or self.last_update == aya.time.frames()) {
             self.tex_dirty = true;
             return 0;
         }
 
-        const tex_area = @intCast(usize, self.width * self.height);
+        const tex_area = @as(usize, @intCast(self.width * self.height));
         var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
             std.debug.print("failed to allocate texture data: {}\n", .{err});
             return 0;

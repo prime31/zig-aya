@@ -56,8 +56,8 @@ pub const Window = struct {
         _ = sdl.SDL_GL_SetAttribute(.SDL_GL_DEPTH_SIZE, 24);
         _ = sdl.SDL_GL_SetAttribute(.SDL_GL_STENCIL_SIZE, 8);
 
-        var window_flags = flags | @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_OPENGL);
-        self.sdl_window = sdl.SDL_CreateWindow(config.title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @bitCast(u32, window_flags)) orelse {
+        var window_flags = flags | @intFromEnum(sdl.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+        self.sdl_window = sdl.SDL_CreateWindow(config.title, sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, config.width, config.height, @as(u32, @bitCast(window_flags))) orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             @panic("no window");
         };
@@ -81,7 +81,7 @@ pub const Window = struct {
     pub fn scale(self: Window) f32 {
         var wx = self.width();
         const draw_size = self.drawableSize();
-        return @intToFloat(f32, draw_size.w) / @intToFloat(f32, wx);
+        return @as(f32, @floatFromInt(draw_size.w)) / @as(f32, @floatFromInt(wx));
     }
 
     pub fn width(self: Window) i32 {
@@ -93,11 +93,11 @@ pub const Window = struct {
     }
 
     pub fn widthf(self: Window) f32 {
-        return @intToFloat(f32, self.size().w);
+        return @as(f32, @floatFromInt(self.size().w));
     }
 
     pub fn heightf(self: Window) f32 {
-        return @intToFloat(f32, self.size().h);
+        return @as(f32, @floatFromInt(self.size().h));
     }
 
     pub fn aspectRatio(self: Window) f32 {
@@ -142,7 +142,7 @@ pub const Window = struct {
     }
 
     pub fn resizable(self: Window) bool {
-        return (sdl.SDL_GetWindowFlags(self.sdl_window) & @intCast(u32, @enumToInt(sdl.SDL_WindowFlags.SDL_WINDOW_RESIZABLE))) != 0;
+        return (sdl.SDL_GetWindowFlags(self.sdl_window) & @as(u32, @intCast(@intFromEnum(sdl.SDL_WindowFlags.SDL_WINDOW_RESIZABLE)))) != 0;
     }
 
     pub fn setResizable(self: Window, is_resizable: bool) void {
