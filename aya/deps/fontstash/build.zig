@@ -16,7 +16,10 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     exe.linkLibC();
 
     const lib_cflags = &[_][]const u8{"-O3"};
-    exe.addCSourceFile(prefix_path ++ "aya/deps/fontstash/src/fontstash.c", lib_cflags);
+    exe.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+        .file = std.Build.LazyPath.relative(prefix_path ++ "aya/deps/fontstash/src/fontstash.c"),
+        .flags = lib_cflags,
+    });
 }
 
 pub fn getModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {

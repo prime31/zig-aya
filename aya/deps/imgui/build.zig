@@ -35,16 +35,18 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     }
 
     const base_path = prefix_path ++ "aya/deps/imgui/";
-    exe.addIncludePath(base_path ++ "cimgui/imgui");
-    exe.addIncludePath(base_path ++ "cimgui/imgui/examples");
+    exe.addIncludePath(std.Build.LazyPath.relative(base_path ++ "cimgui/imgui"));
+    exe.addIncludePath(std.Build.LazyPath.relative(base_path ++ "cimgui/imgui/examples"));
 
     const cpp_args = [_][]const u8{"-Wno-return-type-c-linkage"};
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui_demo.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui_draw.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/imgui_widgets.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/cimgui.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "temporary_hacks.cpp", &cpp_args);
+    exe.addCSourceFiles(&[_][]const u8{
+        base_path ++ "cimgui/imgui/imgui.cpp",
+        base_path ++ "cimgui/imgui/imgui_demo.cpp",
+        base_path ++ "cimgui/imgui/imgui_draw.cpp",
+        base_path ++ "cimgui/imgui/imgui_widgets.cpp",
+        base_path ++ "cimgui/cimgui.cpp",
+        base_path ++ "temporary_hacks.cpp",
+    }, &cpp_args);
 
     addImGuiGlImplementation(b, exe, target, prefix_path);
 }
@@ -55,13 +57,15 @@ fn addImGuiGlImplementation(_: *Builder, exe: *std.build.LibExeObjStep, _: std.z
 
     // what we actually want to work but for some reason on macos it doesnt
     exe.linkSystemLibrary("SDL2");
-    exe.addIncludePath(base_path ++ "cimgui/imgui/examples/libs/gl3w");
-    exe.addIncludePath("/usr/local/include/SDL2");
-    exe.addIncludePath("/opt/homebrew/include/SDL2");
+    exe.addIncludePath(std.Build.LazyPath.relative(base_path ++ "cimgui/imgui/examples/libs/gl3w"));
+    exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/usr/local/include/SDL2" });
+    exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/opt/homebrew/include/SDL2" });
 
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/libs/gl3w/GL/gl3w.c", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/imgui_impl_opengl3.cpp", &cpp_args);
-    exe.addCSourceFile(base_path ++ "cimgui/imgui/examples/imgui_impl_sdl.cpp", &cpp_args);
+    exe.addCSourceFiles(&[_][]const u8{
+        base_path ++ "cimgui/imgui/examples/libs/gl3w/GL/gl3w.c",
+        base_path ++ "cimgui/imgui/examples/imgui_impl_opengl3.cpp",
+        base_path ++ "cimgui/imgui/examples/imgui_impl_sdl.cpp",
+    }, &cpp_args);
 }
 
 /// helper function to get SDK path on Mac
@@ -85,8 +89,8 @@ fn macosAddSdkDirs(b: *Builder, step: *std.build.LibExeObjStep) !void {
     }
     framework_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ sdk_dir, "/System/Library/Frameworks" });
     const usrinclude_dir = try std.mem.concat(b.allocator, u8, &[_][]const u8{ sdk_dir, "/usr/include" });
-    step.addFrameworkPath(framework_dir.?);
-    step.addIncludePath(usrinclude_dir);
+    step.addFrameworkPath(std.Build.LazyPath{ .cwd_relative = framework_dir.? });
+    step.addFrameworkPath(std.Build.LazyPath{ .cwd_relative = usrinclude_dir });
 }
 
 pub fn getImGuiModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
