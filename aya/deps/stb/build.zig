@@ -12,10 +12,13 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     _ = b;
     _ = target;
     exe.linkLibC();
-    exe.addIncludePath(prefix_path ++ "aya/deps/stb/src");
+    exe.addIncludePath(std.Build.LazyPath.relative(prefix_path ++ "aya/deps/stb/src"));
 
     const lib_cflags = &[_][]const u8{"-std=c99"};
-    exe.addCSourceFile(prefix_path ++ "aya/deps/stb/src/stb_impl.c", lib_cflags);
+    exe.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+        .file = std.Build.LazyPath.relative(prefix_path ++ "aya/deps/stb/src/stb_impl.c"),
+        .flags = lib_cflags,
+    });
 }
 
 pub fn getModule(b: *std.Build, comptime prefix_path: []const u8) *std.build.Module {
