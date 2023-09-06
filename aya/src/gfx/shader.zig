@@ -67,15 +67,16 @@ pub const Shader = struct {
         return initWithVertFrag(VertexParams, FragUniformT, options);
     }
 
+    // TODO: this shouldnt have `catch unreachable`s but in release mode builds fail to identify the error set....
     pub fn initWithVertFrag(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
         const vert = blk: {
             // if we were not provided a vert shader we substitute in the sprite shader
             if (options.vert) |vert| {
                 // if we were provided an allocator that means this is a file
                 if (options.allocator) |allocator| {
-                    const vert_path = try std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" });
+                    const vert_path = std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" }) catch unreachable;
                     defer allocator.free(vert_path);
-                    break :blk try fs.readZ(allocator, vert_path);
+                    break :blk fs.readZ(allocator, vert_path) catch unreachable;
                 }
                 break :blk vert;
             } else {
@@ -84,9 +85,9 @@ pub const Shader = struct {
         };
         const frag = blk: {
             if (options.allocator) |allocator| {
-                const frag_path = try std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" });
+                const frag_path = std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" }) catch unreachable;
                 defer allocator.free(frag_path);
-                break :blk try fs.readZ(allocator, frag_path);
+                break :blk fs.readZ(allocator, frag_path) catch unreachable;
             }
             break :blk options.frag;
         };

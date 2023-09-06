@@ -198,7 +198,7 @@ pub fn postProcess(stack: *PostProcessStack) void {
 }
 
 /// renders the default OffscreenPass to the backbuffer using the ResolutionScaler
-pub fn blitToScreen(comptime letterbox_color: math.Color) void {
+pub fn blitToScreen(letterbox_color: math.Color) void {
     if (state.blitted_to_screen) return;
     state.blitted_to_screen = true;
 

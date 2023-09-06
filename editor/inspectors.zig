@@ -356,7 +356,7 @@ pub fn inspectTransform(transform: *root.data.Transform) void {
     inspectVec2("Scale", &transform.scale, .{ .x = 1, .y = 1 });
 }
 
-pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25:0]u8) void {
+pub fn inspectEnum(label: [:0]const u8, value: *u8, enum_values: [][25]u8) void {
     beginColumns(label, value);
     defer endColumns();
 

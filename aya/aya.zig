@@ -64,10 +64,7 @@ pub fn run(comptime config: Config) !void {
     mem.initTmpAllocator();
     window = try Window.init(config.window);
 
-    renderkit.setup(.{
-        .gl_loader = sdl.SDL_GL_GetProcAddress,
-        .disable_vsync = config.window.disable_vsync,
-    }, mem.allocator);
+    renderkit.setup(.{ .gl_loader = sdl.SDL_GL_GetProcAddress }, mem.allocator);
 
     gfx.init(config.gfx);
     time = Time.init(config.update_rate);

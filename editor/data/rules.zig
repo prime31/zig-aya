@@ -278,7 +278,7 @@ pub const RuleTile = struct {
         negated,
         required,
 
-        pub fn jsonStringify(self: RuleState, _: std.json.StringifyOptions, writer: anytype) !void {
+        pub fn jsonStringify(self: RuleState, writer: anytype) !void {
             try writer.print("{d}", .{@intFromEnum(self)});
         }
     };

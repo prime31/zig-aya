@@ -117,7 +117,7 @@ fn drawDetailsPane(state: *root.AppState, component: *Component) void {
             }
 
             if (imgui.ogButton("Add Enum Value")) {
-                prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len + 1) catch unreachable;
+                // prop_value.enum_values = aya.mem.allocator.realloc(prop_value.enum_values, prop_value.enum_values.len + 1) catch unreachable;
                 @memset(&prop_value.enum_values[prop_value.enum_values.len - 1], 0);
             }
         }
@@ -189,11 +189,12 @@ fn addFieldPopup(state: *root.AppState, component: *Component) void {
             addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (imgui.ogSelectableBool("enum", false, imgui.ImGuiSelectableFlags_None, .{})) {
-            var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
-            @memset(&enums[0], 0);
-            std.mem.copy(u8, &enums[0], "default_value");
-            component.addProperty(.{ .enum_values = enums });
-            addLastPropertyToEntitiesContainingComponent(state, component);
+            @panic("fix this once zig can allocate with sentinels again");
+            // var enums = aya.mem.allocator.alloc([25:0]u8, 1) catch unreachable;
+            // @memset(&enums[0], 0);
+            // std.mem.copy(u8, &enums[0], "default_value");
+            // component.addProperty(.{ .enum_values = enums });
+            // addLastPropertyToEntitiesContainingComponent(state, component);
         }
         if (imgui.ogSelectableBool("Entity Link", false, imgui.ImGuiSelectableFlags_None, .{})) {
             component.addProperty(.{ .entity_link = 0 });
