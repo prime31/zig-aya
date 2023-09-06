@@ -59,14 +59,20 @@ fn createExe(b: *Builder, optimize: std.builtin.Mode, target: Target, name: []co
         .optimize = optimize,
     });
 
+    b.installArtifact(exe);
+
     // exe.setOutputDir(std.fs.path.join(b.allocator, &[_][]const u8{ b.cache_root, "bin" }) catch unreachable);
 
     addAyaToArtifact(b, exe, target, "");
 
-    // std.Build.addRunArtifact
     const run_cmd = b.addRunArtifact(exe);
-    const exe_step = b.step(name, b.fmt("run {s}.zig", .{name}));
-    exe_step.dependOn(&run_cmd.step);
+
+    // uncomment to install all examples and compile shaders for ever build
+    // if (!std.mem.eql(u8, name, "all_examples"))
+    //     run_cmd.step.dependOn(b.getInstallStep());
+
+    const run_step = b.step(name, b.fmt("run {s}.zig", .{name}));
+    run_step.dependOn(&run_cmd.step);
 
     return exe;
 }

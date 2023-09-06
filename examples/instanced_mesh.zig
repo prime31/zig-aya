@@ -41,7 +41,7 @@ fn init() !void {
     vertices[2].col = 0xFFFFFFFF;
     vertices[3].pos = .{ .x = 0, .y = 0 }; // tl
     vertices[3].col = 0xFFFFFFFF;
-    instanced_mesh = try aya.gfx.InstancedMesh(u16, aya.gfx.Vertex, InstancedVert).init(null, 100, indices[0..], vertices[0..]);
+    instanced_mesh = aya.gfx.InstancedMesh(u16, aya.gfx.Vertex, InstancedVert).init(null, 100, indices[0..], vertices[0..]);
 
     // const instances_per_row = @divTrunc(aya.window.width(), @as(i32, 40));
     var i: usize = 0;

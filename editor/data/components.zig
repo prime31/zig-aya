@@ -60,7 +60,7 @@ pub const PropertyValue = union(enum) {
     float: f32,
     bool: bool,
     vec2: math.Vec2,
-    enum_values: [][25:0]u8,
+    enum_values: [][25]u8, // TODO: used to be `[][25:0]u8` before zig alloc broke and couldnt allocate it
     entity_link: u8,
 
     pub fn propertyInstanceValue(self: @This()) PropertyInstanceValue {

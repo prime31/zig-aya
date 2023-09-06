@@ -117,6 +117,7 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
 }
 
 /// Contains a dynamic instance buffer and a slice of verts CPU side
+// TODO: this should return `!gfx.Shader` but release mode builds fail to identify the error set....
 pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime InstanceT: type) type {
     std.debug.assert(IndexT == u16 or IndexT == u32);
 
@@ -128,7 +129,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         element_count: c_int,
         allocator: std.mem.Allocator,
 
-        pub fn init(allocator: ?std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) !Self {
+        pub fn init(allocator: ?std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) Self {
             const alloc = allocator orelse aya.mem.allocator;
 
             var ibuffer = renderkit.createBuffer(IndexT, .{
@@ -148,7 +149,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
 
             return Self{
                 .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
-                .instance_data = try alloc.alloc(InstanceT, instance_count),
+                .instance_data = alloc.alloc(InstanceT, instance_count) catch unreachable,
                 .element_count = @as(c_int, @intCast(indices.len)),
                 .allocator = alloc,
             };
@@ -184,7 +185,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         }
 
         pub fn drawAll(self: Self) void {
-            self.draw(0, @as(c_int, @intCast(self.element_count)), @as(c_int, @intCast(self.instance_data.len)));
+            self.draw(0, self.element_count, @as(c_int, @intCast(self.instance_data.len)));
         }
     };
 }
