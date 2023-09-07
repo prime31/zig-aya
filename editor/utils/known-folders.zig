@@ -81,7 +81,7 @@ pub fn getPath(allocator: std.mem.Allocator, folder: KnownFolder) Error!?[]const
                 },
                 .by_env => |env_path| {
                     if (env_path.subdir) |sub_dir| {
-                        const root_path = std.process.getEnvVarOwned(&arena.allocator, env_path.env_var) catch |err| switch (err) {
+                        const root_path = std.process.getEnvVarOwned(arena.allocator(), env_path.env_var) catch |err| switch (err) {
                             error.EnvironmentVariableNotFound => return null,
                             error.InvalidUtf8 => return null,
                             error.OutOfMemory => |e| return e,
