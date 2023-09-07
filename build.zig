@@ -68,8 +68,10 @@ fn createExe(b: *Builder, optimize: std.builtin.Mode, target: Target, name: []co
     const run_cmd = b.addRunArtifact(exe);
 
     // uncomment to install all examples and compile shaders for ever build
-    // if (!std.mem.eql(u8, name, "all_examples"))
-    //     run_cmd.step.dependOn(b.getInstallStep());
+    if (@import("builtin").os.tag == .windows) {
+        if (!std.mem.eql(u8, name, "all_examples"))
+            run_cmd.step.dependOn(b.getInstallStep());
+    }
 
     const run_step = b.step(name, b.fmt("run {s}.zig", .{name}));
     run_step.dependOn(&run_cmd.step);
@@ -156,7 +158,7 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
 
     const recursor = struct {
         fn search(alloc: std.mem.Allocator, directory: []const u8, filelist: *std.ArrayList([2][]const u8)) void {
-            if (std.mem.eql(u8, directory, "examples/assets")) return;
+            if (std.mem.eql(u8, directory, "examples/assets") or std.mem.eql(u8, directory, "examples\\assets")) return;
 
             var dir = std.fs.cwd().openIterableDir(directory, .{}) catch unreachable;
             defer dir.close();
