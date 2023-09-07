@@ -47,13 +47,13 @@ pub fn inspect(comptime T: type, comptime label: []const u8, comptime value: *T)
         imgui.igPushIDPtr(value);
         var changed = false;
         inline for (info.fields) |*field_info| {
-            const name = field_info.name;
             const FieldType = field_info.type;
             if (comptime std.meta.trait.is(.Pointer)(FieldType)) {
-                std.debug.print("skipping field " ++ name ++ " of struct " ++ @typeName(T) ++ " because it is of pointer-type " ++ @typeName(FieldType), .{});
+                std.debug.print("skipping field " ++ field_info.name ++ " of struct " ++ @typeName(T) ++ " because it is of pointer-type " ++ @typeName(FieldType), .{});
                 continue;
             }
-            if (inspectValue(name, value, &@field(value, name))) changed = true;
+
+            if (inspectValue(field_info.name, value, &@field(value, field_info.name))) changed = true;
         }
         imgui.igPopID();
         return changed;
@@ -77,6 +77,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
     // }
 
     const C = comptime std.meta.Child(T);
+    const label_cstr = aya.mem.tmp_allocator.dupeZ(u8, label) catch unreachable;
 
     // special cases of aya built-in structs
     switch (C) {
@@ -84,14 +85,14 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Mat32, aya.math.Mat4 => return false,
         aya.math.Vec2 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragFloat2(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat2(label_cstr, @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
         },
         aya.math.Vec3 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragFloat3(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat3(label_cstr, @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -99,7 +100,7 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         aya.math.Vec4 => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
             // should be able to use @ptrCast([*c]f32, &value.x) but when the Vec4 is padded with align(n) it doesnt work
-            if (imgui.igDragFloat4(@as([*c]const u8, label.ptr), @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat4(label_cstr, @as([*c]f32, @ptrCast(&value.x)), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
             return false;
@@ -113,13 +114,13 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
         .Bool => return imgui.igCheckbox(@as([*c]const u8, label.ptr), value),
         .Int => {
             var min_max = getMinMax(i32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragInt(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragInt(label_cstr, @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
         },
         .Float => {
             var min_max = getMinMax(f32, std.meta.Child(@TypeOf(parent)), label);
-            if (imgui.igDragFloat(@as([*c]const u8, label.ptr), @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
+            if (imgui.igDragFloat(label_cstr, @alignCast(value), min_max.speed, min_max.min, min_max.max, null, 1)) {
                 return true;
             }
         },

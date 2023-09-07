@@ -19,6 +19,7 @@ pub const Mat32 = struct {
     pub const TransformParams = struct { x: f32 = 0, y: f32 = 0, angle: f32 = 0, sx: f32 = 1, sy: f32 = 1, ox: f32 = 0, oy: f32 = 0 };
 
     pub const identity = Mat32{ .data = .{ 1, 0, 0, 1, 0, 0 } };
+    pub const zero = Mat32{ .data = .{ 0, 0, 0, 0, 0, 0 } };
 
     pub fn format(self: Mat32, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
         return writer.print("{d:0.6}, {d:0.6}, {d:0.6}, {d:0.6}, {d:0.6}, {d:0.6}", .{ self.data[0], self.data[1], self.data[2], self.data[3], self.data[4], self.data[5] });
@@ -35,7 +36,7 @@ pub const Mat32 = struct {
     }
 
     pub fn initOrthoInverted(width: f32, height: f32) Mat32 {
-        var result = Mat32{};
+        var result = zero;
         result.data[0] = 2 / width;
         result.data[3] = 2 / height;
         result.data[4] = -1;
@@ -44,7 +45,7 @@ pub const Mat32 = struct {
     }
 
     pub fn initOrtho(width: f32, height: f32) Mat32 {
-        var result = Mat32{};
+        var result = zero;
         result.data[0] = 2 / width;
         result.data[3] = -2 / height;
         result.data[4] = -1;

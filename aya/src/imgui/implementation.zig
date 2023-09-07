@@ -27,7 +27,8 @@ pub fn init(window: Window, docking: bool, viewports: bool, icon_font: bool) voi
 
         const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ imgui.icons.icon_range_min, imgui.icons.icon_range_max, 0 };
         var data = @embedFile("assets/" ++ imgui.icons.font_icon_filename_fas);
-        _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 14, icons_config, &font_awesome_range[0]);
+        _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, data, data.len, 14, icons_config, &font_awesome_range);
+        _ = imgui.ImFontAtlas_Build(io.Fonts);
     }
 
     var style = imgui.igGetStyle();

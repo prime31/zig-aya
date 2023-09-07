@@ -65,14 +65,11 @@ fn update() !void {
 
     var pixel_glitch = stack.processors.items[0].getParent(effects.PixelGlitch);
     _ = stack.processors.items[1].getParent(effects.Sepia);
-    _ = stack.processors.items[1].getParent(effects.Vignette);
+    _ = stack.processors.items[2].getParent(effects.Vignette);
 
-    // _ = aya.utils.inspect("lines", &lines_shader.frag_uniform);
-    // _ = aya.utils.inspect("noise", &noise_shader.frag_uniform);
-    // _ = aya.utils.inspect("dissolve", &dissolve_shader.frag_uniform);
-    // _ = aya.utils.inspect("pixel glitch", &pixel_glitch.shader.frag_uniform);
-    // _ = aya.utils.inspect("sepia", &sepia.shader.frag_uniform);
-    // _ = aya.utils.inspect("sepia", &vignette.shader.frag_uniform);
+    _ = aya.utils.inspect(@TypeOf(lines_shader.frag_uniform), "lines", &lines_shader.frag_uniform);
+    _ = aya.utils.inspect(@TypeOf(noise_shader.frag_uniform), "noise", &noise_shader.frag_uniform);
+    _ = aya.utils.inspect(@TypeOf(dissolve_shader.frag_uniform), "dissolve", &dissolve_shader.frag_uniform);
 
     if (@mod(aya.time.frames(), 5) == 0) {
         pixel_glitch.shader.frag_uniform.vertical_size = aya.math.rand.range(f32, 1, 5);
@@ -102,6 +99,8 @@ fn render() !void {
         dissolve_shader.frag_uniform.progress = aya.math.pingpong(aya.time.seconds(), 1);
         aya.gfx.setShader(&dissolve_shader.shader);
         aya.draw.bindTexture(clouds_tex, 1);
+    } else {
+        aya.gfx.setShader(null);
     }
     aya.draw.texScale(tex, 330, 30, 3);
 
