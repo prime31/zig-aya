@@ -1,5 +1,7 @@
 const std = @import("std");
-const App = @import("../app/app.zig").App;
+const aya = @import("../aya.zig");
+
+const App = aya.App;
 const Allocator = std.mem.Allocator;
 
 pub const AssetServer = @import("asset_server.zig").AssetServer;
@@ -37,6 +39,10 @@ pub fn Assets(comptime T: type) type {
             return T{};
         }
     };
+}
+
+test "assets" {
+    try std.testing.expect(true);
 }
 
 // test "tickles" {

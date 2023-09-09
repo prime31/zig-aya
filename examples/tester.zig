@@ -1,7 +1,9 @@
 const std = @import("std");
+const aya = @import("aya");
+
 const Allocator = std.mem.Allocator;
-const Resources = @import("app/resources.zig").Resources;
-const App = @import("app/app.zig").App;
+const Resources = aya.Resources;
+const App = aya.App;
 
 const ClearColorResource = struct {
     value: usize,

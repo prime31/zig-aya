@@ -4,7 +4,6 @@
     "version": "2.0.0",
     "options": {
         "env": {
-            "ZIG_SYSTEM_LINKER_HACK": "1",
             "MTL_SHADER_VALIDATION": "1",
             "MTL_SHADER_VALIDATION_GLOBAL_MEMORY": "1",
             "MTL_SHADER_VALIDATION_TEXTURE_USAGE": "1",
@@ -33,18 +32,6 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "presentation": {
-                "clear": true
-            }
-        },
-        {
-            "label": "Build and Run Project (x64 on arm)",
-            "type": "shell",
-            "command": "~/zig/zig-x64/zig build run",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
             "presentation": {
                 "clear": true
             }
