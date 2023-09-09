@@ -1,5 +1,7 @@
 const std = @import("std");
-const typeId = @import("../type_id.zig").typeId;
+const aya = @import("../aya.zig");
+
+const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
 

@@ -1,6 +1,8 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
+
 const Allocator = std.mem.Allocator;
-const Resources = @import("resources.zig").Resources;
+const Resources = aya.Resources;
 
 pub const World = struct {
     const Self = @This();
