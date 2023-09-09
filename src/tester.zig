@@ -30,14 +30,16 @@ const PhysicsPlugin = struct {
     data: u8 = 250,
 
     pub fn build(self: PhysicsPlugin, app: *App) void {
-        std.debug.print("PhysicsPlugins.build called. app: {}, data: {}\n", .{ app, self.data });
+        _ = app;
+        std.debug.print("PhysicsPlugins.build called. data: {}\n", .{self.data});
     }
 };
 
 const TimePlugin = struct {
     pub fn build(self: TimePlugin, app: *App) void {
+        _ = app;
         _ = self;
-        std.debug.print("TimePlugin.build called. app: {}\n", .{app});
+        std.debug.print("TimePlugin.build called\n", .{});
     }
 };
 
@@ -48,11 +50,9 @@ pub fn main() !void {
     var app = App.init(gpa.allocator());
     defer app.deinit();
 
-    app.addPlugin(TimePlugin);
-    app.insertPlugin(PhysicsPlugin{ .data = 35 });
-    // app.insertPlugin(PhysicsPlugin{ .data = 4 });
-    // app.addPlugins(.{PhysicsPlugin});
-    app.run();
+    app.addPlugin(TimePlugin)
+        .insertPlugin(PhysicsPlugin{ .data = 35 })
+        .run();
 
     var res = Resources.init(gpa.allocator());
     defer res.deinit();
