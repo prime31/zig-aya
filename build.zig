@@ -48,10 +48,12 @@ pub fn build(b: *std.Build) void {
     // const run_step = b.step("sdl3-tester", "Run sdl3-tester");
     // run_step.dependOn(&run_cmd.step);
 
-    addExecutable(b, target, optimize, "sdl3-tester", "examples/sdl.zig");
+    addExecutable(b, target, optimize, "sdl3_tester", "examples/sdl.zig");
     addExecutable(b, target, optimize, "tester", "examples/tester.zig");
 
     addTests(b, target, optimize);
+
+    flecs_build.addFlecsUpdateStep(b, target);
 }
 
 fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, comptime name: []const u8, source: []const u8) void {

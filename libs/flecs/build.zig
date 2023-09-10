@@ -49,6 +49,19 @@ fn addTranslateCStep(b: *std.build, target: std.zig.CrossTarget, optimize: std.b
     // const module = b.createModule(.{ .source_file = trans_c.getOutput() });
 }
 
+pub fn addFlecsUpdateStep(b: *std.build, target: std.zig.CrossTarget) void {
+    // only mac and linux get the update_flecs command
+    if (!target.isWindows()) {
+        var exe = b.addSystemCommand(&[_][]const u8{ "zsh", thisDir() ++ "/update_flecs.sh" });
+        exe.addArg(thisDir());
+
+        const exe_step = b.step("update_flecs", b.fmt("updates Flecs.h/c and runs translate-c", .{}));
+        exe_step.dependOn(&exe.step);
+    }
+
+    // TODO: write some sort of cleanup function if we end up updating flecs too often
+}
+
 pub fn getModule(b: *std.Build) *std.build.Module {
     return b.createModule(.{
         .source_file = .{ .path = thisDir() ++ "/src/ecs.zig" },
