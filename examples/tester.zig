@@ -72,14 +72,8 @@ pub fn main() !void {
     res.remove(WindowResource);
 
     std.debug.print("-+-+-+ flecs test -+-+-+\n", .{});
-    const world = ecs.c.ecs_init();
+    const world = ecs.c.ecs_init().?;
     defer _ = ecs.c.ecs_fini(world);
-
-    var entity_desc = std.mem.zeroInit(ecs.c.ecs_entity_desc_t, .{
-        .id = ecs.c.ecs_new_id(world),
-        .name = "run_system",
-        .add = [_]u64{ ecs.c.ecs_make_pair(ecs.c.EcsDependsOn, ecs.c.EcsOnUpdate), ecs.c.EcsDependsOn } ++ [_]u64{0} ** 30,
-    });
 
     var system_desc: ecs.c.ecs_system_desc_t = std.mem.zeroInit(ecs.c.ecs_system_desc_t, .{
         .callback = run,
@@ -87,14 +81,16 @@ pub fn main() !void {
         .query = std.mem.zeroInit(ecs.c.ecs_query_desc_t, .{
             .filter = std.mem.zeroInit(ecs.c.ecs_filter_desc_t, .{ .expr = null }),
         }),
-        .entity = ecs.c.ecs_entity_init(world, &entity_desc),
     });
+    ecs.SYSTEM(world, "run_system", ecs.c.EcsOnUpdate, &system_desc);
 
-    _ = ecs.c.ecs_system_init(world, &system_desc);
     ecs.c.ecs_set_target_fps(world, 30);
     _ = ecs.c.ecs_progress(world, 0);
     _ = ecs.c.ecs_progress(world, 0);
     _ = ecs.c.ecs_progress(world, 0);
+
+    ecs.TAG(world, TimePlugin);
+    ecs.COMPONENT(world, PhysicsPlugin);
 }
 
 fn run(it: [*c]ecs.c.ecs_iter_t) callconv(.C) void {
