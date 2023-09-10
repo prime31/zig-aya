@@ -1,12 +1,13 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const app = @import("mod.zig");
 
 const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
 
-pub const World = @import("world.zig").World;
-pub const Resources = @import("resources.zig").Resources;
+const World = app.World;
+const Resources = app.Resources;
 
 pub const App = struct {
     const Self = @This();

@@ -18,21 +18,21 @@ pub fn typeName(comptime T: type) @TypeOf(@typeName(T)) {
     };
 }
 
-fn PerTypeGlobalVar(comptime _: type) type {
+fn PerTypeGlobalStruct(comptime _: type) type {
     return struct {
         var id: u64 = 0;
     };
 }
 
-inline fn perTypeGlobalVarPtr(comptime T: type) *u64 {
-    return comptime &PerTypeGlobalVar(T).id;
+inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
+    return comptime &PerTypeGlobalStruct(T).id;
 }
 
 pub fn COMPONENT(world: *c.ecs_world_t, comptime T: type) void {
     if (@sizeOf(T) == 0)
         @compileError("Size of the type must be greater than zero");
 
-    const type_id_ptr = perTypeGlobalVarPtr(T);
+    const type_id_ptr = perTypeGlobalStructPtr(T);
     if (type_id_ptr.* != 0)
         return;
 
@@ -55,7 +55,7 @@ pub fn TAG(world: *c.ecs_world_t, comptime T: type) void {
     if (@sizeOf(T) != 0)
         @compileError("Size of the type must be zero");
 
-    const type_id_ptr = perTypeGlobalVarPtr(T);
+    const type_id_ptr = perTypeGlobalStructPtr(T);
     if (type_id_ptr.* != 0)
         return;
 
@@ -76,7 +76,7 @@ pub fn SYSTEM(world: *c.ecs_world_t, name: [*:0]const u8, phase: c.ecs_entity_t,
 }
 
 pub fn OBSERVER(world: *c.ecs_world_t, name: [*:0]const u8, observer_desc: *c.ecs_observer_desc_t) void {
-    var entity_desc = c.ecs_entity_desc_t{};
+    var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = c.ecs_new_id(world);
     entity_desc.name = name;
 

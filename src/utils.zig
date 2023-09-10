@@ -1,10 +1,12 @@
 const std = @import("std");
 
+const Allocator = std.mem.Allocator;
+
 pub fn typeId(comptime T: type) usize {
-    return @intFromPtr(&TypeIdStruct(T).unique_global);
+    return @intFromPtr(&PerTypeGlobalStruct(T).unique_global);
 }
 
-pub fn TypeIdStruct(comptime _: type) type {
+pub fn PerTypeGlobalStruct(comptime _: type) type {
     return struct {
         pub var unique_global: u8 = 0;
     };
@@ -26,3 +28,33 @@ pub fn hashStringFnv(comptime ReturnType: type, comptime str: []const u8) Return
     }
     return value;
 }
+
+/// stores all resources as erased pointers but retains the ability to deinit them safely via a closure.
+/// if T.init(Allocator) or T.deinit() exists it will be called
+pub const ErasedPtr = struct {
+    ptr: usize,
+    deinit: *const fn (ErasedPtr, Allocator) void,
+
+    pub fn init(comptime T: type, allocator: Allocator) ErasedPtr {
+        const res = allocator.create(T) catch unreachable;
+        res.* = if (@hasDecl(T, "init")) T.init(allocator) else std.mem.zeroes(T);
+        return initWithPtr(T, @intFromPtr(res));
+    }
+
+    pub fn initWithPtr(comptime T: type, ptr: usize) ErasedPtr {
+        return .{
+            .ptr = ptr,
+            .deinit = struct {
+                fn deinit(self: ErasedPtr, allocator: Allocator) void {
+                    const res = self.asPtr(T);
+                    if (@hasDecl(T, "deinit")) res.deinit();
+                    allocator.destroy(res);
+                }
+            }.deinit,
+        };
+    }
+
+    pub fn asPtr(self: ErasedPtr, comptime T: type) *T {
+        return @as(*T, @ptrFromInt(self.ptr));
+    }
+};
