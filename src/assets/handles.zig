@@ -1,17 +1,17 @@
 const std = @import("std");
+const assets = @import("mod.zig");
 
-// AssetId is the same as AssetIndex in bevy
-// pub struct AssetIndex {
-//     pub(crate) generation: u32,
-//     pub(crate) index: u32,
-// }
-pub const AssetId = struct {};
+const AssetId = assets.AssetId;
 
 pub fn Handle(comptime T: type) type {
     return struct {
         const Self = @This();
         const phantom = T;
 
-        asset_id: AssetId = .{},
+        asset_id: AssetId,
+
+        pub fn init(asset_id: AssetId) Self {
+            return .{ .asset_id = asset_id };
+        }
     };
 }
