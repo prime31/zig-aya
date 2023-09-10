@@ -1,10 +1,12 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const assets = @import("mod.zig");
 
 const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
-const Handle = @import("assets.zig").Handle;
+const Handle = assets.Handle;
+const ErasedPtr = aya.utils.ErasedPtr;
 
 pub fn AssetLoader(comptime T: type) type {
     return struct {
@@ -17,35 +19,6 @@ pub fn AssetLoader(comptime T: type) type {
 /// Resource. Manages the loading of assets by type for each registered asset type + loader.
 pub const AssetServer = struct {
     loaders: std.AutoHashMap(usize, ErasedPtr),
-
-    /// TODO: copied from Resources
-    const ErasedPtr = struct {
-        ptr: usize,
-        deinit: *const fn (ErasedPtr, Allocator) void,
-
-        pub fn init(comptime T: type, allocator: Allocator) ErasedPtr {
-            const res = allocator.create(T) catch unreachable;
-            res.* = if (@hasDecl(T, "init")) T.init(allocator) else std.mem.zeroes(T);
-            return initWithPtr(T, @intFromPtr(res));
-        }
-
-        pub fn initWithPtr(comptime T: type, ptr: usize) ErasedPtr {
-            return .{
-                .ptr = ptr,
-                .deinit = struct {
-                    fn deinit(self: ErasedPtr, allocator: Allocator) void {
-                        const res = self.asPtr(T);
-                        if (@hasDecl(T, "deinit")) res.deinit();
-                        allocator.destroy(res);
-                    }
-                }.deinit,
-            };
-        }
-
-        pub fn asPtr(self: ErasedPtr, comptime T: type) *T {
-            return @as(*T, @ptrFromInt(self.ptr));
-        }
-    };
 
     pub fn init(allocator: Allocator) AssetServer {
         return .{ .loaders = std.AutoHashMap(usize, ErasedPtr).init(allocator) };
