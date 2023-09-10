@@ -9,7 +9,7 @@ pub const AssetId = @import("handles.zig").AssetId;
 pub const Handle = @import("handles.zig").Handle;
 
 pub const AssetPlugin = struct {
-    pub fn build(_: AssetPlugin, app: *App) void {
+    pub fn build(app: *App) void {
         _ = app.initResource(AssetServer);
     }
 };

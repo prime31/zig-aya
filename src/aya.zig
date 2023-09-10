@@ -1,9 +1,21 @@
 const std = @import("std");
 
-pub const app = @import("app/app.zig");
-pub const resources = @import("app/resources.zig");
-pub const assets = @import("assets/assets.zig");
 pub const utils = @import("utils.zig");
 
+// inner modules
+const app = @import("app/app.zig");
+const assets = @import("assets/assets.zig");
+const input = @import("input/input.zig");
+const window = @import("window/window.zig");
+
+// export types
 pub const App = app.App;
-pub const Resources = resources.Resources;
+pub const Resources = app.Resources;
+pub const World = app.World;
+
+pub const AssetsPlugin = assets.AssetPlugin;
+pub const AssetServer = assets.AssetServer;
+
+pub const InputPlugin = input.InputPlugin;
+
+pub const WindowPlugin = window.WindowPlugin;
