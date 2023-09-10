@@ -1,11 +1,12 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const assets = @import("mod.zig");
 
 const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
-const Handle = assets.Handle;
+const Assets = aya.Assets;
+const Handle = @import("mod.zig").Handle;
+const AssetHandleProvider = @import("asset_handle_provider.zig").AssetHandleProvider;
 const ErasedPtr = aya.utils.ErasedPtr;
 
 pub fn AssetLoader(comptime T: type) type {
@@ -19,25 +20,31 @@ pub fn AssetLoader(comptime T: type) type {
 /// Resource. Manages the loading of assets by type for each registered asset type + loader.
 pub const AssetServer = struct {
     loaders: std.AutoHashMap(usize, ErasedPtr),
+    handle_providers: std.AutoHashMap(usize, *AssetHandleProvider),
 
     pub fn init(allocator: Allocator) AssetServer {
-        return .{ .loaders = std.AutoHashMap(usize, ErasedPtr).init(allocator) };
+        return .{
+            .loaders = std.AutoHashMap(usize, ErasedPtr).init(allocator),
+            .handle_providers = std.AutoHashMap(usize, *AssetHandleProvider).init(allocator),
+        };
     }
 
     pub fn deinit(self: *AssetServer) void {
         var iter = self.loaders.iterator();
         while (iter.next()) |entry| entry.value_ptr.deinit(entry.value_ptr.*, self.loaders.allocator);
         self.loaders.deinit();
+
+        self.handle_providers.deinit();
     }
 
-    pub fn load(self: AssetServer, comptime T: type, path: []const u8, settings: AssetLoader(T).settings_type) Handle(T) {
-        if (self.loaders.get(typeId(T))) |res| {
-            const loader = res.asPtr(AssetLoader(T));
-            const asset = loader.load(path, settings);
-            _ = asset;
-            // add asset to Assets(T)
-        }
-        return Handle(T){};
+    pub fn load(self: *AssetServer, comptime T: type, assets: *Assets(T), path: []const u8, settings: AssetLoader(T).settings_type) Handle(T) {
+        const ptr = self.loaders.get(typeId(T)) orelse @panic("No registered AssetLoader for type " ++ @typeName(T));
+
+        const handle = Handle(T).init(assets.handle_provider.create());
+        const loader = ptr.asPtr(AssetLoader(T));
+        const asset = loader.load(path, settings);
+        assets.insert(handle.asset_id, asset);
+        return handle;
     }
 
     pub fn registerLoader(self: *AssetServer, comptime T: type, loadFn: *const fn ([]const u8, AssetLoader(T).settings_type) T) void {

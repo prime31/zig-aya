@@ -1,6 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
+const assets = @import("../assets/mod.zig");
 
 const typeId = aya.utils.typeId;
 
@@ -8,6 +9,9 @@ const Allocator = std.mem.Allocator;
 
 const World = app.World;
 const Resources = app.Resources;
+const AssetServer = aya.AssetServer;
+const Assets = aya.Assets;
+const AssetLoader = assets.AssetLoader;
 
 pub const App = struct {
     const Self = @This();
@@ -82,21 +86,19 @@ pub const App = struct {
 
     // Assets
     pub fn initAsset(self: *Self, comptime T: type) *Self {
-        _ = T;
-        // let assets = Assets::<T>::default();
-        // self.world.resource::<AssetServer>().register_asset(&assets);
+        _ = self.world.resources.initResource(Assets(T));
         return self;
     }
 
-    pub fn initAssetLoader(self: *Self, comptime T: type) *Self {
-        _ = T;
-        // self.world.resource::<AssetServer>().register_loader(loader);
+    pub fn initAssetLoader(self: *Self, comptime T: type, loadFn: *const fn ([]const u8, AssetLoader(T).settings_type) T) *Self {
+        const asset_server = self.world.getResource(AssetServer) orelse @panic("AssetServer not found in Resources");
+        asset_server.registerLoader(T, loadFn);
         return self;
     }
 
     // Resources
     pub fn insertResource(self: *Self, resource: anytype) *App {
-        self.world.insert(resource);
+        self.world.insertResource(resource);
         return self;
     }
 

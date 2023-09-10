@@ -12,33 +12,35 @@ const AssetHandleProvider = @import("asset_handle_provider.zig").AssetHandleProv
 pub fn Assets(comptime T: type) type {
     return struct {
         const Self = @This();
+        instances: std.ArrayList(T),
         handle_provider: AssetHandleProvider,
-        instances: std.AutoHashMap(AssetId, T),
 
         pub fn init(allocator: Allocator) Self {
             return .{
-                .instances = std.AutoHashMap(AssetId, T).init(allocator),
+                .instances = std.ArrayList(T).init(allocator),
                 .handle_provider = AssetHandleProvider.init(allocator),
             };
         }
 
-        pub fn deinit(self: Self) void {
+        pub fn deinit(self: *Self) void {
             self.instances.deinit();
             self.handle_provider.deinit();
         }
 
-        pub fn insert(self: Self, id: AssetId, asset: T) void {
-            self.instances.put(id, asset) catch unreachable;
+        pub fn insert(self: *Self, id: AssetId, asset: T) void {
+            self.instances.ensureTotalCapacity(id.index) catch unreachable;
+            self.instances.expandToCapacity();
+            self.instances.items[id.index] = asset;
         }
 
-        pub fn get(self: Self, id: AssetId) ?T {
-            std.debug.assert(self.handle_provider.alive(id));
-            return self.instances.get(id);
+        pub fn get(self: Self, handle: Handle(T)) ?T {
+            std.debug.assert(self.handle_provider.alive(handle.asset_id));
+            return self.instances.items[handle.asset_id.index];
         }
 
-        pub fn remove(self: Self, id: AssetId) void {
-            _ = self.instances.remove(id);
-            self.handle_provider.remove(id);
+        pub fn remove(self: Self, handle: Handle(T)) void {
+            _ = self.instances.remove(handle.asset_id.index);
+            self.handle_provider.remove(handle.asset_id);
         }
     };
 }
@@ -49,13 +51,21 @@ test "assets" {
     var asset_server = AssetServer.init(std.testing.allocator);
     defer asset_server.deinit();
 
+    var images = Assets(Image).init(std.testing.allocator);
+    defer images.deinit();
+
+    var things = Assets(Thing).init(std.testing.allocator);
+    defer things.deinit();
+
     asset_server.registerLoader(Image, loadImage);
-    const img_handle = asset_server.load(Image, "fook", {});
-    std.debug.print("----------- img_handle: {}\n", .{img_handle});
+    const img_handle = asset_server.load(Image, &images, "fook", {});
+    const img = images.get(img_handle);
+    std.debug.print("----------- img: {any}\n", .{img});
 
     asset_server.registerLoader(Thing, loadThing);
-    const thing_handle = asset_server.load(Thing, "fook", 55);
-    std.debug.print("----------- thing_handle: {}\n", .{thing_handle});
+    const thing_handle = asset_server.load(Thing, &things, "fook", 55);
+    _ = thing_handle;
+    // std.debug.print("----------- thing_handle: {}\n", .{thing_handle});
 }
 
 const Image = struct {};

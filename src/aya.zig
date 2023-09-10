@@ -15,6 +15,7 @@ pub const World = app.World;
 
 pub const AssetsPlugin = assets.AssetPlugin;
 pub const AssetServer = assets.AssetServer;
+pub const Assets = assets.Assets;
 
 pub const InputPlugin = input.InputPlugin;
 
