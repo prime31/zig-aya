@@ -50,6 +50,7 @@ pub fn build(b: *std.Build) void {
 
     addExecutable(b, target, optimize, "sdl3_tester", "examples/sdl.zig");
     addExecutable(b, target, optimize, "tester", "examples/tester.zig");
+    addExecutable(b, target, optimize, "init", "examples/init.zig");
 
     addTests(b, target, optimize);
 
