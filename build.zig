@@ -49,6 +49,7 @@ pub fn build(b: *std.Build) void {
     // run_step.dependOn(&run_cmd.step);
 
     addExecutable(b, target, optimize, "sdl3_tester", "examples/sdl.zig");
+    addExecutable(b, target, optimize, "sdl3_gpu", "examples/sdl_gpu.zig");
     addExecutable(b, target, optimize, "tester", "examples/tester.zig");
     addExecutable(b, target, optimize, "init", "examples/init.zig");
 
