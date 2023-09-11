@@ -2,7 +2,7 @@ const std = @import("std");
 pub const c = @import("flecs.zig");
 
 // flecs internally reserves names like u16, u32, f32, etc. so we re-map them to uppercase to avoid collisions
-pub fn typeName(comptime T: type) @TypeOf(@typeName(T)) {
+fn typeName(comptime T: type) @TypeOf(@typeName(T)) {
     return switch (T) {
         u8 => return "U8",
         u16 => return "U16",
