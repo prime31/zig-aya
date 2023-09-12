@@ -6,7 +6,7 @@ const Builder = std.build.Builder;
 // - zig translate-c flecs.h > flecs.zig
 
 pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
-    exe.addIncludePath(.{ .path = thisDir() ++ "/libs" });
+    exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });
     exe.linkLibrary(buildStaticLibrary(b, target, optimize));
 }
 
@@ -17,9 +17,9 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
         .optimize = optimize,
     });
     lib.linkLibC();
-    lib.addIncludePath(.{ .path = thisDir() ++ "/libs" });
+    lib.addIncludePath(.{ .path = thisDir() ++ "/lib" });
     lib.addCSourceFile(.{
-        .file = .{ .path = thisDir() ++ "/libs/flecs.c" },
+        .file = .{ .path = thisDir() ++ "/lib/flecs.c" },
         .flags = &.{
             "-fno-sanitize=undefined",
             "-DFLECS_NO_CPP",
@@ -37,7 +37,7 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
 // cImport doesn't yet work with zls so for now we manually generate the file
 fn addTranslateCStep(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
     const trans_c = b.addTranslateC(.{
-        .source_file = .{ .path = thisDir() ++ "/libs/flecs.h" },
+        .source_file = .{ .path = thisDir() ++ "/lib/flecs.h" },
         .target = target,
         .optimize = optimize,
     });
@@ -46,6 +46,7 @@ fn addTranslateCStep(b: *std.build, target: std.zig.CrossTarget, optimize: std.b
     if (@import("builtin").mode == .Debug)
         trans_c.c_macros.append("FLECS_SANITIZE") catch unreachable;
 
+    // doesnt work with zls either
     // const module = b.createModule(.{ .source_file = trans_c.getOutput() });
 }
 
