@@ -34,7 +34,7 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
     return lib;
 }
 
-// doesn't yet work with zls so for now we manually generate the file
+// cImport doesn't yet work with zls so for now we manually generate the file
 fn addTranslateCStep(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
     const trans_c = b.addTranslateC(.{
         .source_file = .{ .path = thisDir() ++ "/libs/flecs.h" },

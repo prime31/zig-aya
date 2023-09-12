@@ -1,10 +1,17 @@
 const std = @import("std");
 const sdl = @import("sdl");
+const stb = @import("stb");
+
+const Allocator = std.mem.Allocator;
 
 var rand_impl = std.rand.DefaultPrng.init(42);
 const rnd = rand_impl.random();
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 pub fn main() !void {
+    defer _ = gpa.detectLeaks();
+
     const window = sdl.SDL_CreateWindow("fook you sdl3", 1024, 768, sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_METAL) orelse {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("no window created");
@@ -14,7 +21,7 @@ pub fn main() !void {
         @panic("no renderer created");
     };
 
-    const tex = Texture.init(renderer, "examples/assets/icon.bmp");
+    var tex = Texture.init(gpa.allocator(), renderer, "examples/assets/sword_dude.png");
     defer tex.deinit();
 
     var sprites: [200]Sprite = undefined;
@@ -77,31 +84,31 @@ const Sprite = struct {
 };
 
 const Texture = struct {
+    wtf: stb.Image = undefined,
     tex: *sdl.SDL_Texture = undefined,
     w: f32 = 0,
     h: f32 = 0,
 
-    pub fn init(renderer: *sdl.SDL_Renderer, path: []const u8) Texture {
-        const temp = sdl.SDL_LoadBMP(path.ptr);
-        defer sdl.SDL_DestroySurface(temp);
+    pub fn init(allocator: Allocator, renderer: *sdl.SDL_Renderer, path: []const u8) Texture {
+        var image = stb.Image.init(allocator, path) catch unreachable;
 
-        if (temp.*.format.*.palette != null) {
-            const pixels = @as(*u32, @alignCast(@ptrCast(temp.*.pixels)));
-            _ = sdl.SDL_SetSurfaceColorKey(temp, sdl.SDL_TRUE, pixels.*);
-        } else {
-            @panic("image has no palette");
-        }
+        const tex = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGBA32, sdl.SDL_TEXTUREACCESS_TARGET, @intCast(image.w), @intCast(image.h));
 
-        const tex = sdl.SDL_CreateTextureFromSurface(renderer, temp);
+        const image_data = image.getImageData();
+        const rect: sdl.SDL_Rect = .{ .x = 0, .y = 0, .w = @intCast(image.w), .h = @intCast(image.h) };
+        _ = sdl.SDL_UpdateTexture(tex, &rect, image_data.ptr, @intCast(image.w * @sizeOf(u32)));
+        _ = sdl.SDL_SetTextureBlendMode(tex, sdl.SDL_BLENDMODE_BLEND);
 
         return .{
+            .wtf = image,
             .tex = tex.?,
-            .w = @floatFromInt(temp.*.w),
-            .h = @floatFromInt(temp.*.h),
+            .w = @floatFromInt(image.w),
+            .h = @floatFromInt(image.h),
         };
     }
 
-    pub fn deinit(self: Texture) void {
+    pub fn deinit(self: *Texture) void {
         sdl.SDL_DestroyTexture(self.tex);
+        self.wtf.deinit();
     }
 };
