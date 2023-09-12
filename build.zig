@@ -5,6 +5,7 @@ const Builder = std.build.Builder;
 const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
+const imgui_build = @import("libs/imgui/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -105,6 +106,9 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     sdl_build.linkArtifact(b, exe);
     const sdl_module = sdl_build.getModule(b, stb_module);
 
+    imgui_build.linkArtifact(b, exe, target, optimize, "libs/sdl");
+    const imgui_module = imgui_build.getModule(b);
+
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
@@ -112,6 +116,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "ecs", .module = flecs_module },
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
+            .{ .name = "imgui", .module = imgui_module },
         },
     });
 
@@ -119,6 +124,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("stb", stb_module);
     exe.addModule("ecs", flecs_module);
     exe.addModule("sdl", sdl_module);
+    exe.addModule("imgui", imgui_module);
 }
 
 inline fn thisDir() []const u8 {

@@ -1,6 +1,7 @@
 const std = @import("std");
 const sdl = @import("sdl");
 const stb = @import("stb");
+const imgui = @import("imgui");
 
 const Allocator = std.mem.Allocator;
 
@@ -16,10 +17,19 @@ pub fn main() !void {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("no window created");
     };
-    const renderer = sdl.SDL_CreateRenderer(window, null, sdl.SDL_RENDERER_PRESENTVSYNC) orelse {
+    const renderer = sdl.SDL_CreateRenderer(window, null, sdl.SDL_RENDERER_PRESENTVSYNC | sdl.SDL_RENDERER_ACCELERATED) orelse {
         sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
         @panic("no renderer created");
     };
+
+    // Dear ImGui
+    _ = imgui.igCreateContext(null);
+    var io = imgui.igGetIO().*;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
+
+    _ = imgui.sdl3.ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    _ = imgui.sdl3.ImGui_ImplSDLRenderer3_Init(renderer);
 
     var tex = Texture.init(gpa.allocator(), renderer, "examples/assets/sword_dude.png");
     defer tex.deinit();
@@ -27,17 +37,24 @@ pub fn main() !void {
     var sprites: [200]Sprite = undefined;
     for (0..200) |i| sprites[i] = Sprite.init(tex.w, tex.h);
 
-    while (true) {
+    blk: while (true) {
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
+            _ = imgui.sdl3.ImGui_ImplSDL3_ProcessEvent(&event);
             switch (event.type) {
-                sdl.SDL_EVENT_QUIT => return,
+                sdl.SDL_EVENT_QUIT => break :blk,
                 sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => {
                     std.debug.print("window evt: {}\n", .{event.window.type});
                 },
                 else => {},
             }
         }
+
+        imgui.sdl3.ImGui_ImplSDLRenderer3_NewFrame();
+        imgui.sdl3.ImGui_ImplSDL3_NewFrame();
+        imgui.igNewFrame();
+        imgui.igShowDemoWindow(null);
+        imgui.igRender();
 
         _ = sdl.SDL_SetRenderDrawColor(renderer, 0xA0, 0xA0, 0xA0, 0xFF);
         _ = sdl.SDL_RenderClear(renderer);
@@ -52,8 +69,17 @@ pub fn main() !void {
             _ = sdl.SDL_RenderTexture(renderer, tex.tex, null, &sprite.pos);
         }
 
+        imgui.sdl3.ImGui_ImplSDLRenderer3_RenderDrawData(imgui.igGetDrawData());
         _ = sdl.SDL_RenderPresent(renderer);
     }
+
+    imgui.sdl3.ImGui_ImplSDLRenderer3_Shutdown();
+    imgui.sdl3.ImGui_ImplSDL3_Shutdown();
+    imgui.igDestroyContext(null);
+
+    sdl.SDL_DestroyRenderer(renderer);
+    sdl.SDL_DestroyWindow(window);
+    sdl.SDL_Quit();
 }
 
 const Sprite = struct {
