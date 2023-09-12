@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
-const assets = @import("../assets/mod.zig");
+const assets = @import("../asset/mod.zig");
 
 const typeId = aya.utils.typeId;
 
