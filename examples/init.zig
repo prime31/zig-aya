@@ -2,7 +2,6 @@ const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
 
-const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
 const App = aya.App;
 
