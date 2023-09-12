@@ -28,9 +28,12 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
     }
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
+pub fn getModule(b: *std.Build, stb_module: *std.build.Module) *std.build.Module {
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/sdl.zig" },
+        .source_file = .{ .path = thisDir() ++ "/src/sdl.zig" },
+        .dependencies = &.{
+            .{ .name = "stb", .module = stb_module },
+        },
     });
 }
 

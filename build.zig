@@ -2,8 +2,9 @@ const std = @import("std");
 const Builder = std.build.Builder;
 
 // libs
-const sdl_build = @import("libs/sdl/build.zig");
 const flecs_build = @import("libs/flecs/build.zig");
+const stb_build = @import("libs/stb/build.zig");
+const sdl_build = @import("libs/sdl/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -95,24 +96,29 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
 }
 
 fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode) void {
-    sdl_build.linkArtifact(b, exe);
-    const sdl_module = sdl_build.getModule(b);
-
     flecs_build.linkArtifact(b, exe, target, optimize);
     const flecs_module = flecs_build.getModule(b);
+
+    stb_build.linkArtifact(exe);
+    const stb_module = stb_build.getModule(b);
+
+    sdl_build.linkArtifact(b, exe);
+    const sdl_module = sdl_build.getModule(b, stb_module);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
         .dependencies = &.{
-            .{ .name = "sdl", .module = sdl_module },
             .{ .name = "ecs", .module = flecs_module },
+            .{ .name = "stb", .module = stb_module },
+            .{ .name = "sdl", .module = sdl_module },
         },
     });
 
     exe.addModule("aya", aya_module);
-    exe.addModule("sdl", sdl_module);
+    exe.addModule("stb", stb_module);
     exe.addModule("ecs", flecs_module);
+    exe.addModule("sdl", sdl_module);
 }
 
 inline fn thisDir() []const u8 {
