@@ -115,8 +115,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const sdl_module = sdl_build.getModule(b, stb_module);
 
     if (options.enable_imgui)
-        imgui_build.linkArtifact(b, exe, target, optimize, "libs/sdl");
-    const imgui_module = imgui_build.getModule(b, options.enable_imgui);
+        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
+    const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
