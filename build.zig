@@ -7,9 +7,17 @@ const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 
+const Options = struct {
+    enable_imgui: bool,
+};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    const options = Options{
+        .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
+    };
 
     // const exe = b.addExecutable(.{
     //     .name = "sdl3-tester",
@@ -50,17 +58,17 @@ pub fn build(b: *std.Build) void {
     // const run_step = b.step("sdl3-tester", "Run sdl3-tester");
     // run_step.dependOn(&run_cmd.step);
 
-    addExecutable(b, target, optimize, "sdl3_tester", "examples/sdl.zig");
-    addExecutable(b, target, optimize, "sdl3_gpu", "examples/sdl_gpu.zig");
-    addExecutable(b, target, optimize, "tester", "examples/tester.zig");
-    addExecutable(b, target, optimize, "init", "examples/init.zig");
+    addExecutable(b, target, optimize, options, "sdl3_tester", "examples/sdl.zig");
+    addExecutable(b, target, optimize, options, "sdl3_gpu", "examples/sdl_gpu.zig");
+    addExecutable(b, target, optimize, options, "tester", "examples/tester.zig");
+    addExecutable(b, target, optimize, options, "init", "examples/init.zig");
 
     addTests(b, target, optimize);
 
     flecs_build.addFlecsUpdateStep(b, target);
 }
 
-fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, comptime name: []const u8, source: []const u8) void {
+fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, comptime name: []const u8, source: []const u8) void {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = .{ .path = source },
@@ -68,7 +76,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
         .optimize = optimize,
     });
 
-    linkLibs(b, exe, target, optimize);
+    linkLibs(b, exe, target, optimize, options);
 
     b.installArtifact(exe);
 
@@ -96,7 +104,7 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
     run_step.dependOn(&run_tests.step);
 }
 
-fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode) void {
+fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
     flecs_build.linkArtifact(b, exe, target, optimize);
     const flecs_module = flecs_build.getModule(b);
 
@@ -106,8 +114,9 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     sdl_build.linkArtifact(b, exe);
     const sdl_module = sdl_build.getModule(b, stb_module);
 
-    imgui_build.linkArtifact(b, exe, target, optimize, "libs/sdl");
-    const imgui_module = imgui_build.getModule(b);
+    if (options.enable_imgui)
+        imgui_build.linkArtifact(b, exe, target, optimize, "libs/sdl");
+    const imgui_module = imgui_build.getModule(b, options.enable_imgui);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
