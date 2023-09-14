@@ -39,11 +39,11 @@ pub fn main() !void {
     const PreUpdate = makePhase(world, phase_0);
     const StateTransition = makePhase(world, phase_1);
     const RunFixedUpdateLoop = makePhase(world, phase_2);
-    _ = RunFixedUpdateLoop;
     const Update = makePhase(world, phase_3);
     const PostUpdate = makePhase(world, phase_4);
-    _ = PostUpdate;
     const Last = makePhase(world, phase_5);
+
+    const InsertedPhase = makePhase(world, PreUpdate);
 
     var system_desc: ecs.c.ecs_system_desc_t = std.mem.zeroInit(ecs.c.ecs_system_desc_t, .{
         .callback = run,
@@ -61,6 +61,10 @@ pub fn main() !void {
     ecs.SYSTEM(world, "PreUpdate_0", PreUpdate, &system_desc);
     ecs.SYSTEM(world, "PreUpdate_1", PreUpdate, &system_desc);
     ecs.SYSTEM(world, "Last_0", Last, &system_desc);
+    ecs.SYSTEM(world, "RunFixedUpdateLoop_0", RunFixedUpdateLoop, &system_desc);
+    ecs.SYSTEM(world, "PostUpdate_0", PostUpdate, &system_desc);
+
+    ecs.SYSTEM(world, "InsertedPhase", InsertedPhase, &system_desc);
 
     ecs.SYSTEM(world, "PostStartup", PostStartup, &system_desc);
     ecs.SYSTEM(world, "PreStartup", PreStartup, &system_desc);
@@ -128,6 +132,7 @@ fn makePhase(world: *ecs.c.ecs_world_t, depends_on: ?u64) u64 {
 }
 
 fn pipelineEntityCompare(e1: u64, _: ?*const anyopaque, e2: u64, _: ?*const anyopaque) callconv(.C) c_int {
+    std.debug.print("----- sort\n", .{});
     const first: c_int = if (e1 > e2) 1 else 0;
     const second: c_int = if (e1 < e2) 1 else 0;
     return first - second;
