@@ -24,7 +24,7 @@
         {
             "label": "Build and Run Project",
             "type": "shell",
-            "command": "zig build run",
+            "command": "zig build tester",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -92,21 +92,6 @@
                 "clear": true
             },
             "group": "none"
-        },
-        {
-            "label": "Compile Shaders",
-            "type": "shell",
-            "command": "zig build compile-shaders",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "clear": true
-            }
         }
     ]
 }

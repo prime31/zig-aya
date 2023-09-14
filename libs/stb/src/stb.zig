@@ -38,10 +38,6 @@ pub const Image = struct {
         };
     }
 
-    pub fn deinit(self: *Image) void {
-        stb.stbi_image_free(self.stb_allocation);
-    }
-
     pub fn getImageData(self: Image) []u8 {
         return self.stb_allocation[0..@as(usize, @intCast(self.w * self.h * self.channels))];
     }

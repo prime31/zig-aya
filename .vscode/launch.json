@@ -42,5 +42,6 @@
             "logging": {
                 "moduleLoad": false
             }
+        }
     ]
 }
