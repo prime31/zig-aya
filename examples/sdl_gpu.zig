@@ -13,7 +13,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub fn main() !void {
     defer _ = gpa.detectLeaks();
 
-    const window = sdl.SDL_CreateWindow("fook you sdl3", 1024, 768, sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_METAL) orelse {
+    const window = sdl.SDL_CreateWindow("fook you sdl3", 1024, 768, sdl.SDL_WINDOW_RESIZABLE) orelse {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("no window created");
     };
@@ -99,7 +99,7 @@ const Sprite = struct {
 };
 
 const Texture = struct {
-    wtf: stb.Image = undefined,
+    image: stb.Image = undefined,
     tex: *sdl.SDL_Texture = undefined,
     w: f32 = 0,
     h: f32 = 0,
@@ -115,7 +115,7 @@ const Texture = struct {
         _ = sdl.SDL_SetTextureBlendMode(tex, sdl.SDL_BLENDMODE_BLEND);
 
         return .{
-            .wtf = image,
+            .image = image,
             .tex = tex.?,
             .w = @floatFromInt(image.w),
             .h = @floatFromInt(image.h),
@@ -124,6 +124,5 @@ const Texture = struct {
 
     pub fn deinit(self: *Texture) void {
         sdl.SDL_DestroyTexture(self.tex);
-        self.wtf.deinit();
     }
 };

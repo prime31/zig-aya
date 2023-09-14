@@ -15,16 +15,13 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
         exe.addLibraryPath(.{ .path = thisDir() ++ "/libs/macos" });
     } else if (@import("builtin").os.tag == .windows) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2
-        exe.addLibraryPath(.{ .cwd_relative = "c:\\SDL2\\lib\\x64" });
+        exe.addLibraryPath(.{ .path = thisDir() ++ "/libs/windows" });
+        exe.addLibraryPath(.{ .cwd_relative = "." });
+        exe.addLibraryPath(.{ .path = "." });
+        exe.addLibraryPath(.{ .cwd_relative = "zig-out/bin" });
 
-        // SDL2.dll needs to be copied to the zig-cache/bin folder
-        // TODO: installFile doesnt seeem to work on Windows so manually copy the file over
-        // b.installFile("c:\\SDL2\\lib\\x64\\SDL2.dll", "bin\\SDL2.dll");
-
-        // TODO: copy sdl3 dlls in libs/windows
-        std.fs.cwd().makePath("zig-out\\bin") catch unreachable;
-        const src_dir = std.fs.cwd().openDir("c:\\SDL2\\lib\\x64", .{}) catch unreachable;
-        src_dir.copyFile("SDL2.dll", std.fs.cwd(), "zig-out\\bin\\SDL2.dll", .{}) catch unreachable;
+        // SDL3.dll needs to be copied to the zig-cache/bin folder
+        b.installFile(thisDir() ++ "/libs/windows/SDL3.dll", "bin/SDL3.dll");
     }
 }
 
