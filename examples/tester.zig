@@ -90,7 +90,7 @@ pub fn main() !void {
     _ = ecs.c.ecs_progress(world, 0);
 
     ecs.TAG(world, TimePlugin);
-    ecs.COMPONENT(world, PhysicsPlugin);
+    _ = ecs.COMPONENT(world, PhysicsPlugin);
 }
 
 fn run(it: [*c]ecs.c.ecs_iter_t) callconv(.C) void {
