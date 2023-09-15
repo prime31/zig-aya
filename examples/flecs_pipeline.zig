@@ -43,6 +43,14 @@ pub fn main() !void {
     const PostUpdate = makePhase(world, phase_4);
     const Last = makePhase(world, phase_5);
 
+    std.debug.print("\nFirst: {}\n", .{First});
+    std.debug.print("PreUpdate: {}\n", .{PreUpdate});
+    std.debug.print("StateTransition: {}\n", .{StateTransition});
+    std.debug.print("RunFixedUpdateLoop: {}\n", .{RunFixedUpdateLoop});
+    std.debug.print("Update: {}\n", .{Update});
+    std.debug.print("PostUpdate: {}\n", .{PostUpdate});
+    std.debug.print("Last: {}\n\n", .{Last});
+
     const InsertedPhase = makePhase(world, PreUpdate);
 
     var system_desc: ecs.c.ecs_system_desc_t = std.mem.zeroInit(ecs.c.ecs_system_desc_t, .{
@@ -64,6 +72,7 @@ pub fn main() !void {
     ecs.SYSTEM(world, "RunFixedUpdateLoop_0", RunFixedUpdateLoop, &system_desc);
     ecs.SYSTEM(world, "PostUpdate_0", PostUpdate, &system_desc);
 
+    // currently sets up the DependsOn with the built-in phases so it will run after but could be anywhere after...
     ecs.SYSTEM(world, "InsertedPhase", InsertedPhase, &system_desc);
 
     ecs.SYSTEM(world, "PostStartup", PostStartup, &system_desc);
@@ -80,21 +89,17 @@ pub fn main() !void {
 
     var pip_desc = std.mem.zeroes(ecs.c.ecs_pipeline_desc_t);
     pip_desc.entity = ecs.c.ecs_entity_init(world, &std.mem.zeroInit(ecs.c.ecs_entity_desc_t, .{ .name = "CustomPipeline" }));
-    pip_desc.query.order_by = pipelineEntityCompare;
+    pip_desc.query.order_by = pipelineSystemSortCompare;
+    pip_desc.query.order_by_component = ecs.COMPONENT(world, ecs.SystemSort);
     pip_desc.query.filter.terms[0].id = ecs.c.EcsSystem;
+    // pip_desc.query.filter.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+    //     .id = ecs.c.EcsPhase,
+    //     .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
+    //         .flags = ecs.c.EcsCascade,
+    //         .trav = ecs.c.EcsDependsOn,
+    //     }),
+    // });
     pip_desc.query.filter.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsPhase,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsCascade,
-            .trav = ecs.c.EcsDependsOn,
-        }),
-    });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.ecs_make_pair(ecs.c.EcsDependsOn, ecs.c.EcsOnStart),
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
-        .oper = ecs.c.EcsNot,
-    });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
         .id = ecs.c.EcsDisabled,
         .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
             .flags = ecs.c.EcsUp,
@@ -102,13 +107,17 @@ pub fn main() !void {
         }),
         .oper = ecs.c.EcsNot,
     });
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
         .id = ecs.c.EcsDisabled,
         .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
             .flags = ecs.c.EcsUp,
             .trav = ecs.c.EcsChildOf,
         }),
         .oper = ecs.c.EcsNot,
+    });
+    pip_desc.query.filter.terms[3] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+        .id = ecs.COMPONENT(world, ecs.SystemSort),
+        .inout = ecs.c.EcsIn,
     });
 
     const pipeline = ecs.c.ecs_pipeline_init(world, &pip_desc);
@@ -121,7 +130,7 @@ pub fn main() !void {
 }
 
 fn run(it: [*c]ecs.c.ecs_iter_t) callconv(.C) void {
-    std.debug.print("------------ runing: {s}\n", .{ecs.c.ecs_get_name(it.*.world, it.*.system)});
+    std.debug.print("------------ system: {s}\n", .{ecs.c.ecs_get_name(it.*.world, it.*.system)});
     if (!ecs.c.ecs_iter_next(it)) return;
 }
 
@@ -131,55 +140,50 @@ fn makePhase(world: *ecs.c.ecs_world_t, depends_on: ?u64) u64 {
     return phase;
 }
 
-fn pipelineEntityCompare(e1: u64, _: ?*const anyopaque, e2: u64, _: ?*const anyopaque) callconv(.C) c_int {
-    std.debug.print("----- sort\n", .{});
+fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
+    const sort1 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr1)));
+    const sort2 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr2)));
+
     const first: c_int = if (e1 > e2) 1 else 0;
     const second: c_int = if (e1 < e2) 1 else 0;
-    return first - second;
+
+    const phase_1: c_int = if (sort1.phase > sort2.phase) 1 else 0;
+    const phase_2: c_int = if (sort1.phase < sort2.phase) 1 else 0;
+
+    if (sort1.phase == sort2.phase) {
+        std.debug.print("SAME PHASE: {} vs {}, first - second: {}, {} vs {}\n", .{ sort1.phase, sort2.phase, first - second, e1, e2 });
+        const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
+        const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
+        return order_1 - order_2;
+    }
+
+    // std.debug.print("{} vs {}, first - second: {}, {} vs {}\n", .{ sort1.phase, sort2.phase, first - second, e1, e2 });
+
+    return phase_1 - phase_2;
+
+    // if (first - second == 0) return sort1.order_in_phase - sort2.order_in_phase;
+    // return first - second;
 }
 
 fn getStartupPipeline(world: *ecs.c.ecs_world_t, pre_startup: u64, startup: u64, post_startup: u64) u64 {
     var pip_desc = std.mem.zeroes(ecs.c.ecs_pipeline_desc_t);
     pip_desc.entity = ecs.c.ecs_entity_init(world, &std.mem.zeroInit(ecs.c.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
-    pip_desc.query.order_by = pipelineEntityCompare;
+    pip_desc.query.order_by = pipelineSystemSortCompare;
+    pip_desc.query.order_by_component = ecs.COMPONENT(world, ecs.SystemSort);
+
     pip_desc.query.filter.terms[0].id = ecs.c.EcsSystem;
     pip_desc.query.filter.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsPhase,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsCascade,
-            .trav = ecs.c.EcsDependsOn,
-        }),
+        .id = pre_startup,
+        .oper = ecs.c.EcsOr,
     });
     pip_desc.query.filter.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsDisabled,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsUp,
-            .trav = ecs.c.EcsDependsOn,
-        }),
-        .oper = ecs.c.EcsNot,
+        .id = startup,
+        .oper = ecs.c.EcsOr,
     });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsDisabled,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsUp,
-            .trav = ecs.c.EcsChildOf,
-        }),
-        .oper = ecs.c.EcsNot,
-    });
-
+    pip_desc.query.filter.terms[3].id = post_startup;
     pip_desc.query.filter.terms[4] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.ecs_make_pair(ecs.c.EcsDependsOn, pre_startup),
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
-        .oper = ecs.c.EcsOr,
-    });
-    pip_desc.query.filter.terms[5] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.ecs_make_pair(ecs.c.EcsDependsOn, startup),
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
-        .oper = ecs.c.EcsOr,
-    });
-    pip_desc.query.filter.terms[6] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.ecs_make_pair(ecs.c.EcsDependsOn, post_startup),
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
+        .id = ecs.COMPONENT(world, ecs.SystemSort),
+        .inout = ecs.c.EcsIn,
     });
 
     return ecs.c.ecs_pipeline_init(world, &pip_desc);
@@ -187,18 +191,16 @@ fn getStartupPipeline(world: *ecs.c.ecs_world_t, pre_startup: u64, startup: u64,
 
 fn removeStartupSystems(world: *ecs.c.ecs_world_t, pre_startup: u64, startup: u64, post_startup: u64) void {
     var filter_desc = std.mem.zeroes(ecs.c.ecs_filter_desc_t);
-    // filter_desc.terms[0].id = pre_startup;
-    filter_desc.terms[0] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = pre_startup,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
-        .oper = ecs.c.EcsOr,
-    });
+    filter_desc.terms[0].id = ecs.c.EcsSystem;
     filter_desc.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = startup,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{ .trav = ecs.c.EcsDependsOn }),
+        .id = pre_startup,
         .oper = ecs.c.EcsOr,
     });
-    filter_desc.terms[2].id = post_startup;
+    filter_desc.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+        .id = startup,
+        .oper = ecs.c.EcsOr,
+    });
+    filter_desc.terms[3].id = post_startup;
 
     const filter = ecs.c.ecs_filter_init(world, &filter_desc);
     var it = ecs.c.ecs_filter_iter(world, filter);

@@ -106,4 +106,38 @@ pub const App = struct {
         self.world.initResource(T);
         return self;
     }
+
+    // States
+    pub fn addState(self: *Self, comptime T: type, current_state: T) *App {
+        std.debug.assert(@typeInfo(T) == .Enum);
+
+        std.debug.print("state: {}\n", .{current_state});
+        // self.init_resource::<State<S>>()
+        //     .init_resource::<NextState<S>>()
+        //     .add_systems(
+        //         StateTransition,
+        //         (
+        //             run_enter_schedule::<S>.run_if(run_once_condition()),
+        //             apply_state_transition::<S>,
+        //         )
+        //             .chain(),
+        //     );
+        return self;
+    }
 };
+
+// states, organize these
+pub fn State(comptime T: type) type {
+    return struct { current: T };
+}
+
+pub fn NextState(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        state: T,
+
+        pub fn set(self: Self, new_state: T) void {
+            self.state = new_state;
+        }
+    };
+}
