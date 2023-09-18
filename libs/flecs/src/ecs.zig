@@ -50,6 +50,7 @@ pub fn SYSTEM(world: *c.ecs_world_t, name: [*:0]const u8, phase: c.ecs_entity_t,
     entity_desc.name = name;
     entity_desc.add[0] = COMPONENT(world, SystemSort);
     entity_desc.add[1] = phase;
+    entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
 
     system_desc.entity = c.ecs_entity_init(world, &entity_desc);
     _ = c.ecs_system_init(world, system_desc);

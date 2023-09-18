@@ -148,47 +148,15 @@ pub const App = struct {
     }
 
     pub fn addSystemAfter(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, after_system: []const u8) *App {
-        const other_system = flecs.ecs_lookup(self.world.ecs, after_system.ptr);
-        if (other_system == 0) @panic("addSystemAfter could not find after_system");
-
-        const other_sort = ecs.get(self.world.ecs, other_system, ecs.SystemSort).?;
-        if (other_sort.phase != phase) @panic("other_system is in a different phase. Cannot addSystemAfter unless they are in the same phase");
-        const other_order_in_phase = other_sort.order_in_phase;
-        std.debug.print("other_order_in_phase: {}\n", .{other_order_in_phase});
-
-        var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
-        filter_desc.terms[0].id = ecs.COMPONENT(self.world.ecs, ecs.SystemSort);
-        filter_desc.terms[0].inout = flecs.EcsInOut;
-
-        const filter = flecs.ecs_filter_init(self.world.ecs, &filter_desc);
-        defer flecs.ecs_filter_fini(filter);
-
-        var it = flecs.ecs_filter_iter(self.world.ecs, filter);
-        while (flecs.ecs_filter_next(&it)) {
-            const system_sorts = ecs.field(&it, ecs.SystemSort, 1);
-
-            var i: usize = 0;
-            while (i < it.count) : (i += 1) {
-                if (system_sorts[i].phase == phase and system_sorts[i].order_in_phase > other_order_in_phase) {
-                    std.debug.print("iter: {d}, entity: {}, sort: {}\n", .{ i, it.entities[i], system_sorts[i] });
-                    system_sorts[i].order_in_phase += 1;
-                }
-            }
-        }
-
-        // increment our phase_insert_indices since we are adding a new system
-        var phase_insertion = self.phase_insert_indices.getPtr(phase).?;
-        phase_insertion.* += 1;
-
-        var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
-        ecs.SYSTEM(self.world.ecs, name, phase, other_order_in_phase + 1, &system_desc);
-        std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase + 1});
-
-        return self;
+        return self.insertSystem(name, phase, runFn, after_system, 1);
     }
 
     pub fn addSystemBefore(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, before_system: []const u8) *App {
-        const other_system = flecs.ecs_lookup(self.world.ecs, before_system.ptr);
+        return self.insertSystem(name, phase, runFn, before_system, -1);
+    }
+
+    fn insertSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, other_system_name: []const u8, direction: i32) *App {
+        const other_system = flecs.ecs_lookup(self.world.ecs, other_system_name.ptr);
         if (other_system == 0) @panic("addSystemAfter could not find after_system");
 
         const other_sort = ecs.get(self.world.ecs, other_system, ecs.SystemSort).?;
@@ -209,20 +177,24 @@ pub const App = struct {
 
             var i: usize = 0;
             while (i < it.count) : (i += 1) {
-                if (system_sorts[i].phase == phase and system_sorts[i].order_in_phase < other_order_in_phase) {
-                    std.debug.print("iter: {d}, entity: {}, sort: {}\n", .{ i, it.entities[i], system_sorts[i] });
-                    system_sorts[i].order_in_phase -= 1;
+                if (system_sorts[i].phase != phase) continue;
+                if (direction > 0) {
+                    if (system_sorts[i].order_in_phase > other_order_in_phase)
+                        system_sorts[i].order_in_phase += direction;
+                } else {
+                    if (system_sorts[i].order_in_phase < other_order_in_phase)
+                        system_sorts[i].order_in_phase += direction;
                 }
             }
         }
 
         // increment our phase_insert_indices since we are adding a new system
         var phase_insertion = self.phase_insert_indices.getPtr(phase).?;
-        phase_insertion.* -= 1;
+        phase_insertion.* += direction;
 
         var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
-        ecs.SYSTEM(self.world.ecs, name, phase, other_order_in_phase - 1, &system_desc);
-        std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase - 1});
+        ecs.SYSTEM(self.world.ecs, name, phase, other_order_in_phase + direction, &system_desc);
+        std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase + direction});
 
         return self;
     }
