@@ -61,23 +61,23 @@ pub fn main() !void {
         }),
     });
 
-    ecs.SYSTEM(world, "StateTransition_0", StateTransition, &system_desc);
-    ecs.SYSTEM(world, "StateTransition_1", StateTransition, &system_desc);
-    ecs.SYSTEM(world, "First_0", First, &system_desc);
-    ecs.SYSTEM(world, "Update_0", Update, &system_desc);
-    ecs.SYSTEM(world, "Update_1", Update, &system_desc);
-    ecs.SYSTEM(world, "PreUpdate_0", PreUpdate, &system_desc);
-    ecs.SYSTEM(world, "PreUpdate_1", PreUpdate, &system_desc);
-    ecs.SYSTEM(world, "Last_0", Last, &system_desc);
-    ecs.SYSTEM(world, "RunFixedUpdateLoop_0", RunFixedUpdateLoop, &system_desc);
-    ecs.SYSTEM(world, "PostUpdate_0", PostUpdate, &system_desc);
+    ecs.SYSTEM(world, "StateTransition_0", StateTransition, 0, &system_desc);
+    ecs.SYSTEM(world, "StateTransition_1", StateTransition, 0, &system_desc);
+    ecs.SYSTEM(world, "First_0", First, 0, &system_desc);
+    ecs.SYSTEM(world, "Update_0", Update, 0, &system_desc);
+    ecs.SYSTEM(world, "Update_1", Update, 0, &system_desc);
+    ecs.SYSTEM(world, "PreUpdate_0", PreUpdate, 0, &system_desc);
+    ecs.SYSTEM(world, "PreUpdate_1", PreUpdate, 0, &system_desc);
+    ecs.SYSTEM(world, "Last_0", Last, 0, &system_desc);
+    ecs.SYSTEM(world, "RunFixedUpdateLoop_0", RunFixedUpdateLoop, 0, &system_desc);
+    ecs.SYSTEM(world, "PostUpdate_0", PostUpdate, 0, &system_desc);
 
     // currently sets up the DependsOn with the built-in phases so it will run after but could be anywhere after...
-    ecs.SYSTEM(world, "InsertedPhase", InsertedPhase, &system_desc);
+    ecs.SYSTEM(world, "InsertedPhase", InsertedPhase, 0, &system_desc);
 
-    ecs.SYSTEM(world, "PostStartup", PostStartup, &system_desc);
-    ecs.SYSTEM(world, "PreStartup", PreStartup, &system_desc);
-    ecs.SYSTEM(world, "Startup", Startup, &system_desc);
+    ecs.SYSTEM(world, "PostStartup", PostStartup, 0, &system_desc);
+    ecs.SYSTEM(world, "PreStartup", PreStartup, 0, &system_desc);
+    ecs.SYSTEM(world, "Startup", Startup, 0, &system_desc);
 
     ecs.c.ecs_set_target_fps(world, 30);
 

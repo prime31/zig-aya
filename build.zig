@@ -63,6 +63,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "tester", "examples/tester.zig");
     addExecutable(b, target, optimize, options, "init", "examples/init.zig");
     addExecutable(b, target, optimize, options, "flecs_pipeline", "examples/flecs_pipeline.zig");
+    addExecutable(b, target, optimize, options, "app_init", "examples/app_init.zig");
 
     addTests(b, target, optimize);
 

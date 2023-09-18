@@ -30,10 +30,10 @@ pub inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
     return comptime &PerTypeGlobalStruct(T).id;
 }
 
-/// gets the EntityId for T creating it if it doesn't already exist
-pub fn componentId(world: *flecs.c.ecs_world_t, comptime T: type) flecs.EntityId {
+// is this used?
+pub fn componentId(world: *flecs.ecs_world_t, comptime T: type) u64 {
     var handle = perTypeGlobalStructPtr(T);
-    if (handle.* < std.math.maxInt(flecs.EntityId)) {
+    if (handle.* < std.math.maxInt(u64)) {
         return handle.*;
     }
 

@@ -23,15 +23,15 @@ pub fn main() !void {
             .filter = std.mem.zeroInit(ecs.c.ecs_filter_desc_t, .{ .expr = null }),
         }),
     });
-    ecs.SYSTEM(world, "collision_0", Collisions, &system_desc);
-    ecs.SYSTEM(world, "update_1", Update, &system_desc);
-    ecs.SYSTEM(world, "physics_2", Physics, &system_desc);
-    ecs.SYSTEM(world, "physics_3", Physics, &system_desc);
-    ecs.SYSTEM(world, "update_4", Update, &system_desc);
+    ecs.SYSTEM(world, "collision_0", Collisions, 0, &system_desc);
+    ecs.SYSTEM(world, "update_1", Update, 0, &system_desc);
+    ecs.SYSTEM(world, "physics_2", Physics, 0, &system_desc);
+    ecs.SYSTEM(world, "physics_3", Physics, 0, &system_desc);
+    ecs.SYSTEM(world, "update_4", Update, 0, &system_desc);
 
-    ecs.SYSTEM(world, "startup_system1", ecs.c.EcsOnStart, &system_desc);
-    ecs.SYSTEM(world, "startup_system2", ecs.c.EcsOnStart, &system_desc);
-    ecs.SYSTEM(world, "startup_system3", ecs.c.EcsOnStart, &system_desc);
+    ecs.SYSTEM(world, "startup_system1", ecs.c.EcsOnStart, 0, &system_desc);
+    ecs.SYSTEM(world, "startup_system2", ecs.c.EcsOnStart, 0, &system_desc);
+    ecs.SYSTEM(world, "startup_system3", ecs.c.EcsOnStart, 0, &system_desc);
 
     ecs.c.ecs_set_target_fps(world, 30);
     _ = ecs.c.ecs_progress(world, 0);
