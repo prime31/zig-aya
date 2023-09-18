@@ -45,7 +45,7 @@ pub fn main() !void {
         .addSystem("Last_0", Last, run)
         .addSystem("RunFixedUpdateLoop_0", RunFixedUpdateLoop, run)
         .addSystem("PostUpdate_1", PostUpdate, run)
-        .addSystemAfter("Last_2", Last, run, "Last_0")
+        .addSystem("Last_2", Last, run)
         .addSystemAfter("Last_1", Last, run, "Last_0")
         .addSystemBefore("Last_-1", Last, run, "Last_0")
         .addSystem("PostStartup", PostStartup, run)
@@ -58,21 +58,24 @@ pub fn main() !void {
         .addSystemBefore("PreStartup_2a", PreStartup, run, "PreStartup_2b")
         .run();
 
+    // disables an entire phase
+    // flecs.ecs_enable(app.world.ecs, StateTransition, false);
+
     // run the startup pipeline then core pipeline
     runStartupPipeline(app.world.ecs, PreStartup, Startup, PostStartup);
     setCorePipeline(app.world.ecs);
 
     std.debug.print("---------\n", .{});
-    _ = ecs.c.ecs_progress(app.world.ecs, 0);
+    _ = flecs.ecs_progress(app.world.ecs, 0);
 }
 
-fn run(it: [*c]ecs.c.ecs_iter_t) callconv(.C) void {
-    std.debug.print("------------ system: {s}\n", .{ecs.c.ecs_get_name(it.*.world, it.*.system)});
-    if (!ecs.c.ecs_iter_next(it)) return;
+fn run(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
+    std.debug.print("------------ system: {s}\n", .{flecs.ecs_get_name(it.*.world, it.*.system)});
+    if (!flecs.ecs_iter_next(it)) return;
 }
 
-fn makePhase(world: *ecs.c.ecs_world_t) u64 {
-    return ecs.c.ecs_new_w_id(world, ecs.c.EcsPhase);
+fn makePhase(world: *flecs.ecs_world_t) u64 {
+    return flecs.ecs_new_w_id(world, flecs.EcsPhase);
 }
 
 fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
@@ -100,63 +103,60 @@ fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*
     return phase_1 - phase_2;
 }
 
-fn runStartupPipeline(world: *ecs.c.ecs_world_t, pre_startup: u64, startup: u64, post_startup: u64) void {
-    var pip_desc = std.mem.zeroes(ecs.c.ecs_pipeline_desc_t);
-    pip_desc.entity = ecs.c.ecs_entity_init(world, &std.mem.zeroInit(ecs.c.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
+fn runStartupPipeline(world: *flecs.ecs_world_t, pre_startup: u64, startup: u64, post_startup: u64) void {
+    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
+    pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
     pip_desc.query.order_by_component = ecs.COMPONENT(world, ecs.SystemSort);
 
-    pip_desc.query.filter.terms[0].id = ecs.c.EcsSystem;
-    pip_desc.query.filter.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
+    pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
         .id = pre_startup,
-        .oper = ecs.c.EcsOr,
+        .oper = flecs.EcsOr,
     });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
         .id = startup,
-        .oper = ecs.c.EcsOr,
+        .oper = flecs.EcsOr,
     });
     pip_desc.query.filter.terms[3].id = post_startup;
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
+    pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
         .id = ecs.COMPONENT(world, ecs.SystemSort),
-        .inout = ecs.c.EcsIn,
+        .inout = flecs.EcsIn,
     });
 
-    const startup_pipeline = ecs.c.ecs_pipeline_init(world, &pip_desc);
-    ecs.c.ecs_set_pipeline(world, startup_pipeline);
-    _ = ecs.c.ecs_progress(world, 0);
+    const startup_pipeline = flecs.ecs_pipeline_init(world, &pip_desc);
+    flecs.ecs_set_pipeline(world, startup_pipeline);
+    _ = flecs.ecs_progress(world, 0);
 
     flecs.ecs_delete_with(world, pre_startup);
     flecs.ecs_delete_with(world, startup);
     flecs.ecs_delete_with(world, post_startup);
 }
 
-fn setCorePipeline(world: *ecs.c.ecs_world_t) void {
-    var pip_desc = std.mem.zeroes(ecs.c.ecs_pipeline_desc_t);
-    pip_desc.entity = ecs.c.ecs_entity_init(world, &std.mem.zeroInit(ecs.c.ecs_entity_desc_t, .{ .name = "CustomPipeline" }));
+fn setCorePipeline(world: *flecs.ecs_world_t) void {
+    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
+    pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "CustomPipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
     pip_desc.query.order_by_component = ecs.COMPONENT(world, ecs.SystemSort);
-    pip_desc.query.filter.terms[0].id = ecs.c.EcsSystem;
-    pip_desc.query.filter.terms[1] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsDisabled,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsUp,
-            .trav = ecs.c.EcsDependsOn,
+    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
+    pip_desc.query.filter.terms[1].id = ecs.COMPONENT(world, ecs.SystemSort);
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = flecs.EcsDisabled,
+        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
+            .flags = flecs.EcsUp,
+            .trav = flecs.EcsDependsOn,
         }),
-        .oper = ecs.c.EcsNot,
+        .oper = flecs.EcsNot,
     });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.c.EcsDisabled,
-        .src = std.mem.zeroInit(ecs.c.ecs_term_id_t, .{
-            .flags = ecs.c.EcsUp,
-            .trav = ecs.c.EcsChildOf,
+    pip_desc.query.filter.terms[3] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = flecs.EcsDisabled,
+        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
+            .flags = flecs.EcsUp,
+            .trav = flecs.EcsChildOf,
         }),
-        .oper = ecs.c.EcsNot,
-    });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(ecs.c.ecs_term_t, .{
-        .id = ecs.COMPONENT(world, ecs.SystemSort),
-        .inout = ecs.c.EcsIn,
+        .oper = flecs.EcsNot,
     });
 
-    const pipeline = ecs.c.ecs_pipeline_init(world, &pip_desc);
-    ecs.c.ecs_set_pipeline(world, pipeline);
+    const pipeline = flecs.ecs_pipeline_init(world, &pip_desc);
+    flecs.ecs_set_pipeline(world, pipeline);
 }
