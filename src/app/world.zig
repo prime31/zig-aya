@@ -1,5 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const ecs = @import("ecs");
+const flecs = ecs.c;
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
@@ -7,13 +9,18 @@ const Resources = aya.Resources;
 pub const World = struct {
     const Self = @This();
 
+    ecs: *flecs.ecs_world_t,
     resources: Resources,
 
     pub fn init(allocator: Allocator) Self {
-        return .{ .resources = Resources.init(allocator) };
+        return .{
+            .ecs = flecs.ecs_init().?,
+            .resources = Resources.init(allocator),
+        };
     }
 
     pub fn deinit(self: *Self) void {
+        _ = flecs.ecs_fini(self.ecs);
         self.resources.deinit();
     }
 

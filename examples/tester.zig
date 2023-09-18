@@ -82,7 +82,7 @@ pub fn main() !void {
             .filter = std.mem.zeroInit(ecs.c.ecs_filter_desc_t, .{ .expr = null }),
         }),
     });
-    ecs.SYSTEM(world, "run_system", ecs.c.EcsOnUpdate, &system_desc);
+    ecs.SYSTEM(world, "run_system", ecs.c.EcsOnUpdate, 0, &system_desc);
 
     ecs.c.ecs_set_target_fps(world, 30);
     _ = ecs.c.ecs_progress(world, 0);
