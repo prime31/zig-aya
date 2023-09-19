@@ -11,7 +11,7 @@ pub const TermInfo = struct {
     relation_type: ?type = null,
     inout: flecs.ecs_inout_kind_t = flecs.EcsInOutDefault,
     oper: flecs.ecs_oper_kind_t = flecs.EcsAnd,
-    mask: u8 = flecs.EcsDefaultSet,
+    mask: u8 = 0,
     field: ?[]const u8 = null,
 
     pub fn init(comptime T: type) TermInfo {
@@ -40,14 +40,14 @@ pub const TermInfo = struct {
                 term_info.field = @field(t, "field");
             }
 
-            t = fi.field_type;
+            t = fi.type;
         }
 
         // if the final unwrapped type is an Or it will have term_type1
         if (std.meta.fieldIndex(t, "term_type1")) |_| {
             const fields = std.meta.fields(t);
-            t = fields[0].field_type;
-            term_info.or_term_type = fields[1].field_type;
+            t = fields[0].type;
+            term_info.or_term_type = fields[1].type;
 
             if (term_info.oper != 0) @compileError("Bad oper in query. Previous modifier already set oper. " ++ @typeName(T));
             term_info.oper = flecs.EcsOr;
@@ -57,10 +57,10 @@ pub const TermInfo = struct {
         if (std.meta.fieldIndex(t, "obj_type")) |obj_idx| {
             const fields = std.meta.fields(t);
             if (term_info.obj_type != null) @compileError("Bad obj_type in query. Previous modifier already set obj_type. " ++ @typeName(T));
-            term_info.obj_type = fields[obj_idx].field_type;
+            term_info.obj_type = fields[obj_idx].type;
 
             if (std.meta.fieldIndex(t, "relation_type")) |relation_idx| {
-                term_info.relation_type = fields[relation_idx].field_type;
+                term_info.relation_type = fields[relation_idx].type;
             } else unreachable;
 
             if (@hasDecl(t, "field")) {
@@ -69,7 +69,7 @@ pub const TermInfo = struct {
                 term_info.field = @field(t, "field");
             }
 
-            t = fields[0].field_type;
+            t = fields[0].type;
         }
 
         assert(!@hasDecl(t, "term_type") and !@hasDecl(t, "term_type1"));
@@ -88,7 +88,7 @@ pub const TermInfo = struct {
     pub fn format(comptime value: TermInfo, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
         const inout = switch (value.inout) {
             flecs.EcsInOutDefault => "InOutDefault",
-            flecs.EcsInOutNone => "Filter",
+            flecs.EcsInOutNone => "None",
             flecs.EcsIn => "In",
             flecs.EcsOut => "Out",
             else => unreachable,
@@ -100,6 +100,6 @@ pub const TermInfo = struct {
             flecs.EcsOptional => "Optional",
             else => unreachable,
         };
-        try std.fmt.format(writer, "TermInfo{{ type = {d}, or_type = {d}, inout: {s}, oper: {s}, mask: {d}, obj_type: {any}, relation_type: {any}, field_name: {s} }}", .{ value.term_type, value.or_term_type, inout, oper, value.mask, value.obj_type, value.relation_type, value.field });
+        try std.fmt.format(writer, "TermInfo{{ type = {any}, or_type = {?}, inout: {s}, oper: {s}, mask: {?}, obj_type: {?}, relation_type: {?}, field_name: {any} }}", .{ value.term_type, value.or_term_type, inout, oper, value.mask, value.obj_type, value.relation_type, value.field });
     }
 };

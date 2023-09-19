@@ -36,7 +36,7 @@ pub const QueryBuilder = struct {
     }
 
     /// the term will be used for the query but it is neither read nor written
-    pub fn withFilter(self: *QueryBuilder, comptime T: type) *QueryBuilder {
+    pub fn withNone(self: *QueryBuilder, comptime T: type) *QueryBuilder {
         self.desc.query.filter.terms[self.terms_count].id = self.world.componentId(T);
         self.desc.query.filter.terms[self.terms_count].inout = flecs.EcsInOutNone;
         self.terms_count += 1;
@@ -100,9 +100,9 @@ pub const QueryBuilder = struct {
         return ecs.Filter.init(self.world, &self.desc.query.filter);
     }
 
-    // pub fn buildQuery(self: *QueryBuilder) ecs.Query {
-    //     return flecs.Query.init(self.world, &self.desc.query);
-    // }
+    pub fn buildQuery(self: *QueryBuilder) ecs.Query {
+        return flecs.Query.init(self.world, &self.desc.query);
+    }
 
     /// queries/system only
     pub fn orderBy(self: *QueryBuilder, comptime T: type, orderByFn: *const fn (u64, ?*const anyopaque, u64, ?*const anyopaque) callconv(.C) c_int) *QueryBuilder {

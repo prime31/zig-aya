@@ -166,13 +166,13 @@ pub const Ecs = struct {
     // }
 
     /// creates a Filter using the passed in struct
-    pub fn filter(self: Ecs, comptime Components: type) flecs.Filter {
+    pub fn filter(self: Ecs, comptime Components: type) ecs.Filter {
         std.debug.assert(@typeInfo(Components) == .Struct);
         var desc = meta.generateFilterDesc(self, Components);
-        return flecs.Filter.init(self, &desc);
+        return ecs.Filter.init(self, &desc);
     }
 
-    // /// probably temporary until we find a better way to handle it better, but a way to
+    // /// probably temporary until we find a better way to handle it, but a way to
     // /// iterate the passed components of children of the parent entity
     // pub fn filterParent(self: Ecs, comptime Components: type, parent: flecs.Entity) flecs.Filter {
     //     std.debug.assert(@typeInfo(Components) == .Struct);
@@ -182,55 +182,60 @@ pub const Ecs = struct {
     //     return flecs.Filter.init(self, &desc);
     // }
 
-    // /// creates a Query using the passed in struct
-    // pub fn query(self: Ecs, comptime Components: type) flecs.Query {
-    //     std.debug.assert(@typeInfo(Components) == .Struct);
-    //     var desc = std.mem.zeroes(flecs.ecs_query_desc_t);
-    //     desc.filter = meta.generateFilterDesc(self, Components);
+    /// creates a Query using the passed in struct
+    pub fn query(self: Ecs, comptime Components: type) ecs.Query {
+        std.debug.assert(@typeInfo(Components) == .Struct);
+        var desc = std.mem.zeroes(flecs.ecs_query_desc_t);
+        desc.filter = meta.generateFilterDesc(self, Components);
 
-    //     if (@hasDecl(Components, "order_by")) {
-    //         meta.validateOrderByFn(Components.order_by);
-    //         const ti = @typeInfo(@TypeOf(Components.order_by));
-    //         const OrderByType = meta.FinalChild(ti.Fn.args[1].arg_type.?);
-    //         meta.validateOrderByType(Components, OrderByType);
+        if (@hasDecl(Components, "order_by")) {
+            meta.validateOrderByFn(Components.order_by);
+            const ti = @typeInfo(@TypeOf(Components.order_by));
+            const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
+            meta.validateOrderByType(Components, OrderByType);
 
-    //         desc.order_by = wrapOrderByFn(OrderByType, Components.order_by);
-    //         desc.order_by_component = self.componentId(OrderByType);
-    //     }
+            desc.order_by = wrapOrderByFn(OrderByType, Components.order_by);
+            desc.order_by_component = self.componentId(OrderByType);
+        }
 
-    //     if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+        if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
 
-    //     return flecs.Query.init(self, &desc);
-    // }
+        return ecs.Query.init(self, &desc);
+    }
 
-    // /// adds a system to the Ecs using the passed in struct
-    // pub fn system(self: Ecs, comptime Components: type, phase: flecs.Phase) void {
-    //     std.debug.assert(@typeInfo(Components) == .Struct);
-    //     std.debug.assert(@hasDecl(Components, "run"));
-    //     std.debug.assert(@hasDecl(Components, "name"));
+    /// adds a system to the Ecs using the passed in struct
+    pub fn system(self: Ecs, comptime Components: type, phase: u64) void {
+        std.debug.assert(@typeInfo(Components) == .Struct);
+        std.debug.assert(@hasDecl(Components, "run"));
+        std.debug.assert(@hasDecl(Components, "name"));
 
-    //     var desc = std.mem.zeroes(flecs.ecs_system_desc_t);
-    //     desc.callback = dummyFn;
-    //     desc.entity.name = Components.name;
-    //     desc.entity.add[0] = @intFromEnum(phase);
-    //     // desc.multi_threaded = true;
-    //     desc.run = wrapSystemFn(Components, Components.run);
-    //     desc.query.filter = meta.generateFilterDesc(self, Components);
+        var entity_desc = std.mem.zeroes(flecs.ecs_entity_desc_t);
+        entity_desc.id = flecs.ecs_new_id(self.ecs);
+        entity_desc.name = Components.name;
+        entity_desc.add[0] = phase;
+        entity_desc.add[1] = if (phase != 0) flecs.ecs_make_pair(flecs.EcsDependsOn, phase) else 0;
 
-    //     if (@hasDecl(Components, "order_by")) {
-    //         meta.validateOrderByFn(Components.order_by);
-    //         const ti = @typeInfo(@TypeOf(Components.order_by));
-    //         const OrderByType = meta.FinalChild(ti.Fn.args[1].arg_type.?);
-    //         meta.validateOrderByType(Components, OrderByType);
+        var desc = std.mem.zeroes(flecs.ecs_system_desc_t);
+        desc.callback = dummyFn;
+        desc.entity = flecs.ecs_entity_init(self.ecs, &entity_desc);
+        // desc.multi_threaded = true;
+        desc.run = wrapSystemFn(Components, Components.run);
+        desc.query.filter = meta.generateFilterDesc(self, Components);
 
-    //         desc.query.order_by = wrapOrderByFn(OrderByType, Components.order_by);
-    //         desc.query.order_by_component = self.componentId(OrderByType);
-    //     }
+        if (@hasDecl(Components, "order_by")) {
+            meta.validateOrderByFn(Components.order_by);
+            const ti = @typeInfo(@TypeOf(Components.order_by));
+            const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
+            meta.validateOrderByType(Components, OrderByType);
 
-    //     if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+            desc.query.order_by = wrapOrderByFn(OrderByType, Components.order_by);
+            desc.query.order_by_component = self.componentId(OrderByType);
+        }
 
-    //     _ = flecs.ecs_system_init(self.ecs, &desc);
-    // }
+        if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+
+        _ = flecs.ecs_system_init(self.ecs, &desc);
+    }
 
     // /// adds an observer system to the Ecs using the passed in struct (see systems)
     // pub fn observer(self: Ecs, comptime Components: type, event: flecs.Event) void {
@@ -251,13 +256,13 @@ pub const Ecs = struct {
     //     _ = flecs.ecs_observer_init(self.ecs, &desc);
     // }
 
-    // pub fn setName(self: Ecs, entity: flecs.EntityId, name: [*c]const u8) void {
-    //     _ = flecs.ecs_set_name(self.ecs, entity, name);
-    // }
+    pub fn setName(self: Ecs, entity: flecs.EntityId, name: [*c]const u8) void {
+        _ = flecs.ecs_set_name(self.ecs, entity, name);
+    }
 
-    // pub fn getName(self: Ecs, entity: flecs.EntityId) [*c]const u8 {
-    //     return flecs.ecs_get_name(self.ecs, entity);
-    // }
+    pub fn getName(self: Ecs, entity: flecs.EntityId) [*c]const u8 {
+        return flecs.ecs_get_name(self.ecs, entity);
+    }
 
     /// sets a component on entity. Can be either a pointer to a struct or a struct
     pub fn set(self: *Ecs, entity: flecs.EntityId, ptr_or_struct: anytype) void {
@@ -323,21 +328,22 @@ pub const Ecs = struct {
     }
 };
 
-fn wrapSystemFn(comptime T: type, comptime cb: fn (*flecs.Iterator(T)) void) fn ([*c]flecs.ecs_iter_t) callconv(.C) void {
+fn wrapSystemFn(comptime T: type, comptime cb: fn (*ecs.Iterator(T)) void) fn ([*c]flecs.ecs_iter_t) callconv(.C) void {
     const Closure = struct {
-        pub var callback: fn (*flecs.Iterator(T)) void = cb;
+        pub var callback: *const fn (*ecs.Iterator(T)) void = cb;
 
         pub fn closure(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
-            callback(&flecs.Iterator(T).init(it, flecs.ecs_iter_next));
+            var iterator = ecs.Iterator(T).init(it, flecs.ecs_iter_next);
+            callback(&iterator);
         }
     };
     return Closure.closure;
 }
 
-fn wrapOrderByFn(comptime T: type, comptime cb: fn (flecs.EntityId, *const T, flecs.EntityId, *const T) c_int) FlecsOrderByAction {
+fn wrapOrderByFn(comptime T: type, comptime cb: fn (u64, *const T, u64, *const T) c_int) FlecsOrderByAction {
     const Closure = struct {
-        pub fn closure(e1: flecs.EntityId, c1: ?*const anyopaque, e2: flecs.EntityId, c2: ?*const anyopaque) callconv(.C) c_int {
-            return @call(.{ .modifier = .always_inline }, cb, .{ e1, @as(*const T, @ptrCast(@alignCast(c1))), e2, @as(*const T, @ptrCast(@alignCast(c2))) });
+        pub fn closure(e1: u64, c1: ?*const anyopaque, e2: u64, c2: ?*const anyopaque) callconv(.C) c_int {
+            return @call(.always_inline, cb, .{ e1, @as(*const T, @ptrCast(@alignCast(c1))), e2, @as(*const T, @ptrCast(@alignCast(c2))) });
         }
     };
     return Closure.closure;
