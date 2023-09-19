@@ -99,13 +99,13 @@ const Sprite = struct {
 };
 
 const Texture = struct {
-    image: stb.Image = undefined,
     tex: *sdl.SDL_Texture = undefined,
     w: f32 = 0,
     h: f32 = 0,
 
     pub fn init(allocator: Allocator, renderer: *sdl.SDL_Renderer, path: []const u8) Texture {
         var image = stb.Image.init(allocator, path) catch unreachable;
+        defer image.deinit();
 
         const tex = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGBA32, sdl.SDL_TEXTUREACCESS_TARGET, @intCast(image.w), @intCast(image.h));
 
@@ -115,7 +115,6 @@ const Texture = struct {
         _ = sdl.SDL_SetTextureBlendMode(tex, sdl.SDL_BLENDMODE_BLEND);
 
         return .{
-            .image = image,
             .tex = tex.?,
             .w = @floatFromInt(image.w),
             .h = @floatFromInt(image.h),
