@@ -2,6 +2,16 @@ const std = @import("std");
 pub const c = @import("flecs.zig");
 const meta = @import("meta.zig");
 
+pub const Ecs = @import("ecs_impl.zig").Ecs;
+pub const Entity = @import("entity.zig").Entity;
+pub const QueryBuilder = @import("query_builder.zig").QueryBuilder;
+
+pub const Term = @import("term.zig").Term;
+pub const Filter = @import("filter.zig").Filter;
+
+pub const TableIterator = @import("table_iterator.zig").TableIterator;
+pub const Iterator = @import("iterator.zig").Iterator;
+
 pub const SystemSort = struct {
     phase: u64,
     order_in_phase: i32 = 0,
@@ -9,27 +19,7 @@ pub const SystemSort = struct {
 
 // meta.componentId from old repo handles zero or sized types
 pub fn COMPONENT(world: *c.ecs_world_t, comptime T: type) u64 {
-    if (@sizeOf(T) == 0)
-        @compileError("Size of the type must be greater than zero");
-
-    const type_id_ptr = meta.perTypeGlobalStructPtr(T);
-    if (type_id_ptr.* != 0)
-        return type_id_ptr.*;
-
-    // component_ids_hm.put(type_id_ptr, 0) catch @panic("OOM");
-
-    type_id_ptr.* = c.ecs_component_init(world, &std.mem.zeroInit(c.ecs_component_desc_t, .{
-        .entity = c.ecs_entity_init(world, &std.mem.zeroInit(c.ecs_entity_desc_t, .{
-            .use_low_id = true,
-            .name = meta.typeName(T),
-            .symbol = meta.typeName(T),
-        })),
-        .type = .{
-            .alignment = @alignOf(T),
-            .size = @sizeOf(T),
-        },
-    }));
-    return type_id_ptr.*;
+    return meta.componentId(world, T);
 }
 
 pub fn TAG(world: *c.ecs_world_t, comptime T: type) void {
@@ -80,9 +70,19 @@ pub fn componentId(world: *c.ecs_world_t, comptime T: type) u64 {
 }
 
 /// returns the field at index
-pub fn field(iter: [*c]const c.ecs_iter_t, comptime T: type, index: i32) [*]T {
+pub fn field(iter: [*c]const c.ecs_iter_t, comptime T: type, index: i32) []T {
     var col = c.ecs_field_w_size(iter, @sizeOf(T), index);
-    return @as([*]T, @ptrCast(@alignCast(col)));
+    const ptr = @as([*]T, @ptrCast(@alignCast(col)));
+    return ptr[0..@intCast(iter.*.count)];
+}
+
+/// returns null in the case of column not being present or an invalid index
+pub fn fieldOpt(iter: [*c]const c.ecs_iter_t, comptime T: type, index: i32) ?[]T {
+    if (index <= 0) return null;
+    var col = c.ecs_field_w_size(iter, @sizeOf(T), index);
+    if (col == null) return null;
+    const ptr = @as([*]T, @ptrCast(@alignCast(col)));
+    return ptr[0..@intCast(iter.*.count)];
 }
 
 /// gets a pointer to a type if the component is present on the entity
@@ -104,8 +104,12 @@ pub fn getMut(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*T {
 }
 
 /// used when the Flecs API provides untyped data to convert to type. Query/system order_by callbacks are one example.
-pub fn componentCast(comptime T: type, val: ?*const anyopaque) *const T {
+pub fn cast(comptime T: type, val: ?*const anyopaque) *const T {
     return @as(*const T, @ptrCast(@alignCast(val)));
+}
+
+pub fn castMut(comptime T: type, val: ?*anyopaque) *T {
+    return @as(*T, @ptrCast(@alignCast(val)));
 }
 
 /// Allowed params: u64 (entity_id), type
@@ -138,4 +142,12 @@ pub fn pair(self: *c.ecs_world_t, relation: anytype, object: anytype) u64 {
 
 pub fn addPair(world: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) void {
     c.ecs_add_id(world, entity, pair(world, relation, object));
+}
+
+pub fn pairFirst(id: u64) u32 {
+    return @as(u32, @truncate((id & c.ECS_COMPONENT_MASK) >> 32));
+}
+
+pub fn pairSecond(id: u64) u32 {
+    return @as(u32, @truncate(id));
 }
