@@ -658,8 +658,11 @@ pub const struct_ecs_iter_t = extern struct {
     interrupted_by: ecs_entity_t,
     priv: ecs_iter_private_t,
     next: ecs_iter_next_action_t,
-    callback: ecs_iter_action_t,
-    set_var: ecs_iter_action_t,
+    // MIKEWASHERE: hack for https://github.com/ziglang/zig/issues/12325
+    // callback: ecs_iter_action_t,
+    // set_var: ecs_iter_action_t,
+    callback: *anyopaque,
+    set_var: *anyopaque,
     fini: ecs_iter_fini_action_t,
     chain_it: [*c]ecs_iter_t,
 };
