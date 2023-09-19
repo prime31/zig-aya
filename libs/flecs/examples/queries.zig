@@ -46,6 +46,11 @@ const SystemCallbackType = struct {
     pub const expr = "?queries.PopTart";
 };
 
+const EmptyCallback = struct {
+    pub const name = "PrintDeltaTime";
+    pub const run = printDeltaTime;
+};
+
 pub fn main() !void {
     var world = ecs.Ecs.init();
     defer world.deinit();
@@ -61,6 +66,7 @@ pub fn main() !void {
     std.debug.print("----- {s}\n", .{query.asString()});
 
     world.system(SystemCallbackType, flecs.EcsOnUpdate);
+    world.system(EmptyCallback, flecs.EcsOnUpdate);
 
     const entity1 = world.newEntityWithName("MyEntityYo");
     const entity2 = world.newEntityWithName("MyEntity2");
@@ -106,6 +112,11 @@ fn system(iter: *ecs.Iterator(SystemCallbackType)) void {
     while (iter.next()) |e| {
         std.debug.print("system: a: {?}, v: {} - {s}\n", .{ e.acc, e.vel, iter.entity().getName() });
     }
+}
+
+fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
+    while (iter.next()) |_| {}
+    std.log.debug("delta_time: {d}", .{iter.iter.delta_time});
 }
 
 fn orderBy(_: u64, c1: *const Velocity, _: u64, c2: *const Velocity) c_int {
