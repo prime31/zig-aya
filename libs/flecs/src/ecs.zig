@@ -7,6 +7,7 @@ pub const SystemSort = struct {
     order_in_phase: i32 = 0,
 };
 
+// meta.componentId from old repo handles zero or sized types
 pub fn COMPONENT(world: *c.ecs_world_t, comptime T: type) u64 {
     if (@sizeOf(T) == 0)
         @compileError("Size of the type must be greater than zero");
@@ -59,7 +60,6 @@ pub fn SYSTEM(world: *c.ecs_world_t, name: [*:0]const u8, phase: c.ecs_entity_t,
         .phase = phase,
         .order_in_phase = order_in_phase,
     });
-    std.debug.print("--- adding system: {s}, entity: {}, order: {}\n", .{ name, system_desc.entity, order_in_phase });
 }
 
 pub fn OBSERVER(world: *c.ecs_world_t, name: [*:0]const u8, observer_desc: *c.ecs_observer_desc_t) void {
@@ -73,7 +73,10 @@ pub fn OBSERVER(world: *c.ecs_world_t, name: [*:0]const u8, observer_desc: *c.ec
 
 // is this used?
 pub fn componentId(world: *c.ecs_world_t, comptime T: type) u64 {
-    return meta.componentId(world, T);
+    _ = T;
+    _ = world;
+    @panic("is this really used");
+    // return meta.componentId(world, T);
 }
 
 /// returns the field at index
@@ -93,7 +96,7 @@ pub fn get(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*const T {
 
 pub fn getMut(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*T {
     var is_added = false;
-    var ptr = c.ecs_get_mut_id(world, entity.id, meta.componentId(world, T), &is_added);
+    var ptr = c.ecs_get_mut_id(world, entity.id, COMPONENT(world, T), &is_added);
     if (ptr) |p| {
         return @as(*T, @ptrCast(@alignCast(p)));
     }
@@ -103,4 +106,36 @@ pub fn getMut(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*T {
 /// used when the Flecs API provides untyped data to convert to type. Query/system order_by callbacks are one example.
 pub fn componentCast(comptime T: type, val: ?*const anyopaque) *const T {
     return @as(*const T, @ptrCast(@alignCast(val)));
+}
+
+/// Allowed params: u64 (entity_id), type
+pub fn pair(self: *c.ecs_world_t, relation: anytype, object: anytype) u64 {
+    _ = self;
+    const Relation = @TypeOf(relation);
+    const Object = @TypeOf(object);
+
+    const rel_info = @typeInfo(Relation);
+    const obj_info = @typeInfo(Object);
+
+    std.debug.assert(rel_info == .Struct or rel_info == .Type or Relation == u64 or Relation == c_int);
+    std.debug.assert(obj_info == .Struct or obj_info == .Type or Object == u64);
+
+    const rel_id = switch (Relation) {
+        c_int => @as(u64, @intCast(relation)),
+        type => COMPONENT(relation),
+        u64 => relation,
+        else => unreachable,
+    };
+
+    const obj_id = switch (Object) {
+        type => COMPONENT(object),
+        u64 => object,
+        else => unreachable,
+    };
+
+    return c.ECS_PAIR | (rel_id << @as(u32, 32)) + @as(u32, @truncate(obj_id));
+}
+
+pub fn addPair(world: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) void {
+    c.ecs_add_id(world, entity, pair(world, relation, object));
 }
