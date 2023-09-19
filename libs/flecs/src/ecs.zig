@@ -2,12 +2,16 @@ const std = @import("std");
 pub const c = @import("flecs.zig");
 const meta = @import("meta.zig");
 
+pub const queries = @import("queries.zig");
+
 pub const Ecs = @import("ecs_impl.zig").Ecs;
 pub const Entity = @import("entity.zig").Entity;
 pub const QueryBuilder = @import("query_builder.zig").QueryBuilder;
 
 pub const Term = @import("term.zig").Term;
 pub const Filter = @import("filter.zig").Filter;
+pub const Query = @import("query.zig").Query;
+pub const Type = @import("type.zig").Type;
 
 pub const TableIterator = @import("table_iterator.zig").TableIterator;
 pub const Iterator = @import("iterator.zig").Iterator;
@@ -17,7 +21,7 @@ pub const SystemSort = struct {
     order_in_phase: i32 = 0,
 };
 
-// meta.componentId from old repo handles zero or sized types
+// dont do direct access. go through EcsWorld
 pub fn COMPONENT(world: *c.ecs_world_t, comptime T: type) u64 {
     return meta.componentId(world, T);
 }
@@ -59,14 +63,6 @@ pub fn OBSERVER(world: *c.ecs_world_t, name: [*:0]const u8, observer_desc: *c.ec
 
     observer_desc.entity = c.ecs_entity_init(world, &entity_desc);
     _ = c.ecs_observer_init(world, observer_desc);
-}
-
-// is this used?
-pub fn componentId(world: *c.ecs_world_t, comptime T: type) u64 {
-    _ = T;
-    _ = world;
-    @panic("is this really used");
-    // return meta.componentId(world, T);
 }
 
 /// returns the field at index
@@ -151,3 +147,21 @@ pub fn pairFirst(id: u64) u32 {
 pub fn pairSecond(id: u64) u32 {
     return @as(u32, @truncate(id));
 }
+
+pub const OperKind = enum(c_int) {
+    and_ = c.EcsAnd,
+    or_ = c.EcsOr,
+    not = c.EcsNot,
+    optional = c.EcsOptional,
+    and_from = c.EcsAndFrom,
+    or_from = c.EcsOrFrom,
+    not_from = c.EcsNotFrom,
+};
+
+pub const InOutKind = enum(c_int) {
+    default = c.EcsInOutDefault, // in_out for regular terms, in for shared terms
+    none = c.EcsInOutNone, // neither read nor written. Cannot have a query term.
+    in_out = c.EcsInOut, // read/write
+    in = c.EcsIn, // read only. Query term is const.
+    out = c.EcsOut, // write only
+};

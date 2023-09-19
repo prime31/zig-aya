@@ -29,16 +29,16 @@ pub fn Iterator(comptime Components: type) type {
             };
         }
 
-        pub fn entity(self: *@This()) flecs.Entity {
-            return flecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
+        pub fn entity(self: *@This()) ecs.Entity {
+            return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
-        pub fn world(self: *@This()) flecs.World {
+        pub fn world(self: *@This()) ecs.Ecs {
             return .{ .world = self.iter.world.? };
         }
 
-        pub fn tableType(self: *@This()) flecs.Type {
-            return flecs.Type.init(self.iter.world.?, self.iter.type);
+        pub fn tableType(self: *@This()) ecs.Type {
+            return ecs.Type.init(self.iter.world.?, self.iter.type);
         }
 
         pub fn skip(self: *@This()) void {
@@ -86,7 +86,7 @@ pub fn Iterator(comptime Components: type) type {
             var iter: TableColumns = .{ .count = self.iter.count };
             var index: usize = 0;
             inline for (@typeInfo(Components).Struct.fields, 0..) |field, i| {
-                // skip EcsInOutNone since they arent returned when we iterate. TODO: old api had EcsNothing masks that also have no field associated
+                // skip EcsInOutNone since they arent returned when we iterate
                 while (self.iter.terms[index].inout == flecs.EcsInOutNone) : (index += 1) {}
 
                 const is_optional = @typeInfo(field.type) == .Optional;

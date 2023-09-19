@@ -52,13 +52,7 @@ pub fn main() !void {
     var filter = builder.buildFilter();
     defer filter.deinit();
 
-    std.debug.print("\n\niterate with a FilterIterator\n", .{});
-    var filter_iter = filter.filterIterator();
-    while (filter_iter.next()) |_| {
-        std.debug.print("pos: {}, vel: {}, accel: {?}, player: {?}\n", .{ filter_iter.getConst(Position), filter_iter.get(Velocity), filter_iter.getOpt(Acceleration), filter_iter.getOpt(Player) });
-    }
-
-    std.debug.print("\n\niterate with a TableIterator\n", .{});
+    std.debug.print("\niterate with a TableIterator\n", .{});
     var table_iter = filter.tableIterator(FilterFields);
     while (table_iter.next()) |it| {
         var i: usize = 0;

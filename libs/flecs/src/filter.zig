@@ -9,85 +9,6 @@ pub const Filter = struct {
     world: ecs.Ecs,
     filter: *flecs.ecs_filter_t,
 
-    /// filter iterator that lets you fetch components via get/getOpt
-    /// TODO: is this thing necessary? Seems the other iterators are more then capable compared to this thing.
-    const FilterIterator = struct {
-        iter: flecs.ecs_iter_t,
-        index: usize = 0,
-
-        pub fn init(iter: flecs.ecs_iter_t) @This() {
-            return .{ .iter = iter };
-        }
-
-        pub fn next(self: *@This()) ?void {
-            if (self.index >= self.iter.count) {
-                self.index = 0;
-                if (!flecs.ecs_filter_next(&self.iter)) return null;
-            }
-
-            self.index += 1;
-        }
-
-        pub fn entity(self: *@This()) flecs.Entity {
-            return flecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
-        }
-
-        /// gets the index into the terms array of this type
-        fn getTermIndex(self: @This(), comptime T: type) usize {
-            const comp_id = meta.perTypeGlobalStructPtr(T).*;
-            var i: usize = 0;
-            while (i < self.iter.field_count) : (i += 1) {
-                if (self.iter.terms[i].id == comp_id) return i;
-            }
-            unreachable;
-        }
-
-        /// gets a term that is not optional
-        pub fn get(self: @This(), comptime T: type) *T {
-            const index = self.getTermIndex(T);
-            const column_index = self.iter.terms[index].field_index;
-            return &ecs.field(&self.iter, T, column_index + 1)[self.index - 1];
-        }
-
-        /// gets a term that is not optional but is readonly
-        pub fn getConst(self: @This(), comptime T: type) *const T {
-            const index = self.getTermIndex(T);
-            const column_index = self.iter.terms[index].field_index;
-            std.debug.assert(flecs.ecs_field_is_readonly(&self.iter, @as(i32, @intCast(index + 1))));
-
-            // const column_index = flecs.ecs_iter_find_column(&self.iter, meta.perTypeGlobalStructPtr(T).*);
-            return &ecs.field(&self.iter, T, column_index + 1)[self.index - 1];
-        }
-
-        /// gets a term that is optional. Returns null if it isnt found.
-        pub fn getOpt(self: @This(), comptime T: type) ?*T {
-            const index = self.getTermIndex(T);
-            const column_index = self.iter.terms[index].field_index;
-            var skip_term = meta.perTypeGlobalStructPtr(T).* != flecs.ecs_field_id(&self.iter, @intCast(column_index + 1));
-            if (skip_term) return null;
-
-            if (ecs.fieldOpt(&self.iter, T, column_index + 1)) |col| {
-                return &col[self.index - 1];
-            }
-            return null;
-        }
-
-        /// gets a term that is optional and readonly. Returns null if it isnt found.
-        pub fn getConstOpt(self: @This(), comptime T: type) ?*const T {
-            const index = self.getTermIndex(T);
-            std.debug.assert(flecs.ecs_term_is_readonly(&self.iter, @as(i32, @intCast(index + 1))));
-
-            const column_index = self.iter.terms[index].index;
-            var skip_term = meta.perTypeGlobalStructPtr(T).* != flecs.ecs_field_id(&self.iter, @as(usize, @intCast(column_index + 1)));
-            if (skip_term) return null;
-
-            if (ecs.fieldOpt(&self.iter, T, column_index + 1)) |col| {
-                return &col[self.index - 1];
-            }
-            return null;
-        }
-    };
-
     pub fn init(world: ecs.Ecs, desc: *flecs.ecs_filter_desc_t) Self {
         return .{
             .world = world,
@@ -101,10 +22,6 @@ pub const Filter = struct {
 
     pub fn asString(self: *Self) [*c]u8 {
         return flecs.ecs_filter_str(self.world.ecs, self.filter);
-    }
-
-    pub fn filterIterator(self: *Self) FilterIterator {
-        return FilterIterator.init(flecs.ecs_filter_iter(self.world.ecs, self.filter));
     }
 
     /// gets an iterator that let you iterate the tables and then it provides an inner iterator to iterate entities
