@@ -116,7 +116,46 @@ pub const App = struct {
     pub fn addState(self: *Self, comptime T: type, current_state: T) *App {
         std.debug.assert(@typeInfo(T) == .Enum);
 
-        std.debug.print("state: {}\n", .{current_state});
+        std.debug.print("-- add state: {}\n", .{current_state});
+
+        const base_state = flecs.ecs_new_id(self.world.ecs);
+        _ = flecs.ecs_add_id(self.world.ecs, base_state, flecs.EcsUnion);
+
+        const EnumMap = std.enums.EnumMap(T, u64);
+        var map = EnumMap{};
+
+        for (std.enums.values(T)) |val| {
+            map.put(val, flecs.ecs_new_id(self.world.ecs));
+        }
+
+        _ = self.insertResource(State(T).init(base_state, current_state, map));
+        _ = self.insertResource(NextState(T).init(current_state));
+
+        // add the state to the entity so we can query for it (see init.zig on bottom or below)
+        const system_entity = flecs.ecs_new_id(self.world.ecs);
+        ecs.addPair(self.world.ecs, system_entity, base_state, map.getAssertContains(current_state));
+
+        // add system for this T that will handle disabling/enabling systems with the state when it changes
+
+        // ELSEWHERE, when we need to query for systems with this state
+        // grab the entity for the enum T
+        const state_resource = self.world.getResource(State(T)).?;
+
+        var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
+        filter_desc.terms[0].id = ecs.pair(self.world.ecs, state_resource.base, flecs.EcsWildcard);
+
+        // in the iterator, this is how to fetch the union relationship value
+        // const system_state = flecs.ecs_get_target(it.world, it.entities[i], state_resource.base, 0);
+
+        // TODO:
+        // - init state enum with an EcsUnion (see init example at bottom)
+        // - set the current state
+        // - when NextState changes, query for all with the base tag of the enum
+        //     * any sytems in the current state, normal phases are disabled
+        //     * any systems in the current state OnExit run (handle later, needs thought)
+        //     * any systems in next state OnEnter run (handle later, needs thought
+        //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
+
         // self.init_resource::<State<S>>()
         //     .init_resource::<NextState<S>>()
         //     .add_systems(
@@ -202,13 +241,26 @@ pub const App = struct {
 
 // states, organize these
 pub fn State(comptime T: type) type {
-    return struct { current: T };
+    return struct {
+        const Self = @This();
+        base: u64,
+        state: T,
+        state_map: std.enums.EnumMap(T, u64),
+
+        pub fn init(base: u64, state: T, state_map: std.enums.EnumMap(T, u64)) Self {
+            return .{ .base = base, .state = state, .state_map = state_map };
+        }
+    };
 }
 
 pub fn NextState(comptime T: type) type {
     return struct {
         const Self = @This();
         state: T,
+
+        pub fn init(state: T) Self {
+            return .{ .state = state };
+        }
 
         pub fn set(self: Self, new_state: T) void {
             self.state = new_state;

@@ -38,6 +38,6 @@ pub const World = struct {
     }
 
     pub fn getResource(self: *Self, comptime T: type) ?*T {
-        self.resources.get(T);
+        return self.resources.get(T);
     }
 };
