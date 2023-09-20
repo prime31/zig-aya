@@ -70,9 +70,9 @@ pub fn componentId(world: *flecs.ecs_world_t, comptime T: type) u64 {
         }));
     }
 
-    // // allow disabling reflection data with a root bool
-    // if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
-    //     registerReflectionData(world, T, type_id_ptr.*);
+    // allow disabling reflection data with a root bool
+    if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
+        registerReflectionData(world, T, type_id_ptr.*);
 
     return type_id_ptr.*;
 }
@@ -95,8 +95,8 @@ pub fn FinalChild(comptime T: type) type {
     @compileError("Expected pointer or optional pointer, found '" ++ @typeName(T) ++ "'");
 }
 
-/// given a pointer or optional pointer returns a pointer-to-many. constness and optionality are retained.
-pub fn PointerToMany(comptime T: type) type {
+/// given a pointer or optional pointer returns a pointer-to-slide. constness and optionality are retained.
+pub fn PointerToSlice(comptime T: type) type {
     var is_const = false;
     var is_optional = false;
     var PointerT = T;
@@ -156,7 +156,7 @@ pub fn TableIteratorData(comptime Components: type) type {
         const T = FinalChild(field.type);
         fields[i] = .{
             .name = field.name,
-            .type = PointerToMany(field.type),
+            .type = PointerToSlice(field.type),
             .default_value = null,
             .is_comptime = false,
             .alignment = @alignOf(*T),

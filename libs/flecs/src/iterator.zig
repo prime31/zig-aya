@@ -16,6 +16,8 @@ pub fn Iterator(comptime Components: type) type {
     };
 
     return struct {
+        pub const components_type = Components;
+
         iter: *flecs.ecs_iter_t,
         inner_iter: ?TableColumns = null,
         index: usize = 0,

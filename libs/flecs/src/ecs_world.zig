@@ -70,20 +70,20 @@ pub const EcsWorld = struct {
         const rel_info = @typeInfo(Relation);
         const obj_info = @typeInfo(Object);
 
-        std.debug.assert(rel_info == .Struct or rel_info == .Type or Relation == flecs.EntityId or Relation == flecs.Entity or Relation == c_int);
-        std.debug.assert(obj_info == .Struct or obj_info == .Type or Object == flecs.EntityId or Object == flecs.Entity);
+        std.debug.assert(rel_info == .Struct or rel_info == .Type or Relation == u64 or Relation == flecs.Entity or Relation == c_int);
+        std.debug.assert(obj_info == .Struct or obj_info == .Type or Object == u64 or Object == flecs.Entity);
 
         const rel_id = switch (Relation) {
-            c_int => @as(flecs.EntityId, @intCast(relation)),
+            c_int => @as(u64, @intCast(relation)),
             type => self.componentId(relation),
-            flecs.EntityId => relation,
+            u64 => relation,
             flecs.Entity => relation.id,
             else => unreachable,
         };
 
         const obj_id = switch (Object) {
             type => self.componentId(object),
-            flecs.EntityId => object,
+            u64 => object,
             flecs.Entity => object.id,
             else => unreachable,
         };
@@ -104,8 +104,8 @@ pub const EcsWorld = struct {
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component. The name will be generated
     /// by adding the Ids of each component so that order doesnt matter.
-    pub fn newType(self: EcsWorld, comptime Types: anytype) flecs.EntityId {
-        var i: flecs.EntityId = 0;
+    pub fn newType(self: EcsWorld, comptime Types: anytype) u64 {
+        var i: u64 = 0;
         inline for (Types) |T| {
             i += self.componentId(T);
         }
@@ -115,7 +115,7 @@ pub const EcsWorld = struct {
     }
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component.
-    pub fn newTypeWithName(self: EcsWorld, name: [*c]const u8, comptime Types: anytype) flecs.EntityId {
+    pub fn newTypeWithName(self: EcsWorld, name: [*c]const u8, comptime Types: anytype) u64 {
         var desc = std.mem.zeroes(flecs.ecs_type_desc_t);
         desc.entity = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = name });
 
@@ -126,7 +126,7 @@ pub const EcsWorld = struct {
         return flecs.ecs_type_init(self.world, &desc);
     }
 
-    pub fn newTypeExpr(self: EcsWorld, name: [*c]const u8, expr: [*c]const u8) flecs.EntityId {
+    pub fn newTypeExpr(self: EcsWorld, name: [*c]const u8, expr: [*c]const u8) u64 {
         var desc = std.mem.zeroInit(flecs.ecs_type_desc_t, .{ .ids_expr = expr });
         desc.entity = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = name });
 
@@ -203,7 +203,7 @@ pub const EcsWorld = struct {
         return ecs.Query.init(self, &desc);
     }
 
-    /// adds a system to the Ecs using the passed in struct
+    /// adds a system to the ecs using the passed in struct
     pub fn system(self: EcsWorld, comptime Components: type, phase: u64) void {
         std.debug.assert(@typeInfo(Components) == .Struct);
         std.debug.assert(@hasDecl(Components, "run"));
@@ -261,16 +261,16 @@ pub const EcsWorld = struct {
         _ = flecs.ecs_observer_init(self.world, &desc);
     }
 
-    pub fn setName(self: EcsWorld, entity: flecs.EntityId, name: [*c]const u8) void {
+    pub fn setName(self: EcsWorld, entity: u64, name: [*c]const u8) void {
         _ = flecs.ecs_set_name(self.world, entity, name);
     }
 
-    pub fn getName(self: EcsWorld, entity: flecs.EntityId) [*c]const u8 {
+    pub fn getName(self: EcsWorld, entity: u64) [*c]const u8 {
         return flecs.ecs_get_name(self.world, entity);
     }
 
     /// sets a component on entity. Can be either a pointer to a struct or a struct
-    pub fn set(self: *EcsWorld, entity: flecs.EntityId, ptr_or_struct: anytype) void {
+    pub fn set(self: *EcsWorld, entity: u64, ptr_or_struct: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer or @typeInfo(@TypeOf(ptr_or_struct)) == .Struct);
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
@@ -279,17 +279,17 @@ pub const EcsWorld = struct {
     }
 
     /// removes a component from an Entity
-    pub fn remove(self: *EcsWorld, entity: flecs.EntityId, comptime T: type) void {
+    pub fn remove(self: *EcsWorld, entity: u64, comptime T: type) void {
         flecs.ecs_remove_id(self.world, entity, self.componentId(T));
     }
 
     /// removes all components from an Entity
-    pub fn clear(self: *EcsWorld, entity: flecs.EntityId) void {
+    pub fn clear(self: *EcsWorld, entity: u64) void {
         flecs.ecs_clear(self.world, entity);
     }
 
     /// removes the entity from the Ecs
-    pub fn delete(self: *EcsWorld, entity: flecs.EntityId) void {
+    pub fn delete(self: *EcsWorld, entity: u64) void {
         flecs.ecs_delete(self.world, entity);
     }
 

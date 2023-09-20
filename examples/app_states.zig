@@ -24,26 +24,32 @@ pub fn main() !void {
     const PostStartup = makePhase(app.world.ecs_world);
 
     const First = makePhase(app.world.ecs_world);
+    _ = First;
     const PreUpdate = makePhase(app.world.ecs_world);
+    _ = PreUpdate;
     const StateTransition = makePhase(app.world.ecs_world);
+    _ = StateTransition;
     const RunFixedUpdateLoop = makePhase(app.world.ecs_world);
     _ = RunFixedUpdateLoop;
     const Update = makePhase(app.world.ecs_world);
+    _ = Update;
     const PostUpdate = makePhase(app.world.ecs_world);
+    _ = PostUpdate;
     const Last = makePhase(app.world.ecs_world);
+    _ = Last;
 
-    app.addState(SuperState, .start)
-        .addSystem("StateTransition_0", StateTransition, run)
-        .addSystem("StateTransition_1", StateTransition, run)
-        .addSystem("PostUpdate_0", PostUpdate, run)
-        .addSystem("StateTransition_2", StateTransition, run)
-        .addSystem("First_0", First, run)
-        .addSystem("Update_0", Update, run)
-        .addSystem("Update_1", Update, run)
-        .addSystem("PreUpdate_0", PreUpdate, run)
-        .addSystem("PreUpdate_1", PreUpdate, run)
-        .addSystem("Last_0", Last, run)
-        .run();
+    // app.addState(SuperState, .start)
+    //     .addSystem("StateTransition_0", StateTransition, run)
+    //     .addSystem("StateTransition_1", StateTransition, run)
+    //     .addSystem("PostUpdate_0", PostUpdate, run)
+    //     .addSystem("StateTransition_2", StateTransition, run)
+    //     .addSystem("First_0", First, run)
+    //     .addSystem("Update_0", Update, run)
+    //     .addSystem("Update_1", Update, run)
+    //     .addSystem("PreUpdate_0", PreUpdate, run)
+    //     .addSystem("PreUpdate_1", PreUpdate, run)
+    //     .addSystem("Last_0", Last, run)
+    //     .run();
 
     // run the startup pipeline then core pipeline
     runStartupPipeline(app.world.ecs_world.world, PreStartup, Startup, PostStartup);
