@@ -3,11 +3,11 @@ const ecs = @import("ecs.zig");
 const flecs = ecs.c;
 
 pub const QueryBuilder = struct {
-    world: ecs.Ecs,
+    world: ecs.EcsWorld,
     desc: flecs.ecs_system_desc_t,
     terms_count: usize = 0,
 
-    pub fn init(world: ecs.Ecs) QueryBuilder {
+    pub fn init(world: ecs.EcsWorld) QueryBuilder {
         return .{
             .world = world,
             .desc = std.mem.zeroes(flecs.ecs_system_desc_t),

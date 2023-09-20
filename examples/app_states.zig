@@ -19,18 +19,18 @@ pub fn main() !void {
     var app = App.init(gpa.allocator());
     defer app.deinit();
 
-    const PreStartup = makePhase(app.world.ecs);
-    const Startup = makePhase(app.world.ecs);
-    const PostStartup = makePhase(app.world.ecs);
+    const PreStartup = makePhase(app.world.ecs_world);
+    const Startup = makePhase(app.world.ecs_world);
+    const PostStartup = makePhase(app.world.ecs_world);
 
-    const First = makePhase(app.world.ecs);
-    const PreUpdate = makePhase(app.world.ecs);
-    const StateTransition = makePhase(app.world.ecs);
-    const RunFixedUpdateLoop = makePhase(app.world.ecs);
+    const First = makePhase(app.world.ecs_world);
+    const PreUpdate = makePhase(app.world.ecs_world);
+    const StateTransition = makePhase(app.world.ecs_world);
+    const RunFixedUpdateLoop = makePhase(app.world.ecs_world);
     _ = RunFixedUpdateLoop;
-    const Update = makePhase(app.world.ecs);
-    const PostUpdate = makePhase(app.world.ecs);
-    const Last = makePhase(app.world.ecs);
+    const Update = makePhase(app.world.ecs_world);
+    const PostUpdate = makePhase(app.world.ecs_world);
+    const Last = makePhase(app.world.ecs_world);
 
     app.addState(SuperState, .start)
         .addSystem("StateTransition_0", StateTransition, run)
@@ -46,11 +46,11 @@ pub fn main() !void {
         .run();
 
     // run the startup pipeline then core pipeline
-    runStartupPipeline(app.world.ecs, PreStartup, Startup, PostStartup);
-    setCorePipeline(app.world.ecs);
+    runStartupPipeline(app.world.ecs_world.world, PreStartup, Startup, PostStartup);
+    setCorePipeline(app.world.ecs_world.world);
 
     std.debug.print("---------\n", .{});
-    _ = flecs.ecs_progress(app.world.ecs, 0);
+    app.world.ecs_world.progress(0);
 }
 
 fn run(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
@@ -58,8 +58,8 @@ fn run(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
     if (!flecs.ecs_iter_next(it)) return;
 }
 
-fn makePhase(world: *flecs.ecs_world_t) u64 {
-    return flecs.ecs_new_w_id(world, flecs.EcsPhase);
+fn makePhase(world: ecs.EcsWorld) u64 {
+    return flecs.ecs_new_w_id(world.world, flecs.EcsPhase);
 }
 
 fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {

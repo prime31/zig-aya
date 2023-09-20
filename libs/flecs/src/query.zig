@@ -4,10 +4,10 @@ const flecs = ecs.c;
 const meta = @import("meta.zig");
 
 pub const Query = struct {
-    world: ecs.Ecs,
+    world: ecs.EcsWorld,
     query: *flecs.ecs_query_t,
 
-    pub fn init(world: ecs.Ecs, desc: *flecs.ecs_query_desc_t) @This() {
+    pub fn init(world: ecs.EcsWorld, desc: *flecs.ecs_query_desc_t) @This() {
         return .{ .world = world, .query = flecs.ecs_query_init(world.ecs, desc).? };
     }
 

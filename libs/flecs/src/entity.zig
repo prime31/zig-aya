@@ -2,7 +2,7 @@ const std = @import("std");
 const flecs = @import("ecs.zig").c;
 const meta = @import("meta.zig");
 
-const Ecs = @import("ecs").Ecs;
+const Ecs = @import("ecs").EcsWorld;
 
 pub const Entity = struct {
     ecs: *flecs.ecs_world_t,
