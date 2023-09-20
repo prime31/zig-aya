@@ -4,6 +4,7 @@ const flecs = ecs.c;
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 const assets = @import("../asset/mod.zig");
+pub const phases = @import("phases.zig");
 
 const typeId = aya.utils.typeId;
 
@@ -23,8 +24,15 @@ pub const App = struct {
     phase_insert_indices: std.AutoHashMap(u64, i32),
 
     pub fn init(allocator: Allocator) Self {
+        const world = AppWorld.init(allocator);
+
+        // register our phases
+        inline for (@typeInfo(phases).Struct.decls) |decl| {
+            @field(phases, decl.name) = flecs.ecs_new_w_id(world.ecs_world.world, flecs.EcsPhase);
+        }
+
         return .{
-            .world = AppWorld.init(allocator),
+            .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
         };
@@ -37,7 +45,7 @@ pub const App = struct {
     }
 
     fn addDefaultPlugins(self: *Self) void {
-        _ = self.addPlugin(aya.AssetsPlugin)
+        _ = self.addPlugin(aya.AssetPlugin)
             .addPlugin(aya.InputPlugin)
             .addPlugin(aya.WindowPlugin);
     }
@@ -45,6 +53,9 @@ pub const App = struct {
     pub fn run(self: *Self) void {
         self.addDefaultPlugins();
         self.plugins.clearAndFree();
+
+        runStartupPipeline(self.world.ecs_world);
+        setCorePipeline(self.world.ecs_world);
     }
 
     /// Plugins must implement `build(App)`
@@ -170,6 +181,39 @@ pub const App = struct {
     }
 
     // Systems
+    pub fn addSystems(self: *Self, phase: u64, runFn: anytype) *App {
+        std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
+
+        var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
+        const order_in_phase = blk: {
+            if (!phase_insertions.found_existing) {
+                phase_insertions.value_ptr.* = 0;
+                break :blk 0;
+            }
+            phase_insertions.value_ptr.* += 1;
+            break :blk phase_insertions.value_ptr.*;
+        };
+        _ = order_in_phase;
+
+        // allowed params: *Iterator(T), Res(T), ResMut(T), *World
+        const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
+        inline for (fn_info.params) |param| {
+            if (@typeInfo(param.type.?) == .Pointer) {
+                const T = std.meta.Child(param.type.?);
+                if (@hasDecl(T, "components_type")) {
+                    std.debug.print("param type: {any}, {any}\n", .{ param.type, T.components_type });
+                    // self.world.ecs_world.system(T.inner_type, phase);
+                }
+            }
+
+            // var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
+            // ecs.SYSTEM(self.world.ecs_world.world, @typeName(runFn), phase, order_in_phase, &system_desc);
+        }
+
+        return self;
+    }
+
+    // OLD Systems
     pub fn addSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype) *App {
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
         const order_in_phase = blk: {
@@ -201,10 +245,10 @@ pub const App = struct {
         const other_sort = ecs.get(self.world.ecs_world.world, other_system, ecs.SystemSort).?;
         if (other_sort.phase != phase) @panic("other_system is in a different phase. Cannot addSystemAfter unless they are in the same phase");
         const other_order_in_phase = other_sort.order_in_phase;
-        std.debug.print("other_order_in_phase: {}\n", .{other_order_in_phase});
+        // std.debug.print("other_order_in_phase: {}\n", .{other_order_in_phase});
 
         var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
-        filter_desc.terms[0].id = ecs.COMPONENT(self.world.ecs_world.world, ecs.SystemSort);
+        filter_desc.terms[0].id = self.world.ecs_world.componentId(ecs.SystemSort);
         filter_desc.terms[0].inout = flecs.EcsInOut;
 
         const filter = flecs.ecs_filter_init(self.world.ecs_world.world, &filter_desc);
@@ -228,16 +272,102 @@ pub const App = struct {
         }
 
         // increment our phase_insert_indices since we are adding a new system
-        var phase_insertion = self.phase_insert_indices.getPtr(phase).?;
-        phase_insertion.* += direction;
+        var phase_insertion = self.phase_insert_indices.getOrPut(phase) catch unreachable;
+        phase_insertion.value_ptr.* += direction;
 
         var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
         ecs.SYSTEM(self.world.ecs_world.world, name, phase, other_order_in_phase + direction, &system_desc);
-        std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase + direction});
+        // std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase + direction});
 
         return self;
     }
 };
+
+fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
+    const sort1 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr1)));
+    const sort2 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr2)));
+
+    const phase_1: c_int = if (sort1.phase > sort2.phase) 1 else 0;
+    const phase_2: c_int = if (sort1.phase < sort2.phase) 1 else 0;
+
+    // sort by: phase, order_in_phase then entity_id
+    if (sort1.phase == sort2.phase) {
+        // std.debug.print("SAME PHASE. order: {} vs {}, entity: {}, {}\n", .{ sort1.order_in_phase, sort2.order_in_phase, e1, e2 });
+        const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
+        const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
+
+        const order_in_phase = order_1 - order_2;
+        if (order_in_phase != 0) return order_in_phase;
+
+        const first: c_int = if (e1 > e2) 1 else 0;
+        const second: c_int = if (e1 < e2) 1 else 0;
+
+        return first - second;
+    }
+
+    return phase_1 - phase_2;
+}
+
+/// runs a Pipeline that matches only the startup phases then deletes all systems in those phases
+fn runStartupPipeline(world: ecs.EcsWorld) void {
+    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
+    pip_desc.entity = flecs.ecs_entity_init(world.world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
+    pip_desc.query.order_by = pipelineSystemSortCompare;
+    pip_desc.query.order_by_component = world.componentId(ecs.SystemSort);
+
+    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
+    pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = phases.pre_startup,
+        .oper = flecs.EcsOr,
+    });
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = phases.startup,
+        .oper = flecs.EcsOr,
+    });
+    pip_desc.query.filter.terms[3].id = phases.post_startup;
+    pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = world.componentId(ecs.SystemSort),
+        .inout = flecs.EcsIn,
+    });
+
+    const startup_pipeline = flecs.ecs_pipeline_init(world.world, &pip_desc);
+    flecs.ecs_set_pipeline(world.world, startup_pipeline);
+    _ = flecs.ecs_progress(world.world, 0);
+
+    flecs.ecs_delete_with(world.world, phases.pre_startup);
+    flecs.ecs_delete_with(world.world, phases.startup);
+    flecs.ecs_delete_with(world.world, phases.post_startup);
+}
+
+/// creates and sets a Pipeline that handles system sorting
+fn setCorePipeline(world: ecs.EcsWorld) void {
+    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
+    pip_desc.entity = flecs.ecs_entity_init(world.world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "CorePipeline" }));
+    pip_desc.query.order_by = pipelineSystemSortCompare;
+    pip_desc.query.order_by_component = world.componentId(ecs.SystemSort);
+
+    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
+    pip_desc.query.filter.terms[1].id = world.componentId(ecs.SystemSort);
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = flecs.EcsDisabled,
+        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
+            .flags = flecs.EcsUp,
+            .trav = flecs.EcsDependsOn,
+        }),
+        .oper = flecs.EcsNot,
+    });
+    pip_desc.query.filter.terms[3] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        .id = flecs.EcsDisabled,
+        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
+            .flags = flecs.EcsUp,
+            .trav = flecs.EcsChildOf,
+        }),
+        .oper = flecs.EcsNot,
+    });
+
+    const pipeline = flecs.ecs_pipeline_init(world.world, &pip_desc);
+    flecs.ecs_set_pipeline(world.world, pipeline);
+}
 
 // states, organize these
 pub fn State(comptime T: type) type {

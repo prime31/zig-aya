@@ -49,7 +49,7 @@ const EmptyCallback = struct {
 };
 
 pub fn main() !void {
-    var world = ecs.Ecs.init();
+    var world = ecs.EcsWorld.init();
     defer world.deinit();
 
     world.registerComponents(.{ ZeroSizedTag, PopTart });
