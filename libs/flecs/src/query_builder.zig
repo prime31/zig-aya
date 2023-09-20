@@ -90,8 +90,8 @@ pub const QueryBuilder = struct {
     }
 
     pub fn singleton(self: *QueryBuilder, comptime T: type, entity: u64) *QueryBuilder {
-        self.desc.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{ .id = self.world.componentId(T) });
-        self.desc.filter.terms[self.terms_count].subj.entity = entity;
+        self.desc.filter.terms[self.terms_count].id = self.world.componentId(T);
+        self.desc.filter.terms[self.terms_count].src.id = entity;
         self.terms_count += 1;
         return self;
     }

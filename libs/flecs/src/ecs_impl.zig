@@ -237,24 +237,29 @@ pub const Ecs = struct {
         _ = flecs.ecs_system_init(self.ecs, &desc);
     }
 
-    // /// adds an observer system to the Ecs using the passed in struct (see systems)
-    // pub fn observer(self: Ecs, comptime Components: type, event: flecs.Event) void {
-    //     std.debug.assert(@typeInfo(Components) == .Struct);
-    //     std.debug.assert(@hasDecl(Components, "run"));
-    //     std.debug.assert(@hasDecl(Components, "name"));
+    /// adds an observer system to the Ecs using the passed in struct (see systems)
+    pub fn observer(self: Ecs, comptime Components: type, event: u64) void {
+        std.debug.assert(@typeInfo(Components) == .Struct);
+        std.debug.assert(@hasDecl(Components, "run"));
+        std.debug.assert(@hasDecl(Components, "name"));
 
-    //     var desc = std.mem.zeroes(flecs.ecs_observer_desc_t);
-    //     desc.callback = dummyFn;
-    //     desc.entity.name = Components.name;
-    //     desc.events[0] = @intFromEnum(event);
+        var entity_desc = std.mem.zeroes(flecs.ecs_entity_desc_t);
+        entity_desc.id = flecs.ecs_new_id(self.ecs);
+        entity_desc.name = Components.name;
+        entity_desc.add[0] = event;
 
-    //     desc.run = wrapSystemFn(Components, Components.run);
-    //     desc.filter = meta.generateFilterDesc(self, Components);
+        var desc = std.mem.zeroes(flecs.ecs_observer_desc_t);
+        desc.callback = dummyFn;
+        desc.entity = flecs.ecs_entity_init(self.ecs, &entity_desc);
+        desc.events[0] = event;
 
-    //     if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+        desc.run = wrapSystemFn(Components, Components.run);
+        desc.filter = meta.generateFilterDesc(self, Components);
 
-    //     _ = flecs.ecs_observer_init(self.ecs, &desc);
-    // }
+        if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+
+        _ = flecs.ecs_observer_init(self.ecs, &desc);
+    }
 
     pub fn setName(self: Ecs, entity: flecs.EntityId, name: [*c]const u8) void {
         _ = flecs.ecs_set_name(self.ecs, entity, name);

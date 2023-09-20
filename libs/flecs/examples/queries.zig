@@ -10,9 +10,6 @@ pub const Acceleration = struct { x: f32, y: f32 };
 pub const Player = struct { id: u8 = 0 };
 pub const Enemy = struct { id: u64 = 0 };
 pub const PopTart = struct { id: u64 = 0 };
-pub const Shit = struct {
-    pub const Fuck = struct { id: u8 = 0 };
-};
 pub const FunkLocity = Wrapper(Velocity);
 
 pub fn Wrapper(comptime t: type) type {
@@ -106,6 +103,7 @@ pub fn main() !void {
 
     std.debug.print("\n----- Tick System\n", .{});
     world.progress(0);
+    std.debug.print("\n\n\n----- OMFG. WE CAN PROLLY USE FUNC.NAME + typeName(TypeOf(fn)): {s}\n\n", .{@typeName(@TypeOf(system))});
 }
 
 fn system(iter: *ecs.Iterator(SystemCallbackType)) void {
