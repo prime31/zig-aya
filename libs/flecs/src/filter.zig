@@ -6,10 +6,10 @@ const meta = @import("meta.zig");
 pub const Filter = struct {
     const Self = @This();
 
-    world: ecs.Ecs,
+    world: ecs.EcsWorld,
     filter: *flecs.ecs_filter_t,
 
-    pub fn init(world: ecs.Ecs, desc: *flecs.ecs_filter_desc_t) Self {
+    pub fn init(world: ecs.EcsWorld, desc: *flecs.ecs_filter_desc_t) Self {
         return .{
             .world = world,
             .filter = flecs.ecs_filter_init(world.ecs, desc),

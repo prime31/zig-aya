@@ -33,7 +33,7 @@ pub fn Iterator(comptime Components: type) type {
             return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
-        pub fn world(self: *@This()) ecs.Ecs {
+        pub fn world(self: *@This()) ecs.EcsWorld {
             return .{ .world = self.iter.world.? };
         }
 

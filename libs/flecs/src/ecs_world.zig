@@ -9,61 +9,61 @@ const FlecsOrderByAction = fn (flecs.ecs_entity_t, ?*const anyopaque, flecs.ecs_
 
 fn dummyFn(_: [*c]flecs.ecs_iter_t) callconv(.C) void {}
 
-pub const Ecs = struct {
-    ecs: *flecs.ecs_world_t,
+pub const EcsWorld = struct {
+    world: *flecs.ecs_world_t,
 
-    pub fn init() Ecs {
-        return .{ .ecs = flecs.ecs_init().? };
+    pub fn init() EcsWorld {
+        return .{ .world = flecs.ecs_init().? };
     }
 
-    pub fn deinit(self: *Ecs) void {
-        _ = flecs.ecs_fini(self.ecs);
+    pub fn deinit(self: *EcsWorld) void {
+        _ = flecs.ecs_fini(self.world);
     }
 
-    pub fn setTargetFps(self: Ecs, fps: f32) void {
-        flecs.ecs_set_target_fps(self.ecs, fps);
+    pub fn setTargetFps(self: EcsWorld, fps: f32) void {
+        flecs.ecs_set_target_fps(self.world, fps);
     }
 
     /// available at: https://www.flecs.dev/explorer/?remote=true
     /// test if running: http://localhost:27750/entity/flecs
-    pub fn enableWebExplorer(self: Ecs) void {
-        _ = flecs.ecs_set_id(self.ecs, flecs.FLECS__EEcsRest, flecs.FLECS__EEcsRest, @sizeOf(flecs.EcsRest), &std.mem.zeroes(flecs.EcsRest));
+    pub fn enableWebExplorer(self: EcsWorld) void {
+        _ = flecs.ecs_set_id(self.world, flecs.FLECS__EEcsRest, flecs.FLECS__EEcsRest, @sizeOf(flecs.EcsRest), &std.mem.zeroes(flecs.EcsRest));
     }
 
     /// -1 log level turns off logging
-    pub fn setLogLevel(_: Ecs, level: c_int, enable_colors: bool) void {
+    pub fn setLogLevel(_: EcsWorld, level: c_int, enable_colors: bool) void {
         _ = flecs.ecs_log_set_level(level);
         _ = flecs.ecs_log_enable_colors(enable_colors);
     }
 
-    pub fn progress(self: Ecs, delta_time: f32) void {
-        _ = flecs.ecs_progress(self.ecs, delta_time);
+    pub fn progress(self: EcsWorld, delta_time: f32) void {
+        _ = flecs.ecs_progress(self.world, delta_time);
     }
 
-    pub fn getTypeStr(self: Ecs, typ: flecs.ecs_type_t) [*c]u8 {
-        return flecs.ecs_type_str(self.ecs, typ);
+    pub fn getTypeStr(self: EcsWorld, typ: flecs.ecs_type_t) [*c]u8 {
+        return flecs.ecs_type_str(self.world, typ);
     }
 
-    pub fn newEntity(self: Ecs) Entity {
-        return Entity.init(self.ecs, flecs.ecs_new_id(self.ecs));
+    pub fn newEntity(self: EcsWorld) Entity {
+        return Entity.init(self.world, flecs.ecs_new_id(self.world));
     }
 
-    pub fn newEntityWithName(self: Ecs, name: [*c]const u8) Entity {
+    pub fn newEntityWithName(self: EcsWorld, name: [*c]const u8) Entity {
         var desc = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = name });
-        return Entity.init(self.ecs, flecs.ecs_entity_init(self.ecs, &desc));
+        return Entity.init(self.world, flecs.ecs_entity_init(self.world, &desc));
     }
 
-    pub fn newPrefab(self: Ecs, name: [*c]const u8) flecs.Entity {
+    pub fn newPrefab(self: EcsWorld, name: [*c]const u8) flecs.Entity {
         var desc = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{
             .name = name,
             .add = [_]flecs.ecs_id_t{0} ** 32,
         });
         desc.add[0] = flecs.EcsPrefab;
-        return Entity.init(self.ecs, flecs.ecs_entity_init(self.ecs, &desc));
+        return Entity.init(self.world, flecs.ecs_entity_init(self.world, &desc));
     }
 
     /// Allowed params: Entity, EntityId, type
-    pub fn pair(self: Ecs, relation: anytype, object: anytype) u64 {
+    pub fn pair(self: EcsWorld, relation: anytype, object: anytype) u64 {
         const Relation = @TypeOf(relation);
         const Object = @TypeOf(object);
 
@@ -92,19 +92,19 @@ pub const Ecs = struct {
     }
 
     /// bulk registers a tuple of Types
-    pub fn registerComponents(self: Ecs, types: anytype) void {
+    pub fn registerComponents(self: EcsWorld, types: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(types)) == .Struct);
         inline for (types) |t| _ = self.componentId(t);
     }
 
     /// gets the EntityId for T creating it if it doesn't already exist
-    pub fn componentId(self: Ecs, comptime T: type) u64 {
-        return meta.componentId(self.ecs, T);
+    pub fn componentId(self: EcsWorld, comptime T: type) u64 {
+        return meta.componentId(self.world, T);
     }
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component. The name will be generated
     /// by adding the Ids of each component so that order doesnt matter.
-    pub fn newType(self: Ecs, comptime Types: anytype) flecs.EntityId {
+    pub fn newType(self: EcsWorld, comptime Types: anytype) flecs.EntityId {
         var i: flecs.EntityId = 0;
         inline for (Types) |T| {
             i += self.componentId(T);
@@ -115,7 +115,7 @@ pub const Ecs = struct {
     }
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component.
-    pub fn newTypeWithName(self: Ecs, name: [*c]const u8, comptime Types: anytype) flecs.EntityId {
+    pub fn newTypeWithName(self: EcsWorld, name: [*c]const u8, comptime Types: anytype) flecs.EntityId {
         var desc = std.mem.zeroes(flecs.ecs_type_desc_t);
         desc.entity = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = name });
 
@@ -123,14 +123,14 @@ pub const Ecs = struct {
             desc.ids[i] = self.componentId(T);
         }
 
-        return flecs.ecs_type_init(self.ecs, &desc);
+        return flecs.ecs_type_init(self.world, &desc);
     }
 
-    pub fn newTypeExpr(self: Ecs, name: [*c]const u8, expr: [*c]const u8) flecs.EntityId {
+    pub fn newTypeExpr(self: EcsWorld, name: [*c]const u8, expr: [*c]const u8) flecs.EntityId {
         var desc = std.mem.zeroInit(flecs.ecs_type_desc_t, .{ .ids_expr = expr });
         desc.entity = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = name });
 
-        return flecs.ecs_type_init(self.ecs, &desc);
+        return flecs.ecs_type_init(self.world, &desc);
     }
 
     // pub fn newSystem(self: Ecs, name: [*c]const u8, phase: flecs.Phase, signature: [*c]const u8, action: flecs.ecs_iter_action_t) void {
@@ -166,7 +166,7 @@ pub const Ecs = struct {
     // }
 
     /// creates a Filter using the passed in struct
-    pub fn filter(self: Ecs, comptime Components: type) ecs.Filter {
+    pub fn filter(self: EcsWorld, comptime Components: type) ecs.Filter {
         std.debug.assert(@typeInfo(Components) == .Struct);
         var desc = meta.generateFilterDesc(self, Components);
         return ecs.Filter.init(self, &desc);
@@ -183,7 +183,7 @@ pub const Ecs = struct {
     // }
 
     /// creates a Query using the passed in struct
-    pub fn query(self: Ecs, comptime Components: type) ecs.Query {
+    pub fn query(self: EcsWorld, comptime Components: type) ecs.Query {
         std.debug.assert(@typeInfo(Components) == .Struct);
         var desc = std.mem.zeroes(flecs.ecs_query_desc_t);
         desc.filter = meta.generateFilterDesc(self, Components);
@@ -204,20 +204,20 @@ pub const Ecs = struct {
     }
 
     /// adds a system to the Ecs using the passed in struct
-    pub fn system(self: Ecs, comptime Components: type, phase: u64) void {
+    pub fn system(self: EcsWorld, comptime Components: type, phase: u64) void {
         std.debug.assert(@typeInfo(Components) == .Struct);
         std.debug.assert(@hasDecl(Components, "run"));
         std.debug.assert(@hasDecl(Components, "name"));
 
         var entity_desc = std.mem.zeroes(flecs.ecs_entity_desc_t);
-        entity_desc.id = flecs.ecs_new_id(self.ecs);
+        entity_desc.id = flecs.ecs_new_id(self.world);
         entity_desc.name = Components.name;
         entity_desc.add[0] = phase;
         entity_desc.add[1] = if (phase != 0) flecs.ecs_make_pair(flecs.EcsDependsOn, phase) else 0;
 
         var desc = std.mem.zeroes(flecs.ecs_system_desc_t);
         desc.callback = dummyFn;
-        desc.entity = flecs.ecs_entity_init(self.ecs, &entity_desc);
+        desc.entity = flecs.ecs_entity_init(self.world, &entity_desc);
         // desc.multi_threaded = true;
         desc.run = wrapSystemFn(Components, Components.run);
         desc.query.filter = meta.generateFilterDesc(self, Components);
@@ -234,23 +234,23 @@ pub const Ecs = struct {
 
         if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
 
-        _ = flecs.ecs_system_init(self.ecs, &desc);
+        _ = flecs.ecs_system_init(self.world, &desc);
     }
 
     /// adds an observer system to the Ecs using the passed in struct (see systems)
-    pub fn observer(self: Ecs, comptime Components: type, event: u64) void {
+    pub fn observer(self: EcsWorld, comptime Components: type, event: u64) void {
         std.debug.assert(@typeInfo(Components) == .Struct);
         std.debug.assert(@hasDecl(Components, "run"));
         std.debug.assert(@hasDecl(Components, "name"));
 
         var entity_desc = std.mem.zeroes(flecs.ecs_entity_desc_t);
-        entity_desc.id = flecs.ecs_new_id(self.ecs);
+        entity_desc.id = flecs.ecs_new_id(self.world);
         entity_desc.name = Components.name;
         entity_desc.add[0] = event;
 
         var desc = std.mem.zeroes(flecs.ecs_observer_desc_t);
         desc.callback = dummyFn;
-        desc.entity = flecs.ecs_entity_init(self.ecs, &entity_desc);
+        desc.entity = flecs.ecs_entity_init(self.world, &entity_desc);
         desc.events[0] = event;
 
         desc.run = wrapSystemFn(Components, Components.run);
@@ -258,78 +258,78 @@ pub const Ecs = struct {
 
         if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
 
-        _ = flecs.ecs_observer_init(self.ecs, &desc);
+        _ = flecs.ecs_observer_init(self.world, &desc);
     }
 
-    pub fn setName(self: Ecs, entity: flecs.EntityId, name: [*c]const u8) void {
-        _ = flecs.ecs_set_name(self.ecs, entity, name);
+    pub fn setName(self: EcsWorld, entity: flecs.EntityId, name: [*c]const u8) void {
+        _ = flecs.ecs_set_name(self.world, entity, name);
     }
 
-    pub fn getName(self: Ecs, entity: flecs.EntityId) [*c]const u8 {
-        return flecs.ecs_get_name(self.ecs, entity);
+    pub fn getName(self: EcsWorld, entity: flecs.EntityId) [*c]const u8 {
+        return flecs.ecs_get_name(self.world, entity);
     }
 
     /// sets a component on entity. Can be either a pointer to a struct or a struct
-    pub fn set(self: *Ecs, entity: flecs.EntityId, ptr_or_struct: anytype) void {
+    pub fn set(self: *EcsWorld, entity: flecs.EntityId, ptr_or_struct: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer or @typeInfo(@TypeOf(ptr_or_struct)) == .Struct);
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
         var component = if (@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer) ptr_or_struct else &ptr_or_struct;
-        _ = flecs.ecs_set_id(self.ecs, entity, self.componentId(T), @sizeOf(T), component);
+        _ = flecs.ecs_set_id(self.world, entity, self.componentId(T), @sizeOf(T), component);
     }
 
     /// removes a component from an Entity
-    pub fn remove(self: *Ecs, entity: flecs.EntityId, comptime T: type) void {
-        flecs.ecs_remove_id(self.ecs, entity, self.componentId(T));
+    pub fn remove(self: *EcsWorld, entity: flecs.EntityId, comptime T: type) void {
+        flecs.ecs_remove_id(self.world, entity, self.componentId(T));
     }
 
     /// removes all components from an Entity
-    pub fn clear(self: *Ecs, entity: flecs.EntityId) void {
-        flecs.ecs_clear(self.ecs, entity);
+    pub fn clear(self: *EcsWorld, entity: flecs.EntityId) void {
+        flecs.ecs_clear(self.world, entity);
     }
 
     /// removes the entity from the Ecs
-    pub fn delete(self: *Ecs, entity: flecs.EntityId) void {
-        flecs.ecs_delete(self.ecs, entity);
+    pub fn delete(self: *EcsWorld, entity: flecs.EntityId) void {
+        flecs.ecs_delete(self.world, entity);
     }
 
     /// deletes all entities with the component
-    pub fn deleteWith(self: *Ecs, comptime T: type) void {
-        flecs.ecs_delete_with(self.ecs, self.componentId(T));
+    pub fn deleteWith(self: *EcsWorld, comptime T: type) void {
+        flecs.ecs_delete_with(self.world, self.componentId(T));
     }
 
     /// remove all instances of the specified component
-    pub fn removeAll(self: *Ecs, comptime T: type) void {
-        flecs.ecs_remove_all(self.ecs, self.componentId(T));
+    pub fn removeAll(self: *EcsWorld, comptime T: type) void {
+        flecs.ecs_remove_all(self.world, self.componentId(T));
     }
 
-    pub fn setSingleton(self: Ecs, ptr_or_struct: anytype) void {
+    pub fn setSingleton(self: EcsWorld, ptr_or_struct: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer or @typeInfo(@TypeOf(ptr_or_struct)) == .Struct);
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
         var component = if (@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer) ptr_or_struct else &ptr_or_struct;
-        _ = flecs.ecs_set_id(self.ecs, self.componentId(T), self.componentId(T), @sizeOf(T), component);
+        _ = flecs.ecs_set_id(self.world, self.componentId(T), self.componentId(T), @sizeOf(T), component);
     }
 
     // TODO: use ecs_get_mut_id optionally based on a bool perhaps or maybe if the passed in type is a pointer?
-    pub fn getSingleton(self: Ecs, comptime T: type) ?*const T {
+    pub fn getSingleton(self: EcsWorld, comptime T: type) ?*const T {
         std.debug.assert(@typeInfo(T) == .Struct);
-        var val = flecs.ecs_get_id(self.ecs, self.componentId(T), self.componentId(T));
+        var val = flecs.ecs_get_id(self.world, self.componentId(T), self.componentId(T));
         if (val == null) return null;
         return @as(*const T, @ptrCast(@alignCast(val)));
     }
 
-    pub fn getSingletonMut(self: Ecs, comptime T: type) ?*T {
+    pub fn getSingletonMut(self: EcsWorld, comptime T: type) ?*T {
         std.debug.assert(@typeInfo(T) == .Struct);
         var is_added: bool = undefined;
-        var val = flecs.ecs_get_mut_id(self.ecs, self.componentId(T), self.componentId(T), &is_added);
+        var val = flecs.ecs_get_mut_id(self.world, self.componentId(T), self.componentId(T), &is_added);
         if (val == null) return null;
         return @as(*T, @ptrCast(@alignCast(val)));
     }
 
-    pub fn removeSingleton(self: Ecs, comptime T: type) void {
+    pub fn removeSingleton(self: EcsWorld, comptime T: type) void {
         std.debug.assert(@typeInfo(T) == .Struct);
-        flecs.ecs_remove_id(self.ecs, self.componentId(T), self.componentId(T));
+        flecs.ecs_remove_id(self.world, self.componentId(T), self.componentId(T));
     }
 };
 

@@ -362,7 +362,7 @@ fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entity: u
 }
 
 /// given a struct of Components with optional embedded "metadata", "name", "order_by" data it generates an ecs_filter_desc_t
-pub fn generateFilterDesc(world: ecs.Ecs, comptime Components: type) flecs.ecs_filter_desc_t {
+pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.ecs_filter_desc_t {
     assert(@typeInfo(Components) == .Struct);
     var desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
 

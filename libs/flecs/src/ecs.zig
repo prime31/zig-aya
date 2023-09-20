@@ -4,7 +4,7 @@ const meta = @import("meta.zig");
 
 pub const queries = @import("queries.zig");
 
-pub const Ecs = @import("ecs_impl.zig").Ecs;
+pub const EcsWorld = @import("ecs_world.zig").EcsWorld;
 pub const Entity = @import("entity.zig").Entity;
 pub const QueryBuilder = @import("query_builder.zig").QueryBuilder;
 

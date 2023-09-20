@@ -11,7 +11,7 @@ const window = @import("window/window.zig");
 // export types
 pub const App = app.App;
 pub const Resources = app.Resources;
-pub const World = app.World;
+pub const World = app.AppWorld;
 
 pub const AssetsPlugin = assets.AssetPlugin;
 pub const AssetServer = assets.AssetServer;
