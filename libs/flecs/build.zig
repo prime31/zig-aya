@@ -68,8 +68,10 @@ fn addTranslateCStep(b: *std.build, target: std.zig.CrossTarget, optimize: std.b
         .target = target,
         .optimize = optimize,
     });
+
     trans_c.c_macros.append("FLECS_NO_CPP") catch unreachable;
     trans_c.c_macros.append("FLECS_USE_OS_ALLOC") catch unreachable;
+
     if (@import("builtin").mode == .Debug)
         trans_c.c_macros.append("FLECS_SANITIZE") catch unreachable;
 

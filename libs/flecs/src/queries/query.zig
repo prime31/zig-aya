@@ -1,7 +1,7 @@
 const std = @import("std");
-const ecs = @import("ecs.zig");
+const ecs = @import("../ecs.zig");
 const flecs = ecs.c;
-const meta = @import("meta.zig");
+const meta = @import("../meta.zig");
 
 pub const Query = struct {
     world: ecs.EcsWorld,

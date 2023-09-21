@@ -4,7 +4,7 @@ const flecs = ecs.c;
 
 const assert = std.debug.assert;
 
-const TermInfo = @import("term_info.zig").TermInfo;
+pub const TermInfo = @import("term_info.zig").TermInfo;
 
 /// asserts with a message
 pub fn assertMsg(ok: bool, comptime msg: []const u8, args: anytype) void {
@@ -14,67 +14,6 @@ pub fn assertMsg(ok: bool, comptime msg: []const u8, args: anytype) void {
             unreachable;
         }
     }
-}
-
-// flecs internally reserves names like u16, u32, f32, etc. so we re-map them to uppercase to avoid collisions
-pub fn typeName(comptime T: type) @TypeOf(@typeName(T)) {
-    return switch (T) {
-        u8 => return "U8",
-        u16 => return "U16",
-        u32 => return "U32",
-        u64 => return "U64",
-        i8 => return "I8",
-        i16 => return "I16",
-        i32 => return "I32",
-        i64 => return "I64",
-        f32 => return "F32",
-        f64 => return "F64",
-        else => return @typeName(T),
-    };
-}
-
-/// registered component handle cache. Stores the EntityId for the type.
-fn PerTypeGlobalStruct(comptime _: type) type {
-    return struct {
-        var id: u64 = 0;
-    };
-}
-
-pub inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
-    return comptime &PerTypeGlobalStruct(T).id;
-}
-
-pub inline fn id(comptime T: type) u64 {
-    return perTypeGlobalStructPtr(T).*;
-}
-
-pub fn componentId(world: *flecs.ecs_world_t, comptime T: type) u64 {
-    const type_id_ptr = perTypeGlobalStructPtr(T);
-    if (type_id_ptr.* != 0)
-        return type_id_ptr.*;
-
-    if (@sizeOf(T) == 0) {
-        var desc = std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = @typeName(T) });
-        type_id_ptr.* = flecs.ecs_entity_init(world, &desc);
-    } else {
-        type_id_ptr.* = flecs.ecs_component_init(world, &std.mem.zeroInit(flecs.ecs_component_desc_t, .{
-            .entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{
-                .use_low_id = true,
-                .name = typeName(T),
-                .symbol = typeName(T),
-            })),
-            .type = .{
-                .alignment = @alignOf(T),
-                .size = @sizeOf(T),
-            },
-        }));
-    }
-
-    // allow disabling reflection data with a root bool
-    if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
-        registerReflectionData(world, T, type_id_ptr.*);
-
-    return type_id_ptr.*;
 }
 
 /// given a pointer or optional pointer returns the base struct type.
@@ -210,7 +149,7 @@ pub fn validateIterator(comptime Components: type, iter: *const flecs.ecs_iter_t
             while (iter.terms[index].inout == flecs.EcsInOutNone) : (index += 1) {}
             const is_optional = @typeInfo(field.type) == .Optional;
             const col_type = FinalChild(field.type);
-            const type_entity = perTypeGlobalStructPtr(col_type).*;
+            const type_entity = iter.world.componentId(col_type).*;
 
             // ensure order matches for terms vs struct fields. note that pairs need to have their first term extracted.
             if (flecs.ecs_id_is_pair(iter.terms[index].id)) {
@@ -293,7 +232,7 @@ pub fn isConst(comptime T: type) bool {
 }
 
 /// https://github.com/SanderMertens/flecs/tree/master/examples/c/reflection
-fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entity: u64) void {
+pub fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entity: u64) void {
     var desc = std.mem.zeroes(flecs.ecs_struct_desc_t);
     desc.entity = entity;
 
@@ -331,11 +270,11 @@ fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entity: u
                     else => switch (@typeInfo(field.field_type)) {
                         .Pointer => flecs.FLECS_IDecs_uptr_tID_,
 
-                        .Struct => componentId(world, field.field_type),
+                        .Struct => world.componentId(world, field.field_type),
 
                         .Enum => blk: {
                             var enum_desc = std.mem.zeroes(flecs.ecs_enum_desc_t);
-                            enum_desc.entity.entity = perTypeGlobalStructPtr(T).*;
+                            enum_desc.entity.entity = world.componentId(T);
 
                             inline for (@typeInfo(field.field_type).Enum.fields, 0..) |f, index| {
                                 enum_desc.constants[index] = std.mem.zeroInit(flecs.ecs_enum_constant_t, .{
@@ -362,7 +301,7 @@ fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entity: u
 }
 
 /// given a struct of Components with optional embedded "metadata", "name", "order_by" data it generates an ecs_filter_desc_t
-pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.ecs_filter_desc_t {
+pub fn generateFilterDesc(world: *flecs.ecs_world_t, comptime Components: type) flecs.ecs_filter_desc_t {
     assert(@typeInfo(Components) == .Struct);
     var desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
 
@@ -385,7 +324,7 @@ pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.
             const ti = TermInfo.init(inout_tuple);
             // std.debug.print("{any}: {any}\n", .{ inout_tuple, ti });
 
-            if (getTermIndex(ti.term_type, ti.field, &desc, component_info.fields)) |term_index| {
+            if (getTermIndex(ti.term_type, world, ti.field, &desc, component_info.fields)) |term_index| {
                 // Not terms should not be present in the Components struct
                 assert(ti.oper != flecs.EcsNot);
 
@@ -396,7 +335,7 @@ pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.
                     if (ti.or_term_type) |or_term_type| {
                         // ensure the term is optional. If the second Or term is present ensure it is optional as well.
                         assert(desc.terms[term_index].oper == flecs.EcsOptional);
-                        if (getTermIndex(or_term_type, null, &desc, component_info.fields)) |or_term_index| {
+                        if (getTermIndex(or_term_type, world, null, &desc, component_info.fields)) |or_term_index| {
                             assert(desc.terms[or_term_index].oper == flecs.EcsOptional);
                         }
 
@@ -419,7 +358,7 @@ pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.
                     if (ti.oper == flecs.EcsOr) {
                         assert(desc.terms[term_index].oper == flecs.EcsOptional);
 
-                        if (getTermIndex(ti.or_term_type.?, null, &desc, component_info.fields)) |or_term_index| {
+                        if (getTermIndex(ti.or_term_type.?, world, null, &desc, component_info.fields)) |or_term_index| {
                             assert(desc.terms[or_term_index].oper == flecs.EcsOptional);
                             desc.terms[or_term_index].oper = ti.oper;
                         } else unreachable;
@@ -468,9 +407,9 @@ pub fn generateFilterDesc(world: ecs.EcsWorld, comptime Components: type) flecs.
 }
 
 /// gets the index into the terms array of this type or null if it isnt found (likely a new filter term)
-pub fn getTermIndex(comptime T: type, field_name: ?[]const u8, filter: *flecs.ecs_filter_desc_t, comptime fields: []const std.builtin.Type.StructField) ?usize {
+pub fn getTermIndex(comptime T: type, world: *flecs.ecs_world_t, field_name: ?[]const u8, filter: *flecs.ecs_filter_desc_t, comptime fields: []const std.builtin.Type.StructField) ?usize {
     if (fields.len == 0) return null;
-    const comp_id = perTypeGlobalStructPtr(T).*;
+    const comp_id = world.componentId(T);
 
     // if we have a field_name get the index of it so we can match it up to the term index and double check the type matches
     const named_field_index: ?usize = if (field_name) |fname| blk: {
