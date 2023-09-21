@@ -2,40 +2,30 @@ const std = @import("std");
 pub const c = @import("flecs.zig");
 const meta = @import("meta.zig");
 
-pub const queries = @import("queries.zig");
+pub const queries = @import("queries/queries.zig");
+
+pub usingnamespace @import("queries/mod.zig");
 
 pub const Entity = @import("entity.zig").Entity;
-pub const QueryBuilder = @import("query_builder.zig").QueryBuilder;
-
-pub const Term = @import("term.zig").Term;
-pub const Filter = @import("filter.zig").Filter;
-pub const Query = @import("query.zig").Query;
 pub const Type = @import("type.zig").Type;
-
-pub const TableIterator = @import("table_iterator.zig").TableIterator;
-pub const Iterator = @import("iterator.zig").Iterator;
 
 pub const SystemSort = struct {
     phase: u64,
     order_in_phase: i32 = 0,
 };
 
-pub fn componentId(world: *c.ecs_world_t, comptime T: type) u64 {
-    return meta.componentId(world, T);
-}
-
 pub fn SYSTEM(world: *c.ecs_world_t, name: [*:0]const u8, phase: c.ecs_entity_t, order_in_phase: i32, system_desc: *c.ecs_system_desc_t) void {
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = c.ecs_new_id(world);
     entity_desc.name = name;
-    entity_desc.add[0] = componentId(world, SystemSort);
+    entity_desc.add[0] = world.componentId(SystemSort);
     entity_desc.add[1] = phase;
     entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
 
     system_desc.entity = c.ecs_entity_init(world, &entity_desc);
     _ = c.ecs_system_init(world, system_desc);
 
-    _ = c.ecs_set_id(world, system_desc.entity, componentId(world, SystemSort), @sizeOf(SystemSort), &SystemSort{
+    _ = c.ecs_set_id(world, system_desc.entity, world.componentId(SystemSort), @sizeOf(SystemSort), &SystemSort{
         .phase = phase,
         .order_in_phase = order_in_phase,
     });
@@ -68,7 +58,7 @@ pub fn fieldOpt(iter: [*c]const c.ecs_iter_t, comptime T: type, index: i32) ?[]T
 
 /// gets a pointer to a type if the component is present on the entity
 pub fn get(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*const T {
-    const ptr = c.ecs_get_id(world, entity, componentId(world, T));
+    const ptr = c.ecs_get_id(world, entity, world.componentId(T));
     if (ptr) |p| {
         return @as(*const T, @ptrCast(@alignCast(p)));
     }
@@ -77,7 +67,7 @@ pub fn get(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*const T {
 
 pub fn getMut(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*T {
     var is_added = false;
-    var ptr = c.ecs_get_mut_id(world, entity.id, componentId(world, T), &is_added);
+    var ptr = c.ecs_get_mut_id(world, entity.id, world.componentId(T), &is_added);
     if (ptr) |p| {
         return @as(*T, @ptrCast(@alignCast(p)));
     }
@@ -91,38 +81,6 @@ pub fn cast(comptime T: type, val: ?*const anyopaque) *const T {
 
 pub fn castMut(comptime T: type, val: ?*anyopaque) *T {
     return @as(*T, @ptrCast(@alignCast(val)));
-}
-
-/// Allowed params: u64 (entity_id), type
-pub fn pair(self: *c.ecs_world_t, relation: anytype, object: anytype) u64 {
-    _ = self;
-    const Relation = @TypeOf(relation);
-    const Object = @TypeOf(object);
-
-    const rel_info = @typeInfo(Relation);
-    const obj_info = @typeInfo(Object);
-
-    std.debug.assert(rel_info == .Struct or rel_info == .Type or Relation == u64 or Relation == c_int);
-    std.debug.assert(obj_info == .Struct or obj_info == .Type or Object == u64);
-
-    const rel_id = switch (Relation) {
-        c_int => @as(u64, @intCast(relation)),
-        type => componentId(relation),
-        u64 => relation,
-        else => unreachable,
-    };
-
-    const obj_id = switch (Object) {
-        type => componentId(object),
-        u64 => object,
-        else => unreachable,
-    };
-
-    return c.ECS_PAIR | (rel_id << @as(u32, 32)) + @as(u32, @truncate(obj_id));
-}
-
-pub fn addPair(world: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) void {
-    c.ecs_add_id(world, entity, pair(world, relation, object));
 }
 
 pub fn pairFirst(id: u64) u32 {

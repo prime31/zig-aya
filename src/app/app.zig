@@ -248,7 +248,7 @@ pub const App = struct {
         // std.debug.print("other_order_in_phase: {}\n", .{other_order_in_phase});
 
         var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
-        filter_desc.terms[0].id = ecs.componentId(self.world.ecs, ecs.SystemSort);
+        filter_desc.terms[0].id = self.world.ecs.componentId(ecs.SystemSort);
         filter_desc.terms[0].inout = flecs.EcsInOut;
 
         const filter = flecs.ecs_filter_init(self.world.ecs, &filter_desc);
@@ -313,7 +313,7 @@ fn runStartupPipeline(world: *flecs.ecs_world_t) void {
     var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
     pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = ecs.componentId(world, ecs.SystemSort);
+    pip_desc.query.order_by_component = world.componentId(ecs.SystemSort);
 
     pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
     pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
@@ -326,7 +326,7 @@ fn runStartupPipeline(world: *flecs.ecs_world_t) void {
     });
     pip_desc.query.filter.terms[3].id = phases.post_startup;
     pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = ecs.componentId(world, ecs.SystemSort),
+        .id = world.componentId(ecs.SystemSort),
         .inout = flecs.EcsIn,
     });
 
@@ -344,10 +344,10 @@ fn setCorePipeline(world: *flecs.ecs_world_t) void {
     var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
     pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "CorePipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = ecs.componentId(world, ecs.SystemSort);
+    pip_desc.query.order_by_component = world.componentId(ecs.SystemSort);
 
     pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
-    pip_desc.query.filter.terms[1].id = ecs.componentId(world, ecs.SystemSort);
+    pip_desc.query.filter.terms[1].id = world.componentId(ecs.SystemSort);
     pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
         .id = flecs.EcsDisabled,
         .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{

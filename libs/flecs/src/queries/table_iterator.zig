@@ -1,7 +1,7 @@
 const std = @import("std");
-const ecs = @import("ecs.zig");
+const ecs = @import("../ecs.zig");
 const flecs = ecs.c;
-const meta = @import("meta.zig");
+const meta = @import("../meta.zig");
 
 pub fn TableIterator(comptime Components: type) type {
     std.debug.assert(@typeInfo(Components) == .Struct);

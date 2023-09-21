@@ -1,8 +1,8 @@
 const std = @import("std");
-const ecs = @import("ecs.zig");
+const ecs = @import("../ecs.zig");
 const flecs = ecs.c;
 
-/// void {} is an allowed T for Terms that iterate only the entities. Void is requiried when using initWithPair
+/// void {} is an allowed T for Terms that iterate only the entities. Void is required when using initWithPair
 pub fn Term(comptime T: anytype) type {
     std.debug.assert(@TypeOf(T) == type or @TypeOf(T) == void);
 
