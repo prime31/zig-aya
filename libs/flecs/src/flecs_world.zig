@@ -240,14 +240,14 @@ pub const struct_ecs_world_t = opaque {
         std.debug.assert(@hasDecl(Components, "name"));
 
         var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-        entity_desc.id = c.ecs_new_id(self.world);
+        entity_desc.id = c.ecs_new_id(self);
         entity_desc.name = Components.name;
         entity_desc.add[0] = phase;
         entity_desc.add[1] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0;
 
         var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
         system_desc.callback = dummyFn;
-        system_desc.entity = c.ecs_entity_init(self.world, &entity_desc);
+        system_desc.entity = c.ecs_entity_init(self, &entity_desc);
         // desc.multi_threaded = true;
         system_desc.run = wrapSystemFn(Components, Components.run);
         system_desc.query.filter = meta.generateFilterDesc(self, Components);
@@ -264,7 +264,7 @@ pub const struct_ecs_world_t = opaque {
 
         if (@hasDecl(Components, "instanced") and Components.instanced) system_desc.filter.instanced = true;
 
-        _ = c.ecs_system_init(self.world, &system_desc);
+        _ = c.ecs_system_init(self, &system_desc);
     }
 
     /// adds an observer system to the Ecs using the passed in struct (see systems)

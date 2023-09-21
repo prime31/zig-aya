@@ -52,14 +52,14 @@ pub const Query = struct {
 
             var iter = self.iterator(Components);
             while (iter.next()) |comps| {
-                @call(.{ .modifier = .always_inline }, function, .{comps});
+                @call(.always_inline, function, .{comps});
             }
         } else {
             const Components = std.meta.ArgsTuple(@TypeOf(function));
 
             var iter = self.iterator(Components);
             while (iter.next()) |comps| {
-                @call(.{ .modifier = .always_inline }, function, meta.fieldsTuple(comps));
+                @call(.always_inline, function, meta.fieldsTuple(comps));
             }
         }
     }

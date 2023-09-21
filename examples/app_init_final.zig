@@ -14,7 +14,8 @@ pub fn main() !void {
     var app = App.init(gpa.allocator());
     defer app.deinit();
 
-    app.addSystems(phases.first, printDeltaTime)
+    app.addSystem(phases.first, printDeltaTime)
+        .addSystem(phases.first, printSystem)
     // .addSystem("StateTransition_0", phases.state_transition, run)
     // .addSystem("StateTransition_1", phases.state_transition, run)
     // .addSystem("PostUpdate_0", phases.post_update, run)
@@ -56,6 +57,14 @@ const EmptyCallback = struct {
 };
 
 fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
-    std.log.debug("delta_time: {d}", .{iter.iter.delta_time});
+    std.log.debug("delta_time: {d}\n", .{iter.iter.delta_time});
     while (iter.next()) |_| {}
+}
+
+const EmptySystem = struct {
+    pub const run = printDeltaTime;
+};
+
+fn printSystem() void {
+    std.log.debug("empty system called\n", .{});
 }
