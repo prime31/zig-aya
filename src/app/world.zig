@@ -6,21 +6,21 @@ const flecs = ecs.c;
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
 
-pub const AppWorld = struct {
+pub const World = struct {
     const Self = @This();
 
-    ecs_world: ecs.EcsWorld,
+    ecs: *flecs.ecs_world_t,
     resources: Resources,
 
     pub fn init(allocator: Allocator) Self {
         return .{
-            .ecs_world = ecs.EcsWorld.init(),
+            .ecs = flecs.ecs_init().?,
             .resources = Resources.init(allocator),
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.ecs_world.deinit();
+        _ = flecs.ecs_fini(self.ecs);
         self.resources.deinit();
     }
 
