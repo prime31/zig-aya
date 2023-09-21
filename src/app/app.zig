@@ -201,7 +201,7 @@ pub const App = struct {
             if (@typeInfo(param.type.?) == .Pointer) {
                 const T = std.meta.Child(param.type.?);
                 if (@hasDecl(T, "components_type")) {
-                    std.debug.print("param type: {any}, {any}\n", .{ param.type, T.components_type });
+                    std.debug.print("\nparam type: {any}, {any}\n", .{ param.type, T.components_type });
                     // self.world.ecs_world.system(T.inner_type, phase);
                 }
             }

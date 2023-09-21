@@ -245,12 +245,12 @@ pub const struct_ecs_world_t = opaque {
         entity_desc.add[0] = phase;
         entity_desc.add[1] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0;
 
-        var desc = std.mem.zeroes(c.ecs_system_desc_t);
-        desc.callback = dummyFn;
-        desc.entity = c.ecs_entity_init(self.world, &entity_desc);
+        var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
+        system_desc.callback = dummyFn;
+        system_desc.entity = c.ecs_entity_init(self.world, &entity_desc);
         // desc.multi_threaded = true;
-        desc.run = wrapSystemFn(Components, Components.run);
-        desc.query.filter = meta.generateFilterDesc(self, Components);
+        system_desc.run = wrapSystemFn(Components, Components.run);
+        system_desc.query.filter = meta.generateFilterDesc(self, Components);
 
         if (@hasDecl(Components, "order_by")) {
             meta.validateOrderByFn(Components.order_by);
@@ -258,13 +258,13 @@ pub const struct_ecs_world_t = opaque {
             const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
             meta.validateOrderByType(Components, OrderByType);
 
-            desc.query.order_by = wrapOrderByFn(OrderByType, Components.order_by);
-            desc.query.order_by_component = self.componentId(OrderByType);
+            system_desc.query.order_by = wrapOrderByFn(OrderByType, Components.order_by);
+            system_desc.query.order_by_component = self.componentId(OrderByType);
         }
 
-        if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
+        if (@hasDecl(Components, "instanced") and Components.instanced) system_desc.filter.instanced = true;
 
-        _ = c.ecs_system_init(self.world, &desc);
+        _ = c.ecs_system_init(self.world, &system_desc);
     }
 
     /// adds an observer system to the Ecs using the passed in struct (see systems)
@@ -299,7 +299,7 @@ fn PerTypeGlobalStruct(comptime _: type) type {
     };
 }
 
-pub inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
+inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
     return comptime &PerTypeGlobalStruct(T).id;
 }
 

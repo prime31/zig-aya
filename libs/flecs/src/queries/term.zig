@@ -9,7 +9,7 @@ pub fn Term(comptime T: anytype) type {
     return struct {
         const Self = @This();
 
-        ecs: ecs.EcsWorld,
+        ecs: *flecs.ecs_world_t,
         term: flecs.ecs_term_t,
 
         const Iterator = struct {
@@ -55,7 +55,7 @@ pub fn Term(comptime T: anytype) type {
             }
         };
 
-        pub fn init(world: ecs.EcsWorld) Self {
+        pub fn init(world: *flecs.ecs_world_t) Self {
             var term = std.mem.zeroInit(flecs.ecs_term_t, .{ .id = world.componentId(T) });
             return .{ .ecs = world, .term = term };
         }
