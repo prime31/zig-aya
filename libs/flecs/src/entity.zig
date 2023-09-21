@@ -35,7 +35,7 @@ pub const Entity = struct {
     /// combination with the added entity.
     pub fn add(self: Entity, id_or_type: anytype) void {
         std.debug.assert(@TypeOf(id_or_type) == u64 or @typeInfo(@TypeOf(id_or_type)) == .Type);
-        const id = if (@TypeOf(id_or_type) == u64) id_or_type else meta.componentId(self.ecs, id_or_type);
+        const id = if (@TypeOf(id_or_type) == u64) id_or_type else self.ecs.componentId(id_or_type);
         flecs.ecs_add_id(self.ecs, self.id, id);
     }
 
@@ -76,7 +76,7 @@ pub const Entity = struct {
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
         var component = if (@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer) ptr_or_struct else &ptr_or_struct;
-        _ = flecs.ecs_set_id(self.ecs, self.id, meta.componentId(self.ecs, T), @sizeOf(T), component);
+        _ = flecs.ecs_set_id(self.ecs, self.id, self.ecs.componentId(T), @sizeOf(T), component);
     }
 
     /// sets a private instance of a component on entity. Useful for inheritance.
@@ -85,7 +85,7 @@ pub const Entity = struct {
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
         var component = if (@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer) ptr_or_struct else &ptr_or_struct;
-        const id = meta.componentId(self.ecs, T);
+        const id = self.ecs.componentId(T);
         flecs.ecs_add_id(self.ecs, self.id, flecs.ECS_OVERRIDE | id);
         _ = flecs.ecs_set_id(self.ecs, self.id, id, @sizeOf(T), component);
     }
@@ -93,13 +93,13 @@ pub const Entity = struct {
     /// sets a component as modified, and will trigger observers after being modified from a system
     pub fn setModified(self: Entity, id_or_type: anytype) void {
         std.debug.assert(@TypeOf(id_or_type) == u64 or @typeInfo(@TypeOf(id_or_type)) == .Type);
-        const id = if (@TypeOf(id_or_type) == u64) id_or_type else meta.componentId(self.ecs, id_or_type);
+        const id = if (@TypeOf(id_or_type) == u64) id_or_type else self.ecs.componentId(id_or_type);
         flecs.ecs_modified_id(self.ecs, self.id, id);
     }
 
     /// gets a pointer to a type if the component is present on the entity
     pub fn get(self: Entity, comptime T: type) ?*const T {
-        const ptr = flecs.ecs_get_id(self.ecs, self.id, meta.componentId(self.ecs, T));
+        const ptr = flecs.ecs_get_id(self.ecs, self.id, self.ecs.componentId(T));
         if (ptr) |p| {
             return @as(*const T, @ptrCast(@alignCast(p)));
         }
@@ -108,7 +108,7 @@ pub const Entity = struct {
 
     pub fn getMut(self: Entity, comptime T: type) ?*T {
         var is_added = false;
-        var ptr = flecs.ecs_get_mut_id(self.ecs, self.id, meta.componentId(self.ecs, T), &is_added);
+        var ptr = flecs.ecs_get_mut_id(self.ecs, self.id, self.ecs.componentId(T), &is_added);
         if (ptr) |p| {
             return @as(*T, @ptrCast(@alignCast(p)));
         }
@@ -118,7 +118,7 @@ pub const Entity = struct {
     /// removes a component from an Entity
     pub fn remove(self: Entity, id_or_type: anytype) void {
         std.debug.assert(@TypeOf(id_or_type) == u64 or @typeInfo(@TypeOf(id_or_type)) == .Type);
-        const id = if (@TypeOf(id_or_type) == u64) id_or_type else meta.componentId(self.ecs, id_or_type);
+        const id = if (@TypeOf(id_or_type) == u64) id_or_type else self.ecs.componentId(id_or_type);
         flecs.ecs_remove_id(self.ecs, self.id, id);
     }
 
@@ -140,7 +140,7 @@ pub const Entity = struct {
     /// returns true if the entity has a matching component type
     pub fn has(self: Entity, id_or_type: anytype) bool {
         std.debug.assert(@TypeOf(id_or_type) == u64 or @typeInfo(@TypeOf(id_or_type)) == .Type);
-        const id = if (@TypeOf(id_or_type) == u64) id_or_type else meta.componentId(self.ecs, id_or_type);
+        const id = if (@TypeOf(id_or_type) == u64) id_or_type else self.ecs.componentId(id_or_type);
         return flecs.ecs_has_id(self.ecs, self.id, id);
     }
 

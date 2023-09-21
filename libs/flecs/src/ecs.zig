@@ -138,8 +138,9 @@ pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
                 var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
                 system_desc.callback = dummyFn;
                 system_desc.entity = c.ecs_entity_init(world, &entity_desc);
-                // desc.multi_threaded = true;
-                system_desc.run = wrapSystemFn(T.components_type, T.components_type.run);
+                system_desc.multi_threaded = true;
+                // system_desc.run = wrapSystemFn(T.components_type, T.components_type.run);
+                system_desc.run = newNewWrapSystemFn(runFn);
                 system_desc.query.filter = meta.generateFilterDesc(world, T.components_type);
 
                 if (@hasDecl(T.components_type, "order_by")) {
@@ -155,6 +156,8 @@ pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
                 if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) system_desc.filter.instanced = true;
                 break system_desc;
             }
+            // need to add these to system_desc
+            std.debug.print(" +++ ------- {} ------\n", .{meta.FinalChild(T)});
         }
     } else blk: {
         var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
@@ -174,6 +177,34 @@ pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
     });
 }
 
+fn newNewWrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
+    const Closure = struct {
+        const callback = cb;
+
+        pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
+            const Args = std.meta.ArgsTuple(@TypeOf(cb));
+            var args: Args = undefined;
+
+            inline for (@typeInfo(Args).Struct.fields) |f| {
+                const Child = meta.FinalChild(f.type);
+
+                std.debug.print("---------------- T: {}, Child: {} ------\n", .{ f.type, Child });
+
+                if (@hasDecl(Child, "components_type")) {
+                    var iterator = ecs.Iterator(Child.components_type).init(it, c.ecs_iter_next);
+                    @field(args, f.name) = &iterator;
+                } else {
+                    @field(args, f.name) = it.*.world.?.getSingletonMut(Child).?;
+                }
+                // TODO: check for World, Res, ResMut
+            }
+
+            @call(.always_inline, callback, args);
+        }
+    };
+    return Closure.closure;
+}
+
 fn newWrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
     const Closure = struct {
         const callback = cb;
@@ -189,7 +220,6 @@ fn newWrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void
             }
 
             @call(.always_inline, callback, args);
-            // callback();
         }
     };
     return Closure.closure;
