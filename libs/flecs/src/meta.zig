@@ -112,8 +112,9 @@ pub fn TableIteratorData(comptime Components: type) type {
 
 /// returns a tuple consisting of the field values of value
 pub fn fieldsTuple(value: anytype) FieldsTupleType(@TypeOf(value)) {
+    assert(@typeInfo(@TypeOf(value)) == .Struct);
+
     const T = @TypeOf(value);
-    assert(@typeInfo(T) == .Struct);
     const ti = @typeInfo(T).Struct;
     const FieldsTuple = FieldsTupleType(T);
 

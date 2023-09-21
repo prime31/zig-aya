@@ -1,9 +1,11 @@
 const std = @import("std");
 const ecs = @import("ecs");
 const flecs = ecs.c;
+const c = flecs;
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 const assets = @import("../asset/mod.zig");
+
 pub const phases = @import("phases.zig");
 
 const typeId = aya.utils.typeId;
@@ -113,18 +115,18 @@ pub const App = struct {
     }
 
     // Resources
-    pub fn insertResource(self: *Self, resource: anytype) *App {
+    pub fn insertResource(self: *Self, resource: anytype) *Self {
         self.world.insertResource(resource);
         return self;
     }
 
-    pub fn initResource(self: *Self, comptime T: type) *App {
+    pub fn initResource(self: *Self, comptime T: type) *Self {
         self.world.initResource(T);
         return self;
     }
 
     // States
-    pub fn addState(self: *Self, comptime T: type, current_state: T) *App {
+    pub fn addState(self: *Self, comptime T: type, current_state: T) *Self {
         std.debug.assert(@typeInfo(T) == .Enum);
 
         std.debug.print("-- add state: {}\n", .{current_state});
@@ -181,7 +183,7 @@ pub const App = struct {
     }
 
     // Systems
-    pub fn addSystems(self: *Self, phase: u64, runFn: anytype) *App {
+    pub fn addSystem(self: *Self, phase: u64, runFn: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
 
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
@@ -201,7 +203,7 @@ pub const App = struct {
             if (@typeInfo(param.type.?) == .Pointer) {
                 const T = std.meta.Child(param.type.?);
                 if (@hasDecl(T, "components_type")) {
-                    std.debug.print("\nparam type: {any}, {any}\n", .{ param.type, T.components_type });
+                    // std.debug.print("\nparam type: {any}, {any}\n", .{ param.type, T.components_type });
                     // self.world.ecs_world.system(T.inner_type, phase);
                 }
             }
@@ -210,11 +212,13 @@ pub const App = struct {
             // ecs.SYSTEM(self.world.ecs_world.world, @typeName(runFn), phase, order_in_phase, &system_desc);
         }
 
+        ecs._addSystem(self.world.ecs, phase, runFn);
+
         return self;
     }
 
     // OLD Systems
-    pub fn addSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype) *App {
+    pub fn addSystems(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype) *Self {
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
         const order_in_phase = blk: {
             if (!phase_insertions.found_existing) {
@@ -230,15 +234,15 @@ pub const App = struct {
         return self;
     }
 
-    pub fn addSystemAfter(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, after_system: []const u8) *App {
+    pub fn addSystemAfter(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, after_system: []const u8) *Self {
         return self.insertSystem(name, phase, runFn, after_system, 1);
     }
 
-    pub fn addSystemBefore(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, before_system: []const u8) *App {
+    pub fn addSystemBefore(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, before_system: []const u8) *Self {
         return self.insertSystem(name, phase, runFn, before_system, -1);
     }
 
-    fn insertSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, other_system_name: []const u8, direction: i32) *App {
+    fn insertSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, other_system_name: []const u8, direction: i32) *Self {
         const other_system = flecs.ecs_lookup(self.world.ecs, other_system_name.ptr);
         if (other_system == 0) @panic("addSystemAfter could not find after_system");
 

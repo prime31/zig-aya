@@ -1,6 +1,7 @@
 const std = @import("std");
 pub const c = @import("flecs.zig");
 const meta = @import("meta.zig");
+const ecs = @This();
 
 pub usingnamespace @import("queries/mod.zig");
 
@@ -106,3 +107,102 @@ pub const InOutKind = enum(c_int) {
     in = c.EcsIn, // read only. Query term is const.
     out = c.EcsOut, // write only
 };
+
+// -------------  --  -------------
+// -------------      -------------
+// ------------- TEMP -------------
+// -------------      -------------
+// -------------  --  -------------
+
+const FlecsOrderByAction = fn (c.ecs_entity_t, ?*const anyopaque, c.ecs_entity_t, ?*const anyopaque) callconv(.C) c_int;
+
+fn dummyFn(_: [*c]ecs.c.ecs_iter_t) callconv(.C) void {}
+
+pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
+    std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
+
+    var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
+    entity_desc.id = c.ecs_new_id(world);
+    entity_desc.add[0] = world.componentId(SystemSort);
+    entity_desc.add[1] = phase;
+    entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
+
+    // allowed params: *Iterator(T), Res(T), ResMut(T), *World
+    const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
+    var system_desc: c.ecs_system_desc_t = inline for (fn_info.params) |param| {
+        if (@typeInfo(param.type.?) == .Pointer) {
+            const T = std.meta.Child(param.type.?);
+            if (@hasDecl(T, "components_type")) {
+                entity_desc.name = if (@hasDecl(T.components_type, "name")) T.components_type.name else @typeName(@TypeOf(runFn));
+
+                var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
+                system_desc.callback = dummyFn;
+                system_desc.entity = c.ecs_entity_init(world, &entity_desc);
+                // desc.multi_threaded = true;
+                system_desc.run = wrapSystemFn(T.components_type, T.components_type.run);
+                system_desc.query.filter = meta.generateFilterDesc(world, T.components_type);
+
+                if (@hasDecl(T.components_type, "order_by")) {
+                    meta.validateOrderByFn(T.components_type.order_by);
+                    const ti = @typeInfo(@TypeOf(T.components_type.order_by));
+                    const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
+                    meta.validateOrderByType(T.components_type, OrderByType);
+
+                    system_desc.query.order_by = wrapOrderByFn(OrderByType, T.components_type.order_by);
+                    system_desc.query.order_by_component = world.componentId(OrderByType);
+                }
+
+                if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) system_desc.filter.instanced = true;
+                break system_desc;
+            }
+        }
+    } else blk: {
+        var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
+        system_desc.callback = dummyFn;
+        system_desc.entity = c.ecs_entity_init(world, &entity_desc);
+        system_desc.run = newWrapSystemFn(runFn);
+        system_desc.entity = c.ecs_entity_init(world, &entity_desc);
+
+        break :blk system_desc;
+    };
+
+    _ = c.ecs_system_init(world, &system_desc);
+
+    _ = c.ecs_set_id(world, system_desc.entity, world.componentId(SystemSort), @sizeOf(SystemSort), &SystemSort{
+        .phase = phase,
+        .order_in_phase = 666, //order_in_phase,
+    });
+}
+
+fn newWrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
+    const Closure = struct {
+        const callback = cb;
+
+        pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
+            c.ecs_iter_fini(it);
+            callback();
+        }
+    };
+    return Closure.closure;
+}
+
+fn wrapSystemFn(comptime T: type, comptime cb: fn (*ecs.Iterator(T)) void) fn ([*c]c.ecs_iter_t) callconv(.C) void {
+    const Closure = struct {
+        pub var callback: *const fn (*ecs.Iterator(T)) void = cb;
+
+        pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
+            var iterator = ecs.Iterator(T).init(it, c.ecs_iter_next);
+            callback(&iterator);
+        }
+    };
+    return Closure.closure;
+}
+
+fn wrapOrderByFn(comptime T: type, comptime cb: fn (u64, *const T, u64, *const T) c_int) FlecsOrderByAction {
+    const Closure = struct {
+        pub fn closure(e1: u64, c1: ?*const anyopaque, e2: u64, c2: ?*const anyopaque) callconv(.C) c_int {
+            return @call(.always_inline, cb, .{ e1, @as(*const T, @ptrCast(@alignCast(c1))), e2, @as(*const T, @ptrCast(@alignCast(c2))) });
+        }
+    };
+    return Closure.closure;
+}
