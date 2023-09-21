@@ -17,8 +17,10 @@ pub fn main() !void {
 
     App.init(gpa.allocator())
         .addSystem(phases.first, printDeltaTime)
-        .addSystem(phases.first, EmptySystem.printSystem)
-        .addSystem(phases.first, WorldSystem.printWorld)
+        .addSystem(phases.post_update, WorldAndVelocitySystem.runner)
+    // .addSystem(phases.first, EmptySystem.printSystem)
+    // .addSystem(phases.startup, WorldSystem.printWorld)
+    // .addSystem(phases.last, SystemCallbackType.printer)
     // .addSystem("StateTransition_0", phases.state_transition, run)
     // .addSystem("StateTransition_1", phases.state_transition, run)
     // .addSystem("PostUpdate_0", phases.post_update, run)
@@ -55,12 +57,16 @@ pub fn main() !void {
     // _ = flecs.ecs_progress(app.world.ecs, 0);
 }
 
+pub const Velocity = struct { x: f32 = 0, y: f32 = 0 };
+
 const EmptyCallback = struct {
     pub const run = printDeltaTime;
 };
 
 fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
-    std.log.debug("\ndelta_time: {d}\n", .{iter.iter.delta_time});
+    std.debug.print("\ndelta_time: {d}\n", .{iter.iter.delta_time});
+    _ = iter.world().newEntity().set(Velocity{ .x = 6 });
+    _ = iter.world().newEntity().set(Velocity{});
     while (iter.next()) |_| {}
 }
 
@@ -68,7 +74,7 @@ const EmptySystem = struct {
     pub const run = printDeltaTime;
 
     fn printSystem() void {
-        std.log.debug("empty system called\n", .{});
+        std.debug.print("empty system called\n", .{});
     }
 };
 
@@ -76,6 +82,32 @@ const WorldSystem = struct {
     pub const run = printDeltaTime;
 
     fn printWorld(world: *World) void {
-        std.log.debug("world system called with world: {*}\n", .{world});
+        std.debug.print("\nworld system called with world: {*}\n", .{world});
+    }
+};
+
+const WorldAndVelocitySystem = struct {
+    vel: *Velocity,
+
+    pub const run = runner;
+
+    fn runner(world: *World, iter: *ecs.Iterator(WorldAndVelocitySystem)) void {
+        std.debug.print("----------------- holy fucking fuck. world: {*}, ecs_world: {}\n", .{ world, iter.world() });
+        while (iter.next()) |comps| {
+            std.debug.print("--- WorldAndVelocitySystem called: {}\n", .{comps.vel});
+        }
+    }
+};
+
+const SystemCallbackType = struct {
+    vel: *Velocity,
+
+    pub const run = printer;
+
+    fn printer(iter: *ecs.Iterator(SystemCallbackType)) void {
+        // std.debug.print("\n--- printer called: {d}\n", .{iter});
+        while (iter.next()) |comps| {
+            std.debug.print("--- printer called: {}\n", .{comps.vel});
+        }
     }
 };

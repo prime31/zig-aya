@@ -36,7 +36,7 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         pub fn world(self: *@This()) *flecs.ecs_world_t {
-            std.debug.print("----\n\n ---- RETHINK THIS API. direct world access feels odd. ----\n", .{});
+            std.debug.print("-------- RETHINK THIS API. direct world access feels odd. ----\n", .{});
             return self.iter.world.?;
         }
 

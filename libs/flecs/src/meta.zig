@@ -150,7 +150,7 @@ pub fn validateIterator(comptime Components: type, iter: *const flecs.ecs_iter_t
             while (iter.terms[index].inout == flecs.EcsInOutNone) : (index += 1) {}
             const is_optional = @typeInfo(field.type) == .Optional;
             const col_type = FinalChild(field.type);
-            const type_entity = iter.world.componentId(col_type).*;
+            const type_entity = iter.world.?.componentId(col_type);
 
             // ensure order matches for terms vs struct fields. note that pairs need to have their first term extracted.
             if (flecs.ecs_id_is_pair(iter.terms[index].id)) {
