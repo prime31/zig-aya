@@ -2,8 +2,6 @@ const std = @import("std");
 const flecs = @import("ecs.zig").c;
 const meta = @import("meta.zig");
 
-const Ecs = @import("ecs").EcsWorld;
-
 pub const Entity = struct {
     ecs: *flecs.ecs_world_t,
     id: u64,
@@ -13,10 +11,6 @@ pub const Entity = struct {
             .ecs = ecs,
             .id = id,
         };
-    }
-
-    fn getEcs(self: Entity) Ecs {
-        return .{ .ecs = self.ecs };
     }
 
     pub fn format(value: Entity, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {

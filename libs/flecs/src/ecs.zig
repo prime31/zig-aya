@@ -2,8 +2,6 @@ const std = @import("std");
 pub const c = @import("flecs.zig");
 const meta = @import("meta.zig");
 
-pub const queries = @import("queries/queries.zig");
-
 pub usingnamespace @import("queries/mod.zig");
 
 pub const Entity = @import("entity.zig").Entity;

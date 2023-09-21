@@ -59,8 +59,3 @@ fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
     std.log.debug("delta_time: {d}", .{iter.iter.delta_time});
     while (iter.next()) |_| {}
 }
-
-fn run(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
-    // std.debug.print("------------ system: {s}\n", .{flecs.ecs_get_name(it.*.world, it.*.system)});
-    if (!flecs.ecs_iter_next(it)) return;
-}

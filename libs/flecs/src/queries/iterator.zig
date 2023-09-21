@@ -35,8 +35,9 @@ pub fn Iterator(comptime Components: type) type {
             return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
-        pub fn world(self: *@This()) ecs.EcsWorld {
-            return .{ .world = self.iter.world.? };
+        pub fn world(self: *@This()) *flecs.ecs_world_t {
+            std.debug.print("----\n\n ---- RETHINK THIS API. direct world access feels odd. ----\n", .{});
+            return self.iter.world.?;
         }
 
         pub fn tableType(self: *@This()) ecs.Type {
