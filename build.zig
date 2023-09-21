@@ -58,14 +58,14 @@ pub fn build(b: *std.Build) void {
     // const run_step = b.step("sdl3-tester", "Run sdl3-tester");
     // run_step.dependOn(&run_cmd.step);
 
-    addExecutable(b, target, optimize, options, "sdl3_tester", "examples/sdl.zig");
-    addExecutable(b, target, optimize, options, "sdl3_gpu", "examples/sdl_gpu.zig");
-    addExecutable(b, target, optimize, options, "tester", "examples/tester.zig");
-    addExecutable(b, target, optimize, options, "init", "examples/init.zig");
-    addExecutable(b, target, optimize, options, "flecs_pipeline", "examples/flecs_pipeline.zig");
-    addExecutable(b, target, optimize, options, "app_init", "examples/app_init.zig");
+    // addExecutable(b, target, optimize, options, "sdl3_tester", "examples/sdl.zig");
+    // addExecutable(b, target, optimize, options, "sdl3_gpu", "examples/sdl_gpu.zig");
+    // addExecutable(b, target, optimize, options, "tester", "examples/tester.zig");
+    // addExecutable(b, target, optimize, options, "init", "examples/init.zig");
+    // addExecutable(b, target, optimize, options, "flecs_pipeline", "examples/flecs_pipeline.zig");
+    // addExecutable(b, target, optimize, options, "app_init", "examples/app_init.zig");
     addExecutable(b, target, optimize, options, "app_init_final", "examples/app_init_final.zig");
-    addExecutable(b, target, optimize, options, "app_states", "examples/app_states.zig");
+    // addExecutable(b, target, optimize, options, "app_states", "examples/app_states.zig");
 
     addTests(b, target, optimize);
 

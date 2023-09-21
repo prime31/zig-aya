@@ -411,7 +411,8 @@ pub const ecs_type_t = extern struct {
     array: [*c]ecs_id_t,
     count: i32,
 };
-pub const struct_ecs_world_t = opaque {};
+pub const struct_ecs_world_t = @import("flecs_world.zig").struct_ecs_world_t;
+// pub const struct_ecs_world_t = opaque {};
 pub const ecs_world_t = struct_ecs_world_t;
 pub const struct_ecs_table_t = opaque {};
 pub const ecs_table_t = struct_ecs_table_t;
