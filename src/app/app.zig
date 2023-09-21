@@ -25,7 +25,7 @@ pub const App = struct {
     plugins: std.AutoHashMap(u32, void),
     phase_insert_indices: std.AutoHashMap(u64, i32),
 
-    pub fn init(allocator: Allocator) Self {
+    pub fn init(allocator: Allocator) *Self {
         const world = World.init(allocator);
 
         // register our phases
@@ -33,17 +33,24 @@ pub const App = struct {
             @field(phases, decl.name) = flecs.ecs_new_w_id(world.ecs, flecs.EcsPhase);
         }
 
-        return .{
+        var self = allocator.create(App) catch unreachable;
+        world.ecs.setSingleton(self);
+
+        self.* = .{
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
         };
+
+        return self;
     }
 
     pub fn deinit(self: *Self) void {
+        var allocator = self.phase_insert_indices.allocator;
         self.world.deinit();
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
+        allocator.destroy(self);
     }
 
     fn addDefaultPlugins(self: *Self) void {
@@ -58,6 +65,11 @@ pub const App = struct {
 
         runStartupPipeline(self.world.ecs);
         setCorePipeline(self.world.ecs);
+
+        // main loop
+        self.world.ecs.progress(0);
+
+        self.deinit();
     }
 
     /// Plugins must implement `build(App)`

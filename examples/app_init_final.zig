@@ -6,16 +6,19 @@ const phases = aya.phases;
 
 const Resources = aya.Resources;
 const App = aya.App;
+const World = aya.World;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.print("GPA has leaks: {}\n", .{gpa.detectLeaks()});
 
-    var app = App.init(gpa.allocator());
-    defer app.deinit();
+    // var app = App.init(gpa.allocator());
+    // defer app.deinit();
 
-    app.addSystem(phases.first, printDeltaTime)
-        .addSystem(phases.first, printSystem)
+    App.init(gpa.allocator())
+        .addSystem(phases.first, printDeltaTime)
+        .addSystem(phases.first, EmptySystem.printSystem)
+        .addSystem(phases.first, WorldSystem.printWorld)
     // .addSystem("StateTransition_0", phases.state_transition, run)
     // .addSystem("StateTransition_1", phases.state_transition, run)
     // .addSystem("PostUpdate_0", phases.post_update, run)
@@ -48,8 +51,8 @@ pub fn main() !void {
     // runStartupPipeline(app.world.ecs_world, phases.pre_startup, phases.startup, phases.post_startup);
     // setCorePipeline(app.world.ecs_world);
 
-    std.debug.print("---------\n", .{});
-    _ = flecs.ecs_progress(app.world.ecs, 0);
+    std.debug.print("--------- fini -------\n", .{});
+    // _ = flecs.ecs_progress(app.world.ecs, 0);
 }
 
 const EmptyCallback = struct {
@@ -57,14 +60,22 @@ const EmptyCallback = struct {
 };
 
 fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
-    std.log.debug("delta_time: {d}\n", .{iter.iter.delta_time});
+    std.log.debug("\ndelta_time: {d}\n", .{iter.iter.delta_time});
     while (iter.next()) |_| {}
 }
 
 const EmptySystem = struct {
     pub const run = printDeltaTime;
+
+    fn printSystem() void {
+        std.log.debug("empty system called\n", .{});
+    }
 };
 
-fn printSystem() void {
-    std.log.debug("empty system called\n", .{});
-}
+const WorldSystem = struct {
+    pub const run = printDeltaTime;
+
+    fn printWorld(world: *World) void {
+        std.log.debug("world system called with world: {*}\n", .{world});
+    }
+};

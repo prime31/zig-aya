@@ -124,8 +124,8 @@ pub const struct_ecs_world_t = opaque {
         }
 
         // allow disabling reflection data with a root bool
-        if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
-            meta.registerReflectionData(self, T, type_id_ptr.*);
+        // if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
+        //     meta.registerReflectionData(self, T, type_id_ptr.*);
 
         return type_id_ptr.*;
     }
@@ -181,7 +181,7 @@ pub const struct_ecs_world_t = opaque {
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
         var component = if (@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer) ptr_or_struct else &ptr_or_struct;
-        _ = c.ecs_set_id(self.world, self.componentId(T), self.componentId(T), @sizeOf(T), component);
+        _ = c.ecs_set_id(self, self.componentId(T), self.componentId(T), @sizeOf(T), component);
     }
 
     // TODO: use ecs_get_mut_id optionally based on a bool perhaps or maybe if the passed in type is a pointer?
@@ -194,8 +194,7 @@ pub const struct_ecs_world_t = opaque {
 
     pub fn getSingletonMut(self: Self, comptime T: type) ?*T {
         std.debug.assert(@typeInfo(T) == .Struct);
-        var is_added: bool = undefined;
-        var val = c.ecs_get_mut_id(self.world, self.componentId(T), self.componentId(T), &is_added);
+        var val = c.ecs_get_mut_id(self, self.componentId(T), self.componentId(T));
         if (val == null) return null;
         return @as(*T, @ptrCast(@alignCast(val)));
     }

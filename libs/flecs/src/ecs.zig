@@ -180,7 +180,16 @@ fn newWrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void
 
         pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
             c.ecs_iter_fini(it);
-            callback();
+
+            const Args = std.meta.ArgsTuple(@TypeOf(cb));
+            var args: Args = undefined;
+
+            inline for (@typeInfo(Args).Struct.fields) |f| {
+                @field(args, f.name) = it.*.world.?.getSingletonMut(meta.FinalChild(f.type)).?;
+            }
+
+            @call(.always_inline, callback, args);
+            // callback();
         }
     };
     return Closure.closure;
