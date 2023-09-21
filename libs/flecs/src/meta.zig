@@ -268,16 +268,14 @@ pub fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entit
                     usize => flecs.FLECS_IDecs_uptr_tID_,
                     []const u8 => flecs.FLECS_IDecs_string_tID_,
                     [*]const u8 => flecs.FLECS_IDecs_string_tID_,
-                    else => switch (@typeInfo(field.field_type)) {
+                    else => switch (@typeInfo(field.type)) {
                         .Pointer => flecs.FLECS_IDecs_uptr_tID_,
-
-                        .Struct => world.componentId(world, field.field_type),
-
+                        .Struct => world.componentId(field.type),
                         .Enum => blk: {
                             var enum_desc = std.mem.zeroes(flecs.ecs_enum_desc_t);
                             enum_desc.entity.entity = world.componentId(T);
 
-                            inline for (@typeInfo(field.field_type).Enum.fields, 0..) |f, index| {
+                            inline for (@typeInfo(field.type).Enum.fields, 0..) |f, index| {
                                 enum_desc.constants[index] = std.mem.zeroInit(flecs.ecs_enum_constant_t, .{
                                     .name = f.name.ptr,
                                     .value = @as(i32, @intCast(f.value)),
@@ -288,7 +286,7 @@ pub fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entit
                         },
 
                         else => {
-                            std.debug.print("unhandled field type: {any}, ti: {any}\n", .{ field.field_type, @typeInfo(field.field_type) });
+                            std.debug.print("unhandled field type: {any}, ti: {any}\n", .{ field.type, @typeInfo(field.type) });
                             unreachable;
                         },
                     },
