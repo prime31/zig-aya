@@ -7,6 +7,7 @@ const phases = aya.phases;
 const Resources = aya.Resources;
 const App = aya.App;
 const World = aya.World;
+const Iterator = ecs.Iterator;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -17,7 +18,7 @@ pub fn main() !void {
 
     App.init(gpa.allocator())
         .addSystem(phases.first, printDeltaTime)
-        .addSystem(phases.post_update, WorldAndVelocitySystem.runner)
+        .addSystem(phases.post_update, WorldAndVelocitySystem.run)
     // .addSystem(phases.first, EmptySystem.printSystem)
     // .addSystem(phases.startup, WorldSystem.printWorld)
     // .addSystem(phases.last, SystemCallbackType.printer)
@@ -63,7 +64,7 @@ const EmptyCallback = struct {
     pub const run = printDeltaTime;
 };
 
-fn printDeltaTime(iter: *ecs.Iterator(EmptyCallback)) void {
+fn printDeltaTime(iter: *Iterator(EmptyCallback)) void {
     std.debug.print("\ndelta_time: {d}\n", .{iter.iter.delta_time});
     _ = iter.world().newEntity().set(Velocity{ .x = 6 });
     _ = iter.world().newEntity().set(Velocity{});
@@ -89,9 +90,9 @@ const WorldSystem = struct {
 const WorldAndVelocitySystem = struct {
     vel: *Velocity,
 
-    pub const run = runner;
+    // pub const run = runner;
 
-    fn runner(world: *World, iter: *ecs.Iterator(WorldAndVelocitySystem)) void {
+    fn run(world: *World, iter: *Iterator(WorldAndVelocitySystem)) void {
         std.debug.print("----------------- holy fucking fuck. world: {*}, ecs_world: {}\n", .{ world, iter.world() });
         while (iter.next()) |comps| {
             std.debug.print("--- WorldAndVelocitySystem called: {}\n", .{comps.vel});
@@ -104,7 +105,7 @@ const SystemCallbackType = struct {
 
     pub const run = printer;
 
-    fn printer(iter: *ecs.Iterator(SystemCallbackType)) void {
+    fn printer(iter: *Iterator(SystemCallbackType)) void {
         // std.debug.print("\n--- printer called: {d}\n", .{iter});
         while (iter.next()) |comps| {
             std.debug.print("--- printer called: {}\n", .{comps.vel});
