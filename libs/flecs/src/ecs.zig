@@ -127,6 +127,13 @@ pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
     entity_desc.add[1] = phase;
     entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
 
+    // Proper order of operations:
+    // - loop through all Fn params:
+    //      - if an Iterator is found use it to create and start filling ecs_system_desc_t
+    //      - if not, create a ecs_system_desc_t and fill in the entity, callback and run
+    // - loop through all Fn params again skipping the Iterator:
+    //      - fill in singletons
+
     // allowed params: *Iterator(T), Res(T), ResMut(T), *World
     const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
     var system_desc: c.ecs_system_desc_t = inline for (fn_info.params) |param| {
@@ -158,13 +165,15 @@ pub fn _addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) void {
             }
             // need to add these to system_desc
             std.debug.print(" +++ ------- {} ------\n", .{meta.FinalChild(T)});
+            // singleton filter term
+            // system_desc.query.filter.terms[0].id = world.componentId(Singleton);
+            // system_desc.query.filter.terms[0].src.id = world.componentId(Singleton);
         }
     } else blk: {
         var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
         system_desc.callback = dummyFn;
         system_desc.entity = c.ecs_entity_init(world, &entity_desc);
         system_desc.run = newWrapSystemFn(runFn);
-        system_desc.entity = c.ecs_entity_init(world, &entity_desc);
 
         break :blk system_desc;
     };
