@@ -28,7 +28,7 @@ pub const Resources = struct {
         self.resources.deinit();
     }
 
-    pub fn contains(self: *Self, comptime T: type) bool {
+    pub fn contains(self: Self, comptime T: type) bool {
         return self.resources.contains(typeId(T));
     }
 
@@ -54,10 +54,8 @@ pub const Resources = struct {
     }
 
     pub fn get(self: Self, comptime T: type) ?*T {
-        if (self.resources.get(typeId(T))) |res| {
-            return res.asPtr(T);
-        }
-        return null;
+        const res = self.resources.get(typeId(T)) orelse return null;
+        return res.asPtr(T);
     }
 
     pub fn remove(self: *Self, comptime T: type) void {

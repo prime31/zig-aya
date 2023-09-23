@@ -35,8 +35,8 @@ pub fn Iterator(comptime Components: type) type {
             return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
+        // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
         pub fn world(self: *@This()) *flecs.ecs_world_t {
-            std.debug.print("-------- RETHINK THIS API. direct world access feels odd. ----\n", .{});
             return self.iter.world.?;
         }
 
