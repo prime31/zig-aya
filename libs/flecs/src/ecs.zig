@@ -107,3 +107,21 @@ pub const InOutKind = enum(c_int) {
     in = c.EcsIn, // read only. Query term is const.
     out = c.EcsOut, // write only
 };
+
+pub const Event = enum(c.ecs_id_t) {
+    // Event. Triggers when an id (component, tag, pair) is added to an entity
+    on_add = c.FLECS_HI_COMPONENT_ID + 33,
+    // Event. Triggers when an id (component, tag, pair) is removed from an entity
+    on_remove = c.FLECS_HI_COMPONENT_ID + 34,
+    // Event. Triggers when a component is set for an entity
+    on_set = c.FLECS_HI_COMPONENT_ID + 35,
+    // Event. Triggers when a component is unset for an entity
+    un_set = c.FLECS_HI_COMPONENT_ID + 36,
+    on_delete = c.FLECS_HI_COMPONENT_ID + 37,
+    on_table_create = c.FLECS_HI_COMPONENT_ID + 38,
+    // Event. Exactly-once trigger for when an entity matches/unmatches a filter
+    on_table_delete = c.FLECS_HI_COMPONENT_ID + 39,
+    on_table_empty = c.FLECS_HI_COMPONENT_ID + 40,
+    on_table_fill = c.FLECS_HI_COMPONENT_ID + 41,
+    on_table_delete_target = c.FLECS_HI_COMPONENT_ID + 46,
+};

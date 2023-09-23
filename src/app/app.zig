@@ -295,6 +295,12 @@ pub const App = struct {
         }
     }
 
+    pub fn addObserver(self: *Self, event: ecs.Event, runFn: anytype) *Self {
+        std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
+        systems.addObserver(self.world.ecs, @intFromEnum(event), runFn);
+        return self;
+    }
+
     // OLD Systems
     pub fn addSystems(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype) *Self {
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
