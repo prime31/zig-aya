@@ -52,6 +52,12 @@ pub const struct_ecs_world_t = opaque {
         return Entity.init(self.world, c.ecs_entity_init(self.world, &desc));
     }
 
+    pub fn lookupFullPath(self: Self, path: [:0]const u8) ?Entity {
+        const entity = c.ecs_lookup_path_w_sep(self, 0, path, ".", null, true);
+        if (entity != 0) return Entity.init(self, entity);
+        return null;
+    }
+
     pub fn newPrefab(self: Self, name: [*c]const u8) c.Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
             .name = name,
@@ -184,18 +190,18 @@ pub const struct_ecs_world_t = opaque {
         _ = c.ecs_set_id(self, self.componentId(T), self.componentId(T), @sizeOf(T), component);
     }
 
-    // TODO: use ecs_get_mut_id optionally based on a bool perhaps or maybe if the passed in type is a pointer?
     pub fn getSingleton(self: Self, comptime T: type) ?*const T {
         std.debug.assert(@typeInfo(T) == .Struct);
-        var val = c.ecs_get_id(self.world, self.componentId(T), self.componentId(T));
+
+        var val = c.ecs_get_id(self, self.componentId(T), self.componentId(T));
         if (val == null) return null;
         return @as(*const T, @ptrCast(@alignCast(val)));
     }
 
     pub fn getSingletonMut(self: Self, comptime T: type) ?*T {
         std.debug.assert(@typeInfo(T) == .Struct);
-        var val = c.ecs_get_mut_id(self, self.componentId(T), self.componentId(T));
-        if (val == null) return null;
+
+        const val = c.ecs_get_mut_id(self, self.componentId(T), self.componentId(T)) orelse return null;
         return @as(*T, @ptrCast(@alignCast(val)));
     }
 
@@ -232,40 +238,6 @@ pub const struct_ecs_world_t = opaque {
         return Query.init(self, &desc);
     }
 
-    /// adds a system to the ecs using the passed in struct
-    pub fn system(self: Self, comptime Components: type, phase: u64) void {
-        std.debug.assert(@typeInfo(Components) == .Struct);
-        std.debug.assert(@hasDecl(Components, "run"));
-        std.debug.assert(@hasDecl(Components, "name"));
-
-        var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-        entity_desc.id = c.ecs_new_id(self);
-        entity_desc.name = Components.name;
-        entity_desc.add[0] = phase;
-        entity_desc.add[1] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0;
-
-        var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
-        system_desc.callback = dummyFn;
-        system_desc.entity = c.ecs_entity_init(self, &entity_desc);
-        // desc.multi_threaded = true;
-        system_desc.run = wrapSystemFn(Components, Components.run);
-        system_desc.query.filter = meta.generateFilterDesc(self, Components);
-
-        if (@hasDecl(Components, "order_by")) {
-            meta.validateOrderByFn(Components.order_by);
-            const ti = @typeInfo(@TypeOf(Components.order_by));
-            const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
-            meta.validateOrderByType(Components, OrderByType);
-
-            system_desc.query.order_by = wrapOrderByFn(OrderByType, Components.order_by);
-            system_desc.query.order_by_component = self.componentId(OrderByType);
-        }
-
-        if (@hasDecl(Components, "instanced") and Components.instanced) system_desc.filter.instanced = true;
-
-        _ = c.ecs_system_init(self, &system_desc);
-    }
-
     /// adds an observer system to the Ecs using the passed in struct (see systems)
     pub fn observer(self: Self, comptime Components: type, event: u64) void {
         std.debug.assert(@typeInfo(Components) == .Struct);
@@ -278,7 +250,6 @@ pub const struct_ecs_world_t = opaque {
         entity_desc.add[0] = event;
 
         var desc = std.mem.zeroes(c.ecs_observer_desc_t);
-        desc.callback = dummyFn;
         desc.entity = c.ecs_entity_init(self.world, &entity_desc);
         desc.events[0] = event;
 
@@ -301,8 +272,6 @@ fn PerTypeGlobalStruct(comptime _: type) type {
 inline fn perTypeGlobalStructPtr(comptime T: type) *u64 {
     return comptime &PerTypeGlobalStruct(T).id;
 }
-
-fn dummyFn(_: [*c]c.ecs_iter_t) callconv(.C) void {}
 
 fn wrapSystemFn(comptime T: type, comptime cb: fn (*Iterator(T)) void) fn ([*c]c.ecs_iter_t) callconv(.C) void {
     const Closure = struct {

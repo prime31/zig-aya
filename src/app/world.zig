@@ -37,7 +37,11 @@ pub const World = struct {
         self.resources.remove(T);
     }
 
-    pub fn getResource(self: *Self, comptime T: type) ?*T {
+    pub fn getResource(self: *Self, comptime T: type) ?*const T {
+        return self.resources.get(T);
+    }
+
+    pub fn getResourceMut(self: *Self, comptime T: type) ?*T {
         return self.resources.get(T);
     }
 };
