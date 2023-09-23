@@ -219,6 +219,22 @@ pub const App = struct {
         return self;
     }
 
+    pub fn inState(self: *Self, comptime T: type, state: T) *Self {
+        if (self.last_added_system) |system| {
+            // add the State tag entity to the system and disable it if the state isnt active
+            const state_res = self.world.getResource(State(T)).?;
+            const entity = ecs.Entity.init(self.world.ecs, system);
+            entity.addPair(state_res.base, state_res.entityForTag(state));
+
+            if (state_res.state != state)
+                entity.enable(false);
+
+            self.last_added_system = null;
+            return self;
+        }
+        unreachable;
+    }
+
     // Systems
     pub fn addSystem(self: *Self, phase: u64, runFn: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
@@ -412,6 +428,10 @@ pub fn State(comptime T: type) type {
 
         pub fn init(base: u64, state: T, state_map: std.enums.EnumMap(T, u64)) Self {
             return .{ .base = base, .state = state, .state_map = state_map };
+        }
+
+        pub fn entityForTag(self: Self, state: T) u64 {
+            return self.state_map.getAssertContains(state);
         }
     };
 }

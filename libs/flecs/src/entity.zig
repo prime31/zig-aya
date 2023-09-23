@@ -51,21 +51,21 @@ pub const Entity = struct {
 
     /// adds a relation to the object on the entity. Allowed params: Entity, EntityId, type
     pub fn addPair(self: Entity, relation: anytype, object: anytype) void {
-        flecs.ecs_add_id(self.ecs, self.id, self.getEcs().pair(relation, object));
+        flecs.ecs_add_id(self.ecs, self.id, self.ecs.pair(relation, object));
     }
 
     /// returns true if the entity has the relation to the object
     pub fn hasPair(self: Entity, relation: anytype, object: anytype) bool {
-        return flecs.ecs_has_id(self.ecs, self.id, self.getEcs().pair(relation, object));
+        return flecs.ecs_has_id(self.ecs, self.id, self.ecs.pair(relation, object));
     }
 
     /// removes a relation to the object from the entity.
     pub fn removePair(self: Entity, relation: anytype, object: anytype) void {
-        return flecs.ecs_remove_id(self.ecs, self.id, self.getEcs().pair(relation, object));
+        return flecs.ecs_remove_id(self.ecs, self.id, self.ecs.pair(relation, object));
     }
 
     pub fn setPair(self: Entity, Relation: anytype, object: type, data: Relation) void {
-        const pair = self.getEcs().pair(Relation, object);
+        const pair = self.ecs.pair(Relation, object);
         var component = &data;
         _ = flecs.ecs_set_id(self.ecs, self.id, pair, @sizeOf(Relation), component);
     }
@@ -134,6 +134,10 @@ pub const Entity = struct {
     /// returns true if the entity is alive
     pub fn isAlive(self: Entity) bool {
         return flecs.ecs_is_alive(self.ecs, self.id);
+    }
+
+    pub fn enable(self: Entity, enabled: bool) void {
+        flecs.ecs_enable(self.ecs, self.id, enabled);
     }
 
     /// returns true if the entity has a matching component type
