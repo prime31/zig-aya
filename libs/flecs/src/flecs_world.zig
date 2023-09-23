@@ -47,6 +47,10 @@ pub const struct_ecs_world_t = opaque {
         return Entity.init(self, c.ecs_new_id(self));
     }
 
+    pub fn newId(self: Self) u64 {
+        return c.ecs_new_id(self);
+    }
+
     pub fn newEntityWithName(self: Self, name: [*c]const u8) Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
         return Entity.init(self.world, c.ecs_entity_init(self.world, &desc));

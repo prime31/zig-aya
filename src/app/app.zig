@@ -154,34 +154,47 @@ pub const App = struct {
 
         std.debug.print("-- add state: {}\n", .{current_state});
 
-        const base_state = flecs.ecs_new_id(self.world.ecs_world.world);
-        _ = flecs.ecs_add_id(self.world.ecs_world.world, base_state, flecs.EcsUnion);
+        const enum_entity = self.world.ecs.newId();
+        _ = flecs.ecs_add_id(self.world.ecs, enum_entity, flecs.EcsUnion);
 
         const EnumMap = std.enums.EnumMap(T, u64);
         var map = EnumMap{};
 
         for (std.enums.values(T)) |val| {
-            map.put(val, flecs.ecs_new_id(self.world.ecs_world.world));
+            map.put(val, flecs.ecs_new_id(self.world.ecs));
         }
 
-        _ = self.insertResource(State(T).init(base_state, current_state, map));
+        _ = self.insertResource(State(T).init(enum_entity, current_state, map));
         _ = self.insertResource(NextState(T).init(current_state));
 
-        // add the state to the entity so we can query for it (see init.zig on bottom or below)
-        const system_entity = flecs.ecs_new_id(self.world.ecs_world.world);
-        ecs.addPair(self.world.ecs_world.world, system_entity, base_state, map.getAssertContains(current_state));
+        // WHEN ADDING SYSTEMS: add the state to the system entity so we can query for it (see init.zig on bottom or below)
+        const system_entity = flecs.ecs_new_id(self.world.ecs);
+        self.world.ecs.addPair(system_entity, enum_entity, map.getAssertContains(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
+        _ = self.addSystem(phases.state_transition, StateChangeCheckSystem(T).run);
+
+        // MAYBE TODO? add a system in startup that enables all systems of the current_state
 
         // ELSEWHERE, when we need to query for systems with this state
-        // grab the entity for the enum T
-        const state_resource = self.world.resource(State(T)).?;
+        // grab the resource for the enum T
+        const state_resource = self.world.getResource(State(T)).?;
 
-        var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
-        filter_desc.terms[0].id = ecs.pair(self.world.ecs_world.world, state_resource.base, flecs.EcsWildcard);
+        // find all systems with the state
+        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        filter_desc.terms[0].id = self.world.ecs.pair(state_resource.base, flecs.EcsWildcard);
+        filter_desc.terms[1].id = c.EcsSystem;
+
+        const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
+        defer c.ecs_filter_fini(filter);
 
         // in the iterator, this is how to fetch the union relationship value
-        // const system_state = flecs.ecs_get_target(it.world, it.entities[i], state_resource.base, 0);
+        // const system_state = c.ecs_get_target(it.world, it.entities[i], state_resource.base, 0);
+
+        // system_state can then be compared to map
+        // const from_state_entity = map.getAssertContains(prev_state);
+        // const to_state_entity = map.getAssertContains(current_state);
+        // if (from_state_entity == system_state) { } // in prev_state
 
         // TODO:
         // - init state enum with an EcsUnion (see init example at bottom)
@@ -189,7 +202,8 @@ pub const App = struct {
         // - when NextState changes, query for all with the base tag of the enum
         //     * any sytems in the current state, normal phases are disabled
         //     * any systems in the current state OnExit run (handle later, needs thought)
-        //     * any systems in next state OnEnter run (handle later, needs thought
+        //     * any systems in next state OnEnter run (handle later, needs thought)
+        //     * any systems with OnTransition(T) { .from: T, .to: T } should be called
         //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
 
         // self.init_resource::<State<S>>()
@@ -298,75 +312,6 @@ pub const App = struct {
     pub fn addObserver(self: *Self, event: ecs.Event, runFn: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
         systems.addObserver(self.world.ecs, @intFromEnum(event), runFn);
-        return self;
-    }
-
-    // OLD Systems
-    pub fn addSystems(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype) *Self {
-        var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
-        const order_in_phase = blk: {
-            if (!phase_insertions.found_existing) {
-                phase_insertions.value_ptr.* = 0;
-                break :blk 0;
-            }
-            phase_insertions.value_ptr.* += 1;
-            break :blk phase_insertions.value_ptr.*;
-        };
-
-        var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
-        ecs.SYSTEM(self.world.ecs, name, phase, order_in_phase, &system_desc);
-        return self;
-    }
-
-    pub fn addSystemAfter(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, after_system: []const u8) *Self {
-        return self.insertSystem(name, phase, runFn, after_system, 1);
-    }
-
-    pub fn addSystemBefore(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, before_system: []const u8) *Self {
-        return self.insertSystem(name, phase, runFn, before_system, -1);
-    }
-
-    fn insertSystem(self: *Self, name: [*:0]const u8, phase: u64, runFn: anytype, other_system_name: []const u8, direction: i32) *Self {
-        const other_system = flecs.ecs_lookup(self.world.ecs, other_system_name.ptr);
-        if (other_system == 0) @panic("addSystemAfter could not find after_system");
-
-        const other_sort = ecs.get(self.world.ecs, other_system, SystemSort).?;
-        if (other_sort.phase != phase) @panic("other_system is in a different phase. Cannot addSystemAfter unless they are in the same phase");
-        const other_order_in_phase = other_sort.order_in_phase;
-        // std.debug.print("other_order_in_phase: {}\n", .{other_order_in_phase});
-
-        var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
-        filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
-        filter_desc.terms[0].inout = flecs.EcsInOut;
-
-        const filter = flecs.ecs_filter_init(self.world.ecs, &filter_desc);
-        defer flecs.ecs_filter_fini(filter);
-
-        var it = flecs.ecs_filter_iter(self.world.ecs, filter);
-        while (flecs.ecs_filter_next(&it)) {
-            const system_sorts = ecs.field(&it, SystemSort, 1);
-
-            var i: usize = 0;
-            while (i < it.count) : (i += 1) {
-                if (system_sorts[i].phase != phase) continue;
-                if (direction > 0) {
-                    if (system_sorts[i].order_in_phase > other_order_in_phase)
-                        system_sorts[i].order_in_phase += direction;
-                } else {
-                    if (system_sorts[i].order_in_phase < other_order_in_phase)
-                        system_sorts[i].order_in_phase += direction;
-                }
-            }
-        }
-
-        // increment our phase_insert_indices since we are adding a new system
-        var phase_insertion = self.phase_insert_indices.getOrPut(phase) catch unreachable;
-        phase_insertion.value_ptr.* += direction;
-
-        var system_desc: flecs.ecs_system_desc_t = std.mem.zeroInit(flecs.ecs_system_desc_t, .{ .run = runFn });
-        ecs.SYSTEM(self.world.ecs, name, phase, other_order_in_phase + direction, &system_desc);
-        // std.debug.print("new order_in_phase: {}\n", .{other_order_in_phase + direction});
-
         return self;
     }
 };
@@ -480,8 +425,37 @@ pub fn NextState(comptime T: type) type {
             return .{ .state = state };
         }
 
-        pub fn set(self: Self, new_state: T) void {
+        pub fn set(self: *Self, world: *c.ecs_world_t, new_state: T) void {
             self.state = new_state;
+            world.newEntity().set(StateChanged(T){ .next_state = new_state });
+        }
+    };
+}
+
+fn StateChanged(comptime T: type) type {
+    return struct { next_state: T };
+}
+
+fn StateChangeCheckSystem(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        next_state: *StateChanged(T),
+
+        fn run(state: ResMut(State(T)), iter: *ecs.Iterator(Self)) void {
+            std.debug.assert(iter.iter.count <= 1);
+
+            while (iter.next()) |comps| {
+                std.debug.print("-- -- -- -- --StateChangeCheckSystem(T) {}\n", .{comps.next_state});
+                // set State(T) to the new state
+                const prev_state = state.get().?.state;
+                _ = prev_state;
+                state.get().?.state = comps.next_state.next_state;
+
+                // disable all systems with prev_state
+                // enable all systems with comps.next_state.next_state
+
+                iter.entity().delete();
+            }
         }
     };
 }
