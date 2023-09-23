@@ -11,15 +11,35 @@ const Iterator = ecs.Iterator;
 
 pub const Resource = struct { num: u64 };
 
+const SuperState = enum {
+    start,
+    middle,
+    end,
+};
+
+const ChangeStateSystem = struct {
+    vel: ?*const Velocity,
+
+    fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
+        _ = world;
+        std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().?.state });
+        while (iter.next()) |_| {}
+        state.get().?.set(iter.world(), .middle);
+    }
+};
+
 pub fn main() !void {
     App.init()
+        .addState(SuperState, .start)
+        .addSystem(phases.pre_update, ChangeStateSystem.run)
+        .insertPlugin(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_add, VelocityObserver.run)
         .addSystem(phases.first, WorldAndVelocitySystem.run)
         .addSystem(phases.first, EmptyCallback.run).before(WorldAndVelocitySystem.run)
-        .addSystem(phases.last, EmptySystem.run)
-        .addSystem(phases.last, WorldSystem.run)
-        .addSystem(phases.last, SystemCallbackType.run)
+        .addSystem(phases.pre_update, EmptySystem.run)
+        .addSystem(phases.pre_startup, WorldSystem.run)
+        .addSystem(phases.update, SystemCallbackType.run)
         .run();
 
     // disables an entire phase
@@ -72,6 +92,22 @@ const VelocityObserver = struct {
 
     fn run(iter: *Iterator(VelocityObserver)) void {
         std.debug.print("-- ++ VelocityObserver.ecs_world: {}\n", .{iter.world()});
+        while (iter.next()) |_| {}
+    }
+};
+
+const PhysicsPlugin = struct {
+    data: u8 = 250,
+
+    pub fn build(self: PhysicsPlugin, app: *App) void {
+        _ = app.addSystem(phases.last, PhysicsSystem.run);
+        std.debug.print("--- PhysicsPlugins.build called. data: {}\n", .{self.data});
+    }
+};
+
+const PhysicsSystem = struct {
+    fn run(iter: *Iterator(PhysicsSystem)) void {
+        std.debug.print("-- ++ PhysicsSystem\n", .{});
         while (iter.next()) |_| {}
     }
 };

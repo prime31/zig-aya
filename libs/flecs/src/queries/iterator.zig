@@ -100,7 +100,7 @@ pub fn Iterator(comptime Components: type) type {
                 const field_index = self.iter.terms[index].field_index;
                 const raw_term_id = flecs.ecs_field_id(self.iter, @intCast(field_index + 1));
                 const term_id = if (flecs.ecs_id_is_pair(raw_term_id)) ecs.pairFirst(raw_term_id) else raw_term_id;
-                var skip_term = if (is_optional) meta.id(col_type) != term_id else false;
+                var skip_term = if (is_optional) self.iter.world.?.componentId(col_type) != term_id else false;
 
                 // note that an OR is actually a single term!
                 // std.debug.print("---- col_type: {any}, optional: {any}, i: {d}, col_index: {d}, skip_term: {d}\n", .{ col_type, is_optional, i, column_index, skip_term });
