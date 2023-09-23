@@ -73,6 +73,34 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
     return c.ecs_system_init(world, &system_desc);
 }
 
+pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
+    var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
+    entity_desc.id = c.ecs_new_id(world);
+    entity_desc.name = @typeName(@TypeOf(runFn));
+    entity_desc.add[0] = event;
+
+    // allowed params: *Iterator(T), Res(T), ResMut(T), *World
+    const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
+    var observer_desc: c.ecs_observer_desc_t = inline for (fn_info.params) |param| {
+        if (@typeInfo(param.type.?) == .Pointer) {
+            const T = std.meta.Child(param.type.?);
+            if (@hasDecl(T, "components_type")) {
+                var observer_desc = std.mem.zeroes(c.ecs_observer_desc_t);
+                observer_desc.entity = c.ecs_entity_init(world, &entity_desc);
+                observer_desc.run = wrapSystemFn(runFn);
+                observer_desc.filter = meta.generateFilterDesc(world, T.components_type);
+
+                if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) observer_desc.filter.instanced = true;
+                break observer_desc;
+            }
+        }
+    } else @panic("observers must have an Iterator");
+
+    observer_desc.events[0] = event;
+
+    _ = c.ecs_observer_init(world, &observer_desc);
+}
+
 fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
     const Closure = struct {
         const callback = cb;
