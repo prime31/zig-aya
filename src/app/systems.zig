@@ -41,7 +41,6 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
             const T = std.meta.Child(param.type.?);
             if (@hasDecl(T, "components_type")) {
                 var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
-                // system_desc.callback = dummyFn;
                 system_desc.entity = c.ecs_entity_init(world, &entity_desc);
                 system_desc.multi_threaded = true;
                 system_desc.run = wrapSystemFn(runFn);

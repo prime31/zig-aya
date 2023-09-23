@@ -31,14 +31,14 @@ const ChangeStateSystem = struct {
 pub fn main() !void {
     App.init()
         .addState(SuperState, .start)
-        .addSystem(phases.pre_update, ChangeStateSystem.run)
         .insertPlugin(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_add, VelocityObserver.run)
+        .addSystem(phases.startup, EmptyCallback.run)
         .addSystem(phases.first, WorldAndVelocitySystem.run)
-        .addSystem(phases.first, EmptyCallback.run).before(WorldAndVelocitySystem.run)
-        .addSystem(phases.pre_update, EmptySystem.run)
-        .addSystem(phases.pre_startup, WorldSystem.run)
+        .addSystem(phases.first, ChangeStateSystem.run)
+        .addSystem(phases.pre_update, EmptySystem.run).inState(SuperState, .middle)
+        .addSystem(phases.pre_update, WorldSystem.run).before(EmptySystem.run)
         .addSystem(phases.update, SystemCallbackType.run)
         .run();
 
