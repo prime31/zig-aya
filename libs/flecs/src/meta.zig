@@ -156,7 +156,7 @@ pub fn validateIterator(comptime Components: type, iter: *const flecs.ecs_iter_t
             if (flecs.ecs_id_is_pair(iter.terms[index].id)) {
                 assertMsg(ecs.pairFirst(iter.terms[index].id) == type_entity, "Order of struct does not match order of iter.terms! {d} != {d}\n", .{ iter.terms[index].id, type_entity });
             } else {
-                assertMsg(iter.terms[index].id == type_entity, "Order of struct does not match order of iter.terms! {d} != {d}. term index: {d}\n", .{ iter.terms[index].id, type_entity, index });
+                assertMsg(iter.terms[index].id == type_entity, "Order of struct does not match order of iter.terms! {d} != {d}. term index: {d} (type: {s})\n", .{ iter.terms[index].id, type_entity, index, @typeName(col_type) });
             }
 
             // validate readonly (non-ptr types in the struct) matches up with the inout

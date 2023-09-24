@@ -79,6 +79,7 @@ pub const App = struct {
 
         // main loop
         self.world.ecs.progress(0);
+        self.world.ecs.progress(0);
 
         self.deinit();
     }
@@ -465,15 +466,40 @@ fn StateChangeCheckSystem(comptime T: type) type {
             std.debug.assert(iter.iter.count <= 1);
 
             while (iter.next()) |comps| {
-                std.debug.print("-- -- -- -- --StateChangeCheckSystem(T) {}\n", .{comps.next_state});
-                // set State(T) to the new state
-                const prev_state = state.get().?.state;
-                _ = prev_state;
+                std.debug.print("-- -- ---- StateChangeCheckSystem(T) {}\n", .{comps.next_state});
+                // grab the previous and current State entities and set State(T) to the new state
+                const state_res = state.get().?;
+                const prev_state_entity = state_res.entityForTag(state_res.state);
+                const next_state_entity = state_res.entityForTag(comps.next_state.next_state);
+
                 state.get().?.state = comps.next_state.next_state;
 
-                // disable all systems with prev_state
-                // enable all systems with comps.next_state.next_state
+                // disable all systems with prev_state and enable all systems with next_state
+                var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                filter_desc.terms[0].id = iter.world().pair(state_res.base, c.EcsWildcard);
+                filter_desc.terms[1].id = c.EcsSystem;
+                filter_desc.terms[1].inout = c.EcsInOutNone;
+                filter_desc.terms[2].id = c.EcsDisabled;
+                filter_desc.terms[2].inout = c.EcsInOutNone;
+                filter_desc.terms[2].oper = c.EcsOptional;
 
+                const filter = c.ecs_filter_init(iter.world(), &filter_desc);
+                defer c.ecs_filter_fini(filter);
+
+                var it = c.ecs_filter_iter(iter.world(), filter);
+                while (c.ecs_filter_next(&it)) {
+                    var i: usize = 0;
+                    while (i < it.count) : (i += 1) {
+                        const system_state = c.ecs_get_target(it.world, it.entities[i], state_res.base, 0);
+                        if (system_state == prev_state_entity) {
+                            c.ecs_enable(it.world.?, it.entities[i], false);
+                        } else if (system_state == next_state_entity) {
+                            c.ecs_enable(it.world.?, it.entities[i], system_state == next_state_entity);
+                        }
+                    }
+                }
+
+                // delete the entity
                 iter.entity().delete();
             }
         }

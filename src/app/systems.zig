@@ -89,6 +89,8 @@ pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
                 observer_desc.run = wrapSystemFn(runFn);
                 observer_desc.filter = meta.generateFilterDesc(world, T.components_type);
 
+                std.debug.print("---- added observer field 1 id: {}, entity: {}\n", .{ observer_desc.filter.terms[1].id, observer_desc.entity });
+
                 if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) observer_desc.filter.instanced = true;
                 break observer_desc;
             }
@@ -105,6 +107,12 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
         const callback = cb;
 
         pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
+            if (it.*.field_count == 1) {
+                const e = ecs.Entity.init(it.*.world.?, it.*.system);
+                std.debug.print("------ system called. system id: {}, term[1]: {}\n", .{ e.id, it.*.terms[1].id });
+                e.printJsonRepresentation();
+            }
+
             const Args = std.meta.ArgsTuple(@TypeOf(cb));
             var args: Args = undefined;
 
