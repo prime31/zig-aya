@@ -53,8 +53,7 @@ pub fn Iterator(comptime Components: type) type {
         pub inline fn next(self: *@This()) ?Components {
             // outer check for when we need to see if there is another table to iterate
             if (self.inner_iter == null) {
-                self.inner_iter = self.nextTable();
-                if (self.inner_iter == null) return null;
+                self.inner_iter = self.nextTable() orelse return null;
                 self.index = 0;
             }
 
@@ -83,7 +82,7 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         /// gets the next table from the query results if one is available. Fills the iterator with the columns from the table.
-        inline fn nextTable(self: *@This()) ?TableColumns {
+        pub inline fn nextTable(self: *@This()) ?TableColumns {
             if (!self.nextFn(self.iter)) return null;
 
             var iter: TableColumns = .{ .count = self.iter.count };

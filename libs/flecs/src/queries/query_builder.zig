@@ -35,7 +35,7 @@ pub const QueryBuilder = struct {
         return self;
     }
 
-    /// the term will be used for the query but it is neither read nor written
+    /// the term will be used for the query but it is neither read nor write
     pub fn withNone(self: *QueryBuilder, comptime T: type) *QueryBuilder {
         self.desc.query.filter.terms[self.terms_count].id = self.world.componentId(T);
         self.desc.query.filter.terms[self.terms_count].inout = flecs.EcsInOutNone;
@@ -69,7 +69,6 @@ pub const QueryBuilder = struct {
         self.terms_count += 1;
         self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{
             .id = self.world.componentId(T2),
-            // .oper = flecs.EcsOr,
         });
         self.terms_count += 1;
         return self;
