@@ -76,7 +76,6 @@ pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = c.ecs_new_id(world);
     entity_desc.name = @typeName(@TypeOf(runFn));
-    entity_desc.add[0] = event;
 
     // allowed params: *Iterator(T), Res(T), ResMut(T), *World
     const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
@@ -85,19 +84,16 @@ pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
             const T = std.meta.Child(param.type.?);
             if (@hasDecl(T, "components_type")) {
                 var observer_desc = std.mem.zeroes(c.ecs_observer_desc_t);
+                observer_desc.events[0] = event;
                 observer_desc.entity = c.ecs_entity_init(world, &entity_desc);
-                observer_desc.run = wrapSystemFn(runFn);
+                observer_desc.callback = wrapSystemFn(runFn);
                 observer_desc.filter = meta.generateFilterDesc(world, T.components_type);
-
-                std.debug.print("---- added observer field 1 id: {}, entity: {}\n", .{ observer_desc.filter.terms[1].id, observer_desc.entity });
 
                 if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) observer_desc.filter.instanced = true;
                 break observer_desc;
             }
         }
     } else @panic("observers must have an Iterator");
-
-    observer_desc.events[0] = event;
 
     _ = c.ecs_observer_init(world, &observer_desc);
 }
@@ -107,12 +103,6 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
         const callback = cb;
 
         pub fn closure(it: [*c]c.ecs_iter_t) callconv(.C) void {
-            if (it.*.field_count == 1) {
-                const e = ecs.Entity.init(it.*.world.?, it.*.system);
-                std.debug.print("------ system called. system id: {}, term[1]: {}\n", .{ e.id, it.*.terms[1].id });
-                e.printJsonRepresentation();
-            }
-
             const Args = std.meta.ArgsTuple(@TypeOf(cb));
             var args: Args = undefined;
 

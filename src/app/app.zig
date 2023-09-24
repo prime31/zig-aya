@@ -149,11 +149,27 @@ pub const App = struct {
         return self;
     }
 
+    // Events
+    pub fn addEvent(self: *Self, comptime T: type) *Self {
+        _ = T;
+        //  ecs_entity_t MyEvent = ecs_new_entity(ecs, "MyEvent");
+        return self;
+    }
+
+    // this should be done via an Event(T) resource me thinks
+    pub fn emitEvent(self: *Self) *Self {
+        // Emit the custom event
+        // ecs_emit(ecs, &(ecs_event_desc_t) {
+        //     .event = MyEvent,
+        //     .ids = &(ecs_type_t){ (ecs_id_t[]){ ecs_id(Position) }, 1 }, // 1 id
+        //     .entity = e
+        // });
+        return self;
+    }
+
     // States
     pub fn addState(self: *Self, comptime T: type, current_state: T) *Self {
         std.debug.assert(@typeInfo(T) == .Enum);
-
-        std.debug.print("-- add state: {}\n", .{current_state});
 
         const enum_entity = self.world.ecs.newId();
         _ = flecs.ecs_add_id(self.world.ecs, enum_entity, flecs.EcsUnion);
@@ -168,55 +184,9 @@ pub const App = struct {
         _ = self.insertResource(State(T).init(enum_entity, current_state, map));
         _ = self.insertResource(NextState(T).init(current_state));
 
-        // WHEN ADDING SYSTEMS: add the state to the system entity so we can query for it (see init.zig on bottom or below)
-        const system_entity = flecs.ecs_new_id(self.world.ecs);
-        self.world.ecs.addPair(system_entity, enum_entity, map.getAssertContains(current_state));
-
         // add system for this T that will handle disabling/enabling systems with the state when it changes
         _ = self.addSystem(phases.state_transition, StateChangeCheckSystem(T).run);
 
-        // MAYBE TODO? add a system in startup that enables all systems of the current_state
-
-        // ELSEWHERE, when we need to query for systems with this state
-        // grab the resource for the enum T
-        const state_resource = self.world.getResource(State(T)).?;
-
-        // find all systems with the state
-        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
-        filter_desc.terms[0].id = self.world.ecs.pair(state_resource.base, flecs.EcsWildcard);
-        filter_desc.terms[1].id = c.EcsSystem;
-
-        const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
-        defer c.ecs_filter_fini(filter);
-
-        // in the iterator, this is how to fetch the union relationship value
-        // const system_state = c.ecs_get_target(it.world, it.entities[i], state_resource.base, 0);
-
-        // system_state can then be compared to map
-        // const from_state_entity = map.getAssertContains(prev_state);
-        // const to_state_entity = map.getAssertContains(current_state);
-        // if (from_state_entity == system_state) { } // in prev_state
-
-        // TODO:
-        // - init state enum with an EcsUnion (see init example at bottom)
-        // - set the current state
-        // - when NextState changes, query for all with the base tag of the enum
-        //     * any sytems in the current state, normal phases are disabled
-        //     * any systems in the current state OnExit run (handle later, needs thought)
-        //     * any systems in next state OnEnter run (handle later, needs thought)
-        //     * any systems with OnTransition(T) { .from: T, .to: T } should be called
-        //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
-
-        // self.init_resource::<State<S>>()
-        //     .init_resource::<NextState<S>>()
-        //     .add_systems(
-        //         StateTransition,
-        //         (
-        //             run_enter_schedule::<S>.run_if(run_once_condition()),
-        //             apply_state_transition::<S>,
-        //         )
-        //             .chain(),
-        //     );
         return self;
     }
 
@@ -465,6 +435,15 @@ fn StateChangeCheckSystem(comptime T: type) type {
         fn run(state: ResMut(State(T)), iter: *ecs.Iterator(Self)) void {
             std.debug.assert(iter.iter.count <= 1);
 
+            // TODO:
+            // - when NextState changes, query for all with the base tag of the enum
+            //     * (done) any sytems in the current state, normal phases are disabled
+            //     * (done) any systems in the current state OnExit run (handle later, needs thought)
+            //     * install run_enter_schedule system that will run any systems in OnEnter(current_state)
+            //     * any systems in next state OnEnter run (handle later, needs thought)
+            //     * any systems with OnTransition(T) { .from: T, .to: T } should be called
+            //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
+
             while (iter.next()) |comps| {
                 std.debug.print("-- -- ---- StateChangeCheckSystem(T) {}\n", .{comps.next_state});
                 // grab the previous and current State entities and set State(T) to the new state
@@ -479,7 +458,7 @@ fn StateChangeCheckSystem(comptime T: type) type {
                 filter_desc.terms[0].id = iter.world().pair(state_res.base, c.EcsWildcard);
                 filter_desc.terms[1].id = c.EcsSystem;
                 filter_desc.terms[1].inout = c.EcsInOutNone;
-                filter_desc.terms[2].id = c.EcsDisabled;
+                filter_desc.terms[2].id = c.EcsDisabled; // make sure we match disabled systems!
                 filter_desc.terms[2].inout = c.EcsInOutNone;
                 filter_desc.terms[2].oper = c.EcsOptional;
 

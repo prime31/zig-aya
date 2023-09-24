@@ -21,6 +21,7 @@ pub fn Iterator(comptime Components: type) type {
         iter: *flecs.ecs_iter_t,
         inner_iter: ?TableColumns = null,
         index: usize = 0,
+        event_iter_called: bool = false,
         nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool,
 
         pub fn init(iter: *flecs.ecs_iter_t, nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool) @This() {
@@ -82,8 +83,18 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         /// gets the next table from the query results if one is available. Fills the iterator with the columns from the table.
+        /// Do not call nextTable and next! Use next in almost all cases and nextTable only when you know what you are doing!
+        /// nextTable can potentially speed up query iteration for cases where no columns are optional and all slices are iterated
+        /// in the same for loop (for (comps.vel, comps.pos) |vel, pos| {})
         pub inline fn nextTable(self: *@This()) ?TableColumns {
-            if (!self.nextFn(self.iter)) return null;
+            // if we are an observer this is running in a callback as opposed to a run like systems. Because of that
+            // we do NOT want to call nextFn! We are given a single table and we should return it and do nothing more.
+            if (self.iter.event > 0) {
+                if (self.event_iter_called) return null;
+                self.event_iter_called = true;
+            } else {
+                if (!self.nextFn(self.iter)) return null;
+            }
 
             var iter: TableColumns = .{ .count = self.iter.count };
             var index: usize = 0;
