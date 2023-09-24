@@ -39,7 +39,7 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig
 
 fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) *std.Build.CompileStep {
     const lib = b.addStaticLibrary(.{
-        .name = "zflecs",
+        .name = "flecs",
         .target = target,
         .optimize = optimize,
     });
