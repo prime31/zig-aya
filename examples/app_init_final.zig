@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
-const flecs = ecs.c;
 const phases = aya.phases;
 
 const Resources = aya.Resources;
@@ -20,7 +19,7 @@ const SuperState = enum {
 const ChangeStateSystem = struct {
     vel: ?*const Velocity,
 
-    fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
+    pub fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
         _ = world;
         std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().?.state });
         while (iter.next()) |_| {}
@@ -34,13 +33,13 @@ pub fn main() !void {
         .insertPlugin(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_set, VelocityObserver.run)
-        .addSystem(phases.startup, EmptyCallback.run)
-        .addSystem(phases.first, WorldAndVelocitySystem.run)
-        .addSystem(phases.first, ChangeStateSystem.run)
-        .addSystem(phases.pre_update, EmptySystem.run).inState(SuperState, .middle)
-        .addSystem(phases.pre_update, OtherSystem.run).inState(SuperState, .start)
-        .addSystem(phases.pre_update, WorldSystem.run).before(EmptySystem.run)
-        .addSystem(phases.update, SystemCallbackType.run)
+        .addSystem(phases.startup, EmptyCallback)
+        .addSystem(phases.first, WorldAndVelocitySystem)
+        .addSystem(phases.first, ChangeStateSystem)
+        .addSystem(phases.pre_update, EmptySystem).inState(SuperState, .middle)
+        .addSystem(phases.pre_update, OtherSystem).inState(SuperState, .start)
+        .addSystem(phases.pre_update, WorldSystem).before(EmptySystem)
+        .addSystem(phases.update, SystemCallbackType)
         .run();
 
     // disables an entire phase
@@ -51,7 +50,7 @@ pub const Position = struct { x: f32 = 0, y: f32 = 0 };
 pub const Velocity = struct { x: f32 = 0, y: f32 = 0 };
 
 const EmptyCallback = struct {
-    fn run(iter: *Iterator(EmptyCallback)) void {
+    pub fn run(iter: *Iterator(EmptyCallback)) void {
         while (iter.next()) |_| {}
 
         std.debug.print("\n-- EmptyCallback. delta_time: {d}\n", .{iter.iter.delta_time});
@@ -64,19 +63,19 @@ const EmptyCallback = struct {
 };
 
 const EmptySystem = struct {
-    fn run(res: aya.Res(Velocity), res_mut: aya.ResMut(Resource)) void {
+    pub fn run(res: aya.Res(Velocity), res_mut: aya.ResMut(Resource)) void {
         std.debug.print("-- EmptySystem called res: {?}, res_mut: {?}\n", .{ res.resource, res_mut.resource });
     }
 };
 
 const OtherSystem = struct {
-    fn run() void {
+    pub fn run() void {
         std.debug.print("-- OtherSystem\n", .{});
     }
 };
 
 const WorldSystem = struct {
-    fn run(world: *World) void {
+    pub fn run(world: *World) void {
         std.debug.print("-- WorldSystem called with world: {*}\n", .{world});
     }
 };
@@ -84,7 +83,7 @@ const WorldSystem = struct {
 const WorldAndVelocitySystem = struct {
     vel: *Velocity,
 
-    fn run(world: *World, iter: *Iterator(WorldAndVelocitySystem)) void {
+    pub fn run(world: *World, iter: *Iterator(WorldAndVelocitySystem)) void {
         std.debug.print("-- WorldAndVelocitySystem. world: {*}, ecs_world: {}\n", .{ world, iter.world() });
         while (iter.next()) |_| {}
     }
@@ -94,7 +93,7 @@ const SystemCallbackType = struct {
     vel: *Velocity,
     pos: ?*const Position,
 
-    fn run(iter: *Iterator(SystemCallbackType)) void {
+    pub fn run(iter: *Iterator(SystemCallbackType)) void {
         std.debug.print("-- SystemCallbackType called. total results: {d}\n", .{iter.*.iter.count});
 
         // iteration can also be via table
@@ -111,11 +110,10 @@ const VelocityObserver = struct {
     vel: *const Velocity,
     pos: *const Position,
 
-    fn run(iter: *Iterator(VelocityObserver)) void {
+    pub fn run(iter: *Iterator(VelocityObserver)) void {
         // std.debug.print("-- ++ VelocityObserver\n", .{});
         while (iter.next()) |comps| {
             std.debug.print("-- v: {}, p: {}\n", .{ comps.vel, comps.pos });
-            iter.entity().printJsonRepresentation();
         }
     }
 };
@@ -124,13 +122,13 @@ const PhysicsPlugin = struct {
     data: u8 = 250,
 
     pub fn build(self: PhysicsPlugin, app: *App) void {
-        _ = app.addSystem(phases.last, PhysicsSystem.run);
+        _ = app.addSystem(phases.last, PhysicsSystem);
         std.debug.print("--- PhysicsPlugins.build called. data: {}\n", .{self.data});
     }
 };
 
 const PhysicsSystem = struct {
-    fn run(iter: *Iterator(PhysicsSystem)) void {
+    pub fn run(iter: *Iterator(PhysicsSystem)) void {
         std.debug.print("-- ++ PhysicsSystem\n", .{});
         while (iter.next()) |_| {}
     }

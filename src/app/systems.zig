@@ -19,12 +19,11 @@ pub const SystemSort = struct {
     order_in_phase: i32 = 0,
 };
 
-pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
-    std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
-
+pub fn addSystem(world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = c.ecs_new_id(world);
-    entity_desc.name = @typeName(@TypeOf(runFn));
+    entity_desc.name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System);
+    std.debug.print("+++ {s}\n", .{entity_desc.name});
     entity_desc.add[0] = world.componentId(SystemSort);
     entity_desc.add[1] = phase;
     entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
@@ -35,7 +34,7 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
     //      - if not, create a ecs_system_desc_t and fill in the entity, callback and run
 
     // allowed params: *Iterator(T), Res(T), ResMut(T), *World
-    const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
+    const fn_info = @typeInfo(@TypeOf(System.run)).Fn;
     var system_desc: c.ecs_system_desc_t = inline for (fn_info.params) |param| {
         if (@typeInfo(param.type.?) == .Pointer) {
             const T = std.meta.Child(param.type.?);
@@ -43,7 +42,7 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
                 var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
                 system_desc.entity = c.ecs_entity_init(world, &entity_desc);
                 system_desc.multi_threaded = true;
-                system_desc.run = wrapSystemFn(runFn);
+                system_desc.run = wrapSystemFn(System.run);
                 system_desc.query.filter = meta.generateFilterDesc(world, T.components_type);
 
                 if (@hasDecl(T.components_type, "order_by")) {
@@ -64,7 +63,7 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, runFn: anytype) u64 {
         var system_desc = std.mem.zeroes(c.ecs_system_desc_t);
         // system_desc.callback = dummyFn;
         system_desc.entity = c.ecs_entity_init(world, &entity_desc);
-        system_desc.run = wrapSystemFn(runFn);
+        system_desc.run = wrapSystemFn(System.run);
 
         break :blk system_desc;
     };

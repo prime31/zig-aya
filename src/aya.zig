@@ -3,11 +3,6 @@ const std = @import("std");
 pub const utils = @import("utils.zig");
 
 // inner modules
-// const app = @import("app/mod.zig");
-// const assets = @import("asset/mod.zig");
-// const input = @import("input/mod.zig");
-// const window = @import("window/window.zig");
-
 pub usingnamespace @import("app/mod.zig");
 pub usingnamespace @import("asset/mod.zig");
 pub usingnamespace @import("input/mod.zig");

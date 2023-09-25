@@ -6,6 +6,32 @@ const typeId = aya.utils.typeId;
 const Allocator = std.mem.Allocator;
 const ErasedPtr = aya.utils.ErasedPtr;
 
+pub fn Res(comptime T: type) type {
+    return struct {
+        pub const res_type = T;
+        const Self = @This();
+
+        resource: ?*const T,
+
+        pub fn get(self: Self) ?*const T {
+            return self.resource;
+        }
+    };
+}
+
+pub fn ResMut(comptime T: type) type {
+    return struct {
+        pub const res_mut_type = T;
+        const Self = @This();
+
+        resource: ?*T,
+
+        pub fn get(self: Self) ?*T {
+            return self.resource;
+        }
+    };
+}
+
 /// Resources are globally unique objects that are stored outside of the ECS. One per type can be stored. Resource
 /// types can optionally implement 2 methods: init(Allocator) Self and deinit(Self). If they are present they will be
 /// called.
