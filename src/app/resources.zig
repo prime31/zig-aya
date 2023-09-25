@@ -29,6 +29,11 @@ pub fn ResMut(comptime T: type) type {
         pub fn get(self: Self) ?*T {
             return self.resource;
         }
+
+        pub fn getAssertContains(self: Self) *T {
+            std.debug.assert(self.resource != null);
+            return self.resource.?;
+        }
     };
 }
 

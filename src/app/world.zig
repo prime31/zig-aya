@@ -33,6 +33,10 @@ pub const World = struct {
         _ = self.resources.initResource(T);
     }
 
+    pub fn containsResource(self: *Self, comptime T: type) bool {
+        return self.resources.contains(T);
+    }
+
     pub fn removeResource(self: *Self, comptime T: type) void {
         self.resources.remove(T);
     }
