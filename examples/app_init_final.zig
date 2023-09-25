@@ -10,6 +10,8 @@ const Iterator = ecs.Iterator;
 
 pub const Resource = struct { num: u64 };
 
+const SuperEvent = struct {};
+
 const SuperState = enum {
     start,
     middle,
@@ -30,6 +32,7 @@ const ChangeStateSystem = struct {
 pub fn main() !void {
     App.init()
         .addState(SuperState, .start)
+        .addEvent(SuperEvent)
         .insertPlugin(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_set, VelocityObserver.run)

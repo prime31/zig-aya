@@ -1,28 +1,41 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const app = @import("mod.zig");
 
-/// Resource
+const ResMut = app.ResMut;
+
+/// Resource, manages two ArrayLists of events that are swapped each frame. Events are available to read
+/// for one full frame before they are swapped. There is always a one frame delay when reading events.
 pub fn Events(comptime T: type) type {
     return struct {
-        pub var event_type = T;
         const Self = @This();
 
         events: std.ArrayList(T),
+        events_next_frame: std.ArrayList(T),
 
         pub fn init(allocator: std.mem.Allocator) Self {
-            return .{ .events = std.ArrayList(T).init(allocator) };
+            return .{
+                .events = std.ArrayList(T).init(allocator),
+                .events_next_frame = std.ArrayList(T).init(allocator),
+            };
         }
 
         pub fn deinit(self: *Self) void {
             self.events.deinit();
+            self.events_next_frame.deinit();
         }
 
-        pub fn send(self: Self, event: T) void {
-            self.events.send(event);
+        fn update(self: *Self) void {
+            self.events.clearRetainingCapacity();
+            std.mem.swap(std.ArrayList(T), &self.events, &self.events_next_frame);
         }
 
-        pub fn sendDefault(self: Self) void {
-            self.events.send(T{});
+        pub fn send(self: *Self, event: T) void {
+            self.events_next_frame.append(event) catch unreachable;
+        }
+
+        pub fn sendDefault(self: *Self) void {
+            self.send(T{});
         }
     };
 }
@@ -30,9 +43,10 @@ pub fn Events(comptime T: type) type {
 /// Sends events of type `T`
 pub fn EventWriter(comptime T: type) type {
     return struct {
+        pub const event_type = T;
         const Self = @This();
 
-        events: Events(T),
+        events: *Events(T),
 
         pub fn send(self: Self, event: T) void {
             self.events.send(event);
@@ -46,35 +60,24 @@ pub fn EventWriter(comptime T: type) type {
 
 pub fn EventReader(comptime T: type) type {
     return struct {
+        pub const event_type = T;
         const Self = @This();
 
-        events: Events(T),
+        events: *Events(T),
 
-        /// Gets an iterator over the events this `EventReader` has not seen yet
-        pub fn iter(self: Self) EventIterator(T) {
-            return EventIterator(T).init(self.events);
-        }
-
-        /// Consumes all available events
-        pub fn clear(self: Self) void {
-            _ = self;
+        /// Gets all the events that are available to be read
+        pub fn get(self: Self) []const T {
+            return self.events.events.items;
         }
     };
 }
 
-fn EventIterator(comptime T: type) type {
+pub fn EventUpdateSystem(comptime T: type) type {
     return struct {
-        const Self = @This();
+        pub const name = "EventUpdateSystem_" ++ aya.utils.typeNameLastComponent(T);
 
-        events: Events(T),
-
-        pub fn init(events: Events(T)) Self {
-            return .{ .events = events };
-        }
-
-        pub inline fn next(self: *Self) ?T {
-            _ = self;
-            return null;
+        pub fn run(state: ResMut(Events(T))) void {
+            state.getAssertContains().update();
         }
     };
 }

@@ -10,6 +10,10 @@ const World = app.World;
 const Res = app.Res;
 const ResMut = app.ResMut;
 
+const Events = app.Events;
+const EventReader = app.EventReader;
+const EventWriter = app.EventWriter;
+
 pub const AppWrapper = struct { app: *App };
 
 const FlecsOrderByAction = fn (c.ecs_entity_t, ?*const anyopaque, c.ecs_entity_t, ?*const anyopaque) callconv(.C) c_int;
@@ -23,7 +27,6 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = c.ecs_new_id(world);
     entity_desc.name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System);
-    std.debug.print("+++ {s}\n", .{entity_desc.name});
     entity_desc.add[0] = world.componentId(SystemSort);
     entity_desc.add[1] = phase;
     entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
@@ -117,20 +120,26 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 }
 
                 if (Child == World) {
-                    const app_holder = it.*.world.?.getSingleton(AppWrapper).?;
-                    @field(args, f.name) = &app_holder.app.world;
+                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
+                    @field(args, f.name) = &app_world;
                     continue;
                 }
 
                 if (@hasDecl(Child, "res_type")) {
-                    const app_holder = it.*.world.?.getSingleton(AppWrapper).?;
-                    @field(args, f.name) = Child{ .resource = app_holder.app.world.getResource(Child.res_type) };
+                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
+                    @field(args, f.name) = Child{ .resource = app_world.getResource(Child.res_type) };
                     continue;
                 }
 
                 if (@hasDecl(Child, "res_mut_type")) {
-                    const app_holder = it.*.world.?.getSingleton(AppWrapper).?;
-                    @field(args, f.name) = Child{ .resource = app_holder.app.world.getResourceMut(Child.res_mut_type) };
+                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
+                    @field(args, f.name) = Child{ .resource = app_world.getResourceMut(Child.res_mut_type) };
+                    continue;
+                }
+
+                if (@hasDecl(Child, "event_type")) {
+                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
+                    @field(args, f.name) = Child{ .events = app_world.getResourceMut(Events(Child.event_type)).? };
                     continue;
                 }
             }

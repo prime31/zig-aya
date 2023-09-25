@@ -18,6 +18,10 @@ const AssetLoader = aya.AssetLoader;
 
 const SystemSort = systems.SystemSort;
 const AppWrapper = systems.AppWrapper;
+
+const Events = app.Events;
+const EventUpdateSystem = @import("event.zig").EventUpdateSystem;
+
 const Res = app.Res;
 const ResMut = app.ResMut;
 const State = app.State;
@@ -154,23 +158,11 @@ pub const App = struct {
 
     // Events
     pub fn addEvent(self: *Self, comptime T: type) *Self {
-        _ = T;
-        //  ecs_entity_t MyEvent = ecs_new_entity(ecs, "MyEvent");
-        // if !self.world.contains_resource::<Events<T>>() {
-        //     self.init_resource::<Events<T>>()
-        //         .add_systems(First, Events::<T>::update_system);
-        // }
-        return self;
-    }
+        if (!self.world.containsResource(Events(T))) {
+            return self.initResource(Events(T))
+                .addSystem(phases.first, EventUpdateSystem(T));
+        }
 
-    // this should be done via an Event(T) resource me thinks
-    pub fn emitEvent(self: *Self) *Self {
-        // Emit the custom event
-        // ecs_emit(ecs, &(ecs_event_desc_t) {
-        //     .event = MyEvent,
-        //     .ids = &(ecs_type_t){ (ecs_id_t[]){ ecs_id(Position) }, 1 }, // 1 id
-        //     .entity = e
-        // });
         return self;
     }
 
