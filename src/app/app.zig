@@ -4,12 +4,9 @@ const flecs = ecs.c;
 const c = flecs;
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
-const assets = @import("../asset/mod.zig");
 const systems = @import("systems.zig");
 
 pub const phases = @import("phases.zig");
-
-const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
 
@@ -17,10 +14,16 @@ const World = app.World;
 const Resources = app.Resources;
 const AssetServer = aya.AssetServer;
 const Assets = aya.Assets;
-const AssetLoader = assets.AssetLoader;
+const AssetLoader = aya.AssetLoader;
 
 const SystemSort = systems.SystemSort;
 const AppWrapper = systems.AppWrapper;
+const Res = app.Res;
+const ResMut = app.ResMut;
+const State = app.State;
+const NextState = app.NextState;
+
+const StateChangeCheckSystem = @import("state.zig").StateChangeCheckSystem;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -185,7 +188,7 @@ pub const App = struct {
         _ = self.insertResource(NextState(T).init(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
-        _ = self.addSystem(phases.state_transition, StateChangeCheckSystem(T).run);
+        _ = self.addSystem(phases.state_transition, StateChangeCheckSystem(T));
 
         return self;
     }
@@ -207,8 +210,9 @@ pub const App = struct {
     }
 
     // Systems
-    pub fn addSystem(self: *Self, phase: u64, runFn: anytype) *Self {
-        std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
+    pub fn addSystem(self: *Self, phase: u64, comptime T: type) *Self {
+        std.debug.assert(@typeInfo(T) == .Struct);
+        std.debug.assert(@hasDecl(T, "run"));
 
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
         const order_in_phase = blk: {
@@ -220,7 +224,7 @@ pub const App = struct {
             break :blk phase_insertions.value_ptr.*;
         };
 
-        self.last_added_system = systems.addSystem(self.world.ecs, phase, runFn);
+        self.last_added_system = systems.addSystem(self.world.ecs, phase, T);
         const system_entity = ecs.Entity.init(self.world.ecs, self.last_added_system.?);
         system_entity.set(SystemSort{
             .phase = phase,
@@ -230,12 +234,13 @@ pub const App = struct {
         return self;
     }
 
-    pub fn before(self: *Self, runFn: anytype) *Self {
+    pub fn before(self: *Self, comptime T: type) *Self {
         if (self.last_added_system) |system| {
             const entity = ecs.Entity.init(self.world.ecs, system);
 
             // find the other system by its name and grab its SystemSort
-            const other_entity = self.world.ecs.lookupFullPath(@typeName(@TypeOf(runFn))) orelse @panic("could not find other system");
+            const system_name = if (@hasDecl(T, "name")) T.name else aya.utils.typeNameLastComponent(T);
+            const other_entity = self.world.ecs.lookupFullPath(system_name) orelse @panic("could not find other system");
             const other_sort = other_entity.get(SystemSort) orelse @panic("other does not appear to be a system");
 
             const current_sort = entity.getMut(SystemSort) orelse unreachable;
@@ -387,127 +392,4 @@ fn setCorePipeline(world: *flecs.ecs_world_t) void {
 
     const pipeline = flecs.ecs_pipeline_init(world, &pip_desc);
     flecs.ecs_set_pipeline(world, pipeline);
-}
-
-// states, organize these
-pub fn State(comptime T: type) type {
-    return struct {
-        const Self = @This();
-        base: u64,
-        state: T,
-        state_map: std.enums.EnumMap(T, u64),
-
-        pub fn init(base: u64, state: T, state_map: std.enums.EnumMap(T, u64)) Self {
-            return .{ .base = base, .state = state, .state_map = state_map };
-        }
-
-        pub fn entityForTag(self: Self, state: T) u64 {
-            return self.state_map.getAssertContains(state);
-        }
-    };
-}
-
-pub fn NextState(comptime T: type) type {
-    return struct {
-        const Self = @This();
-        state: T,
-
-        pub fn init(state: T) Self {
-            return .{ .state = state };
-        }
-
-        pub fn set(self: *Self, world: *c.ecs_world_t, new_state: T) void {
-            self.state = new_state;
-            world.newEntity().set(StateChanged(T){ .next_state = new_state });
-        }
-    };
-}
-
-fn StateChanged(comptime T: type) type {
-    return struct { next_state: T };
-}
-
-fn StateChangeCheckSystem(comptime T: type) type {
-    return struct {
-        const Self = @This();
-        next_state: *StateChanged(T),
-
-        fn run(state: ResMut(State(T)), iter: *ecs.Iterator(Self)) void {
-            std.debug.assert(iter.iter.count <= 1);
-
-            // TODO:
-            // - when NextState changes, query for all with the base tag of the enum
-            //     * (done) any sytems in the current state, normal phases are disabled
-            //     * (done) any systems in the current state OnExit run (handle later, needs thought)
-            //     * install run_enter_schedule system that will run any systems in OnEnter(current_state)
-            //     * any systems in next state OnEnter run (handle later, needs thought)
-            //     * any systems with OnTransition(T) { .from: T, .to: T } should be called
-            //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
-
-            while (iter.next()) |comps| {
-                std.debug.print("-- -- ---- StateChangeCheckSystem(T) {}\n", .{comps.next_state});
-                // grab the previous and current State entities and set State(T) to the new state
-                const state_res = state.get().?;
-                const prev_state_entity = state_res.entityForTag(state_res.state);
-                const next_state_entity = state_res.entityForTag(comps.next_state.next_state);
-
-                state.get().?.state = comps.next_state.next_state;
-
-                // disable all systems with prev_state and enable all systems with next_state
-                var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
-                filter_desc.terms[0].id = iter.world().pair(state_res.base, c.EcsWildcard);
-                filter_desc.terms[1].id = c.EcsSystem;
-                filter_desc.terms[1].inout = c.EcsInOutNone;
-                filter_desc.terms[2].id = c.EcsDisabled; // make sure we match disabled systems!
-                filter_desc.terms[2].inout = c.EcsInOutNone;
-                filter_desc.terms[2].oper = c.EcsOptional;
-
-                const filter = c.ecs_filter_init(iter.world(), &filter_desc);
-                defer c.ecs_filter_fini(filter);
-
-                var it = c.ecs_filter_iter(iter.world(), filter);
-                while (c.ecs_filter_next(&it)) {
-                    var i: usize = 0;
-                    while (i < it.count) : (i += 1) {
-                        const system_state = c.ecs_get_target(it.world, it.entities[i], state_res.base, 0);
-                        if (system_state == prev_state_entity) {
-                            c.ecs_enable(it.world.?, it.entities[i], false);
-                        } else if (system_state == next_state_entity) {
-                            c.ecs_enable(it.world.?, it.entities[i], system_state == next_state_entity);
-                        }
-                    }
-                }
-
-                // delete the entity
-                iter.entity().delete();
-            }
-        }
-    };
-}
-
-// resources, organize these
-pub fn Res(comptime T: type) type {
-    return struct {
-        pub const res_type = T;
-        const Self = @This();
-
-        resource: ?*const T,
-
-        pub fn get(self: Self) ?*const T {
-            return self.resource;
-        }
-    };
-}
-
-pub fn ResMut(comptime T: type) type {
-    return struct {
-        pub const res_mut_type = T;
-        const Self = @This();
-
-        resource: ?*T,
-
-        pub fn get(self: Self) ?*T {
-            return self.resource;
-        }
-    };
 }

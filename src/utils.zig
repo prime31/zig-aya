@@ -6,10 +6,16 @@ pub fn typeId(comptime T: type) usize {
     return @intFromPtr(&PerTypeGlobalStruct(T).unique_global);
 }
 
-pub fn PerTypeGlobalStruct(comptime _: type) type {
+fn PerTypeGlobalStruct(comptime _: type) type {
     return struct {
-        pub var unique_global: u8 = 0;
+        pub var unique_global: u1 = 0;
     };
+}
+
+pub fn typeNameLastComponent(comptime T: type) [:0]const u8 {
+    const name = @typeName(T);
+    const last_dot = if (std.mem.lastIndexOf(u8, name, ".")) |index| index + 1 else 0;
+    return name[last_dot..];
 }
 
 /// comptime string hashing for type names
