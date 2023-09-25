@@ -9,6 +9,7 @@ const App = app.App;
 const World = app.World;
 const Res = app.Res;
 const ResMut = app.ResMut;
+const Local = app.Local;
 
 const Events = app.Events;
 const EventReader = app.EventReader;
@@ -120,26 +121,32 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 }
 
                 if (Child == World) {
-                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
-                    @field(args, f.name) = &app_world;
+                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    @field(args, f.name) = &application.world;
                     continue;
                 }
 
                 if (@hasDecl(Child, "res_type")) {
-                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
-                    @field(args, f.name) = Child{ .resource = app_world.getResource(Child.res_type) };
+                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    @field(args, f.name) = Child{ .resource = application.world.getResource(Child.res_type) };
                     continue;
                 }
 
                 if (@hasDecl(Child, "res_mut_type")) {
-                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
-                    @field(args, f.name) = Child{ .resource = app_world.getResourceMut(Child.res_mut_type) };
+                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    @field(args, f.name) = Child{ .resource = application.world.getResourceMut(Child.res_mut_type) };
                     continue;
                 }
 
                 if (@hasDecl(Child, "event_type")) {
-                    var app_world = it.*.world.?.getSingleton(AppWrapper).?.app.world;
-                    @field(args, f.name) = Child{ .events = app_world.getResourceMut(Events(Child.event_type)).? };
+                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    @field(args, f.name) = Child{ .events = application.world.getResourceMut(Events(Child.event_type)).? };
+                    continue;
+                }
+
+                if (@hasDecl(Child, "local_type")) {
+                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    @field(args, f.name) = Child{ .local = application.world.locals.getLocalMut(Child.local_type, it.*.system) };
                     continue;
                 }
             }

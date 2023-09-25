@@ -8,3 +8,6 @@ pub usingnamespace @import("event.zig");
 const state = @import("state.zig");
 pub const State = state.State;
 pub const NextState = state.NextState;
+
+const locals = @import("locals.zig");
+pub const Local = locals.Local;

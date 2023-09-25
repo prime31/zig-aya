@@ -1,27 +1,32 @@
 const std = @import("std");
+const locals = @import("locals.zig");
 const aya = @import("../aya.zig");
 const ecs = @import("ecs");
 const c = ecs.c;
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
+const LocalServer = locals.LocalServer;
 
 pub const World = struct {
     const Self = @This();
 
     ecs: *c.ecs_world_t,
     resources: Resources,
+    locals: LocalServer,
 
     pub fn init(allocator: Allocator) Self {
         return .{
             .ecs = c.ecs_init().?,
             .resources = Resources.init(allocator),
+            .locals = LocalServer.init(allocator),
         };
     }
 
     pub fn deinit(self: *Self) void {
         _ = c.ecs_fini(self.ecs);
         self.resources.deinit();
+        self.locals.deinit();
     }
 
     // Resources
