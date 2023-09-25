@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const ecs = @import("ecs");
-const flecs = ecs.c;
+const c = ecs.c;
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
@@ -9,18 +9,18 @@ const Resources = aya.Resources;
 pub const World = struct {
     const Self = @This();
 
-    ecs: *flecs.ecs_world_t,
+    ecs: *c.ecs_world_t,
     resources: Resources,
 
     pub fn init(allocator: Allocator) Self {
         return .{
-            .ecs = flecs.ecs_init().?,
+            .ecs = c.ecs_init().?,
             .resources = Resources.init(allocator),
         };
     }
 
     pub fn deinit(self: *Self) void {
-        _ = flecs.ecs_fini(self.ecs);
+        _ = c.ecs_fini(self.ecs);
         self.resources.deinit();
     }
 
@@ -43,5 +43,18 @@ pub const World = struct {
 
     pub fn getResourceMut(self: *Self, comptime T: type) ?*T {
         return self.resources.get(T);
+    }
+
+    // Systems
+    /// registers a system that is not put in any phase and will only run when runSystem is called.
+    pub fn registerSystem(self: *Self) u64 {
+        _ = self;
+        return 0;
+    }
+
+    pub fn runSystem(self: *Self, system: u64) u64 {
+        _ = system;
+        _ = self;
+        return 0;
     }
 };
