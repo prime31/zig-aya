@@ -16,6 +16,7 @@ pub fn Iterator(comptime Components: type) type {
     };
 
     return struct {
+        const Self = @This();
         pub const components_type = Components;
 
         iter: *flecs.ecs_iter_t,
@@ -24,7 +25,7 @@ pub fn Iterator(comptime Components: type) type {
         event_iter_called: bool = false,
         nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool,
 
-        pub fn init(iter: *flecs.ecs_iter_t, nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool) @This() {
+        pub fn init(iter: *flecs.ecs_iter_t, nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool) Self {
             meta.validateIterator(Components, iter);
             return .{
                 .iter = iter,
@@ -32,26 +33,26 @@ pub fn Iterator(comptime Components: type) type {
             };
         }
 
-        pub fn entity(self: *@This()) ecs.Entity {
+        pub fn entity(self: *Self) ecs.Entity {
             return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
         // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
-        pub fn world(self: *@This()) *flecs.ecs_world_t {
+        pub fn world(self: *Self) *flecs.ecs_world_t {
             return self.iter.world.?;
         }
 
-        pub fn tableType(self: *@This()) ecs.Type {
+        pub fn tableType(self: *Self) ecs.Type {
             return ecs.Type.init(self.iter.world.?, self.iter.type);
         }
 
-        pub fn skip(self: *@This()) void {
+        pub fn skip(self: *Self) void {
             meta.assertMsg(self.nextFn == flecs.ecs_query_next, "skip only valid on Queries!", .{});
             flecs.ecs_query_skip(&self.iter);
         }
 
         /// gets the next Entity from the query results if one is available
-        pub inline fn next(self: *@This()) ?Components {
+        pub inline fn next(self: *Self) ?Components {
             // outer check for when we need to see if there is another table to iterate
             if (self.inner_iter == null) {
                 self.inner_iter = self.nextTable() orelse return null;
@@ -86,7 +87,7 @@ pub fn Iterator(comptime Components: type) type {
         /// Do not call nextTable and next! Use next in almost all cases and nextTable only when you know what you are doing!
         /// nextTable can potentially speed up query iteration for cases where no columns are optional and all slices are iterated
         /// in the same for loop (for (comps.vel, comps.pos) |vel, pos| {})
-        pub inline fn nextTable(self: *@This()) ?TableColumns {
+        pub inline fn nextTable(self: *Self) ?TableColumns {
             // if we are an observer this is running in a callback as opposed to a run like systems. Because of that
             // we do NOT want to call nextFn! We are given a single table and we should return it and do nothing more.
             if (self.iter.event > 0) {

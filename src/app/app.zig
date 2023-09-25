@@ -156,6 +156,10 @@ pub const App = struct {
     pub fn addEvent(self: *Self, comptime T: type) *Self {
         _ = T;
         //  ecs_entity_t MyEvent = ecs_new_entity(ecs, "MyEvent");
+        // if !self.world.contains_resource::<Events<T>>() {
+        //     self.init_resource::<Events<T>>()
+        //         .add_systems(First, Events::<T>::update_system);
+        // }
         return self;
     }
 
