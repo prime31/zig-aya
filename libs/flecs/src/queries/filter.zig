@@ -24,12 +24,6 @@ pub const Filter = struct {
         return flecs.ecs_filter_str(self.world.ecs, self.filter);
     }
 
-    /// gets an iterator that let you iterate the tables and then it provides an inner iterator to iterate entities
-    pub fn tableIterator(self: *Self, comptime Components: type) ecs.TableIterator(Components) {
-        temp_iter_storage = flecs.ecs_filter_iter(self.world.ecs, self.filter);
-        return ecs.TableIterator(Components).init(&temp_iter_storage, flecs.ecs_filter_next);
-    }
-
     // storage for the iterator so it can be passed by reference. Do not in-flight two Filters at once!
     var temp_iter_storage: flecs.ecs_iter_t = undefined;
 
