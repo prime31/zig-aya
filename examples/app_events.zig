@@ -7,8 +7,6 @@ const App = aya.App;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
 
-pub const Resource = struct { num: u64 };
-
 const SuperEvent = struct {};
 
 pub fn main() !void {
