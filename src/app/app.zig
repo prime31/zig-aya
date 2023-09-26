@@ -41,6 +41,7 @@ pub const App = struct {
     pub fn init() *Self {
         const allocator = gpa.allocator();
         const world = World.init(allocator);
+        aya.initTmpAllocator(allocator);
 
         // register our phases
         @import("phases.zig").registerPhases(world.ecs);
@@ -62,6 +63,7 @@ pub const App = struct {
         self.world.deinit();
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
+        aya.deinitTmpAllocator();
         allocator.destroy(self);
 
         if (gpa.detectLeaks())

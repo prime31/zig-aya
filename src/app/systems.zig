@@ -26,12 +26,18 @@ pub const SystemSort = struct {
 };
 
 pub fn addSystem(world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {
+    return addSystemToEntity(c.ecs_new_id(world), world, phase, System);
+}
+
+pub fn addSystemToEntity(id: u64, world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-    entity_desc.id = c.ecs_new_id(world);
+    entity_desc.id = id;
     entity_desc.name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System);
-    entity_desc.add[0] = world.componentId(SystemSort);
-    entity_desc.add[1] = phase;
-    entity_desc.add[2] = if (phase != 0) c.ecs_make_pair(c.EcsDependsOn, phase) else 0; // required for disabling systems by phase
+    if (phase > 0) {
+        entity_desc.add[0] = world.componentId(SystemSort);
+        entity_desc.add[1] = phase;
+        entity_desc.add[2] = c.ecs_make_pair(c.EcsDependsOn, phase); // required for disabling systems by phase
+    }
 
     // Proper order of operations:
     // - loop through all Fn params:

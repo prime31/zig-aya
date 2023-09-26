@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const ScratchAllocator = @import("mem/scratch_allocator.zig").ScratchAllocator;
+
 pub const utils = @import("utils.zig");
 
 // inner modules
@@ -33,15 +35,15 @@ pub const ecs = struct {
     pub const WriteonlyI = ecs_mod.WriteonlyI;
 };
 
-// export types
-// pub const App = app.App;
-// pub const Resources = app.Resources;
-// pub const World = app.AppWorld;
+// temp allocator is a ring buffer so memory doesnt need to be freed
+pub var tmp_allocator: std.mem.Allocator = undefined;
+var tmp_allocator_instance: ScratchAllocator = undefined;
 
-// pub const AssetPlugin = assets.AssetPlugin;
-// pub const AssetServer = assets.AssetServer;
-// pub const Assets = assets.Assets;
+pub fn initTmpAllocator(allocator: std.mem.Allocator) void {
+    tmp_allocator_instance = ScratchAllocator.init(allocator);
+    tmp_allocator = tmp_allocator_instance.allocator();
+}
 
-// pub const InputPlugin = input.InputPlugin;
-
-// pub const WindowPlugin = window.WindowPlugin;
+pub fn deinitTmpAllocator() void {
+    tmp_allocator_instance.deinit();
+}
