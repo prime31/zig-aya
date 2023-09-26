@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
 const c = @import("ecs").c;
 const app = @import("mod.zig");
 
@@ -44,13 +45,61 @@ pub const Commands = struct {
     // Systems
     /// registers a system that is not put in any phase and will only run when runSystem is called.
     pub fn registerSystem(self: Commands, comptime T: type) u64 {
-        return systems.addSystem(self.ecs, 0, T);
+        const id = self.ecs.newId();
+
+        const deferred = aya.tmp_allocator.create(DeferredCreateSystem) catch unreachable;
+        deferred.* = DeferredCreateSystem.init(T, id);
+        c.ecs_run_post_frame(self.ecs, createSystemPostFrame, deferred);
+
+        return id;
     }
 
+    /// runs a system AFTER the current schedule completes
     pub fn runSystem(self: Commands, system: u64) void {
-        _ = self;
-        // self.deferred_systems.append(system) catch unreachable;
-        std.debug.print("--- runSystem: {}\n", .{system});
-        // _ = c.ecs_run(self.ecs, system, 0, null);
+        const deferred = aya.tmp_allocator.create(DeferredRunSystem) catch unreachable;
+        deferred.* = DeferredRunSystem.init(system);
+        c.ecs_run_post_frame(self.ecs, runSystemPostFrame, deferred);
+    }
+};
+
+fn createSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
+    const deferred = @as(*DeferredCreateSystem, @ptrFromInt(@intFromPtr(ctx.?)));
+    deferred.createSystemFn(deferred, world.?);
+}
+
+fn runSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
+    const deferred = @as(*DeferredRunSystem, @ptrFromInt(@intFromPtr(ctx.?)));
+    deferred.runSystemFn(deferred, world.?);
+}
+
+const DeferredCreateSystem = struct {
+    id: u64,
+    createSystemFn: *const fn (*DeferredCreateSystem, *c.ecs_world_t) void,
+
+    pub fn init(comptime T: type, id: u64) DeferredCreateSystem {
+        return .{
+            .id = id,
+            .createSystemFn = struct {
+                fn createSystemFn(self: *DeferredCreateSystem, ecs: *c.ecs_world_t) void {
+                    _ = systems.addSystemToEntity(self.id, ecs, 0, T);
+                }
+            }.createSystemFn,
+        };
+    }
+};
+
+const DeferredRunSystem = struct {
+    id: u64,
+    runSystemFn: *const fn (*DeferredRunSystem, *c.ecs_world_t) void,
+
+    pub fn init(id: u64) DeferredRunSystem {
+        return .{
+            .id = id,
+            .runSystemFn = struct {
+                fn runSystemFn(self: *DeferredRunSystem, ecs: *c.ecs_world_t) void {
+                    _ = c.ecs_run(ecs, self.id, 0, null);
+                }
+            }.runSystemFn,
+        };
     }
 };
