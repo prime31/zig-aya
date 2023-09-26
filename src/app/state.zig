@@ -64,7 +64,6 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
             //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
 
             while (iter.next()) |comps| {
-                std.debug.print("-- -- ---- StateChangeCheckSystem(T) {}\n", .{comps.next_state});
                 // grab the previous and current State entities and set State(T) to the new state
                 const state_res = state.get().?;
                 const prev_state_entity = state_res.entityForTag(state_res.state);

@@ -49,53 +49,11 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer std.debug.print("GPA has leaks: {}\n", .{gpa.detectLeaks()});
 
-    var app = App.init(gpa.allocator());
+    var app = App.init();
     defer app.deinit();
 
     app.addPlugin(TimePlugin)
         .insertPlugin(PhysicsPlugin{ .data = 35 })
         .addPlugins(.{ TimePlugin, PhysicsPlugin{ .data = 35 } })
         .run();
-
-    var res = Resources.init(gpa.allocator());
-    defer res.deinit();
-
-    _ = res.initResource(ClearColorResource);
-    const ccr = res.get(ClearColorResource);
-    std.debug.print("ccr: {?}\n", .{ccr});
-
-    // res.remove(ClearColorResource);
-    std.debug.print("contains ClearColorResource?: {}\n", .{res.contains(ClearColorResource)});
-
-    res.insert(WindowResource{ .value = 33 });
-    std.debug.print("contains WindowResource?: {}\n", .{res.contains(WindowResource)});
-    res.remove(WindowResource);
-
-    std.debug.print("-+-+-+ flecs test -+-+-+\n", .{});
-    const world = ecs.c.ecs_init().?;
-    defer _ = ecs.c.ecs_fini(world);
-
-    var system_desc: ecs.c.ecs_system_desc_t = std.mem.zeroInit(ecs.c.ecs_system_desc_t, .{
-        .callback = run,
-        .run = run,
-        .query = std.mem.zeroInit(ecs.c.ecs_query_desc_t, .{
-            .filter = std.mem.zeroInit(ecs.c.ecs_filter_desc_t, .{ .expr = null }),
-        }),
-    });
-    ecs.SYSTEM(world, "run_system", ecs.c.EcsOnUpdate, 0, &system_desc);
-
-    ecs.c.ecs_set_target_fps(world, 30);
-    _ = ecs.c.ecs_progress(world, 0);
-    _ = ecs.c.ecs_progress(world, 0);
-    _ = ecs.c.ecs_progress(world, 0);
-
-    ecs.TAG(world, TimePlugin);
-    _ = ecs.COMPONENT(world, PhysicsPlugin);
 }
-
-fn run(it: [*c]ecs.c.ecs_iter_t) callconv(.C) void {
-    std.debug.print("------------ run system tick {d}\n", .{it.*.delta_time});
-    if (!ecs.c.ecs_iter_next(it)) return; // could be ecs_filter_next or ecs_query_next
-}
-
-fn dummyFn(_: [*c]ecs.c.ecs_iter_t) callconv(.C) void {}
