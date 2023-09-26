@@ -67,7 +67,12 @@ pub const Resources = struct {
     /// will be zeroInit'ed
     pub fn initResource(self: *Self, comptime T: type) *T {
         const res = self.allocator.create(T) catch unreachable;
-        res.* = if (@hasDecl(T, "init")) T.init(self.allocator) else std.mem.zeroes(T);
+
+        if (@typeInfo(T) == .Struct) {
+            res.* = if (@hasDecl(T, "init")) T.init(self.allocator) else std.mem.zeroes(T);
+        } else {
+            res.* = std.mem.zeroes(T);
+        }
 
         self.resources.put(typeId(T), ErasedPtr.initWithPtr(T, @intFromPtr(res))) catch unreachable;
         return res;

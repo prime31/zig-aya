@@ -1,7 +1,6 @@
 const std = @import("std");
 const ecs = @import("ecs");
-const flecs = ecs.c;
-const c = flecs;
+const c = ecs.c;
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 const systems = @import("systems.zig");
@@ -169,13 +168,13 @@ pub const App = struct {
         std.debug.assert(@typeInfo(T) == .Enum);
 
         const enum_entity = self.world.ecs.newId();
-        _ = flecs.ecs_add_id(self.world.ecs, enum_entity, flecs.EcsUnion);
+        _ = c.ecs_add_id(self.world.ecs, enum_entity, c.EcsUnion);
 
         const EnumMap = std.enums.EnumMap(T, u64);
         var map = EnumMap{};
 
         for (std.enums.values(T)) |val| {
-            map.put(val, flecs.ecs_new_id(self.world.ecs));
+            map.put(val, c.ecs_new_id(self.world.ecs));
         }
 
         _ = self.insertResource(State(T).init(enum_entity, current_state, map));
@@ -270,15 +269,15 @@ pub const App = struct {
     }
 
     fn updateSystemOrder(self: *Self, phase: u64, other_order_in_phase: i32, direction: i32) void {
-        var filter_desc = std.mem.zeroes(flecs.ecs_filter_desc_t);
+        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
         filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
-        filter_desc.terms[0].inout = flecs.EcsInOut;
+        filter_desc.terms[0].inout = c.EcsInOut;
 
-        const filter = flecs.ecs_filter_init(self.world.ecs, &filter_desc);
-        defer flecs.ecs_filter_fini(filter);
+        const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
+        defer c.ecs_filter_fini(filter);
 
-        var it = flecs.ecs_filter_iter(self.world.ecs, filter);
-        while (flecs.ecs_filter_next(&it)) {
+        var it = c.ecs_filter_iter(self.world.ecs, filter);
+        while (c.ecs_filter_next(&it)) {
             const system_sorts = ecs.field(&it, SystemSort, 1);
 
             var i: usize = 0;
@@ -328,62 +327,62 @@ fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*
 }
 
 /// runs a Pipeline that matches only the startup phases then deletes all systems in those phases
-fn runStartupPipeline(world: *flecs.ecs_world_t) void {
-    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
-    pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
+fn runStartupPipeline(world: *c.ecs_world_t) void {
+    var pip_desc = std.mem.zeroes(c.ecs_pipeline_desc_t);
+    pip_desc.entity = c.ecs_entity_init(world, &std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
     pip_desc.query.order_by_component = world.componentId(SystemSort);
 
-    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
-    pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
+    pip_desc.query.filter.terms[0].id = c.EcsSystem;
+    pip_desc.query.filter.terms[1] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = Phase.pre_startup.getEntity(),
-        .oper = flecs.EcsOr,
+        .oper = c.EcsOr,
     });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = Phase.startup.getEntity(),
-        .oper = flecs.EcsOr,
+        .oper = c.EcsOr,
     });
     pip_desc.query.filter.terms[3].id = Phase.post_startup.getEntity();
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
+    pip_desc.query.filter.terms[4] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = world.componentId(SystemSort),
-        .inout = flecs.EcsIn,
+        .inout = c.EcsIn,
     });
 
-    const startup_pipeline = flecs.ecs_pipeline_init(world, &pip_desc);
-    flecs.ecs_set_pipeline(world, startup_pipeline);
-    _ = flecs.ecs_progress(world, 0);
+    const startup_pipeline = c.ecs_pipeline_init(world, &pip_desc);
+    c.ecs_set_pipeline(world, startup_pipeline);
+    _ = c.ecs_progress(world, 0);
 
-    flecs.ecs_delete_with(world, Phase.pre_startup.getEntity());
-    flecs.ecs_delete_with(world, Phase.startup.getEntity());
-    flecs.ecs_delete_with(world, Phase.post_startup.getEntity());
+    c.ecs_delete_with(world, Phase.pre_startup.getEntity());
+    c.ecs_delete_with(world, Phase.startup.getEntity());
+    c.ecs_delete_with(world, Phase.post_startup.getEntity());
 }
 
 /// creates and sets a Pipeline that handles system sorting
-fn setCorePipeline(world: *flecs.ecs_world_t) void {
-    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
-    pip_desc.entity = flecs.ecs_entity_init(world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "CorePipeline" }));
+fn setCorePipeline(world: *c.ecs_world_t) void {
+    var pip_desc = std.mem.zeroes(c.ecs_pipeline_desc_t);
+    pip_desc.entity = c.ecs_entity_init(world, &std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = "CorePipeline" }));
     pip_desc.query.order_by = pipelineSystemSortCompare;
     pip_desc.query.order_by_component = world.componentId(SystemSort);
 
-    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
+    pip_desc.query.filter.terms[0].id = c.EcsSystem;
     pip_desc.query.filter.terms[1].id = world.componentId(SystemSort);
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = flecs.EcsDisabled,
-        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
-            .flags = flecs.EcsUp,
-            .trav = flecs.EcsDependsOn,
+    pip_desc.query.filter.terms[2] = std.mem.zeroInit(c.ecs_term_t, .{
+        .id = c.EcsDisabled,
+        .src = std.mem.zeroInit(c.ecs_term_id_t, .{
+            .flags = c.EcsUp,
+            .trav = c.EcsDependsOn,
         }),
-        .oper = flecs.EcsNot,
+        .oper = c.EcsNot,
     });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = flecs.EcsDisabled,
-        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
-            .flags = flecs.EcsUp,
-            .trav = flecs.EcsChildOf,
+    pip_desc.query.filter.terms[3] = std.mem.zeroInit(c.ecs_term_t, .{
+        .id = c.EcsDisabled,
+        .src = std.mem.zeroInit(c.ecs_term_id_t, .{
+            .flags = c.EcsUp,
+            .trav = c.EcsChildOf,
         }),
-        .oper = flecs.EcsNot,
+        .oper = c.EcsNot,
     });
 
-    const pipeline = flecs.ecs_pipeline_init(world, &pip_desc);
-    flecs.ecs_set_pipeline(world, pipeline);
+    const pipeline = c.ecs_pipeline_init(world, &pip_desc);
+    c.ecs_set_pipeline(world, pipeline);
 }

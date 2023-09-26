@@ -1,16 +1,16 @@
 const std = @import("std");
 const ecs = @import("../ecs.zig");
-const flecs = ecs.c;
+const c = ecs.c;
 
 pub const QueryBuilder = struct {
-    world: *flecs.ecs_world_t,
-    desc: flecs.ecs_system_desc_t,
+    world: *c.ecs_world_t,
+    desc: c.ecs_system_desc_t,
     terms_count: usize = 0,
 
-    pub fn init(world: *flecs.ecs_world_t) QueryBuilder {
+    pub fn init(world: *c.ecs_world_t) QueryBuilder {
         return .{
             .world = world,
-            .desc = std.mem.zeroes(flecs.ecs_system_desc_t),
+            .desc = std.mem.zeroes(c.ecs_system_desc_t),
         };
     }
 
@@ -23,14 +23,14 @@ pub const QueryBuilder = struct {
 
     pub fn withReadonly(self: *QueryBuilder, comptime T: type) *QueryBuilder {
         self.desc.query.filter.terms[self.terms_count].id = self.world.componentId(T);
-        self.desc.query.filter.terms[self.terms_count].inout = flecs.EcsIn;
+        self.desc.query.filter.terms[self.terms_count].inout = c.EcsIn;
         self.terms_count += 1;
         return self;
     }
 
     pub fn withWriteonly(self: *QueryBuilder, comptime T: type) *QueryBuilder {
         self.desc.query.filter.terms[self.terms_count].id = self.world.componentId(T);
-        self.desc.query.filter.terms[self.terms_count].inout = flecs.EcsOut;
+        self.desc.query.filter.terms[self.terms_count].inout = c.EcsOut;
         self.terms_count += 1;
         return self;
     }
@@ -38,36 +38,36 @@ pub const QueryBuilder = struct {
     /// the term will be used for the query but it is neither read nor write
     pub fn withNone(self: *QueryBuilder, comptime T: type) *QueryBuilder {
         self.desc.query.filter.terms[self.terms_count].id = self.world.componentId(T);
-        self.desc.query.filter.terms[self.terms_count].inout = flecs.EcsInOutNone;
+        self.desc.query.filter.terms[self.terms_count].inout = c.EcsInOutNone;
         self.terms_count += 1;
         return self;
     }
 
     pub fn without(self: *QueryBuilder, comptime T: type) *QueryBuilder {
-        self.desc.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        self.desc.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
             .id = self.world.componentId(T),
-            .oper = flecs.EcsNot,
+            .oper = c.EcsNot,
         });
         self.terms_count += 1;
         return self;
     }
 
     pub fn optional(self: *QueryBuilder, comptime T: type) *QueryBuilder {
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
             .id = self.world.componentId(T),
-            .oper = flecs.EcsOptional,
+            .oper = c.EcsOptional,
         });
         self.terms_count += 1;
         return self;
     }
 
     pub fn either(self: *QueryBuilder, comptime T1: type, comptime T2: type) *QueryBuilder {
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
             .id = self.world.componentId(T1),
-            .oper = flecs.EcsOr,
+            .oper = c.EcsOr,
         });
         self.terms_count += 1;
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(flecs.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
             .id = self.world.componentId(T2),
         });
         self.terms_count += 1;
@@ -77,8 +77,8 @@ pub const QueryBuilder = struct {
     /// the query will need to match `T1 || T2` but it will not return data for either column
     pub fn eitherAsFilter(self: *QueryBuilder, comptime T1: type, comptime T2: type) *QueryBuilder {
         _ = self.either(T1, T2);
-        self.desc.query.filter.terms[self.terms_count - 1].inout = flecs.EcsInOutNone;
-        self.desc.query.filter.terms[self.terms_count - 2].inout = flecs.EcsInOutNone;
+        self.desc.query.filter.terms[self.terms_count - 1].inout = c.EcsInOutNone;
+        self.desc.query.filter.terms[self.terms_count - 2].inout = c.EcsInOutNone;
         return self;
     }
 
@@ -100,7 +100,7 @@ pub const QueryBuilder = struct {
     }
 
     pub fn buildQuery(self: *QueryBuilder) ecs.Query {
-        return flecs.Query.init(self.world, &self.desc.query);
+        return c.Query.init(self.world, &self.desc.query);
     }
 
     /// queries/system only
@@ -117,13 +117,13 @@ pub const QueryBuilder = struct {
     }
 
     /// systems only. This system callback will be called at least once for each table that matches the query
-    pub fn callback(self: *QueryBuilder, cb: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) void) *QueryBuilder {
+    pub fn callback(self: *QueryBuilder, cb: *const fn ([*c]c.ecs_iter_t) callconv(.C) void) *QueryBuilder {
         self.callback = cb;
         return self;
     }
 
     /// systems only. This system callback will only be called once. The iterator should then be iterated with ecs_iter_next.
-    pub fn run(self: *QueryBuilder, cb: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) void) *QueryBuilder {
+    pub fn run(self: *QueryBuilder, cb: *const fn ([*c]c.ecs_iter_t) callconv(.C) void) *QueryBuilder {
         self.desc.run = cb;
         return self;
     }

@@ -53,7 +53,8 @@ pub const ErasedPtr = struct {
             .deinit = struct {
                 fn deinit(self: ErasedPtr, allocator: Allocator) void {
                     const res = self.asPtr(T);
-                    if (@hasDecl(T, "deinit")) res.deinit();
+                    if (@typeInfo(T) == .Struct)
+                        if (@hasDecl(T, "deinit")) res.deinit();
                     allocator.destroy(res);
                 }
             }.deinit,

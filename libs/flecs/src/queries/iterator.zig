@@ -1,6 +1,6 @@
 const std = @import("std");
 const ecs = @import("../ecs.zig");
-const flecs = ecs.c;
+const c = ecs.c;
 const meta = @import("../meta.zig");
 
 pub fn Iterator(comptime Components: type) type {
@@ -19,13 +19,13 @@ pub fn Iterator(comptime Components: type) type {
         const Self = @This();
         pub const components_type = Components;
 
-        iter: *flecs.ecs_iter_t,
+        iter: *c.ecs_iter_t,
         inner_iter: ?TableColumns = null,
         index: usize = 0,
         event_iter_called: bool = false,
-        nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool,
+        nextFn: *const fn ([*c]c.ecs_iter_t) callconv(.C) bool,
 
-        pub fn init(iter: *flecs.ecs_iter_t, nextFn: *const fn ([*c]flecs.ecs_iter_t) callconv(.C) bool) Self {
+        pub fn init(iter: *c.ecs_iter_t, nextFn: *const fn ([*c]c.ecs_iter_t) callconv(.C) bool) Self {
             meta.validateIterator(Components, iter);
             return .{
                 .iter = iter,
@@ -38,7 +38,7 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
-        pub fn world(self: *Self) *flecs.ecs_world_t {
+        pub fn world(self: *Self) *c.ecs_world_t {
             return self.iter.world.?;
         }
 
@@ -47,8 +47,8 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         pub fn skip(self: *Self) void {
-            meta.assertMsg(self.nextFn == flecs.ecs_query_next, "skip only valid on Queries!", .{});
-            flecs.ecs_query_skip(&self.iter);
+            meta.assertMsg(self.nextFn == c.ecs_query_next, "skip only valid on Queries!", .{});
+            c.ecs_query_skip(&self.iter);
         }
 
         /// gets the next Entity from the query results if one is available
@@ -101,16 +101,16 @@ pub fn Iterator(comptime Components: type) type {
             var index: usize = 0;
             inline for (@typeInfo(Components).Struct.fields, 0..) |field, i| {
                 // skip EcsInOutNone since they arent returned when we iterate
-                while (self.iter.terms[index].inout == flecs.EcsInOutNone) : (index += 1) {}
+                while (self.iter.terms[index].inout == c.EcsInOutNone) : (index += 1) {}
 
                 const is_optional = @typeInfo(field.type) == .Optional;
                 const col_type = meta.FinalChild(field.type);
-                if (meta.isConst(field.type)) std.debug.assert(flecs.ecs_field_is_readonly(self.iter, i + 1));
+                if (meta.isConst(field.type)) std.debug.assert(c.ecs_field_is_readonly(self.iter, i + 1));
 
                 if (is_optional) @field(iter.columns, field.name) = null;
                 const field_index = self.iter.terms[index].field_index;
-                const raw_term_id = flecs.ecs_field_id(self.iter, @intCast(field_index + 1));
-                const term_id = if (flecs.ecs_id_is_pair(raw_term_id)) ecs.pairFirst(raw_term_id) else raw_term_id;
+                const raw_term_id = c.ecs_field_id(self.iter, @intCast(field_index + 1));
+                const term_id = if (c.ecs_id_is_pair(raw_term_id)) ecs.pairFirst(raw_term_id) else raw_term_id;
                 var skip_term = if (is_optional) self.iter.world.?.componentId(col_type) != term_id else false;
 
                 // note that an OR is actually a single term!

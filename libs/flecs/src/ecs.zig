@@ -6,7 +6,6 @@ pub const meta = @import("meta.zig");
 pub usingnamespace @import("queries/mod.zig");
 
 pub const Entity = @import("entity.zig").Entity;
-pub const Type = @import("type.zig").Type;
 
 pub const OperKind = enum(c_int) {
     and_ = c.EcsAnd,
@@ -57,26 +56,6 @@ pub fn fieldOpt(iter: [*c]const c.ecs_iter_t, comptime T: type, index: i32) ?[]T
     var col = c.ecs_field_w_size(iter, @sizeOf(T), index) orelse return null;
     const ptr = @as([*]T, @ptrCast(@alignCast(col)));
     return ptr[0..@intCast(iter.*.count)];
-}
-
-/// gets a pointer to a type if the component is present on the entity
-pub fn get(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*const T {
-    const ptr = c.ecs_get_id(world, entity, world.componentId(T)) orelse return null;
-    return @as(*const T, @ptrCast(@alignCast(ptr)));
-}
-
-pub fn getMut(world: *c.ecs_world_t, entity: u64, comptime T: type) ?*T {
-    var ptr = c.ecs_get_mut_id(world, entity.id, world.componentId(T)) orelse return null;
-    return @as(*T, @ptrCast(@alignCast(ptr)));
-}
-
-/// used when the Flecs API provides untyped data to convert to type. Query/system order_by callbacks are one example.
-pub fn cast(comptime T: type, val: ?*const anyopaque) *const T {
-    return @as(*const T, @ptrCast(@alignCast(val)));
-}
-
-pub fn castMut(comptime T: type, val: ?*anyopaque) *T {
-    return @as(*T, @ptrCast(@alignCast(val)));
 }
 
 pub fn pairFirst(id: u64) u32 {
