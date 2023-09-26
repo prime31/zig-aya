@@ -29,8 +29,8 @@ pub fn Filter(comptime T: type) type {
                 return ecs.Iterator(Components).init(&self.temp_iter_storage, c.ecs_filter_next);
             }
 
-            /// allows either a function that takes 1 parameter (a struct with fields that match the components in the query) or multiple parameters
-            /// (each param should match the components in the query in order)
+            /// allows either a function that takes 1 parameter of type T or multiple parameters
+            /// (each param should match the components in T in order)
             pub fn each(self: *Self, comptime function: anytype) void {
                 // dont allow BoundFn
                 std.debug.assert(@typeInfo(@TypeOf(function)) == .Fn);

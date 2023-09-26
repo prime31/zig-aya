@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
-const phases = aya.phases;
 
 const Resources = aya.Resources;
 const App = aya.App;
@@ -36,17 +35,17 @@ pub fn main() !void {
         .insertPlugin(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_set, VelocityObserver.run)
-        .addSystem(phases.startup, EmptyCallback)
-        .addSystem(phases.first, WorldAndVelocitySystem)
-        .addSystem(phases.first, ChangeStateSystem)
-        .addSystem(phases.pre_update, EmptySystem).inState(SuperState, .middle)
-        .addSystem(phases.pre_update, OtherSystem).inState(SuperState, .start)
-        .addSystem(phases.pre_update, WorldSystem).before(EmptySystem)
-        .addSystem(phases.update, SystemCallbackType)
+        .addSystem(.startup, EmptyCallback)
+        .addSystem(.first, WorldAndVelocitySystem)
+        .addSystem(.first, ChangeStateSystem)
+        .addSystem(.pre_update, EmptySystem).inState(SuperState, .middle)
+        .addSystem(.pre_update, OtherSystem).inState(SuperState, .start)
+        .addSystem(.pre_update, WorldSystem).before(EmptySystem)
+        .addSystem(.update, SystemCallbackType)
         .run();
 
     // disables an entire phase
-    // flecs.ecs_enable(app.world.ecs, phases.first, false);
+    // flecs.ecs_enable(app.world.ecs, .first, false);
 }
 
 pub const Position = struct { x: f32 = 0, y: f32 = 0 };
@@ -125,7 +124,7 @@ const PhysicsPlugin = struct {
     data: u8 = 250,
 
     pub fn build(self: PhysicsPlugin, app: *App) void {
-        _ = app.addSystem(phases.last, PhysicsSystem);
+        _ = app.addSystem(.last, PhysicsSystem);
         std.debug.print("--- PhysicsPlugins.build called. data: {}\n", .{self.data});
     }
 };

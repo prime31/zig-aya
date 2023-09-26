@@ -6,7 +6,7 @@ const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 const systems = @import("systems.zig");
 
-pub const phases = @import("phases.zig");
+pub const Phase = @import("phases.zig").Phase;
 
 const Allocator = std.mem.Allocator;
 
@@ -44,9 +44,7 @@ pub const App = struct {
         const world = World.init(allocator);
 
         // register our phases
-        inline for (@typeInfo(phases).Struct.decls) |decl| {
-            @field(phases, decl.name) = flecs.ecs_new_w_id(world.ecs, flecs.EcsPhase);
-        }
+        @import("phases.zig").registerPhases(world.ecs);
 
         var self = allocator.create(App) catch unreachable;
         self.* = .{
@@ -160,7 +158,7 @@ pub const App = struct {
     pub fn addEvent(self: *Self, comptime T: type) *Self {
         if (!self.world.containsResource(Events(T))) {
             return self.initResource(Events(T))
-                .addSystem(phases.first, EventUpdateSystem(T));
+                .addSystem(.first, EventUpdateSystem(T));
         }
 
         return self;
@@ -184,7 +182,7 @@ pub const App = struct {
         _ = self.insertResource(NextState(T).init(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
-        _ = self.addSystem(phases.state_transition, StateChangeCheckSystem(T));
+        _ = self.addSystem(.state_transition, StateChangeCheckSystem(T));
 
         return self;
     }
@@ -206,11 +204,11 @@ pub const App = struct {
     }
 
     // Systems
-    pub fn addSystem(self: *Self, phase: u64, comptime T: type) *Self {
+    pub fn addSystem(self: *Self, phase: Phase, comptime T: type) *Self {
         std.debug.assert(@typeInfo(T) == .Struct);
         std.debug.assert(@hasDecl(T, "run"));
 
-        var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
+        var phase_insertions = self.phase_insert_indices.getOrPut(phase.getEntity()) catch unreachable;
         const order_in_phase = blk: {
             if (!phase_insertions.found_existing) {
                 phase_insertions.value_ptr.* = 0;
@@ -220,10 +218,10 @@ pub const App = struct {
             break :blk phase_insertions.value_ptr.*;
         };
 
-        self.last_added_system = systems.addSystem(self.world.ecs, phase, T);
+        self.last_added_system = systems.addSystem(self.world.ecs, phase.getEntity(), T);
         const system_entity = ecs.Entity.init(self.world.ecs, self.last_added_system.?);
         system_entity.set(SystemSort{
-            .phase = phase,
+            .phase = phase.getEntity(),
             .order_in_phase = order_in_phase,
         });
 
@@ -338,14 +336,14 @@ fn runStartupPipeline(world: *flecs.ecs_world_t) void {
 
     pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
     pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = phases.pre_startup,
+        .id = Phase.pre_startup.getEntity(),
         .oper = flecs.EcsOr,
     });
     pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = phases.startup,
+        .id = Phase.startup.getEntity(),
         .oper = flecs.EcsOr,
     });
-    pip_desc.query.filter.terms[3].id = phases.post_startup;
+    pip_desc.query.filter.terms[3].id = Phase.post_startup.getEntity();
     pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
         .id = world.componentId(SystemSort),
         .inout = flecs.EcsIn,
@@ -355,9 +353,9 @@ fn runStartupPipeline(world: *flecs.ecs_world_t) void {
     flecs.ecs_set_pipeline(world, startup_pipeline);
     _ = flecs.ecs_progress(world, 0);
 
-    flecs.ecs_delete_with(world, phases.pre_startup);
-    flecs.ecs_delete_with(world, phases.startup);
-    flecs.ecs_delete_with(world, phases.post_startup);
+    flecs.ecs_delete_with(world, Phase.pre_startup.getEntity());
+    flecs.ecs_delete_with(world, Phase.startup.getEntity());
+    flecs.ecs_delete_with(world, Phase.post_startup.getEntity());
 }
 
 /// creates and sets a Pipeline that handles system sorting

@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
-const phases = aya.phases;
 
 const App = aya.App;
 const Local = aya.Local;
@@ -12,8 +11,8 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     App.init()
-        .addSystem(phases.first, LocalSystem1)
-        .addSystem(phases.first, LocalSystem2)
+        .addSystem(.first, LocalSystem1)
+        .addSystem(.first, LocalSystem2)
         .run();
 }
 

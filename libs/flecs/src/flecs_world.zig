@@ -134,8 +134,8 @@ pub const struct_ecs_world_t = opaque {
         }
 
         // allow disabling reflection data with a root bool
-        // if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
-        //     meta.registerReflectionData(self, T, type_id_ptr.*);
+        if (!@hasDecl(@import("root"), "disable_reflection") or !@as(bool, @field(@import("root"), "disable_reflection")))
+            meta.registerReflectionData(self, T, type_id_ptr.*);
 
         return type_id_ptr.*;
     }
