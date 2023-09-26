@@ -6,7 +6,7 @@ const meta = @import("../meta.zig");
 pub fn Iterator(comptime Components: type) type {
     std.debug.assert(@typeInfo(Components) == .Struct);
 
-    // converts the Components struct fields into pointer-to-many arrays
+    // converts the Components struct fields into slices
     const Columns = meta.TableIteratorData(Components);
 
     // used internally to store the current tables columns and the array length

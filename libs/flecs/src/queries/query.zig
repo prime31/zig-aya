@@ -25,12 +25,6 @@ pub const Query = struct {
         return flecs.ecs_query_changed(self.query, null);
     }
 
-    /// gets an iterator that let you iterate the tables and then it provides an inner iterator to interate entities
-    pub fn tableIterator(self: *@This(), comptime Components: type) ecs.TableIterator(Components) {
-        temp_iter_storage = flecs.ecs_query_iter(self.world.ecs, self.query);
-        return ecs.TableIterator(Components).init(&temp_iter_storage, flecs.ecs_query_next);
-    }
-
     // storage for the iterator so it can be passed by reference. Do not in-flight two Queries at once!
     var temp_iter_storage: flecs.ecs_iter_t = undefined;
 
