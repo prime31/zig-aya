@@ -272,8 +272,11 @@ pub fn registerReflectionData(world: *flecs.ecs_world_t, comptime T: type, entit
                         .Pointer => flecs.FLECS_IDecs_uptr_tID_,
                         .Struct => world.componentId(field.type),
                         .Enum => blk: {
+                            // flecs expects enums to be C style ints so if we are packed smaller abandon ship
+                            if (@sizeOf(T) != 4) return;
+
                             var enum_desc = std.mem.zeroes(flecs.ecs_enum_desc_t);
-                            enum_desc.entity.entity = world.componentId(T);
+                            enum_desc.entity = world.componentId(T);
 
                             inline for (@typeInfo(field.type).Enum.fields, 0..) |f, index| {
                                 enum_desc.constants[index] = std.mem.zeroInit(flecs.ecs_enum_constant_t, .{

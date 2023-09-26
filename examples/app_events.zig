@@ -1,7 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
-const phases = aya.phases;
 
 const App = aya.App;
 const EventReader = aya.EventReader;
@@ -14,8 +13,8 @@ pub fn main() !void {
 
     App.init()
         .addEvent(SuperEvent)
-        .addSystem(phases.startup, WriteEventSystem)
-        .addSystem(phases.first, ReadEventSystem)
+        .addSystem(.startup, WriteEventSystem)
+        .addSystem(.first, ReadEventSystem)
         .run();
 }
 
