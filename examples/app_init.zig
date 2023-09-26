@@ -1,162 +1,137 @@
 const std = @import("std");
 const aya = @import("aya");
 const ecs = @import("ecs");
-const flecs = ecs.c;
 
 const Resources = aya.Resources;
 const App = aya.App;
+const World = aya.World;
+const Iterator = ecs.Iterator;
+
+pub const Resource = struct { num: u64 };
+
+const SuperEvent = struct {};
+
+const SuperState = enum {
+    start,
+    middle,
+    end,
+};
+
+const ChangeStateSystem = struct {
+    vel: ?*const Velocity,
+
+    pub fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
+        _ = world;
+        std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().?.state });
+        while (iter.next()) |_| {}
+        state.get().?.set(iter.world(), .middle);
+    }
+};
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer std.debug.print("GPA has leaks: {}\n", .{gpa.detectLeaks()});
-
-    var app = App.init(gpa.allocator());
-    defer app.deinit();
-
-    const PreStartup = makePhase(app.world.ecs_world);
-    const Startup = makePhase(app.world.ecs_world);
-    const PostStartup = makePhase(app.world.ecs_world);
-
-    const First = makePhase(app.world.ecs_world);
-    const PreUpdate = makePhase(app.world.ecs_world);
-    const StateTransition = makePhase(app.world.ecs_world);
-    const RunFixedUpdateLoop = makePhase(app.world.ecs_world);
-    const Update = makePhase(app.world.ecs_world);
-    const PostUpdate = makePhase(app.world.ecs_world);
-    const Last = makePhase(app.world.ecs_world);
-
-    std.debug.print("\nFirst: {}\n", .{First});
-    std.debug.print("PreUpdate: {}\n", .{PreUpdate});
-    std.debug.print("StateTransition: {}\n", .{StateTransition});
-    std.debug.print("RunFixedUpdateLoop: {}\n", .{RunFixedUpdateLoop});
-    std.debug.print("Update: {}\n", .{Update});
-    std.debug.print("PostUpdate: {}\n", .{PostUpdate});
-    std.debug.print("Last: {}\n\n", .{Last});
-
-    app.addSystem("StateTransition_0", StateTransition, run)
-        .addSystem("StateTransition_1", StateTransition, run)
-        .addSystem("PostUpdate_0", PostUpdate, run)
-        .addSystem("StateTransition_2", StateTransition, run)
-        .addSystem("First_0", First, run)
-        .addSystem("Update_0", Update, run)
-        .addSystem("Update_1", Update, run)
-        .addSystem("PreUpdate_0", PreUpdate, run)
-        .addSystem("PreUpdate_1", PreUpdate, run)
-        .addSystem("Last_0", Last, run)
-        .addSystem("RunFixedUpdateLoop_0", RunFixedUpdateLoop, run)
-        .addSystem("PostUpdate_1", PostUpdate, run)
-        .addSystem("Last_2", Last, run)
-        .addSystemAfter("Last_1", Last, run, "Last_0")
-        .addSystemBefore("Last_-1", Last, run, "Last_0")
-        .addSystem("PostStartup", PostStartup, run)
-        .addSystem("PreStartup_0", PreStartup, run)
-        .addSystem("Startup", Startup, run)
-        .addSystem("PreStartup_3", PreStartup, run)
-        .addSystemAfter("PreStartup_1", PreStartup, run, "PreStartup_0")
-        .addSystemAfter("PreStartup_2", PreStartup, run, "PreStartup_1")
-        .addSystemAfter("PreStartup_2b", PreStartup, run, "PreStartup_1")
-        .addSystemBefore("PreStartup_2a", PreStartup, run, "PreStartup_2b")
+    App.init()
+        .addState(SuperState, .start)
+        .addEvent(SuperEvent)
+        .insertPlugin(PhysicsPlugin{ .data = 66 })
+        .insertResource(Resource{ .num = 666 })
+        .addObserver(.on_set, VelocityObserver.run)
+        .addSystem(.startup, EmptyCallback)
+        .addSystem(.first, WorldAndVelocitySystem)
+        .addSystem(.first, ChangeStateSystem)
+        .addSystem(.pre_update, EmptySystem).inState(SuperState, .middle)
+        .addSystem(.pre_update, OtherSystem).inState(SuperState, .start)
+        .addSystem(.pre_update, WorldSystem).before(EmptySystem)
+        .addSystem(.update, SystemCallbackType)
         .run();
 
     // disables an entire phase
-    // flecs.ecs_enable(app.world.ecs, StateTransition, false);
-
-    // run the startup pipeline then core pipeline
-    runStartupPipeline(app.world.ecs_world, PreStartup, Startup, PostStartup);
-    setCorePipeline(app.world.ecs_world);
-
-    std.debug.print("---------\n", .{});
-    app.world.ecs_world.progress(0);
+    // flecs.ecs_enable(app.world.ecs, .first, false);
 }
 
-fn run(it: [*c]flecs.ecs_iter_t) callconv(.C) void {
-    std.debug.print("------------ system: {s}\n", .{flecs.ecs_get_name(it.*.world, it.*.system)});
-    if (!flecs.ecs_iter_next(it)) return;
-}
+pub const Position = struct { x: f32 = 0, y: f32 = 0 };
+pub const Velocity = struct { x: f32 = 0, y: f32 = 0 };
 
-fn makePhase(world: ecs.EcsWorld) u64 {
-    return flecs.ecs_new_w_id(world.world, flecs.EcsPhase);
-}
+const EmptyCallback = struct {
+    pub fn run(iter: *Iterator(EmptyCallback)) void {
+        while (iter.next()) |_| {}
 
-fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
-    const sort1 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr1)));
-    const sort2 = @as(*const ecs.SystemSort, @ptrCast(@alignCast(ptr2)));
+        std.debug.print("\n-- EmptyCallback. delta_time: {d}\n", .{iter.iter.delta_time});
+        iter.world().newEntity().set(Velocity{ .x = 6 });
 
-    const phase_1: c_int = if (sort1.phase > sort2.phase) 1 else 0;
-    const phase_2: c_int = if (sort1.phase < sort2.phase) 1 else 0;
-
-    // sort by: phase, order_in_phase then entity_id
-    if (sort1.phase == sort2.phase) {
-        // std.debug.print("SAME PHASE. order: {} vs {}, entity: {}, {}\n", .{ sort1.order_in_phase, sort2.order_in_phase, e1, e2 });
-        const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
-        const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
-
-        const order_in_phase = order_1 - order_2;
-        if (order_in_phase != 0) return order_in_phase;
-
-        const first: c_int = if (e1 > e2) 1 else 0;
-        const second: c_int = if (e1 < e2) 1 else 0;
-
-        return first - second;
+        const entity = iter.world().newEntity();
+        entity.set(Velocity{ .x = 7 });
+        entity.set(Position{ .x = 8 });
     }
+};
 
-    return phase_1 - phase_2;
-}
+const EmptySystem = struct {
+    pub fn run(res: aya.Res(Velocity), res_mut: aya.ResMut(Resource)) void {
+        std.debug.print("-- EmptySystem called res: {?}, res_mut: {?}\n", .{ res.resource, res_mut.resource });
+    }
+};
 
-fn runStartupPipeline(world: ecs.EcsWorld, pre_startup: u64, startup: u64, post_startup: u64) void {
-    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
-    pip_desc.entity = flecs.ecs_entity_init(world.world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
-    pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = ecs.COMPONENT(world.world, ecs.SystemSort);
+const OtherSystem = struct {
+    pub fn run() void {
+        std.debug.print("-- OtherSystem\n", .{});
+    }
+};
 
-    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
-    pip_desc.query.filter.terms[1] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = pre_startup,
-        .oper = flecs.EcsOr,
-    });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = startup,
-        .oper = flecs.EcsOr,
-    });
-    pip_desc.query.filter.terms[3].id = post_startup;
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = ecs.COMPONENT(world.world, ecs.SystemSort),
-        .inout = flecs.EcsIn,
-    });
+const WorldSystem = struct {
+    pub fn run(world: *World) void {
+        std.debug.print("-- WorldSystem called with world: {*}\n", .{world});
+    }
+};
 
-    const startup_pipeline = flecs.ecs_pipeline_init(world.world, &pip_desc);
-    flecs.ecs_set_pipeline(world.world, startup_pipeline);
-    _ = flecs.ecs_progress(world.world, 0);
+const WorldAndVelocitySystem = struct {
+    vel: *Velocity,
 
-    flecs.ecs_delete_with(world.world, pre_startup);
-    flecs.ecs_delete_with(world.world, startup);
-    flecs.ecs_delete_with(world.world, post_startup);
-}
+    pub fn run(world: *World, iter: *Iterator(WorldAndVelocitySystem)) void {
+        std.debug.print("-- WorldAndVelocitySystem. world: {*}, ecs_world: {}\n", .{ world, iter.world() });
+        while (iter.next()) |_| {}
+    }
+};
 
-fn setCorePipeline(world: ecs.EcsWorld) void {
-    var pip_desc = std.mem.zeroes(flecs.ecs_pipeline_desc_t);
-    pip_desc.entity = flecs.ecs_entity_init(world.world, &std.mem.zeroInit(flecs.ecs_entity_desc_t, .{ .name = "CustomPipeline" }));
-    pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = ecs.COMPONENT(world.world, ecs.SystemSort);
-    pip_desc.query.filter.terms[0].id = flecs.EcsSystem;
-    pip_desc.query.filter.terms[1].id = ecs.COMPONENT(world.world, ecs.SystemSort);
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = flecs.EcsDisabled,
-        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
-            .flags = flecs.EcsUp,
-            .trav = flecs.EcsDependsOn,
-        }),
-        .oper = flecs.EcsNot,
-    });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(flecs.ecs_term_t, .{
-        .id = flecs.EcsDisabled,
-        .src = std.mem.zeroInit(flecs.ecs_term_id_t, .{
-            .flags = flecs.EcsUp,
-            .trav = flecs.EcsChildOf,
-        }),
-        .oper = flecs.EcsNot,
-    });
+const SystemCallbackType = struct {
+    vel: *Velocity,
+    pos: ?*const Position,
 
-    const pipeline = flecs.ecs_pipeline_init(world.world, &pip_desc);
-    flecs.ecs_set_pipeline(world.world, pipeline);
-}
+    pub fn run(iter: *Iterator(SystemCallbackType)) void {
+        std.debug.print("-- SystemCallbackType called. total results: {d}\n", .{iter.*.iter.count});
+
+        // iteration can also be via table
+        while (iter.nextTable()) |table| {
+            for (table.columns.vel, 0..) |v, i| {
+                const pos = if (table.columns.pos) |p| p[i] else null;
+                std.debug.print("-- ++ v: {}, pos: {?}\n", .{ v, pos });
+            }
+        }
+    }
+};
+
+const VelocityObserver = struct {
+    vel: *const Velocity,
+    pos: *const Position,
+
+    pub fn run(iter: *Iterator(VelocityObserver)) void {
+        // std.debug.print("-- ++ VelocityObserver\n", .{});
+        while (iter.next()) |comps| {
+            std.debug.print("-- v: {}, p: {}\n", .{ comps.vel, comps.pos });
+        }
+    }
+};
+
+const PhysicsPlugin = struct {
+    data: u8 = 250,
+
+    pub fn build(self: PhysicsPlugin, app: *App) void {
+        _ = app.addSystem(.last, PhysicsSystem);
+        std.debug.print("--- PhysicsPlugins.build called. data: {}\n", .{self.data});
+    }
+};
+
+const PhysicsSystem = struct {
+    pub fn run(iter: *Iterator(PhysicsSystem)) void {
+        std.debug.print("-- ++ PhysicsSystem\n", .{});
+        while (iter.next()) |_| {}
+    }
+};
