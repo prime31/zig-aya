@@ -34,7 +34,7 @@ pub fn FinalChild(comptime T: type) type {
     @compileError("Expected pointer or optional pointer, found '" ++ @typeName(T) ++ "'");
 }
 
-/// given a pointer or optional pointer returns a pointer-to-slide. constness and optionality are retained.
+/// given a pointer or optional pointer returns a pointer-to-slice. constness and optionality are retained.
 pub fn PointerToSlice(comptime T: type) type {
     var is_const = false;
     var is_optional = false;
