@@ -64,6 +64,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "app_events", "examples/app_events.zig");
     addExecutable(b, target, optimize, options, "app_locals", "examples/app_locals.zig");
     addExecutable(b, target, optimize, options, "app_states", "examples/app_states.zig");
+    addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
 
     addTests(b, target, optimize);
 

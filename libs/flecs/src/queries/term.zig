@@ -1,6 +1,6 @@
 const std = @import("std");
 const ecs = @import("../ecs.zig");
-const flecs = ecs.c;
+const c = ecs.c;
 
 /// void {} is an allowed T for Terms that iterate only the entities. Void is required when using initWithPair
 pub fn Term(comptime T: anytype) type {
@@ -9,21 +9,21 @@ pub fn Term(comptime T: anytype) type {
     return struct {
         const Self = @This();
 
-        ecs: *flecs.ecs_world_t,
-        term: flecs.ecs_term_t,
+        ecs: *c.ecs_world_t,
+        term: c.ecs_term_t,
 
         const Iterator = struct {
-            iter: flecs.ecs_iter_t,
+            iter: c.ecs_iter_t,
             index: usize = 0,
 
-            pub fn init(iter: flecs.ecs_iter_t) Iterator {
+            pub fn init(iter: c.ecs_iter_t) Iterator {
                 return .{ .iter = iter };
             }
 
             pub fn next(self: *Iterator) ?*T {
                 if (self.index >= self.iter.count) {
                     self.index = 0;
-                    if (!flecs.ecs_term_next(&self.iter)) return null;
+                    if (!c.ecs_term_next(&self.iter)) return null;
                 }
 
                 self.index += 1;
@@ -37,43 +37,43 @@ pub fn Term(comptime T: anytype) type {
         };
 
         const EntityIterator = struct {
-            iter: flecs.ecs_iter_t,
+            iter: c.ecs_iter_t,
             index: usize = 0,
 
-            pub fn init(iter: flecs.ecs_iter_t) EntityIterator {
+            pub fn init(iter: c.ecs_iter_t) EntityIterator {
                 return .{ .iter = iter };
             }
 
-            pub fn next(self: *EntityIterator) ?flecs.Entity {
+            pub fn next(self: *EntityIterator) ?c.Entity {
                 if (self.index >= self.iter.count) {
                     self.index = 0;
-                    if (!flecs.ecs_term_next(&self.iter)) return null;
+                    if (!c.ecs_term_next(&self.iter)) return null;
                 }
 
                 self.index += 1;
-                return flecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
+                return c.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
             }
         };
 
-        pub fn init(world: *flecs.ecs_world_t) Self {
-            var term = std.mem.zeroInit(flecs.ecs_term_t, .{ .id = world.componentId(T) });
+        pub fn init(world: *c.ecs_world_t) Self {
+            var term = std.mem.zeroInit(c.ecs_term_t, .{ .id = world.componentId(T) });
             return .{ .ecs = world, .term = term };
         }
 
-        pub fn initWithPair(world: flecs.World, pair: u64) Self {
+        pub fn initWithPair(world: c.World, pair: u64) Self {
             std.debug.assert(@TypeOf(T) == void);
-            var term = std.mem.zeroInit(flecs.ecs_term_t, .{ .id = pair });
+            var term = std.mem.zeroInit(c.ecs_term_t, .{ .id = pair });
             return .{ .world = world, .term = term };
         }
 
         pub fn deinit(self: *Self) void {
-            flecs.ecs_term_fini(&self.term);
+            c.ecs_term_fini(&self.term);
         }
 
         // only export each if we have an actual T that is a struct, pairs with void only iterate entities
         pub usingnamespace if (@TypeOf(T) == type) struct {
             pub fn iterator(self: *Self) Iterator {
-                return Iterator.init(flecs.ecs_term_iter(self.ecs.ecs, &self.term));
+                return Iterator.init(c.ecs_term_iter(self.ecs.ecs, &self.term));
             }
 
             pub fn each(self: *Self, function: *const fn (ecs.Entity, *T) void) void {
@@ -84,12 +84,12 @@ pub fn Term(comptime T: anytype) type {
             }
         } else struct {
             pub fn iterator(self: *Self) EntityIterator {
-                return EntityIterator.init(flecs.ecs_term_iter(self.ecs.world, &self.term));
+                return EntityIterator.init(c.ecs_term_iter(self.ecs.world, &self.term));
             }
         };
 
         pub fn entityIterator(self: *Self) EntityIterator {
-            return EntityIterator.init(flecs.ecs_term_iter(self.ecs.world, &self.term));
+            return EntityIterator.init(c.ecs_term_iter(self.ecs.world, &self.term));
         }
     };
 }

@@ -53,17 +53,4 @@ pub const World = struct {
     pub fn getResourceMut(self: *Self, comptime T: type) ?*T {
         return self.resources.get(T);
     }
-
-    // Systems
-    /// registers a system that is not put in any phase and will only run when runSystem is called.
-    pub fn registerSystem(self: *Self) u64 {
-        _ = self;
-        return 0;
-    }
-
-    pub fn runSystem(self: *Self, system: u64) u64 {
-        _ = system;
-        _ = self;
-        return 0;
-    }
 };

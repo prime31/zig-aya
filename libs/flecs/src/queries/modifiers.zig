@@ -1,6 +1,6 @@
 const std = @import("std");
 const ecs = @import("../ecs.zig");
-const flecs = ecs.c;
+const c = ecs.c;
 
 // inouts
 pub fn None(comptime T: type) type {

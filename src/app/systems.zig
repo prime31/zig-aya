@@ -7,6 +7,7 @@ const app = @import("mod.zig");
 
 const App = app.App;
 const World = app.World;
+const Commands = app.Commands;
 const Res = app.Res;
 const ResMut = app.ResMut;
 const Local = app.Local;
@@ -123,6 +124,11 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 if (Child == World) {
                     var application = it.*.world.?.getSingleton(AppWrapper).?.app;
                     @field(args, f.name) = &application.world;
+                    continue;
+                }
+
+                if (Child == Commands) {
+                    @field(args, f.name) = Commands.init(it.*.world.?);
                     continue;
                 }
 
