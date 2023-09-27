@@ -302,6 +302,26 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
     }
 }
 
+/// given a struct of Components with optional embedded metadata (order_by, instanced, modifiers, eptr) it generates an ecs_query_desc_t
+pub fn generateQueryDesc(world: *c.ecs_world_t, comptime Components: type) c.ecs_query_desc_t {
+    var query_desc = std.mem.zeroes(c.ecs_query_desc_t);
+    query_desc.filter = generateFilterDesc(world, Components);
+
+    if (@hasDecl(Components, "order_by")) {
+        validateOrderByFn(Components.order_by);
+        const ti = @typeInfo(@TypeOf(Components.order_by));
+        const OrderByType = FinalChild(ti.Fn.params[1].type.?);
+        validateOrderByType(Components, OrderByType);
+
+        query_desc.order_by = wrapOrderByFn(OrderByType, Components.order_by);
+        query_desc.order_by_component = world.componentId(OrderByType);
+    }
+
+    if (@hasDecl(Components, "instanced") and Components.instanced) query_desc.filter.instanced = true;
+
+    return query_desc;
+}
+
 /// given a struct of Components with optional embedded "metadata", "name", "order_by" data it generates an ecs_filter_desc_t
 pub fn generateFilterDesc(world: *c.ecs_world_t, comptime Components: type) c.ecs_filter_desc_t {
     assert(@typeInfo(Components) == .Struct);
@@ -406,6 +426,17 @@ pub fn generateFilterDesc(world: *c.ecs_world_t, comptime Components: type) c.ec
     }
 
     return desc;
+}
+
+const FlecsOrderByAction = fn (c.ecs_entity_t, ?*const anyopaque, c.ecs_entity_t, ?*const anyopaque) callconv(.C) c_int;
+
+fn wrapOrderByFn(comptime T: type, comptime cb: fn (u64, *const T, u64, *const T) c_int) FlecsOrderByAction {
+    const Closure = struct {
+        pub fn closure(e1: u64, c1: ?*const anyopaque, e2: u64, c2: ?*const anyopaque) callconv(.C) c_int {
+            return @call(.always_inline, cb, .{ e1, @as(*const T, @ptrCast(@alignCast(c1))), e2, @as(*const T, @ptrCast(@alignCast(c2))) });
+        }
+    };
+    return Closure.closure;
 }
 
 /// gets the index into the terms array of this type or null if it isnt found (likely a new filter term)

@@ -23,9 +23,9 @@ pub const World = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        _ = c.ecs_fini(self.ecs);
         self.resources.deinit();
         self.locals.deinit();
+        _ = c.ecs_fini(self.ecs); // must be last! we could have Flecs objects present in resources or locals
     }
 
     // Resources

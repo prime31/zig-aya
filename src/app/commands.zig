@@ -5,7 +5,7 @@ const app = @import("mod.zig");
 
 const systems = @import("systems.zig");
 
-const Entity = app.Entity;
+const Entity = aya.Entity;
 
 pub const Commands = struct {
     ecs: *c.ecs_world_t,
@@ -19,7 +19,7 @@ pub const Commands = struct {
     }
 
     pub fn newEntity(self: Commands) Entity {
-        return Entity.init(self, c.ecs_new_id(self));
+        return Entity.init(self.ecs, c.ecs_new_id(self.ecs));
     }
 
     pub fn newEntityNamed(self: Commands, name: [*c]const u8) Entity {
@@ -81,7 +81,7 @@ const DeferredCreateSystem = struct {
             .id = id,
             .createSystemFn = struct {
                 fn createSystemFn(self: *DeferredCreateSystem, ecs: *c.ecs_world_t) void {
-                    _ = systems.addSystemToEntity(self.id, ecs, 0, T);
+                    _ = systems.addSystemToEntity(ecs, self.id, 0, T);
                 }
             }.createSystemFn,
         };

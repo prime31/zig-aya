@@ -6,9 +6,10 @@ const meta = @import("../meta.zig");
 pub fn Query(comptime T: type) type {
     return struct {
         const Self = @This();
+        pub const query_type = T;
 
-        world: *c.ecs_world_t,
-        query: *c.ecs_query_t,
+        world: ?*c.ecs_world_t,
+        query: ?*c.ecs_query_t,
         temp_iter_storage: c.ecs_iter_t = undefined,
 
         pub fn deinit(self: *Self) void {
@@ -32,7 +33,7 @@ pub fn Query(comptime T: type) type {
 
             /// gets an iterator that iterates all matched entities from all tables in one iteration. Do not create more than one at a time!
             pub fn iterator(self: *Self, comptime Components: type) ecs.Iterator(Components) {
-                self.temp_iter_storage = c.ecs_query_iter(self.world, self.query);
+                self.temp_iter_storage = c.ecs_query_iter(self.world, self.query.?);
                 return ecs.Iterator(Components).init(&self.temp_iter_storage, c.ecs_query_next);
             }
 
@@ -61,7 +62,7 @@ pub fn Query(comptime T: type) type {
             }
         } else struct {
             pub fn init(world: *c.ecs_world_t) Self {
-                return .{ .world = world, .query = c.ecs_query_init(world, &meta.generateFilterDesc(world, T)).? };
+                return .{ .world = world, .query = c.ecs_query_init(world, &meta.generateQueryDesc(world, T)) };
             }
 
             /// gets an iterator that iterates all matched entities from all tables in one iteration. Do not create more than one at a time!

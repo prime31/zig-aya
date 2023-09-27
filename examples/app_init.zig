@@ -28,13 +28,8 @@ const ChangeStateSystem = struct {
     }
 };
 
-fn runFn(app: *App) void {
-    _ = app;
-}
-
 pub fn main() !void {
     App.init()
-        .setRunner(runFn)
         .addState(SuperState, .start)
         .addEvent(SuperEvent)
         .insertPlugin(PhysicsPlugin{ .data = 66 })
