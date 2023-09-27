@@ -8,6 +8,6 @@ curl -O https://raw.githubusercontent.com/SanderMertens/flecs/master/flecs.h
 curl -O https://raw.githubusercontent.com/SanderMertens/flecs/master/flecs.c
 
 echo "----- translate-c the new flecs.h file"
-zig translate-c flecs.h > ../src/flecs.zig
+zig translate-c flecs.h > ../../../src/ecs/flecs/flecs.zig
 
 echo "----- done"

@@ -1,8 +1,7 @@
 const std = @import("std");
 const locals = @import("locals.zig");
 const aya = @import("../aya.zig");
-const ecs = @import("ecs");
-const c = ecs.c;
+const c = aya.c;
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;

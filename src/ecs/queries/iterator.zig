@@ -1,7 +1,9 @@
 const std = @import("std");
-const ecs = @import("../ecs.zig");
-const c = ecs.c;
+const aya = @import("../../aya.zig");
+const c = @import("../mod.zig").c;
 const meta = @import("../meta.zig");
+
+const Entity = aya.Entity;
 
 pub fn Iterator(comptime Components: type) type {
     std.debug.assert(@typeInfo(Components) == .Struct);
@@ -33,8 +35,8 @@ pub fn Iterator(comptime Components: type) type {
             };
         }
 
-        pub fn entity(self: *Self) ecs.Entity {
-            return ecs.Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
+        pub fn entity(self: *Self) Entity {
+            return Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
         // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
@@ -42,8 +44,8 @@ pub fn Iterator(comptime Components: type) type {
             return self.iter.world.?;
         }
 
-        pub fn tableType(self: *Self) ecs.Type {
-            return ecs.Type.init(self.iter.world.?, self.iter.type);
+        pub fn tableType(self: *Self) aya.Type {
+            return aya.Type.init(self.iter.world.?, self.iter.type);
         }
 
         pub fn skip(self: *Self) void {
@@ -110,14 +112,14 @@ pub fn Iterator(comptime Components: type) type {
                 if (is_optional) @field(iter.columns, field.name) = null;
                 const field_index = self.iter.terms[index].field_index;
                 const raw_term_id = c.ecs_field_id(self.iter, @intCast(field_index + 1));
-                const term_id = if (c.ecs_id_is_pair(raw_term_id)) ecs.pairFirst(raw_term_id) else raw_term_id;
+                const term_id = if (c.ecs_id_is_pair(raw_term_id)) aya.pairFirst(raw_term_id) else raw_term_id;
                 var skip_term = if (is_optional) self.iter.world.?.componentId(col_type) != term_id else false;
 
                 // note that an OR is actually a single term!
                 // std.debug.print("---- col_type: {any}, optional: {any}, i: {d}, col_index: {d}, skip_term: {d}\n", .{ col_type, is_optional, i, column_index, skip_term });
                 // std.debug.print("---- compId: {any}, term_id: {any}\n", .{ meta.componentHandle(col_type).*, flecs.ecs_term_id(self.iter, @intCast(usize, column_index + 1)) });
                 if (!skip_term) {
-                    if (ecs.fieldOpt(self.iter, col_type, field_index + 1)) |col| {
+                    if (aya.fieldOpt(self.iter, col_type, field_index + 1)) |col| {
                         @field(iter.columns, field.name) = col;
                     }
                 }

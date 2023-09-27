@@ -1,11 +1,28 @@
 const std = @import("std");
-pub const c = @import("flecs.zig");
-const ecs = @This();
+pub const c = @import("flecs/flecs.zig");
+const queries = @import("queries/mod.zig");
 
 pub const meta = @import("meta.zig");
-pub usingnamespace @import("queries/mod.zig");
 
 pub const Entity = @import("entity.zig").Entity;
+pub const Iterator = queries.Iterator;
+
+// query types
+pub const Filter = queries.Filter;
+pub const Query = queries.Query;
+pub const Term = queries.Term;
+
+// system query modifiers
+pub const DontMatch = queries.DontMatch;
+pub const Mask = queries.Mask;
+pub const MaskI = queries.MaskI;
+pub const None = queries.None;
+pub const Not = queries.Not;
+pub const Or = queries.Or;
+pub const Pair = queries.Pair;
+pub const PairI = queries.PairI;
+pub const Writeonly = queries.Writeonly;
+pub const WriteonlyI = queries.WriteonlyI;
 
 pub const OperKind = enum(c_int) {
     and_ = c.EcsAnd,

@@ -1,11 +1,11 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const c = @import("ecs").c;
+const c = @import("../ecs/mod.zig").c;
 const app = @import("mod.zig");
 
 const Res = app.Res;
 const ResMut = app.ResMut;
-const Iterator = @import("ecs").Iterator;
+const Iterator = @import("../ecs/mod.zig").Iterator;
 
 pub fn State(comptime T: type) type {
     return struct {

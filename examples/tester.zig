@@ -1,6 +1,5 @@
 const std = @import("std");
 const aya = @import("aya");
-const ecs = @import("ecs");
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
@@ -46,13 +45,8 @@ const TimePlugin = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer std.debug.print("GPA has leaks: {}\n", .{gpa.detectLeaks()});
-
-    var app = App.init();
-    defer app.deinit();
-
-    app.addPlugin(TimePlugin)
+    App.init()
+        .addPlugin(TimePlugin)
         .insertPlugin(PhysicsPlugin{ .data = 35 })
         .addPlugins(.{ TimePlugin, PhysicsPlugin{ .data = 35 } })
         .run();

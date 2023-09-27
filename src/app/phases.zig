@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("ecs").c;
+const c = @import("../ecs/mod.zig").c;
 
 pub var pre_startup: u64 = 0;
 pub var startup: u64 = 0;

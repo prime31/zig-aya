@@ -1,5 +1,5 @@
 const std = @import("std");
-const ecs = @import("../ecs.zig");
+const ecs = @import("../mod.zig");
 const c = ecs.c;
 
 /// void {} is an allowed T for Terms that iterate only the entities. Void is required when using initWithPair

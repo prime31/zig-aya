@@ -1,5 +1,5 @@
 const std = @import("std");
-const ecs = @import("ecs");
+const ecs = @import("../ecs/mod.zig");
 const c = ecs.c;
 const aya = @import("../aya.zig");
 const app = @import("mod.zig");
@@ -27,8 +27,14 @@ const State = app.State;
 const NextState = app.NextState;
 
 const StateChangeCheckSystem = @import("state.zig").StateChangeCheckSystem;
+const ScratchAllocator = @import("../mem/scratch_allocator.zig").ScratchAllocator;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+pub const allocator = gpa.allocator();
+
+// temp allocator is a ring buffer so memory doesnt need to be freed
+pub var tmp_allocator: std.mem.Allocator = undefined;
+var tmp_allocator_instance: ScratchAllocator = undefined;
 
 pub const App = struct {
     const Self = @This();
@@ -37,11 +43,13 @@ pub const App = struct {
     plugins: std.AutoHashMap(u32, void),
     phase_insert_indices: std.AutoHashMap(u64, i32),
     last_added_system: ?u64 = null,
+    runFn: ?*const fn (*App) void = null,
 
     pub fn init() *Self {
-        const allocator = gpa.allocator();
         const world = World.init(allocator);
-        aya.initTmpAllocator(allocator);
+
+        tmp_allocator_instance = ScratchAllocator.init(allocator);
+        tmp_allocator = tmp_allocator_instance.allocator();
 
         // register our phases
         @import("phases.zig").registerPhases(world.ecs);
@@ -59,11 +67,10 @@ pub const App = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        var allocator = self.phase_insert_indices.allocator;
         self.world.deinit();
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
-        aya.deinitTmpAllocator();
+        tmp_allocator_instance.deinit();
         allocator.destroy(self);
 
         if (gpa.detectLeaks())
@@ -84,10 +91,20 @@ pub const App = struct {
         setCorePipeline(self.world.ecs);
 
         // main loop
-        self.world.ecs.progress(0);
-        self.world.ecs.progress(0);
+        if (self.runFn) |runFn| runFn(self) else {
+            self.world.ecs.progress(0);
+            self.world.ecs.progress(0);
+        }
 
         self.deinit();
+    }
+
+    /// Sets the function that will be called when the app is run. The runner function is called only once. If the
+    /// presence of a main loop in the app is desired, it is the responsibility of the runner function to provide it.
+    /// Note that startup systems will always be run before runFn is called.
+    pub fn setRunner(self: *Self, runFn: *const fn (*App) void) *Self {
+        self.runFn = runFn;
+        return self;
     }
 
     /// Plugins must implement `build(App)`
@@ -179,8 +196,8 @@ pub const App = struct {
             map.put(val, c.ecs_new_id(self.world.ecs));
         }
 
-        _ = self.insertResource(State(T).init(enum_entity, current_state, map));
-        _ = self.insertResource(NextState(T).init(current_state));
+        self.world.insertResource(State(T).init(enum_entity, current_state, map));
+        self.world.insertResource(NextState(T).init(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
         _ = self.addSystem(.state_transition, StateChangeCheckSystem(T));
@@ -192,6 +209,7 @@ pub const App = struct {
         if (self.last_added_system) |system| {
             // add the State tag entity to the system and disable it if the state isnt active
             const state_res = self.world.getResource(State(T)).?;
+
             const entity = ecs.Entity.init(self.world.ecs, system);
             entity.addPair(state_res.base, state_res.entityForTag(state));
 

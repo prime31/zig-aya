@@ -1,11 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
-const ecs = @import("ecs");
 
 const Resources = aya.Resources;
 const App = aya.App;
 const World = aya.World;
-const Iterator = ecs.Iterator;
+const Iterator = aya.Iterator;
 
 pub const Resource = struct { num: u64 };
 
@@ -22,14 +21,20 @@ const ChangeStateSystem = struct {
 
     pub fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
         _ = world;
-        std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().?.state });
+
+        std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().? });
         while (iter.next()) |_| {}
         state.get().?.set(iter.world(), .middle);
     }
 };
 
+fn runFn(app: *App) void {
+    _ = app;
+}
+
 pub fn main() !void {
     App.init()
+        .setRunner(runFn)
         .addState(SuperState, .start)
         .addEvent(SuperEvent)
         .insertPlugin(PhysicsPlugin{ .data = 66 })

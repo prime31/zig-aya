@@ -12,6 +12,7 @@ fn PerTypeGlobalStruct(comptime _: type) type {
     };
 }
 
+/// returns a slice of a typename but only the last component (ex. std.HashMap would return HashMap)
 pub fn typeNameLastComponent(comptime T: type) [:0]const u8 {
     const name = @typeName(T);
     const last_dot = if (std.mem.lastIndexOf(u8, name, ".")) |index| index + 1 else 0;
