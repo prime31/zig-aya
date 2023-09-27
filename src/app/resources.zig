@@ -69,7 +69,7 @@ pub const Resources = struct {
         const res = self.allocator.create(T) catch unreachable;
 
         if (@typeInfo(T) == .Struct) {
-            res.* = if (@hasDecl(T, "init")) T.init(self.allocator) else std.mem.zeroes(T);
+            res.* = if (@hasDecl(T, "init") and @typeInfo(@TypeOf(T.init)).Fn.params[0].type.? == std.mem.Allocator) T.init(self.allocator) else std.mem.zeroes(T);
         } else {
             res.* = std.mem.zeroes(T);
         }

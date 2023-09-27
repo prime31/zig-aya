@@ -33,6 +33,15 @@ pub const LocalServer = struct {
         self.locals.deinit();
     }
 
+    pub fn insert(self: *LocalServer, comptime T: type, system: u64, local: T) void {
+        var resources: *Resources = self.locals.getPtr(system) orelse blk: {
+            self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;
+            break :blk self.locals.getPtr(system).?;
+        };
+
+        resources.insert(local);
+    }
+
     pub fn getLocalMut(self: *LocalServer, comptime T: type, system: u64) *T {
         var resources = self.locals.getPtr(system) orelse blk: {
             self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;

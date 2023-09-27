@@ -67,13 +67,13 @@ pub const App = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        self.world.deinit();
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
         tmp_allocator_instance.deinit();
+        self.world.deinit();
         allocator.destroy(self);
 
-        if (gpa.detectLeaks())
+        if (gpa.deinit() == .leak)
             std.debug.print("GPA has leaks. Check previous logs.\n", .{});
     }
 
