@@ -3,34 +3,7 @@ const Builder = std.build.Builder;
 
 // UPDATING FLECS (or use the `update_flecs` step)
 // - copy flecs.c and flecs.h
-// - zig translate-c flecs.h > flecs.zig
-
-pub fn build(b: *std.build.Builder) anyerror!void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
-    const module = getModule(b);
-
-    const examples = getAllExamples(b, "examples");
-    for (examples) |example| {
-        const name = example[0];
-        const source = example[1];
-
-        const exe = b.addExecutable(.{
-            .name = name,
-            .root_source_file = .{ .path = source },
-            .target = target,
-            .optimize = optimize,
-        });
-        exe.addModule("ecs", module);
-        linkArtifact(b, exe, target, optimize);
-
-        const run_cmd = b.addRunArtifact(exe);
-        run_cmd.step.dependOn(b.getInstallStep());
-
-        const run_step = b.step(name, b.fmt("Run '{s}'", .{name}));
-        run_step.dependOn(&run_cmd.step);
-    }
-}
+// - zig translate-c flecs.h > ../../src/ecs/flecs/flecs.zig
 
 pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
     exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });

@@ -109,7 +109,7 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
 
 fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
     flecs_build.linkArtifact(b, exe, target, optimize);
-    const flecs_module = flecs_build.getModule(b);
+    // const flecs_module = flecs_build.getModule(b);
 
     stb_build.linkArtifact(exe);
     const stb_module = stb_build.getModule(b);
@@ -125,7 +125,6 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
         .dependencies = &.{
-            .{ .name = "ecs", .module = flecs_module },
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "imgui", .module = imgui_module },
@@ -134,7 +133,6 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
 
     exe.addModule("aya", aya_module);
     exe.addModule("stb", stb_module);
-    exe.addModule("ecs", flecs_module);
     exe.addModule("sdl", sdl_module);
     exe.addModule("imgui", imgui_module);
 }

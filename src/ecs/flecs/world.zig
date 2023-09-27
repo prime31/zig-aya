@@ -1,17 +1,18 @@
-// NOTE: after regenerating c.zig the struct_ecs_world_t declaration needs to be
-// replace with `pub const struct_ecs_world_t = @import("flecs_world.zig").struct_ecs_world_t;`
+// NOTE: after regenerating c.zig this needs to be added and comment out the `struct_ecs_world_t` declaration.
+// replace with `pub const ecs_world_t = @import("world.zig").ecs_world_t;`
 const std = @import("std");
 const c = @import("flecs.zig");
-const meta = @import("meta.zig");
+const meta = @import("../meta.zig");
+const ecs = @import("../mod.zig");
 
 const FlecsOrderByAction = fn (c.ecs_entity_t, ?*const anyopaque, c.ecs_entity_t, ?*const anyopaque) callconv(.C) c_int;
 
-const Entity = @import("entity.zig").Entity;
-const Filter = @import("queries/filter.zig").Filter;
-const Query = @import("queries/query.zig").Query;
-const Iterator = @import("queries/iterator.zig").Iterator;
+const Entity = ecs.Entity;
+const Filter = ecs.Filter;
+const Query = ecs.Query;
+const Iterator = ecs.Iterator;
 
-pub const struct_ecs_world_t = opaque {
+pub const ecs_world_t = opaque {
     const Self = *@This();
 
     pub fn deinit(self: Self) void {
@@ -54,6 +55,12 @@ pub const struct_ecs_world_t = opaque {
     pub fn newEntityNamed(self: Self, name: [*c]const u8) Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
         return Entity.init(self.world, c.ecs_entity_init(self.world, &desc));
+    }
+
+    pub fn lookup(self: Self, path: [:0]const u8) ?Entity {
+        const entity = c.ecs_lookup(self, path);
+        if (entity != 0) return Entity.init(self, entity);
+        return null;
     }
 
     pub fn lookupFullPath(self: Self, path: [:0]const u8) ?Entity {

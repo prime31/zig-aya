@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const c = @import("ecs").c;
+const c = @import("../ecs/mod.zig").c;
 const app = @import("mod.zig");
 
 const systems = @import("systems.zig");

@@ -1,8 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const ecs = @import("ecs");
-const c = ecs.c;
-const meta = ecs.meta;
+const c = aya.c;
+const meta = aya.meta;
 const app = @import("mod.zig");
 
 const App = app.App;
@@ -121,7 +120,7 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 const Child = meta.FinalChild(f.type);
 
                 if (@hasDecl(Child, "components_type")) {
-                    var iterator = ecs.Iterator(Child.components_type).init(it, c.ecs_iter_next);
+                    var iterator = aya.Iterator(Child.components_type).init(it, c.ecs_iter_next);
                     @field(args, f.name) = &iterator;
                     has_iterator = true;
                     continue;

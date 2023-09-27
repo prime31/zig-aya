@@ -1,5 +1,5 @@
 const std = @import("std");
-const c = @import("ecs.zig").c;
+const c = @import("mod.zig").c;
 const meta = @import("meta.zig");
 
 pub const Entity = struct {

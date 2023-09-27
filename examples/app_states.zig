@@ -1,11 +1,10 @@
 const std = @import("std");
 const aya = @import("aya");
-const ecs = @import("ecs");
 
 const Resources = aya.Resources;
 const App = aya.App;
 const World = aya.World;
-const Iterator = ecs.Iterator;
+const Iterator = aya.Iterator;
 
 const SuperState = enum {
     start,

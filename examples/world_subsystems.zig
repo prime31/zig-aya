@@ -1,6 +1,5 @@
 const std = @import("std");
 const aya = @import("aya");
-const ecs = @import("ecs");
 
 const App = aya.App;
 const World = aya.World;
