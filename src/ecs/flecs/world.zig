@@ -23,11 +23,11 @@ pub const ecs_world_t = opaque {
         c.ecs_set_target_fps(self, fps);
     }
 
-    /// available at: https://www.c.dev/explorer/?remote=true
-    /// test if running: http://localhost:27750/entity/flecs
-    pub fn enableWebExplorer(_: Self) void {
-        @panic("this needs to be updated to 3.x way");
-        // _ = c.ecs_set_id(self, c.FLECS__EEcsRest, c.FLECS__EEcsRest, @sizeOf(c.EcsRest), &std.mem.zeroes(c.EcsRest));
+    /// available at: https://flecs.dev/explorer
+    /// debug check if its running: http://localhost:27750/entity/flecs/core/World
+    pub fn enableWebExplorer(self: Self) void {
+        c.FlecsMonitorImport(self);
+        _ = c.ecs_set_id(self, c.FLECS_IDEcsRestID_, c.FLECS_IDEcsRestID_, @sizeOf(c.EcsRest), &std.mem.zeroes(c.EcsRest));
     }
 
     /// -1 log level turns off logging

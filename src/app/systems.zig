@@ -78,8 +78,10 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
     if (system_desc == null) {
         system_desc = std.mem.zeroInit(c.ecs_system_desc_t, .{
             .entity = c.ecs_entity_init(world, &entity_desc),
+            .interval = if (@hasDecl(System, "interval")) System.interval else 0,
             .run = wrapSystemFn(System.run),
         });
+        std.debug.print("foooooking interval: {}\n", .{system_desc.?.interval});
     }
 
     return c.ecs_system_init(world, &system_desc.?);

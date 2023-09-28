@@ -63,6 +63,7 @@ pub const App = struct {
         };
 
         world.ecs.setSingleton(&AppWrapper{ .app = self });
+        self.enableTimers();
 
         return self;
     }
@@ -106,6 +107,36 @@ pub const App = struct {
     pub fn setRunner(self: *Self, runFn: *const fn (*App) void) *Self {
         self.runFn = runFn;
         return self;
+    }
+
+    /// available at: https://flecs.dev/explorer
+    /// debug check if its running: http://localhost:27750/entity/flecs/core/World
+    pub fn enableWebExplorer(self: *Self) *Self {
+        self.world.ecs.enableWebExplorer();
+
+        // get the Flecs system running in our custom pipeline
+        const rest_system = self.world.ecs.lookupFullPath("flecs.rest.DequeueRest") orelse @panic("could not find DequeueRest system");
+        rest_system.add(Phase.last.getEntity());
+        rest_system.set(systems.SystemSort{
+            .phase = Phase.last.getEntity(),
+            .order_in_phase = self.getNextOrderInPhase(.last),
+        });
+
+        return self;
+    }
+
+    /// fixes all the flecs Timer systems so they run in our pipeline
+    fn enableTimers(self: *Self) void {
+        const timer_systems = .{ "AddTickSource", "ProgressTimers", "ProgressRateFilters", "ProgressTickSource" };
+        inline for (timer_systems) |sys| {
+            if (self.world.ecs.lookupFullPath("flecs.timer." ++ sys)) |system| {
+                system.add(Phase.first.getEntity());
+                system.set(systems.SystemSort{
+                    .phase = Phase.first.getEntity(),
+                    .order_in_phase = self.getNextOrderInPhase(.first),
+                });
+            }
+        }
     }
 
     /// Plugins must implement `build(App)`
@@ -224,12 +255,9 @@ pub const App = struct {
     }
 
     // Systems
-    pub fn addSystem(self: *Self, phase: Phase, comptime T: type) *Self {
-        std.debug.assert(@typeInfo(T) == .Struct);
-        std.debug.assert(@hasDecl(T, "run"));
-
+    fn getNextOrderInPhase(self: *Self, phase: Phase) i32 {
         var phase_insertions = self.phase_insert_indices.getOrPut(phase.getEntity()) catch unreachable;
-        const order_in_phase = blk: {
+        return blk: {
             if (!phase_insertions.found_existing) {
                 phase_insertions.value_ptr.* = 0;
                 break :blk 0;
@@ -237,6 +265,13 @@ pub const App = struct {
             phase_insertions.value_ptr.* += 1;
             break :blk phase_insertions.value_ptr.*;
         };
+    }
+
+    pub fn addSystem(self: *Self, phase: Phase, comptime T: type) *Self {
+        std.debug.assert(@typeInfo(T) == .Struct);
+        std.debug.assert(@hasDecl(T, "run"));
+
+        const order_in_phase = self.getNextOrderInPhase(phase);
 
         self.last_added_system = systems.addSystem(self.world.ecs, phase.getEntity(), T);
         const system_entity = ecs.Entity.init(self.world.ecs, self.last_added_system.?);
