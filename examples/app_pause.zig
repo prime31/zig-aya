@@ -34,12 +34,11 @@ const RunWhenPausedSystem = struct {
     pub fn run(commands: Commands, ticks: aya.Local(u8)) void {
         std.debug.print("-- RunWhenPausedSystem called\n", .{});
 
-        if (ticks.get().* == 0)
-            commands.pause(true);
-        if (ticks.get().* == 2)
-            commands.pause(false);
+        // pause/unpause every 3 frames
+        if (ticks.get().* % 3 == 0)
+            commands.pause(ticks.get().* % 2 == 0);
 
-        ticks.get().* = ticks.get().* + 1;
+        ticks.get().* = ticks.get().* +% 1;
     }
 };
 

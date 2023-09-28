@@ -68,6 +68,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "app_custom_runner", "examples/app_custom_runner.zig");
     addExecutable(b, target, optimize, options, "app_multi_query_system", "examples/app_multi_query_system.zig");
     addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
+    addExecutable(b, target, optimize, options, "systems_intervals", "examples/systems_intervals.zig");
 
     addTests(b, target, optimize);
 
