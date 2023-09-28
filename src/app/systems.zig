@@ -62,7 +62,7 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
                 tmp_system_desc.multi_threaded = true;
                 tmp_system_desc.run = wrapSystemFn(System.run);
                 tmp_system_desc.query = meta.generateQueryDesc(world, T.components_type);
-                tmp_system_desc.interval = if (@hasDecl(T, "interval")) T.interval else 0;
+                tmp_system_desc.interval = if (@hasDecl(System, "interval")) System.interval else 0;
                 system_desc = tmp_system_desc;
             }
 
@@ -81,7 +81,6 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
             .interval = if (@hasDecl(System, "interval")) System.interval else 0,
             .run = wrapSystemFn(System.run),
         });
-        std.debug.print("foooooking interval: {}\n", .{system_desc.?.interval});
     }
 
     return c.ecs_system_init(world, &system_desc.?);

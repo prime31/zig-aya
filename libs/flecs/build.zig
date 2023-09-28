@@ -5,12 +5,12 @@ const Builder = std.build.Builder;
 // - copy flecs.c and flecs.h
 // - zig translate-c flecs.h > ../../src/ecs/flecs/flecs.zig
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
+pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode, include_flecs_explorer: bool) void {
     exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });
-    exe.linkLibrary(buildStaticLibrary(b, target, optimize));
+    exe.linkLibrary(buildStaticLibrary(b, target, optimize, include_flecs_explorer));
 }
 
-fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) *std.Build.CompileStep {
+fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode, include_flecs_explorer: bool) *std.Build.CompileStep {
     const lib = b.addStaticLibrary(.{
         .name = "flecs",
         .target = target,
@@ -30,10 +30,10 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
             "-DFLECS_NO_COREDOC",
             "-DFLECS_NO_APP",
             "-DFLECS_NO_META_C",
-            // "-DFLECS_NO_STATS",
-            // "-DFLECS_NO_MONITOR",
-            // "-DFLECS_NO_HTTP",
-            // "-DFLECS_NO_REST",
+            if (include_flecs_explorer) "" else "-DFLECS_NO_STATS",
+            if (include_flecs_explorer) "" else "-DFLECS_NO_MONITOR",
+            if (include_flecs_explorer) "" else "-DFLECS_NO_HTTP",
+            if (include_flecs_explorer) "" else "-DFLECS_NO_REST",
             if (@import("builtin").mode == .Debug) "-DFLECS_SANITIZE" else "",
         },
     });
