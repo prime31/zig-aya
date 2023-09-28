@@ -12,7 +12,8 @@ pub usingnamespace @import("asset_server.zig");
 pub usingnamespace @import("handles.zig");
 
 pub const AssetPlugin = struct {
-    pub fn build(app: *App) void {
+    pub fn build(self: AssetPlugin, app: *App) void {
+        _ = self;
         _ = app.initResource(AssetServer);
     }
 };

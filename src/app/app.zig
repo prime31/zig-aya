@@ -6,6 +6,7 @@ const app = @import("mod.zig");
 const systems = @import("systems.zig");
 
 pub const Phase = @import("phases.zig").Phase;
+pub const AppExitEvent = struct {};
 
 const Allocator = std.mem.Allocator;
 
@@ -64,8 +65,7 @@ pub const App = struct {
 
         world.ecs.setSingleton(&AppWrapper{ .app = self });
         self.enableTimers();
-
-        return self;
+        return self.addEvent(AppExitEvent);
     }
 
     pub fn deinit(self: *Self) void {
@@ -141,16 +141,9 @@ pub const App = struct {
         }
     }
 
-    /// Plugins must implement `build(App)`
+    /// Plugins must implement `build(Self, *App)`
     pub fn addPlugin(self: *Self, comptime T: type) *Self {
-        std.debug.assert(@typeInfo(@TypeOf(T)) == .Type);
-
-        const type_hash = aya.utils.hashTypeName(T);
-        if (self.plugins.contains(type_hash)) return self;
-        self.plugins.put(type_hash, {}) catch unreachable;
-
-        T.build(self);
-        return self;
+        return self.insertPlugin(T{});
     }
 
     pub fn addPlugins(self: *Self, comptime types: anytype) *Self {
@@ -171,7 +164,7 @@ pub const App = struct {
         return self;
     }
 
-    /// inserted plugins must implement `build(Self, App)`
+    /// inserted plugins must implement `build(Self, *App)`
     pub fn insertPlugin(self: *Self, value: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(value)) == .Struct);
 
