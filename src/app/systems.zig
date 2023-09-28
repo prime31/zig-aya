@@ -16,6 +16,8 @@ const EventReader = app.EventReader;
 const EventWriter = app.EventWriter;
 
 pub const AppWrapper = struct { app: *App };
+pub const RunWhenPaused = struct {};
+pub const SystemPaused = struct {};
 
 pub const SystemSort = struct {
     phase: u64,
@@ -36,15 +38,18 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
         entity_desc.add[2] = c.ecs_make_pair(c.EcsDependsOn, phase); // required for disabling systems by phase
     }
 
+    if (phase > 0 and @hasDecl(System, "run_when_paused") and System.run_when_paused)
+        entity_desc.add[3] = world.componentId(RunWhenPaused);
+
     // Proper order of operations:
     // - loop through all Fn params:
-    //      - if an Iterator is found use it to create and start filling ecs_system_desc_t
+    //      - if an Iterator is found use it to create and set the ecs_system_desc_t
     //      - if not, create a ecs_system_desc_t and fill in the entity, callback and run
-    //      - if a 2nd iterator exists create a Query for it and stick it in a Local
+    //      - if a Query(T) exists create a Query for it and stick it in a Local
 
     var system_desc: ?c.ecs_system_desc_t = null;
 
-    // allowed params: *Iterator(T), Res(T), ResMut(T), *World
+    // allowed params: *Iterator(T), Querty(T), Res(T), ResMut(T), *World
     const fn_info = @typeInfo(@TypeOf(System.run)).Fn;
     inline for (fn_info.params) |param| {
         if (@typeInfo(param.type.?) == .Pointer) {
@@ -52,18 +57,16 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
 
             // check for known associated types. components_type is on Iterator(T)
             if (@hasDecl(T, "components_type")) {
-                if (@hasDecl(T.components_type, "run_when_paused") and T.components_type.run_when_paused) {
-                    std.debug.print("add RunWhenPaused tag to system entity\n", .{});
-                }
-
                 var tmp_system_desc = std.mem.zeroes(c.ecs_system_desc_t);
                 tmp_system_desc.entity = c.ecs_entity_init(world, &entity_desc);
                 tmp_system_desc.multi_threaded = true;
                 tmp_system_desc.run = wrapSystemFn(System.run);
                 tmp_system_desc.query = meta.generateQueryDesc(world, T.components_type);
+                tmp_system_desc.interval = if (@hasDecl(T, "interval")) T.interval else 0;
                 system_desc = tmp_system_desc;
             }
 
+            // query_type is on Iterator(T)
             if (@hasDecl(T, "query_type")) {
                 var query = T.init(world);
                 var application: *App = world.getSingleton(AppWrapper).?.app;

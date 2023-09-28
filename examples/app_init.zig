@@ -5,6 +5,8 @@ const Resources = aya.Resources;
 const App = aya.App;
 const World = aya.World;
 const Iterator = aya.Iterator;
+const NextState = aya.NextState;
+const ResMut = aya.ResMut;
 
 pub const Resource = struct { num: u64 };
 
@@ -19,12 +21,10 @@ const SuperState = enum {
 const ChangeStateSystem = struct {
     vel: ?*const Velocity,
 
-    pub fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
-        _ = world;
-
+    pub fn run(state: ResMut(NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
         std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().? });
         while (iter.next()) |_| {}
-        state.get().?.set(iter.world(), .middle);
+        state.get().?.set(iter.commands(), .middle);
     }
 };
 
@@ -56,9 +56,9 @@ const EmptyCallback = struct {
         while (iter.next()) |_| {}
 
         std.debug.print("\n-- EmptyCallback. delta_time: {d}\n", .{iter.iter.delta_time});
-        iter.world().newEntity().set(Velocity{ .x = 6 });
+        iter.commands().newEntity().set(Velocity{ .x = 6 });
 
-        const entity = iter.world().newEntity();
+        const entity = iter.commands().newEntity();
         entity.set(Velocity{ .x = 7 });
         entity.set(Position{ .x = 8 });
     }
@@ -86,7 +86,7 @@ const WorldAndVelocitySystem = struct {
     vel: *Velocity,
 
     pub fn run(world: *World, iter: *Iterator(WorldAndVelocitySystem)) void {
-        std.debug.print("-- WorldAndVelocitySystem. world: {*}, ecs_world: {}\n", .{ world, iter.world() });
+        std.debug.print("-- WorldAndVelocitySystem. world: {*}\n", .{world});
         while (iter.next()) |_| {}
     }
 };

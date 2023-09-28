@@ -14,6 +14,40 @@ pub const Commands = struct {
         return .{ .ecs = ecs };
     }
 
+    pub fn pause(self: Commands, paused: bool) void {
+        if (!paused) {
+            self.removeAll(systems.SystemPaused);
+            return;
+        }
+
+        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        filter_desc.terms[0].id = c.EcsSystem;
+        filter_desc.terms[0].inout = c.EcsInOutNone;
+        filter_desc.terms[0].inout = c.EcsInOutNone;
+        filter_desc.terms[1].id = self.ecs.componentId(systems.SystemSort); // match only systems in the core pipeline
+        filter_desc.terms[1].inout = c.EcsIn;
+        filter_desc.terms[2].id = self.ecs.componentId(systems.RunWhenPaused); // skip RunWhenPaused systems
+        filter_desc.terms[2].inout = c.EcsInOutNone;
+        filter_desc.terms[2].oper = c.EcsNot;
+        filter_desc.terms[3].id = c.EcsDisabled; // make sure we match disabled systems
+        filter_desc.terms[3].inout = c.EcsInOutNone;
+        filter_desc.terms[3].oper = c.EcsOptional;
+
+        const filter = c.ecs_filter_init(self.ecs, &filter_desc);
+        defer c.ecs_filter_fini(filter);
+
+        var it = c.ecs_filter_iter(self.ecs, filter);
+        while (c.ecs_filter_next(&it)) {
+            var i: usize = 0;
+            while (i < it.count) : (i += 1) {
+                std.debug.print("--- entity: {}, component id: {}\n", .{ it.entities[i], self.ecs.componentId(systems.SystemPaused) });
+                _ = c.ecs_set_id(self.ecs, it.entities[i], self.ecs.componentId(systems.SystemPaused), 0, null);
+                // const e = Entity.init(self.ecs, it.entities[i]);
+                // e.set(systems.SystemPaused{});
+            }
+        }
+    }
+
     pub fn newId(self: Commands) u64 {
         return c.ecs_new_id(self.ecs);
     }
@@ -49,7 +83,7 @@ pub const Commands = struct {
 
         const deferred = aya.tmp_allocator.create(DeferredCreateSystem) catch unreachable;
         deferred.* = DeferredCreateSystem.init(T, id);
-        c.ecs_run_post_frame(self.ecs, createSystemPostFrame, deferred);
+        c.ecs_run_post_frame(self.ecs, DeferredCreateSystem.createSystemPostFrame, deferred);
 
         return id;
     }
@@ -58,19 +92,9 @@ pub const Commands = struct {
     pub fn runSystem(self: Commands, system: u64) void {
         const deferred = aya.tmp_allocator.create(DeferredRunSystem) catch unreachable;
         deferred.* = DeferredRunSystem.init(system);
-        c.ecs_run_post_frame(self.ecs, runSystemPostFrame, deferred);
+        c.ecs_run_post_frame(self.ecs, DeferredRunSystem.runSystemPostFrame, deferred);
     }
 };
-
-fn createSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
-    const deferred = @as(*DeferredCreateSystem, @ptrFromInt(@intFromPtr(ctx.?)));
-    deferred.createSystemFn(deferred, world.?);
-}
-
-fn runSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
-    const deferred = @as(*DeferredRunSystem, @ptrFromInt(@intFromPtr(ctx.?)));
-    deferred.runSystemFn(deferred, world.?);
-}
 
 const DeferredCreateSystem = struct {
     id: u64,
@@ -86,20 +110,26 @@ const DeferredCreateSystem = struct {
             }.createSystemFn,
         };
     }
+
+    fn createSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
+        const deferred = @as(*DeferredCreateSystem, @ptrFromInt(@intFromPtr(ctx.?)));
+        deferred.createSystemFn(deferred, world.?);
+    }
 };
 
 const DeferredRunSystem = struct {
     id: u64,
-    runSystemFn: *const fn (*DeferredRunSystem, *c.ecs_world_t) void,
 
     pub fn init(id: u64) DeferredRunSystem {
-        return .{
-            .id = id,
-            .runSystemFn = struct {
-                fn runSystemFn(self: *DeferredRunSystem, ecs: *c.ecs_world_t) void {
-                    _ = c.ecs_run(ecs, self.id, 0, null);
-                }
-            }.runSystemFn,
-        };
+        return .{ .id = id };
+    }
+
+    fn runSystemFn(self: *DeferredRunSystem, ecs: *c.ecs_world_t) void {
+        _ = c.ecs_run(ecs, self.id, 0, null);
+    }
+
+    fn runSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
+        const deferred = @as(*DeferredRunSystem, @ptrFromInt(@intFromPtr(ctx.?)));
+        deferred.runSystemFn(world.?);
     }
 };

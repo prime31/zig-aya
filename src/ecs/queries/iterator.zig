@@ -4,6 +4,7 @@ const c = @import("../mod.zig").c;
 const meta = @import("../meta.zig");
 
 const Entity = aya.Entity;
+const Commands = aya.Commands;
 
 pub fn Iterator(comptime Components: type) type {
     std.debug.assert(@typeInfo(Components) == .Struct);
@@ -40,8 +41,12 @@ pub fn Iterator(comptime Components: type) type {
         }
 
         // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
-        pub fn world(self: *Self) *c.ecs_world_t {
-            return self.iter.world.?;
+        // pub fn world(self: *Self) *c.ecs_world_t {
+        //     return self.iter.world.?;
+        // }
+
+        pub fn commands(self: *Self) Commands {
+            return Commands.init(self.iter.world.?);
         }
 
         pub fn tableType(self: *Self) aya.Type {

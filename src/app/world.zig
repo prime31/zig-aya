@@ -5,7 +5,7 @@ const c = aya.c;
 
 const Allocator = std.mem.Allocator;
 const Resources = aya.Resources;
-const LocalServer = locals.LocalServer;
+const LocalServer = locals.LocalResources;
 
 pub const World = struct {
     const Self = @This();
