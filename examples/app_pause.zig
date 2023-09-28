@@ -5,11 +5,11 @@ const App = aya.App;
 const Commands = aya.Commands;
 
 fn runFn(app: *App) void {
-    std.debug.print("----- ----- ----- running system schedule\n", .{});
+    std.debug.print("\n----- ----- progress\n", .{});
     app.world.ecs.progress(0);
-    std.debug.print("----- ----- ----- running system schedule\n", .{});
+    std.debug.print("\n----- ----- progress\n", .{});
     app.world.ecs.progress(0);
-    std.debug.print("----- ----- ----- running system schedule\n", .{});
+    std.debug.print("\n----- ----- progress\n", .{});
     app.world.ecs.progress(0);
 }
 
@@ -31,9 +31,15 @@ const StartupSystem = struct {
 const RunWhenPausedSystem = struct {
     pub var run_when_paused = true;
 
-    pub fn run(commands: Commands) void {
-        std.debug.print("-- RunWhenPausedSystem called \n", .{});
-        commands.pause(true);
+    pub fn run(commands: Commands, ticks: aya.Local(u8)) void {
+        std.debug.print("-- RunWhenPausedSystem called\n", .{});
+
+        if (ticks.get().* == 0)
+            commands.pause(true);
+        if (ticks.get().* == 2)
+            commands.pause(false);
+
+        ticks.get().* = ticks.get().* + 1;
     }
 };
 
