@@ -42,6 +42,21 @@ pub const InOutKind = enum(c_int) {
     out = c.EcsOut, // write only
 };
 
+// TODO: add to modifiers and TermInfo
+pub const Traverse = enum(c_int) {
+    /// Match self
+    self = c.EcsSelf,
+    /// Match by traversing upwards
+    up = c.EcsUp,
+    /// Match by traversing downwards (derived, cannot be set)
+    down = c.EcsDown,
+    /// Short for up(ChildOf)
+    parent = c.EcsParent,
+    /// Same as Up, but iterate in breadth-first order
+    cascade = c.EcsCascade,
+    all = c.EcsTraverseAll,
+};
+
 pub const Event = enum(c.ecs_id_t) {
     // Event. Triggers when an id (component, tag, pair) is added to an entity
     on_add = c.FLECS_HI_COMPONENT_ID + 33,
