@@ -69,6 +69,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "app_pause", "examples/app_pause.zig");
     addExecutable(b, target, optimize, options, "app_custom_runner", "examples/app_custom_runner.zig");
     addExecutable(b, target, optimize, options, "app_multi_query_system", "examples/app_multi_query_system.zig");
+    addExecutable(b, target, optimize, options, "app_window", "examples/app_window.zig");
     addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
     addExecutable(b, target, optimize, options, "systems_intervals", "examples/systems_intervals.zig");
 
@@ -87,10 +88,10 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
 
     linkLibs(b, exe, target, optimize, options);
 
-    b.installArtifact(exe);
+    const add_install_step = b.addInstallArtifact(exe, .{});
 
     const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(b.getInstallStep());
+    run_cmd.step.dependOn(&add_install_step.step);
 
     const run_step = b.step(name, "Run '" ++ name ++ "'");
     run_step.dependOn(&run_cmd.step);

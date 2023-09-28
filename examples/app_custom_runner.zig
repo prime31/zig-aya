@@ -8,9 +8,9 @@ const Iterator = aya.Iterator;
 
 fn runFn(app: *App) void {
     std.debug.print("----- running system schedule\n", .{});
-    app.world.ecs.progress(0);
+    app.world.progress(0);
     std.debug.print("----- running system schedule again\n", .{});
-    app.world.ecs.progress(0);
+    app.world.progress(0);
 }
 
 pub fn main() !void {

@@ -38,7 +38,8 @@ const PhysicsPlugin = struct {
 };
 
 const TimePlugin = struct {
-    pub fn build(app: *App) void {
+    pub fn build(self: TimePlugin, app: *App) void {
+        _ = self;
         _ = app;
         std.debug.print("--- TimePlugin.build called\n", .{});
     }

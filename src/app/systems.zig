@@ -12,8 +12,6 @@ const ResMut = app.ResMut;
 const Local = app.Local;
 
 const Events = app.Events;
-const EventReader = app.EventReader;
-const EventWriter = app.EventWriter;
 
 pub const AppWrapper = struct { app: *App };
 pub const RunWhenPaused = struct {};

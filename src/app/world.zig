@@ -28,6 +28,10 @@ pub const World = struct {
         _ = c.ecs_fini(self.ecs); // must be last! we could have Flecs objects present in resources or locals
     }
 
+    pub fn progress(self: Self, delta_time: f32) void {
+        _ = c.ecs_progress(self.ecs, delta_time);
+    }
+
     // Resources
     pub fn insertResource(self: *Self, resource: anytype) void {
         self.resources.insert(resource);
