@@ -9,6 +9,7 @@ const imgui_build = @import("libs/imgui/build.zig");
 
 const Options = struct {
     enable_imgui: bool,
+    include_flecs_explorer: bool,
 };
 
 pub fn build(b: *std.Build) void {
@@ -17,6 +18,7 @@ pub fn build(b: *std.Build) void {
 
     const options = Options{
         .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
+        .include_flecs_explorer = b.option(bool, "include_flecs_explorer", "Include/exclude Flecs REST, HTTP, STATS and MONITOR modules") orelse true,
     };
 
     // const exe = b.addExecutable(.{
@@ -112,8 +114,7 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
 }
 
 fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
-    flecs_build.linkArtifact(b, exe, target, optimize);
-    // const flecs_module = flecs_build.getModule(b);
+    flecs_build.linkArtifact(b, exe, target, optimize, options.include_flecs_explorer);
 
     stb_build.linkArtifact(exe);
     const stb_module = stb_build.getModule(b);

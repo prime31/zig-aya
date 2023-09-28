@@ -112,6 +112,8 @@ pub const App = struct {
     /// available at: https://flecs.dev/explorer
     /// debug check if its running: http://localhost:27750/entity/flecs/core/World
     pub fn enableWebExplorer(self: *Self) *Self {
+        if (!@import("options").include_flecs_explorer) return self;
+
         self.world.ecs.enableWebExplorer();
 
         // get the Flecs system running in our custom pipeline
