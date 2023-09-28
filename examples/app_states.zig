@@ -5,6 +5,7 @@ const Resources = aya.Resources;
 const App = aya.App;
 const World = aya.World;
 const Iterator = aya.Iterator;
+const Commands = aya.Commands;
 
 const SuperState = enum {
     start,
@@ -22,13 +23,13 @@ pub fn main() !void {
 }
 
 const ChangeStateSystem = struct {
-    pub fn run(world: *World, state: aya.ResMut(aya.NextState(SuperState))) void {
+    pub fn run(commands: Commands, state: aya.ResMut(aya.NextState(SuperState))) void {
         std.debug.print("-- ChangeStateSystem called with state: {}\n", .{state.get().?.state});
 
         if (state.get().?.state == .start) {
-            state.get().?.set(world.ecs, .middle);
+            state.get().?.set(commands, .middle);
         } else {
-            state.get().?.set(world.ecs, .start);
+            state.get().?.set(commands, .start);
         }
     }
 };

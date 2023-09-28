@@ -16,6 +16,7 @@ const Assets = aya.Assets;
 const AssetLoader = aya.AssetLoader;
 
 const SystemSort = systems.SystemSort;
+const SystemPaused = systems.SystemPaused;
 const AppWrapper = systems.AppWrapper;
 
 const Events = app.Events;
@@ -385,8 +386,15 @@ fn setCorePipeline(world: *c.ecs_world_t) void {
     pip_desc.query.order_by_component = world.componentId(SystemSort);
 
     pip_desc.query.filter.terms[0].id = c.EcsSystem;
+
     pip_desc.query.filter.terms[1].id = world.componentId(SystemSort);
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(c.ecs_term_t, .{
+    pip_desc.query.filter.terms[1].inout = c.EcsInOutNone;
+
+    pip_desc.query.filter.terms[2].id = world.componentId(SystemPaused); // does not have SystemPaused
+    pip_desc.query.filter.terms[2].inout = c.EcsInOutNone;
+    pip_desc.query.filter.terms[2].oper = c.EcsNot;
+
+    pip_desc.query.filter.terms[3] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = c.EcsDisabled,
         .src = std.mem.zeroInit(c.ecs_term_id_t, .{
             .flags = c.EcsUp,
@@ -394,7 +402,7 @@ fn setCorePipeline(world: *c.ecs_world_t) void {
         }),
         .oper = c.EcsNot,
     });
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(c.ecs_term_t, .{
+    pip_desc.query.filter.terms[4] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = c.EcsDisabled,
         .src = std.mem.zeroInit(c.ecs_term_id_t, .{
             .flags = c.EcsUp,

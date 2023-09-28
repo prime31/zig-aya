@@ -6,6 +6,7 @@ const app = @import("mod.zig");
 const Res = app.Res;
 const ResMut = app.ResMut;
 const Iterator = @import("../ecs/mod.zig").Iterator;
+const Commands = app.Commands;
 
 pub fn State(comptime T: type) type {
     return struct {
@@ -33,9 +34,9 @@ pub fn NextState(comptime T: type) type {
             return .{ .state = state };
         }
 
-        pub fn set(self: *Self, world: *c.ecs_world_t, new_state: T) void {
+        pub fn set(self: *Self, commands: Commands, new_state: T) void {
             self.state = new_state;
-            world.newEntity().set(StateChanged(T){ .next_state = new_state });
+            commands.newEntity().set(StateChanged(T){ .next_state = new_state });
         }
     };
 }
@@ -73,17 +74,17 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
 
                 // disable all systems with prev_state and enable all systems with next_state
                 var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
-                filter_desc.terms[0].id = iter.world().pair(state_res.base, c.EcsWildcard);
+                filter_desc.terms[0].id = iter.commands().ecs.pair(state_res.base, c.EcsWildcard);
                 filter_desc.terms[1].id = c.EcsSystem;
                 filter_desc.terms[1].inout = c.EcsInOutNone;
                 filter_desc.terms[2].id = c.EcsDisabled; // make sure we match disabled systems!
                 filter_desc.terms[2].inout = c.EcsInOutNone;
                 filter_desc.terms[2].oper = c.EcsOptional;
 
-                const filter = c.ecs_filter_init(iter.world(), &filter_desc);
+                const filter = c.ecs_filter_init(iter.commands().ecs, &filter_desc);
                 defer c.ecs_filter_fini(filter);
 
-                var it = c.ecs_filter_iter(iter.world(), filter);
+                var it = c.ecs_filter_iter(iter.commands().ecs, filter);
                 while (c.ecs_filter_next(&it)) {
                     var i: usize = 0;
                     while (i < it.count) : (i += 1) {

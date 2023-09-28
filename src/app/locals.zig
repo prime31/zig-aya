@@ -18,14 +18,14 @@ pub fn Local(comptime T: type) type {
 }
 
 /// Stores a Resources per system, lazily created only if a system uses a Local
-pub const LocalServer = struct {
+pub const LocalResources = struct {
     locals: std.AutoHashMap(u64, Resources),
 
-    pub fn init(allocator: Allocator) LocalServer {
+    pub fn init(allocator: Allocator) LocalResources {
         return .{ .locals = std.AutoHashMap(u64, Resources).init(allocator) };
     }
 
-    pub fn deinit(self: *LocalServer) void {
+    pub fn deinit(self: *LocalResources) void {
         var iter = self.locals.iterator();
         while (iter.next()) |entry| {
             entry.value_ptr.deinit();
@@ -33,7 +33,7 @@ pub const LocalServer = struct {
         self.locals.deinit();
     }
 
-    pub fn insert(self: *LocalServer, comptime T: type, system: u64, local: T) void {
+    pub fn insert(self: *LocalResources, comptime T: type, system: u64, local: T) void {
         var resources: *Resources = self.locals.getPtr(system) orelse blk: {
             self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;
             break :blk self.locals.getPtr(system).?;
@@ -42,7 +42,7 @@ pub const LocalServer = struct {
         resources.insert(local);
     }
 
-    pub fn getLocalMut(self: *LocalServer, comptime T: type, system: u64) *T {
+    pub fn getLocalMut(self: *LocalResources, comptime T: type, system: u64) *T {
         var resources = self.locals.getPtr(system) orelse blk: {
             self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;
             break :blk self.locals.getPtr(system).?;
