@@ -40,10 +40,7 @@ pub const Commands = struct {
         while (c.ecs_filter_next(&it)) {
             var i: usize = 0;
             while (i < it.count) : (i += 1) {
-                std.debug.print("--- entity: {}, component id: {}\n", .{ it.entities[i], self.ecs.componentId(systems.SystemPaused) });
-                _ = c.ecs_set_id(self.ecs, it.entities[i], self.ecs.componentId(systems.SystemPaused), 0, null);
-                // const e = Entity.init(self.ecs, it.entities[i]);
-                // e.set(systems.SystemPaused{});
+                _ = c.ecs_add_id(self.ecs, it.entities[i], self.ecs.componentId(systems.SystemPaused));
             }
         }
     }
