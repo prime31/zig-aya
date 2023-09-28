@@ -32,6 +32,8 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
     var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
     entity_desc.id = id;
     entity_desc.name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System);
+
+    // if phase is 0, this is a manually called system so dont give it a phase or it will be picked up by the pipeline
     if (phase > 0) {
         entity_desc.add[0] = world.componentId(SystemSort);
         entity_desc.add[1] = phase;
@@ -47,6 +49,7 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
     //      - if not, create a ecs_system_desc_t and fill in the entity, callback and run
     //      - if a Query(T) exists create a Query for it and stick it in a Local
 
+    var application: *App = world.getSingleton(AppWrapper).?.app;
     var system_desc: ?c.ecs_system_desc_t = null;
 
     // allowed params: *Iterator(T), Querty(T), Res(T), ResMut(T), *World
@@ -69,7 +72,6 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
             // query_type is on Iterator(T)
             if (@hasDecl(T, "query_type")) {
                 var query = T.init(world);
-                var application: *App = world.getSingleton(AppWrapper).?.app;
                 application.world.locals.insert(@TypeOf(query), system_desc.?.entity, query);
             }
         }
@@ -82,6 +84,8 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
             .run = wrapSystemFn(System.run),
         });
     }
+
+    system_desc.?.binding_ctx = application;
 
     return c.ecs_system_init(world, &system_desc.?);
 }
@@ -132,12 +136,12 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 }
 
                 if (@hasDecl(Child, "query_type")) {
-                    var application: *App = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = application.world.locals.getLocalMut(Child, it.*.system);
                 }
 
                 if (Child == World) {
-                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = &application.world;
                     continue;
                 }
@@ -148,25 +152,25 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
                 }
 
                 if (@hasDecl(Child, "res_type")) {
-                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = Child{ .resource = application.world.getResource(Child.res_type) };
                     continue;
                 }
 
                 if (@hasDecl(Child, "res_mut_type")) {
-                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = Child{ .resource = application.world.getResourceMut(Child.res_mut_type) };
                     continue;
                 }
 
                 if (@hasDecl(Child, "event_type")) {
-                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = Child{ .events = application.world.getResourceMut(Events(Child.event_type)).? };
                     continue;
                 }
 
                 if (@hasDecl(Child, "local_type")) {
-                    var application = it.*.world.?.getSingleton(AppWrapper).?.app;
+                    var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
                     @field(args, f.name) = Child{ .local = application.world.locals.getLocalMut(Child.local_type, it.*.system) };
                     continue;
                 }
