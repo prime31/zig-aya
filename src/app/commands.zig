@@ -85,11 +85,9 @@ pub const Commands = struct {
         return id;
     }
 
-    /// runs a system AFTER the current schedule completes
+    /// runs a system after the current schedule completes
     pub fn runSystem(self: Commands, system: u64) void {
-        const deferred = aya.tmp_allocator.create(DeferredRunSystem) catch unreachable;
-        deferred.* = DeferredRunSystem.init(system);
-        c.ecs_run_post_frame(self.ecs, DeferredRunSystem.runSystemPostFrame, deferred);
+        _ = c.ecs_run(self.ecs, system, 0, null);
     }
 };
 
@@ -111,22 +109,5 @@ const DeferredCreateSystem = struct {
     fn createSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
         const deferred = @as(*DeferredCreateSystem, @ptrFromInt(@intFromPtr(ctx.?)));
         deferred.createSystemFn(deferred, world.?);
-    }
-};
-
-const DeferredRunSystem = struct {
-    id: u64,
-
-    pub fn init(id: u64) DeferredRunSystem {
-        return .{ .id = id };
-    }
-
-    fn runSystemFn(self: *DeferredRunSystem, ecs: *c.ecs_world_t) void {
-        _ = c.ecs_run(ecs, self.id, 0, null);
-    }
-
-    fn runSystemPostFrame(world: ?*c.ecs_world_t, ctx: ?*anyopaque) callconv(.C) void {
-        const deferred = @as(*DeferredRunSystem, @ptrFromInt(@intFromPtr(ctx.?)));
-        deferred.runSystemFn(world.?);
     }
 };
