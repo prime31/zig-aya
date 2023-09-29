@@ -71,6 +71,8 @@ fn eventLoop(app: *App) void {
     blk: while (true) {
         if (exit_event_reader.get().len > 0) break :blk;
 
+        input.newFrame();
+
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
             // if (imgui.sdl.handleEvent(&event)) continue;
