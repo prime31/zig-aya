@@ -15,19 +15,13 @@
         {
             "label": "Build Project",
             "type": "shell",
-            "command": "zig build",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig build",
             "group": "none"
         },
         {
             "label": "Build and Run Project",
             "type": "shell",
-            "command": "zig build tester",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig build test",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -39,10 +33,7 @@
         {
             "label": "Build and Run Project (release-fast)",
             "type": "shell",
-            "command": "zig build run -Doptimize=ReleaseFast",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig build run -Doptimize=ReleaseFast",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -54,10 +45,7 @@
         {
             "label": "Build and Run Project (release-small)",
             "type": "shell",
-            "command": "zig build run -Doptimize=ReleaseSmall",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig build run -Doptimize=ReleaseSmall",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -67,12 +55,10 @@
             }
         },
         {
-            "label": "Test Project",
+            "label": "Test Project (zig build test)",
             "type": "shell",
-            "command": "zig build test",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig build test",
+            "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -84,14 +70,15 @@
         {
             "label": "Build and Run Tests in Current File",
             "type": "shell",
-            "command": "zig test ${file}",
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "command": "source ~/.zshrc && zig test ${file}",
+            "problemMatcher": [],
             "presentation": {
                 "clear": true
             },
-            "group": "none"
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
