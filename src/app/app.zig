@@ -79,13 +79,7 @@ pub const App = struct {
             std.debug.print("GPA has leaks. Check previous logs.\n", .{});
     }
 
-    fn addDefaultPlugins(self: *Self) void {
-        _ = self.addPlugin(aya.AssetPlugin)
-            .addPlugin(aya.WindowPlugin);
-    }
-
     pub fn run(self: *Self) void {
-        self.addDefaultPlugins();
         self.plugins.clearAndFree();
 
         runStartupPipeline(self.world.ecs);
@@ -140,31 +134,42 @@ pub const App = struct {
         }
     }
 
-    /// Plugins must implement `build(Self, *App)`
+    /// Plugins must implement `build(Self, *App)` and have default values for all fields
     pub fn addPlugin(self: *Self, comptime T: type) *Self {
         return self.insertPlugin(T{});
     }
 
-    pub fn addPlugins(self: *Self, comptime types: anytype) *Self {
-        std.debug.assert(@typeInfo(@TypeOf(types)) == .Struct);
-        inline for (types) |T| {
-            switch (@typeInfo(@TypeOf(T))) {
-                .Struct => {
-                    _ = self.insertPlugin(T);
-                },
-                .Type => {
-                    _ = self.addPlugin(T);
-                },
-                else => |p| {
-                    @compileError("cannot compare untagged union type " ++ @typeName(p));
-                },
+    /// Allowed types: type (with `fn build(Self, *App)`) and default values for all fields), DefaultPlugins, struct instance
+    /// (with `fn build(Self, *App)`)
+    pub fn addPlugins(self: *Self, comptime plugins: anytype) *Self {
+        std.debug.assert(@typeInfo(@TypeOf(plugins)) == .Struct or @typeInfo(@TypeOf(plugins)) == .Type);
+
+        const ti = @typeInfo(@TypeOf(plugins));
+        if (ti == .Struct and ti.Struct.is_tuple) {
+            inline for (plugins) |T| {
+                switch (@typeInfo(@TypeOf(T))) {
+                    .Struct => _ = self.addPlugins(T),
+                    .Type => _ = self.addPlugins(T{}),
+                    else => |p| @compileError("cannot compare untagged union type " ++ @typeName(p)),
+                }
             }
+        } else if (ti == .Type and plugins == app.DefaultPlugins) {
+            _ = self.addPlugins(app.DefaultPlugins.init());
+        } else if (@TypeOf(plugins) == app.DefaultPlugins) {
+            inline for (std.meta.fields(app.DefaultPlugins)) |field| {
+                if (@field(plugins, field.name)) |plugin| _ = self.addPlugins(plugin);
+            }
+        } else if (ti == .Type) {
+            return self.insertPlugin(plugins{});
+        } else if (ti == .Struct) {
+            return self.insertPlugin(plugins);
         }
+
         return self;
     }
 
-    /// inserted plugins must implement `build(Self, *App)`
-    pub fn insertPlugin(self: *Self, value: anytype) *Self {
+    /// Inserts an instantiated plugin struct. Plugins must implement `build(Self, *App)`
+    fn insertPlugin(self: *Self, value: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(value)) == .Struct);
 
         const type_hash = aya.utils.hashTypeName(@TypeOf(value));

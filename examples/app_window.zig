@@ -9,6 +9,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     App.init()
+        .addPlugins(aya.DefaultPlugins)
         .addSystem(.update, AppExitEventSystem)
         .run();
 }
