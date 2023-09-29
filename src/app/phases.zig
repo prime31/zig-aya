@@ -17,9 +17,9 @@ pub const Phase = enum {
     startup,
     post_startup,
 
+    state_transition,
     first,
     pre_update,
-    state_transition,
     update,
     post_update,
     last,
@@ -29,9 +29,10 @@ pub const Phase = enum {
             .pre_startup => pre_startup,
             .startup => startup,
             .post_startup => post_startup,
+
+            .state_transition => state_transition,
             .first => first,
             .pre_update => pre_update,
-            .state_transition => state_transition,
             .update => update,
             .post_update => post_update,
             .last => last,
@@ -40,14 +41,11 @@ pub const Phase = enum {
 };
 
 pub fn registerPhases(world: *c.ecs_world_t) void {
-    pre_startup = c.ecs_new_w_id(world, c.EcsPhase);
-    startup = c.ecs_new_w_id(world, c.EcsPhase);
-    post_startup = c.ecs_new_w_id(world, c.EcsPhase);
-
-    first = c.ecs_new_w_id(world, c.EcsPhase);
-    pre_update = c.ecs_new_w_id(world, c.EcsPhase);
-    state_transition = c.ecs_new_w_id(world, c.EcsPhase);
-    update = c.ecs_new_w_id(world, c.EcsPhase);
-    post_update = c.ecs_new_w_id(world, c.EcsPhase);
-    last = c.ecs_new_w_id(world, c.EcsPhase);
+    inline for (std.meta.fields(Phase)) |p| {
+        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
+            .name = @typeName(Phase) ++ "." ++ p.name,
+            .add = [_]u64{c.EcsPhase} ++ [_]u64{0} ** 31,
+        });
+        @field(@This(), p.name) = c.ecs_entity_init(world, &desc);
+    }
 }
