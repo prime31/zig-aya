@@ -7,24 +7,39 @@ const World = aya.World;
 const Iterator = aya.Iterator;
 const Commands = aya.Commands;
 
+const ResMut = aya.ResMut;
+const NextState = aya.NextState;
+const OnEnter = aya.OnEnter;
+const OnExit = aya.OnExit;
+
 const SuperState = enum {
     start,
     middle,
     end,
 };
 
+const SuperState2 = enum {
+    start,
+    middle,
+    end,
+};
+
 pub fn main() !void {
+    std.debug.print("\n", .{});
+
     App.init()
         .addState(SuperState, .start)
-        .addSystem(.first, ChangeStateSystem)
-        .addSystem(.pre_update, MiddleStateSystem).inState(SuperState, .middle)
-        .addSystem(.pre_update, StartStateSystem).inState(SuperState, .start)
+        .addSystem(.update, StartStateSystem).inState(SuperState, .start)
+        .addSystems(OnEnter(SuperState.middle), EnterMiddleStateSystem)
+        .addSystem(.update, MiddleStateSystem).inState(SuperState, .middle)
+        .addSystems(OnExit(SuperState.start), ExitStartStateSystem)
+        .addSystem(.post_update, ChangeStateSystem)
         .run();
 }
 
 const ChangeStateSystem = struct {
-    pub fn run(commands: Commands, state: aya.ResMut(aya.NextState(SuperState))) void {
-        std.debug.print("-- ChangeStateSystem called with state: {}\n", .{state.get().?.state});
+    pub fn run(commands: Commands, state: ResMut(NextState(SuperState))) void {
+        std.debug.print("-- ChangeStateSystem called with current state: {}\n\n", .{state.get().?.state});
 
         if (state.get().?.state == .start) {
             state.get().?.set(commands, .middle);
@@ -42,6 +57,18 @@ const StartStateSystem = struct {
 
 const MiddleStateSystem = struct {
     pub fn run() void {
-        std.debug.print("-- EmptyMiddleStateSystem called\n", .{});
+        std.debug.print("-- MiddleStateSystem called\n", .{});
+    }
+};
+
+const EnterMiddleStateSystem = struct {
+    pub fn run() void {
+        std.debug.print("-- EnterMiddleStateSystem called\n", .{});
+    }
+};
+
+const ExitStartStateSystem = struct {
+    pub fn run() void {
+        std.debug.print("-- ExitStartStateSystem called\n", .{});
     }
 };

@@ -221,13 +221,17 @@ pub const App = struct {
         _ = c.ecs_add_id(self.world.ecs, enum_entity, c.EcsUnion);
 
         const EnumMap = std.enums.EnumMap(T, u64);
-        var map = EnumMap{};
+        var state_map = EnumMap{};
+        var enter_state_map = EnumMap{};
+        var exit_state_map = EnumMap{};
 
         for (std.enums.values(T)) |val| {
-            map.put(val, c.ecs_new_id(self.world.ecs));
+            state_map.put(val, c.ecs_new_id(self.world.ecs));
+            enter_state_map.put(val, c.ecs_new_id(self.world.ecs));
+            exit_state_map.put(val, c.ecs_new_id(self.world.ecs));
         }
 
-        self.world.insertResource(State(T).init(enum_entity, current_state, map));
+        self.world.insertResource(State(T).init(enum_entity, current_state, state_map, enter_state_map, exit_state_map));
         self.world.insertResource(NextState(T).init(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
@@ -237,12 +241,14 @@ pub const App = struct {
     }
 
     pub fn inState(self: *Self, comptime T: type, state: T) *Self {
+        std.debug.assert(@typeInfo(T) == .Enum);
+
         if (self.last_added_system) |system| {
             // add the State tag entity to the system and disable it if the state isnt active
             const state_res = self.world.getResource(State(T)).?;
 
             const entity = ecs.Entity.init(self.world.ecs, system);
-            entity.addPair(state_res.base, state_res.entityForTag(state));
+            entity.addPair(state_res.base_entity, state_res.entityForTag(state));
 
             if (state_res.state != state)
                 entity.enable(false);
@@ -250,7 +256,7 @@ pub const App = struct {
             self.last_added_system = null;
             return self;
         }
-        unreachable;
+        @panic("inState called but there is no last_added_system to modify");
     }
 
     // Systems
@@ -280,6 +286,29 @@ pub const App = struct {
         });
 
         return self;
+    }
+
+    /// phase_or_state can either be a tag of Phases or a State enum tag wrapped in OnEnter/OnExit
+    pub fn addSystems(self: *Self, phase_or_state: anytype, comptime T: type) *Self {
+        std.debug.assert(@typeInfo(T) == .Struct);
+        std.debug.assert(@hasDecl(T, "run"));
+
+        if (@typeInfo(@TypeOf(phase_or_state)) == .EnumLiteral) {
+            return self.addSystem(phase_or_state, T);
+        } else if (@hasDecl(phase_or_state, "state_type")) {
+            var state_res = self.world.getResource(State(phase_or_state.state_type)).?;
+
+            const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.enter_state_map.getAssertContains(phase_or_state.state) else state_res.exit_state_map.getAssertContains(phase_or_state.state);
+
+            // add our system but without a phase so it isnt in the normal schedule
+            const system_id = systems.addSystem(self.world.ecs, 0, T);
+            const system_entity = ecs.Entity.init(self.world.ecs, system_id);
+            system_entity.add(state_entity);
+
+            return self;
+        }
+
+        @panic("addSystems called with invalid params. phase_or_state must be");
     }
 
     pub fn before(self: *Self, comptime T: type) *Self {

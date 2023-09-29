@@ -8,24 +8,49 @@ const ResMut = app.ResMut;
 const Iterator = @import("../ecs/mod.zig").Iterator;
 const Commands = app.Commands;
 
+/// Resource. Stores the tags needed for the State T
 pub fn State(comptime T: type) type {
+    std.debug.assert(@typeInfo(T) == .Enum);
+
     return struct {
         const Self = @This();
-        base: u64,
-        state: T,
-        state_map: std.enums.EnumMap(T, u64),
+        const StateMap = std.enums.EnumMap(T, u64);
 
-        pub fn init(base: u64, state: T, state_map: std.enums.EnumMap(T, u64)) Self {
-            return .{ .base = base, .state = state, .state_map = state_map };
+        /// the entity for the State enum type T
+        base_entity: u64,
+        state: T,
+        state_map: StateMap,
+        enter_state_map: StateMap,
+        exit_state_map: StateMap,
+
+        pub fn init(base_entity: u64, state: T, state_map: StateMap, enter_state_map: StateMap, exit_state_map: StateMap) Self {
+            return .{
+                .base_entity = base_entity,
+                .state = state,
+                .state_map = state_map,
+                .enter_state_map = enter_state_map,
+                .exit_state_map = exit_state_map,
+            };
         }
 
         pub fn entityForTag(self: Self, state: T) u64 {
             return self.state_map.getAssertContains(state);
         }
+
+        pub fn entityForEnterTag(self: Self, state: T) u64 {
+            return self.enter_state_map.getAssertContains(state);
+        }
+
+        pub fn entityForExitTag(self: Self, state: T) u64 {
+            return self.exit_state_map.getAssertContains(state);
+        }
     };
 }
 
+/// Resource. Grab and call `NextState(T).set` to trigger a state change
 pub fn NextState(comptime T: type) type {
+    std.debug.assert(@typeInfo(T) == .Enum);
+
     return struct {
         const Self = @This();
         state: T,
@@ -41,7 +66,25 @@ pub fn NextState(comptime T: type) type {
     };
 }
 
+pub fn OnEnter(comptime enum_tag: anytype) type {
+    return struct {
+        pub const on_enter = true;
+        pub const state_type = @TypeOf(enum_tag);
+        pub const state = enum_tag;
+    };
+}
+
+pub fn OnExit(comptime enum_tag: anytype) type {
+    return struct {
+        pub const on_exit = true;
+        pub const state_type = @TypeOf(enum_tag);
+        pub const state = enum_tag;
+    };
+}
+
 fn StateChanged(comptime T: type) type {
+    std.debug.assert(@typeInfo(T) == .Enum);
+
     return struct { next_state: T };
 }
 
@@ -53,28 +96,65 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
         pub const name = "StateChangeCheckSystem_" ++ aya.utils.typeNameLastComponent(T);
 
         pub fn run(state: ResMut(State(T)), iter: *Iterator(Self)) void {
-            std.debug.assert(iter.iter.count <= 1);
-
-            // TODO:
             // - when NextState changes, query for all with the base tag of the enum
-            //     * (done) any sytems in the current state, normal phases are disabled
-            //     * (done) any systems in the current state OnExit run (handle later, needs thought)
-            //     * install run_enter_schedule system that will run any systems in OnEnter(current_state)
-            //     * any systems in next state OnEnter run (handle later, needs thought)
-            //     * any systems with OnTransition(T) { .from: T, .to: T } should be called
-            //     * any systems in normal phases are enabled (can use run_if for these or change detection on NextState)
+            //     * any systems in current state OnExit run
+            //     * any systems in next state OnEnter run
+            //     * any systems in the current state are disabled
+            //     * any systems in the next state are enabled
+            //     * (maybe TODO) install run_enter_schedule system that will run any systems in OnEnter(current_state)
+            //     * (TODO if useful) any systems with OnTransition(T) { .from: T, .to: T } should be called
 
             while (iter.next()) |comps| {
                 // grab the previous and current State entities and set State(T) to the new state
-                const state_res = state.get().?;
+                const state_res: *State(T) = state.get().?;
                 const prev_state_entity = state_res.entityForTag(state_res.state);
                 const next_state_entity = state_res.entityForTag(comps.next_state.next_state);
+
+                // run OnExits
+                {
+                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    filter_desc.terms[0].id = c.EcsSystem;
+                    filter_desc.terms[0].inout = c.EcsInOutNone;
+                    filter_desc.terms[1].id = state_res.entityForExitTag(state_res.state);
+                    filter_desc.terms[1].inout = c.EcsInOutNone;
+
+                    const filter = c.ecs_filter_init(iter.commands().ecs, &filter_desc);
+                    defer c.ecs_filter_fini(filter);
+
+                    var it = c.ecs_filter_iter(iter.commands().ecs, filter);
+                    while (c.ecs_filter_next(&it)) {
+                        var i: usize = 0;
+                        while (i < it.count) : (i += 1) {
+                            _ = c.ecs_run(iter.iter.real_world, it.entities[i], 0, null);
+                        }
+                    }
+                }
+
+                // run OnEnters
+                {
+                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    filter_desc.terms[0].id = c.EcsSystem;
+                    filter_desc.terms[0].inout = c.EcsInOutNone;
+                    filter_desc.terms[1].id = state_res.entityForEnterTag(comps.next_state.next_state);
+                    filter_desc.terms[1].inout = c.EcsInOutNone;
+
+                    const filter = c.ecs_filter_init(iter.commands().ecs, &filter_desc);
+                    defer c.ecs_filter_fini(filter);
+
+                    var it = c.ecs_filter_iter(iter.commands().ecs, filter);
+                    while (c.ecs_filter_next(&it)) {
+                        var i: usize = 0;
+                        while (i < it.count) : (i += 1) {
+                            _ = c.ecs_run(iter.iter.real_world, it.entities[i], 0, null);
+                        }
+                    }
+                }
 
                 state.get().?.state = comps.next_state.next_state;
 
                 // disable all systems with prev_state and enable all systems with next_state
                 var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
-                filter_desc.terms[0].id = iter.commands().ecs.pair(state_res.base, c.EcsWildcard);
+                filter_desc.terms[0].id = iter.commands().ecs.pair(state_res.base_entity, c.EcsWildcard);
                 filter_desc.terms[1].id = c.EcsSystem;
                 filter_desc.terms[1].inout = c.EcsInOutNone;
                 filter_desc.terms[2].id = c.EcsDisabled; // make sure we match disabled systems!
@@ -88,7 +168,7 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
                 while (c.ecs_filter_next(&it)) {
                     var i: usize = 0;
                     while (i < it.count) : (i += 1) {
-                        const system_state = c.ecs_get_target(it.world, it.entities[i], state_res.base, 0);
+                        const system_state = c.ecs_get_target(it.world, it.entities[i], state_res.base_entity, 0);
                         if (system_state == prev_state_entity) {
                             c.ecs_enable(it.world.?, it.entities[i], false);
                         } else if (system_state == next_state_entity) {
