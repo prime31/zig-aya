@@ -29,11 +29,11 @@ pub fn main() !void {
 
     App.init()
         .addState(SuperState, .start)
-        .addSystem(.update, StartStateSystem).inState(SuperState, .start)
+        .addSystems(.update, StartStateSystem).inState(SuperState, .start)
         .addSystems(OnEnter(SuperState.middle), EnterMiddleStateSystem)
-        .addSystem(.update, MiddleStateSystem).inState(SuperState, .middle)
+        .addSystems(.update, MiddleStateSystem).inState(SuperState, .middle)
         .addSystems(OnExit(SuperState.start), ExitStartStateSystem)
-        .addSystem(.post_update, ChangeStateSystem)
+        .addSystems(.post_update, ChangeStateSystem)
         .run();
 }
 
