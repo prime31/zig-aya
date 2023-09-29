@@ -81,7 +81,6 @@ pub const App = struct {
 
     fn addDefaultPlugins(self: *Self) void {
         _ = self.addPlugin(aya.AssetPlugin)
-            .addPlugin(aya.InputPlugin)
             .addPlugin(aya.WindowPlugin);
     }
 

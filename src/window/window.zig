@@ -3,6 +3,10 @@ const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 
 const App = aya.App;
+const Input = @import("input.zig").Input;
+const Events = aya.Events;
+const EventReader = aya.EventReader;
+const EventWriter = aya.EventWriter;
 
 // TODO: add way more events
 
@@ -10,6 +14,15 @@ pub const WindowResized = struct {
     width: f32,
     height: f32,
 };
+
+pub const WindowMoved = struct {
+    x: f32,
+    y: f32,
+};
+
+pub const WindowFocused = struct { focused: bool };
+
+pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
 
 pub const WindowPlugin = struct {
     window_config: ?WindowConfig = .{},
@@ -32,6 +45,10 @@ pub const WindowPlugin = struct {
             };
 
             _ = app.addEvent(WindowResized)
+                .addEvent(WindowMoved)
+                .addEvent(WindowScaleFactorChanged)
+                .addEvent(WindowFocused)
+                .initResource(Input)
                 .insertResource(Window{
                 .sdl_window = window,
                 .id = sdl.SDL_GetWindowID(window),
@@ -43,12 +60,13 @@ pub const WindowPlugin = struct {
 };
 
 fn eventLoop(app: *App) void {
-    const exit_event_reader = aya.EventReader(aya.AppExitEvent){
-        .events = app.world.getResourceMut(aya.Events(aya.AppExitEvent)) orelse @panic("no AppExitEvent reader"),
-    };
-    const window_resized_writer = aya.EventWriter(WindowResized){
-        .events = app.world.getResourceMut(aya.Events(WindowResized)) orelse @panic("no WindowResizedEvent reader"),
-    };
+    const window = app.world.getResource(Window).?;
+    const input = app.world.getResourceMut(Input).?;
+
+    const exit_event_reader = getEventReader(aya.AppExitEvent, app);
+    const window_resized_writer = getEventWriter(WindowResized, app);
+    const window_moved_writer = getEventWriter(WindowMoved, app);
+    const window_scale_factor_writer = getEventWriter(WindowScaleFactorChanged, app);
 
     blk: while (true) {
         if (exit_event_reader.get().len > 0) break :blk;
@@ -65,18 +83,37 @@ fn eventLoop(app: *App) void {
                     .width = @floatFromInt(event.window.data1),
                     .height = @floatFromInt(event.window.data2),
                 }),
-                sdl.SDL_EVENT_MOUSE_BUTTON_UP, sdl.SDL_EVENT_MOUSE_BUTTON_DOWN => {},
+                sdl.SDL_EVENT_WINDOW_MOVED => window_moved_writer.send(.{
+                    .x = @floatFromInt(event.window.data1),
+                    .y = @floatFromInt(event.window.data2),
+                }),
+                sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => window_scale_factor_writer.send(.{
+                    .scale_factor = sdl.SDL_GetWindowDisplayScale(window.sdl_window),
+                }),
+                sdl.SDL_EVENT_MOUSE_BUTTON_UP, sdl.SDL_EVENT_MOUSE_BUTTON_DOWN => input.handleEvent(&event),
                 sdl.SDL_EVENT_MOUSE_MOTION => {},
                 sdl.SDL_EVENT_MOUSE_WHEEL => {},
-                else => {},
+                else => input.handleEvent(&event),
             }
         }
 
         app.world.progress(0);
     }
 
-    if (app.world.getResource(Window)) |window| sdl.SDL_DestroyWindow(window.sdl_window);
+    if (app.world.getResource(Window)) |win| sdl.SDL_DestroyWindow(win.sdl_window);
     sdl.SDL_Quit();
+}
+
+fn getEventWriter(comptime T: type, app: *App) EventWriter(T) {
+    return EventWriter(T){
+        .events = app.world.getResourceMut(Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+    };
+}
+
+fn getEventReader(comptime T: type, app: *App) EventReader(T) {
+    return EventReader(T){
+        .events = app.world.getResourceMut(Events(T)) orelse @panic("no EventReader found for " ++ @typeName(T)),
+    };
 }
 
 pub const Window = struct {
