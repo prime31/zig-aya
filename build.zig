@@ -12,6 +12,8 @@ const Options = struct {
     include_flecs_explorer: bool,
 };
 
+const install_options: enum { all, only_current } = .only_current;
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -92,10 +94,15 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
 
     linkLibs(b, exe, target, optimize, options);
 
-    const add_install_step = b.addInstallArtifact(exe, .{});
-
     const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(&add_install_step.step);
+
+    if (install_options == .only_current) {
+        const add_install_step = b.addInstallArtifact(exe, .{});
+        run_cmd.step.dependOn(&add_install_step.step);
+    } else {
+        b.installArtifact(exe);
+        run_cmd.step.dependOn(b.getInstallStep());
+    }
 
     const run_step = b.step(name, "Run '" ++ name ++ "'");
     run_step.dependOn(&run_cmd.step);

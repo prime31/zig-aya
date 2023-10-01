@@ -10,7 +10,7 @@ pub fn main() !void {
 
     App.init()
         .addPlugins(aya.DefaultPlugins)
-        .addSystem(.update, AppExitEventSystem)
+        .addSystem(aya.Update, AppExitEventSystem)
         .run();
 }
 
@@ -23,6 +23,6 @@ const AppExitEventSystem = struct {
             exit_events.send(aya.AppExitEvent{});
         }
 
-        for (resize_events.get()) |evt| std.debug.print("WindowResizedEvent: {}\n", .{evt});
+        for (resize_events.read()) |evt| std.debug.print("WindowResizedEvent: {}\n", .{evt});
     }
 };

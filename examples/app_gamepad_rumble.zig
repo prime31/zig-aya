@@ -18,7 +18,7 @@ pub fn main() !void {
 
     App.init()
         .addPlugins(aya.DefaultPlugins)
-        .addSystem(.update, InputSystem)
+        .addSystems(aya.Update, InputSystem)
         .run();
 }
 

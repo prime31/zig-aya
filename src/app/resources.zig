@@ -75,9 +75,7 @@ pub const Resources = struct {
                 if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(self.allocator);
                 break :blk std.mem.zeroes(T);
                 // @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither.");
-            } else {
-                std.mem.zeroes(T);
-            };
+            } else std.mem.zeroes(T);
         } else {
             res.* = std.mem.zeroes(T);
         }

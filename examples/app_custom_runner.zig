@@ -16,9 +16,9 @@ fn runFn(app: *App) void {
 pub fn main() !void {
     App.init()
         .setRunner(runFn)
-        .addSystem(.startup, StartupSystem)
-        .addSystem(.pre_update, EmptySystem)
-        .addSystem(.update, OtherSystem)
+        .addSystem(aya.Startup, StartupSystem)
+        .addSystem(aya.PreUpdate, EmptySystem)
+        .addSystem(aya.Update, OtherSystem)
         .run();
 }
 

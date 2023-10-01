@@ -12,8 +12,8 @@ pub fn main() !void {
 
     App.init()
         .addEvent(SuperEvent)
-        .addSystem(.startup, WriteEventSystem)
-        .addSystem(.first, ReadEventSystem)
+        .addSystems(aya.Startup, WriteEventSystem)
+        .addSystems(aya.First, ReadEventSystem)
         .run();
 }
 
@@ -26,9 +26,9 @@ const WriteEventSystem = struct {
 
 const ReadEventSystem = struct {
     pub fn run(events: EventReader(SuperEvent)) void {
-        std.debug.print("-- ReadEventSystem. total events: {}\n", .{events.get().len});
+        std.debug.print("-- ReadEventSystem. total events: {}\n", .{events.read().len});
 
-        for (events.get()) |evt| {
+        for (events.read()) |evt| {
             std.debug.print("-- --- read event: {}\n", .{evt});
         }
     }

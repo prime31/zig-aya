@@ -23,11 +23,11 @@ pub fn main() !void {
 
     App.init()
         .addState(SuperState, .start)
-        .addSystems(.update, StartStateSystem).inState(SuperState, .start)
+        .addSystems(aya.Update, StartStateSystem).inState(SuperState, .start)
         .addSystems(OnEnter(SuperState.middle), EnterMiddleStateSystem)
-        .addSystems(.update, MiddleStateSystem).inState(SuperState, .middle)
+        .addSystems(aya.Update, MiddleStateSystem).inState(SuperState, .middle)
         .addSystems(OnExit(SuperState.start), ExitStartStateSystem)
-        .addSystems(.post_update, ChangeStateSystem)
+        .addSystems(aya.PostUpdate, ChangeStateSystem)
         .run();
 }
 
