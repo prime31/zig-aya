@@ -66,7 +66,7 @@ pub fn EventReader(comptime T: type) type {
         events: *Events(T),
 
         /// Gets all the events that are available to be read
-        pub fn get(self: Self) []const T {
+        pub fn read(self: Self) []const T {
             return self.events.events.items;
         }
     };

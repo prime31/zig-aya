@@ -70,7 +70,7 @@ pub fn eventLoop(app: *App) void {
     const event_writers = WindowAndInputEventWriters.init(app);
 
     blk: while (true) {
-        if (exit_event_reader.get().len > 0) break :blk;
+        if (exit_event_reader.read().len > 0) break :blk;
 
         mouse_buttons.clear();
         keys.clear();
@@ -156,21 +156,11 @@ pub fn eventLoop(app: *App) void {
                     .gamepad = event.gbutton.which,
                     .type = @enumFromInt(event.gbutton.button),
                 }),
-                sdl.SDL_EVENT_GAMEPAD_REMAPPED => {
-                    std.debug.print("GAMEPAD REMAPPED\n", .{});
-                },
-                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => {
-                    std.debug.print("GAMEPAD TOUCHPAD_DOWN\n", .{});
-                },
-                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => {
-                    std.debug.print("GAMEPAD TOUCHPAD_MOTION\n", .{});
-                },
-                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_UP => {
-                    std.debug.print("GAMEPAD TOUCHPAD_UP\n", .{});
-                },
-                sdl.SDL_EVENT_GAMEPAD_SENSOR_UPDATE => {
-                    std.debug.print("GAMEPAD SENSOR_UPDATE\n", .{});
-                },
+                sdl.SDL_EVENT_GAMEPAD_REMAPPED => std.debug.print("GAMEPAD REMAPPED\n", .{}),
+                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => std.debug.print("GAMEPAD TOUCHPAD_DOWN\n", .{}),
+                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_UP => std.debug.print("GAMEPAD TOUCHPAD_UP\n", .{}),
+                sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => std.debug.print("GAMEPAD TOUCHPAD_MOTION\n", .{}),
+                sdl.SDL_EVENT_GAMEPAD_SENSOR_UPDATE => std.debug.print("GAMEPAD SENSOR_UPDATE\n", .{}),
                 else => {},
             }
         }
