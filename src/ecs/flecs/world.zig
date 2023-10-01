@@ -222,10 +222,10 @@ pub const ecs_world_t = opaque {
     }
 
     /// creates a Filter using the passed in struct
-    pub fn filter(self: Self, comptime Components: type) Filter {
+    pub fn filter(self: Self, comptime Components: type) Filter(Components) {
         std.debug.assert(@typeInfo(Components) == .Struct);
         var desc = meta.generateFilterDesc(self, Components);
-        return Filter.init(self, &desc);
+        return Filter(Components).init(self, &desc);
     }
 
     /// creates a Query using the passed in struct

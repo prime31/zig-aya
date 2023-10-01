@@ -48,8 +48,6 @@ pub const Traverse = enum(c_int) {
     self = c.EcsSelf,
     /// Match by traversing upwards
     up = c.EcsUp,
-    /// Match by traversing downwards (derived, cannot be set)
-    down = c.EcsDown,
     /// Short for up(ChildOf)
     parent = c.EcsParent,
     /// Same as Up, but iterate in breadth-first order

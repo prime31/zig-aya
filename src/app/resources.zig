@@ -73,7 +73,8 @@ pub const Resources = struct {
                 const params = @typeInfo(@TypeOf(T.init)).Fn.params;
                 if (params.len == 0) break :blk T.init();
                 if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(self.allocator);
-                @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither");
+                break :blk std.mem.zeroes(T);
+                // @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither.");
             } else {
                 std.mem.zeroes(T);
             };

@@ -11,8 +11,8 @@ pub const Velocity = struct { x: f32 = 0, y: f32 = 0 };
 
 pub fn main() !void {
     App.init()
-        .addSystem(.startup, AddEntitiesSystem)
-        .addSystem(.update, FirstSystem)
+        .addSystems(aya.Startup, AddEntitiesSystem)
+        .addSystems(aya.Update, FirstSystem)
         .run();
 }
 
@@ -28,8 +28,8 @@ const FirstSystem = struct {
     vel: *Velocity,
 
     pub fn run(iter: *Iterator(FirstSystem), query: *Query(FirstSystemLocalQuery)) void {
-        while (iter.next()) |_| {}
-        std.debug.print("-- FirstSystem called with {} velocities\n", .{iter.iter.count});
+        const v = iter.single();
+        std.debug.print("-- FirstSystem called with 1 result: {}\n", .{v});
 
         var query_it = query.iterator();
         while (query_it.next()) |_| {}

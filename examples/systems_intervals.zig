@@ -9,7 +9,7 @@ fn runFn(app: *App) void {
 
     var i: u8 = 0;
     while (i < 20) : (i += 1) {
-        std.debug.print("\n----- ----- progress\n", .{});
+        std.debug.print("----- ----- progress\n", .{});
         app.world.ecs.progress(0);
     }
 }
@@ -17,23 +17,23 @@ fn runFn(app: *App) void {
 pub fn main() !void {
     App.init()
         .setRunner(runFn)
-        .addSystem(.update, RunWhenPausedSystem)
-        .addSystem(.update, DontRunWhenPausedSystem)
+        .addSystems(aya.Update, RunFast)
+        .addSystems(aya.Update, RunSlow)
         .run();
 }
 
-const RunWhenPausedSystem = struct {
+const RunFast = struct {
     pub const interval = 0.2;
 
     pub fn run() void {
-        std.debug.print("-- RunWhenPausedSystem called\n", .{});
+        std.debug.print("-- RunFast called\n", .{});
     }
 };
 
-const DontRunWhenPausedSystem = struct {
+const RunSlow = struct {
     pub const interval = 0.4;
 
     pub fn run() void {
-        std.debug.print("-- DontRunWhenPausedSystem called\n", .{});
+        std.debug.print("-- RunSlow called\n", .{});
     }
 };

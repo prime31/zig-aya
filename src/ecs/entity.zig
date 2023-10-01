@@ -70,6 +70,41 @@ pub const Entity = struct {
         _ = c.ecs_set_id(self.ecs, self.id, pair, @sizeOf(Relation), component);
     }
 
+    /// Relation can be a type, u64 or Entity
+    pub fn getTargetOfPair(self: Entity, Relation: anytype, index: i32) u64 {
+        const rel_id = switch (@TypeOf(Relation)) {
+            type => self.componentId(Relation),
+            u64 => Relation,
+            Entity => Relation.id,
+            else => unreachable,
+        };
+
+        return c.ecs_get_target(self.ecs, self.id, rel_id, index);
+    }
+
+    /// Iterates all targets of a relationship. Relation can be a type, u64 or Entity
+    pub fn nextTargetOfPair(self: Entity, Relation: anytype) ?u64 {
+        const rel_id = switch (@TypeOf(Relation)) {
+            type => self.componentId(Relation),
+            u64 => Relation,
+            Entity => Relation.id,
+            else => unreachable,
+        };
+
+        const I = struct {
+            var index: ?i32 = null;
+        };
+
+        if (I.index == null) I.index = 0;
+
+        const target = c.ecs_get_target(self.ecs, self.id, rel_id, I.index.?);
+        I.index.? += 1;
+        if (target > 0) return target;
+        I.index = null;
+
+        return null;
+    }
+
     /// sets a component on entity. Can be either a pointer to a struct or a struct
     pub fn set(self: Entity, ptr_or_struct: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer or @typeInfo(@TypeOf(ptr_or_struct)) == .Struct);
