@@ -60,7 +60,7 @@ test "assets" {
     asset_server.registerLoader(Image, loadImage);
     const img_handle = asset_server.load(Image, &images, "fook", {});
     const img = images.get(img_handle);
-    std.debug.print("----------- img: {any}\n", .{img});
+    try std.testing.expect(img != null);
 
     asset_server.registerLoader(Thing, loadThing);
     const thing_handle = asset_server.load(Thing, &things, "fook", 55);

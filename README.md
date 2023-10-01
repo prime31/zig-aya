@@ -37,3 +37,21 @@ const SetVelocityCallback = struct {
     pub cosnt interval = 0.5;
 };
 ```
+
+
+
+## TODO
+- make Res(T) always return the resource and allow ?Res(T) for when it may or may not exist
+- do system phase pipeline query just like Flecs to allow adding and ordering phases
+    - app.addPhase().beforePhase().afterPhase() (creates the phase and its shadow and applies depends_on ordering)
+        - when ordering before: fetch before phase, grab its depends_on, reset depends_on to the added system, set the
+            old depends_on as the current systems
+    - phases should all have ShadowPhase{ shadow: u64 } components for ordering and for disable ability
+- systems should take phase as a u64
+- add `single() T` and `get_single() ?T` to Iterator
+- maybe rename EventReader.get to EventReader.read
+
+- system sets. add to `SystemSort`. would need to manage set order and order_in_set. When set order changes every SystemSort
+    would need to have its set data changed so the sort can be: phase, if_in_set(set) order_in_set else order_in_system
+    - `app.configure_sets(PostUpdate, CalculateBoundsFlush.after(CalculateBounds))`
+    - `app.add_systems(PostUpdate, apply_deferred.in_set(CalculateBoundsFlush))`
