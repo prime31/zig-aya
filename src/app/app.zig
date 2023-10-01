@@ -5,7 +5,8 @@ const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 const systems = @import("systems.zig");
 
-pub const Phase = @import("phases.zig").Phase;
+const phases = @import("phases.zig");
+
 pub const AppExitEvent = struct {};
 
 const Allocator = std.mem.Allocator;
@@ -31,6 +32,8 @@ const NextState = app.NextState;
 const StateChangeCheckSystem = @import("state.zig").StateChangeCheckSystem;
 const ScratchAllocator = @import("../mem/scratch_allocator.zig").ScratchAllocator;
 
+const PhaseSort = struct { order: i32 };
+
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const allocator = gpa.allocator();
 
@@ -53,15 +56,26 @@ pub const App = struct {
         tmp_allocator_instance = ScratchAllocator.init(allocator);
         tmp_allocator = tmp_allocator_instance.allocator();
 
-        // register our phases
-        @import("phases.zig").registerPhases(world.ecs);
-
-        var self = allocator.create(App) catch unreachable;
+        var self: *App = allocator.create(App) catch unreachable;
         self.* = .{
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
         };
+
+        // register startup phases
+        self.world.ecs.registerComponents(.{ phases.PreStartup, phases.Startup, phases.PostStartup });
+
+        // register our phases. The first one depends on nothing so we add it manually
+        const phase_entity = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(phases.First));
+        phase_entity.add(c.EcsPhase);
+        phase_entity.set(PhaseSort{ .order = 0 });
+
+        _ = self.addPhase(phases.PreUpdate, .after, phases.First);
+        _ = self.addPhase(phases.StateTransition, .after, phases.PreUpdate);
+        _ = self.addPhase(phases.Update, .after, phases.StateTransition);
+        _ = self.addPhase(phases.PostUpdate, .after, phases.Update);
+        _ = self.addPhase(phases.Last, .after, phases.PostUpdate);
 
         world.ecs.setSingleton(&AppWrapper{ .app = self });
         self.enableTimers();
@@ -110,10 +124,11 @@ pub const App = struct {
         self.world.ecs.enableWebExplorer();
 
         // get the Flecs system running in our custom pipeline
+        const phase = self.world.ecs.componentId(phases.Last);
         const rest_system = self.world.ecs.lookupFullPath("flecs.rest.DequeueRest") orelse @panic("could not find DequeueRest system");
-        rest_system.add(Phase.last.getEntity());
+        rest_system.add(phase);
         rest_system.set(systems.SystemSort{
-            .phase = Phase.last.getEntity(),
+            .phase = phase,
             .order_in_phase = self.getNextOrderInPhase(.last),
         });
 
@@ -122,16 +137,92 @@ pub const App = struct {
 
     /// fixes all the flecs Timer systems so they run in our pipeline
     fn enableTimers(self: *Self) void {
+        const phase = self.world.ecs.componentId(phases.First);
         const timer_systems = .{ "AddTickSource", "ProgressTimers", "ProgressRateFilters", "ProgressTickSource" };
         inline for (timer_systems) |sys| {
             if (self.world.ecs.lookupFullPath("flecs.timer." ++ sys)) |system| {
-                system.add(Phase.first.getEntity());
+                system.add(phase);
                 system.set(systems.SystemSort{
-                    .phase = Phase.first.getEntity(),
-                    .order_in_phase = self.getNextOrderInPhase(.first),
+                    .phase = phase,
+                    .order_in_phase = self.getNextOrderInPhase(phase),
                 });
             }
         }
+    }
+
+    pub fn addPhase(self: *Self, comptime Phase: type, where: enum { before, after }, comptime OtherPhase: type) *Self {
+        std.debug.assert(@sizeOf(Phase) == 0 and @sizeOf(OtherPhase) == 0);
+
+        const other_phase = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(OtherPhase));
+        const other_sort_order = other_phase.get(PhaseSort).?.order;
+
+        var phase_sort_map = std.AutoHashMap(u64, i32).init(aya.tmp_allocator);
+        defer phase_sort_map.deinit();
+
+        {
+            // update any affected phases, those before/after the inserted phase
+            var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+            filter_desc.terms[0].id = self.world.ecs.componentId(PhaseSort);
+            filter_desc.terms[0].inout = c.EcsInOut;
+            filter_desc.terms[1].id = c.EcsPhase;
+            filter_desc.terms[1].inout = c.EcsInOutNone;
+
+            const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
+            defer c.ecs_filter_fini(filter);
+
+            var it = c.ecs_filter_iter(self.world.ecs, filter);
+            while (c.ecs_filter_next(&it)) {
+                const phase_sorts = ecs.field(&it, PhaseSort, 1);
+
+                var i: usize = 0;
+                while (i < it.count) : (i += 1) {
+                    if (where == .after) {
+                        if (phase_sorts[i].order > other_sort_order) {
+                            phase_sorts[i].order += 1;
+                            phase_sort_map.put(it.entities[i], phase_sorts[i].order) catch unreachable;
+                        }
+                    } else {
+                        if (phase_sorts[i].order < other_sort_order) {
+                            phase_sorts[i].order -= 1;
+                            phase_sort_map.put(it.entities[i], phase_sorts[i].order) catch unreachable;
+                        }
+                    }
+                }
+            }
+        }
+
+        {
+            // update any systems that are in the phases that changed their sort order
+            var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+            filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
+            filter_desc.terms[0].inout = c.EcsInOut;
+
+            const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
+            defer c.ecs_filter_fini(filter);
+
+            var it = c.ecs_filter_iter(self.world.ecs, filter);
+            while (c.ecs_filter_next(&it)) {
+                var system_sorts = ecs.field(&it, SystemSort, 1);
+
+                var i: usize = 0;
+                while (i < it.count) : (i += 1) {
+                    var sort = &system_sorts[i];
+
+                    if (phase_sort_map.get(sort.phase)) |phase_order| {
+                        sort.phase_order = phase_order;
+                    }
+                }
+            }
+        }
+
+        // create the new phase and assign it an order relative to other_sort_order
+        const phase_order = if (where == .before) other_sort_order - 1 else other_sort_order + 1;
+
+        const phase = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(Phase));
+        phase.add(c.EcsPhase);
+        phase.set(PhaseSort{ .order = phase_order });
+
+        return self;
     }
 
     /// Plugins must implement `build(Self, *App)` and have default values for all fields
@@ -207,7 +298,7 @@ pub const App = struct {
     pub fn addEvent(self: *Self, comptime T: type) *Self {
         if (!self.world.containsResource(Events(T))) {
             return self.initResource(Events(T))
-                .addSystem(.first, EventUpdateSystem(T));
+                .addSystem(phases.First, EventUpdateSystem(T));
         }
 
         return self;
@@ -260,8 +351,8 @@ pub const App = struct {
     }
 
     // Systems
-    fn getNextOrderInPhase(self: *Self, phase: Phase) i32 {
-        var phase_insertions = self.phase_insert_indices.getOrPut(phase.getEntity()) catch unreachable;
+    fn getNextOrderInPhase(self: *Self, phase: u64) i32 {
+        var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
         return blk: {
             if (!phase_insertions.found_existing) {
                 phase_insertions.value_ptr.* = 0;
@@ -272,16 +363,19 @@ pub const App = struct {
         };
     }
 
-    pub fn addSystem(self: *Self, phase: Phase, comptime T: type) *Self {
+    pub fn addSystem(self: *Self, comptime Phase: type, comptime T: type) *Self {
         std.debug.assert(@typeInfo(T) == .Struct);
         std.debug.assert(@hasDecl(T, "run"));
 
+        const phase = self.world.ecs.componentId(Phase);
         const order_in_phase = self.getNextOrderInPhase(phase);
+        const phase_order = if (aya.Entity.init(self.world.ecs, phase).get(PhaseSort)) |sort| sort.order else 0;
 
-        self.last_added_system = systems.addSystem(self.world.ecs, phase.getEntity(), T);
+        self.last_added_system = systems.addSystem(self.world.ecs, phase, T);
         const system_entity = ecs.Entity.init(self.world.ecs, self.last_added_system.?);
         system_entity.set(SystemSort{
-            .phase = phase.getEntity(),
+            .phase = phase,
+            .phase_order = phase_order,
             .order_in_phase = order_in_phase,
         });
 
@@ -296,19 +390,22 @@ pub const App = struct {
         if (@typeInfo(@TypeOf(phase_or_state)) == .EnumLiteral) {
             return self.addSystem(phase_or_state, T);
         } else if (@hasDecl(phase_or_state, "state_type")) {
+            // OnEnter/OnExit systems are not associated with a phase or sort
             var state_res = self.world.getResource(State(phase_or_state.state_type)).?;
 
-            const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.enter_state_map.getAssertContains(phase_or_state.state) else state_res.exit_state_map.getAssertContains(phase_or_state.state);
+            // find the enter/exit entity so we can put it on the system
+            const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.entityForEnterTag(phase_or_state.state) else state_res.entityForExitTag(phase_or_state.state);
 
             // add our system but without a phase so it isnt in the normal schedule
             const system_id = systems.addSystem(self.world.ecs, 0, T);
-            const system_entity = ecs.Entity.init(self.world.ecs, system_id);
-            system_entity.add(state_entity);
+            c.ecs_add_id(self.world.ecs, system_id, state_entity);
 
             return self;
+        } else if (@typeInfo(@TypeOf(phase_or_state)) == .Type) {
+            return self.addSystem(phase_or_state, T);
         }
 
-        @panic("addSystems called with invalid params. phase_or_state must be");
+        @panic("addSystems called with invalid params. phase_or_state must be OnEnter/OnExit or a Phase type");
     }
 
     pub fn before(self: *Self, comptime T: type) *Self {
@@ -389,18 +486,19 @@ fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*
     const sort1 = @as(*const SystemSort, @ptrCast(@alignCast(ptr1)));
     const sort2 = @as(*const SystemSort, @ptrCast(@alignCast(ptr2)));
 
-    const phase_1: c_int = if (sort1.phase > sort2.phase) 1 else 0;
-    const phase_2: c_int = if (sort1.phase < sort2.phase) 1 else 0;
+    const phase_1: c_int = if (sort1.phase_order > sort2.phase_order) 1 else 0;
+    const phase_2: c_int = if (sort1.phase_order < sort2.phase_order) 1 else 0;
 
-    // sort by: phase, order_in_phase then entity_id
+    // sort by: phase_order, order_in_phase then entity_id
     if (sort1.phase == sort2.phase) {
-        // std.debug.print("SAME PHASE. order: {} vs {}, entity: {}, {}\n", .{ sort1.order_in_phase, sort2.order_in_phase, e1, e2 });
+        // std.debug.print("SAME PHASE ({}). order_in_phase: {} vs {}, phase_order: {} vs {}, entity: {}, {}\n", .{ sort1.phase, sort1.order_in_phase, sort2.order_in_phase, sort1.phase_order, sort2.phase_order, e1, e2 });
         const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
         const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
 
         const order_in_phase = order_1 - order_2;
         if (order_in_phase != 0) return order_in_phase;
 
+        // systems that didnt specify order will be sorted by entity
         const first: c_int = if (e1 > e2) 1 else 0;
         const second: c_int = if (e1 < e2) 1 else 0;
 
@@ -419,14 +517,14 @@ fn runStartupPipeline(world: *c.ecs_world_t) void {
 
     pip_desc.query.filter.terms[0].id = c.EcsSystem;
     pip_desc.query.filter.terms[1] = std.mem.zeroInit(c.ecs_term_t, .{
-        .id = Phase.pre_startup.getEntity(),
+        .id = world.componentId(phases.PreStartup),
         .oper = c.EcsOr,
     });
     pip_desc.query.filter.terms[2] = std.mem.zeroInit(c.ecs_term_t, .{
-        .id = Phase.startup.getEntity(),
+        .id = world.componentId(phases.Startup),
         .oper = c.EcsOr,
     });
-    pip_desc.query.filter.terms[3].id = Phase.post_startup.getEntity();
+    pip_desc.query.filter.terms[3].id = world.componentId(phases.PostStartup);
     pip_desc.query.filter.terms[4] = std.mem.zeroInit(c.ecs_term_t, .{
         .id = world.componentId(SystemSort),
         .inout = c.EcsIn,
@@ -436,9 +534,9 @@ fn runStartupPipeline(world: *c.ecs_world_t) void {
     c.ecs_set_pipeline(world, startup_pipeline);
     _ = c.ecs_progress(world, 0);
 
-    c.ecs_delete_with(world, Phase.pre_startup.getEntity());
-    c.ecs_delete_with(world, Phase.startup.getEntity());
-    c.ecs_delete_with(world, Phase.post_startup.getEntity());
+    c.ecs_delete_with(world, world.componentId(phases.PreStartup));
+    c.ecs_delete_with(world, world.componentId(phases.Startup));
+    c.ecs_delete_with(world, world.componentId(phases.PostStartup));
 }
 
 /// creates and sets a Pipeline that handles system sorting

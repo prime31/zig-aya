@@ -40,11 +40,6 @@ pub fn Iterator(comptime Components: type) type {
             return Entity.init(self.iter.world.?, self.iter.entities[self.index - 1]);
         }
 
-        // TODO: RETHINK THIS API. direct world access feels odd. maybe return Commands wrapper
-        // pub fn world(self: *Self) *c.ecs_world_t {
-        //     return self.iter.world.?;
-        // }
-
         pub fn commands(self: *Self) Commands {
             return Commands.init(self.iter.world.?);
         }
@@ -56,6 +51,20 @@ pub fn Iterator(comptime Components: type) type {
         pub fn skip(self: *Self) void {
             meta.assertMsg(self.nextFn == c.ecs_query_next, "skip only valid on Queries!", .{});
             c.ecs_query_skip(&self.iter);
+        }
+
+        /// gets a single element from the query. If there is not exactly 1 result panics.
+        pub fn single(self: *Self) Components {
+            return self.getSingle() catch @panic("single called but there was not exactly 1 result");
+        }
+
+        /// same as `single` but returns an optional
+        pub fn getSingle(self: *Self) !Components {
+            while (self.next()) |comps| {
+                if (self.next() != null) return error.IteratorSingleError;
+                return comps;
+            }
+            return error.IteratorSingleError;
         }
 
         /// gets the next Entity from the query results if one is available

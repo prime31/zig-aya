@@ -6,13 +6,13 @@ Import aya via `const aya = @import("aya");` to gain access to the public interf
 
 ```zig
 const SetVelocityCallback = struct {
-    // optional components that will be used for the system.
+    // optional. components that will be used for the system.
     vel: *Velocity,
 
     // optional. If not present the struct type will be used as the name
     pub const name = "SetVelocity";
 
-    // system
+    // system. can contain 1 Iterator and n Queries params
     pub const fn run(iter: *Iterator(SetVelocityCallback)) void {
         while (iter.next()) |_| {
             iter.entity().set(&Velocity{ .x = 1, .y = 2 });
@@ -25,7 +25,7 @@ const SetVelocityCallback = struct {
     }
 
     // optional.
-    pub const modifiers = .{ q.Filter(Position), q.DontMatch(q.Writeonly(Velocity)) };
+    pub const modifiers = .{ None(Position), DontMatch(Writeonly(Velocity)) };
 
     // optional (bool). If true, this system will not be disabled when the game is paused.
     pub const run_when_paused = true;
@@ -41,16 +41,6 @@ const SetVelocityCallback = struct {
 
 
 ## TODO
-- make Res(T) always return the resource and allow ?Res(T) for when it may or may not exist
-- do system phase pipeline query just like Flecs to allow adding and ordering phases
-    - app.addPhase().beforePhase().afterPhase() (creates the phase and its shadow and applies depends_on ordering)
-        - when ordering before: fetch before phase, grab its depends_on, reset depends_on to the added system, set the
-            old depends_on as the current systems
-    - phases should all have ShadowPhase{ shadow: u64 } components for ordering and for disable ability
-- systems should take phase as a u64
-- add `single() T` and `get_single() ?T` to Iterator
-- maybe rename EventReader.get to EventReader.read
-
 - system sets. add to `SystemSort`. would need to manage set order and order_in_set. When set order changes every SystemSort
     would need to have its set data changed so the sort can be: phase, if_in_set(set) order_in_set else order_in_system
     - `app.configure_sets(PostUpdate, CalculateBoundsFlush.after(CalculateBounds))`

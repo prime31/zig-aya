@@ -17,10 +17,10 @@ pub fn Writeonly(comptime T: type) type {
     };
 }
 
-pub fn WriteonlyI(comptime T: type, field_: []const u8) type {
+pub fn WriteonlyI(comptime T: type, field_name: []const u8) type {
     return struct {
         pub const inout: ecs.InOutKind = .out;
-        pub const field = field_;
+        pub const field = field_name;
         term_type: T,
     };
 }
@@ -81,9 +81,9 @@ pub fn Mask(comptime T: type, mask_: u8) type {
     };
 }
 
-pub fn MaskI(comptime T: type, mask_: u8, field_: []const u8) type {
+pub fn MaskI(comptime T: type, mask_: u8, field_name: []const u8) type {
     return struct {
-        pub const field = field_;
+        pub const field = field_name;
         pub const mask: u8 = mask_;
         term_type: T,
     };
@@ -96,9 +96,9 @@ pub fn Pair(comptime RelationT: type, comptime ObjectT: type) type {
     };
 }
 
-pub fn PairI(comptime RelationT: type, comptime ObjectT: type, field_: []const u8) type {
+pub fn PairI(comptime RelationT: type, comptime ObjectT: type, field_name: []const u8) type {
     return struct {
-        pub const field = field_;
+        pub const field = field_name;
         relation_type: RelationT,
         obj_type: ObjectT,
     };

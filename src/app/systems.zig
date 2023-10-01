@@ -19,6 +19,7 @@ pub const SystemPaused = struct {};
 
 pub const SystemSort = struct {
     phase: u64,
+    phase_order: i32 = 0,
     order_in_phase: i32 = 0,
 };
 
@@ -67,7 +68,7 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
                 system_desc = tmp_system_desc;
             }
 
-            // query_type is on Iterator(T)
+            // query_type is on Query(T)
             if (@hasDecl(T, "query_type")) {
                 var query = T.init(world);
                 application.world.locals.insert(@TypeOf(query), system_desc.?.entity, query);

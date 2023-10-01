@@ -5,6 +5,7 @@ pub usingnamespace @import("resources.zig");
 pub usingnamespace @import("world.zig");
 pub usingnamespace @import("commands.zig");
 pub usingnamespace @import("event.zig");
+pub usingnamespace @import("phases.zig");
 
 const state = @import("state.zig");
 pub const State = state.State;

@@ -18,12 +18,6 @@ const SuperState = enum {
     end,
 };
 
-const SuperState2 = enum {
-    start,
-    middle,
-    end,
-};
-
 pub fn main() !void {
     std.debug.print("\n", .{});
 
