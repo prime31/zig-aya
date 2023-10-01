@@ -1,136 +1,182 @@
 const std = @import("std");
-const sdl = @import("sdl");
+const aya = @import("../aya.zig");
 
-const released: u3 = 1; // true only the frame the key is released
-const down: u3 = 2; // true the entire time the key is down
-const pressed: u3 = 3; // only true if down this frame and not down the previous frame
+/// A pressable input of type `T`. When adding this resource for a new input type, you should:
+/// * Call the `press` method for each press event.
+/// * Call the `release` method for each release event.
+/// * Call the `clear` method at each frame start, before processing events.
+pub fn Input(comptime T: type) type {
+    return struct {
+        const Self = @This();
 
-const Scancode = @import("keyboard.zig").Scancode;
+        pressed_set: std.AutoHashMap(T, void),
+        just_pressed_set: std.AutoHashMap(T, void),
+        just_released_set: std.AutoHashMap(T, void),
 
-pub const MouseButton = enum(usize) {
-    left = 1,
-    middle = 2,
-    right = 3,
-};
-
-pub const Input = struct {
-    mouse: Mouse = .{},
-    keyboard: Keyboard = .{},
-
-    pub fn handleEvent(self: *Input, event: *sdl.SDL_Event) void {
-        switch (event.type) {
-            sdl.SDL_EVENT_KEY_DOWN, sdl.SDL_EVENT_KEY_UP => {
-                const scancode = event.key.keysym.scancode;
-                self.keyboard.dirty_keys.appendAssumeCapacity(scancode);
-
-                if (event.key.state == 0) {
-                    self.keyboard.keys[@as(usize, @intCast(scancode))] = released;
-                } else {
-                    self.keyboard.keys[@as(usize, @intCast(scancode))] = pressed;
-                }
-            },
-            sdl.SDL_EVENT_MOUSE_MOTION => {
-                self.mouse.x_rel = event.motion.xrel;
-                self.mouse.y_rel = event.motion.yrel;
-            },
-            sdl.SDL_EVENT_MOUSE_BUTTON_DOWN, sdl.SDL_EVENT_MOUSE_BUTTON_UP => {
-                self.mouse.dirty_buttons.appendAssumeCapacity(@as(u2, @intCast(event.button.button)));
-                if (event.button.state == 0) {
-                    self.mouse.buttons[@as(usize, @intCast(event.button.button))] = released;
-                } else {
-                    self.mouse.buttons[@as(usize, @intCast(event.button.button))] = pressed;
-                }
-            },
-            sdl.SDL_EVENT_MOUSE_WHEEL => self.mouse.wheel_y = event.wheel.y,
-            else => {},
+        pub fn init() Self {
+            return .{
+                .pressed_set = std.AutoHashMap(T, void).init(aya.allocator),
+                .just_pressed_set = std.AutoHashMap(T, void).init(aya.allocator),
+                .just_released_set = std.AutoHashMap(T, void).init(aya.allocator),
+            };
         }
-    }
 
-    pub fn newFrame(self: *Input) void {
-        if (self.keyboard.dirty_keys.len > 0) {
-            for (self.keyboard.dirty_keys.slice()) |key| {
-                const ukey = @as(usize, @intCast(key));
+        pub fn deinit(self: *Self) void {
+            self.pressed_set.deinit();
+            self.just_pressed_set.deinit();
+            self.just_released_set.deinit();
+        }
 
-                // guard against double key presses
-                if (self.keyboard.keys[ukey] > 0)
-                    self.keyboard.keys[ukey] -= 1;
+        pub fn initWithCapacity(capacity: u32) Self {
+            var self = init();
+            self.pressed_set.ensureTotalCapacity(capacity) catch unreachable;
+            self.just_pressed_set.ensureTotalCapacity(capacity) catch unreachable;
+            self.just_released_set.ensureTotalCapacity(capacity) catch unreachable;
+            return self;
+        }
+
+        pub fn press(self: *Self, input: T) void {
+            if (self.pressed_set.contains(input)) return;
+            self.pressed_set.put(input, {}) catch unreachable;
+            self.just_pressed_set.put(input, {}) catch unreachable;
+        }
+
+        pub fn pressed(self: Self, input: T) bool {
+            return self.pressed_set.contains(input);
+        }
+
+        pub fn anyPressed(self: Self, input: []const T) bool {
+            for (input) |i| {
+                if (self.pressed_set.contains(i)) return true;
             }
-            self.keyboard.dirty_keys.resize(0) catch unreachable;
+            return false;
         }
 
-        if (self.mouse.dirty_buttons.len > 0) {
-            for (self.mouse.dirty_buttons.slice()) |button| {
-                // guard against double mouse presses
-                if (self.mouse.buttons[button] > 0)
-                    self.mouse.buttons[button] -= 1;
+        pub fn release(self: *Self, input: T) void {
+            if (self.pressed_set.remove(input))
+                self.just_released_set.put(input, {}) catch unreachable;
+        }
+
+        pub fn releaseAll(self: *Self) void {
+            var iter = self.pressed_set.keyIterator();
+            while (iter.next()) |input| {
+                self.just_released_set.put(input, {}) catch unreachable;
+            }
+            self.pressed_set.clearRetainingCapacity();
+        }
+
+        pub fn justPressed(self: Self, input: T) bool {
+            return self.just_pressed_set.contains(input);
+        }
+
+        pub fn anyJustPressed(self: Self, input: []const T) bool {
+            for (input) |i| {
+                if (self.just_pressed_set.contains(i)) return true;
+            }
+            return false;
+        }
+
+        pub fn clearJustPressed(self: Self) void {
+            self.just_pressed_set.clearRetainingCapacity();
+        }
+
+        pub fn justReleased(self: Self, input: T) bool {
+            return self.just_released_set.contains(input);
+        }
+
+        pub fn anyJustReleased(self: Self, input: []const T) bool {
+            for (input) |i| {
+                if (self.just_released_set.contains(i)) return true;
+            }
+            return false;
+        }
+
+        pub fn clearJustReleased(self: *Self) void {
+            self.just_released_set.clearRetainingCapacity();
+        }
+
+        pub fn reset(self: *Self, input: T) void {
+            _ = self.pressed_set.remove(input);
+            _ = self.just_pressed_set.remove(input);
+            _ = self.just_released_set.remove(input);
+        }
+
+        pub fn resetAll(self: *Self) void {
+            self.pressed_set.clearRetainingCapacity();
+            self.just_pressed_set.clearRetainingCapacity();
+            self.just_released_set.clearRetainingCapacity();
+        }
+
+        /// clears the just_pressed and just_released sets
+        pub fn clear(self: *Self) void {
+            self.just_pressed_set.clearRetainingCapacity();
+            self.just_released_set.clearRetainingCapacity();
+        }
+
+        pub fn getNextPressed(self: *const Self) ?T {
+            const I = struct {
+                var iter: ?std.AutoHashMap(T, void).KeyIterator = null;
+            };
+
+            if (I.iter == null) I.iter = self.pressed_set.keyIterator();
+
+            if (I.iter) |*iter| {
+                if (iter.next()) |next| return next.*;
+                I.iter = null;
             }
 
-            self.mouse.dirty_buttons.resize(0) catch unreachable;
+            return null;
         }
 
-        self.mouse.x_rel = 0;
-        self.mouse.y_rel = 0;
-        self.mouse.wheel_y = 0;
+        pub fn getNextJustPressed(self: *const Self) ?T {
+            const I = struct {
+                var iter: ?std.AutoHashMap(T, void).KeyIterator = null;
+            };
+
+            if (I.iter == null) I.iter = self.just_pressed_set.keyIterator();
+
+            if (I.iter) |*iter| {
+                if (iter.next()) |next| return next.*;
+                I.iter = null;
+            }
+
+            return null;
+        }
+
+        pub fn getNextJustReleased(self: *const Self) ?T {
+            const I = struct {
+                var iter: ?std.AutoHashMap(T, void).KeyIterator = null;
+            };
+
+            if (I.iter == null) I.iter = self.just_released_set.keyIterator();
+
+            if (I.iter) |*iter| {
+                if (iter.next()) |next| return next.*;
+                I.iter = null;
+            }
+
+            return null;
+        }
+    };
+}
+
+test "Input(T)" {
+    var state = Input(u8).init();
+    try std.testing.expect(!state.justPressed(4));
+    try std.testing.expect(!state.pressed(4));
+    state.press(4);
+    try std.testing.expect(state.justPressed(4));
+    try std.testing.expect(state.pressed(4));
+    state.release(4);
+    try std.testing.expect(!state.pressed(4));
+    try std.testing.expect(state.justReleased(4));
+
+    state.press(5);
+    state.press(6);
+    while (state.getNextPressed()) |p| {
+        try std.testing.expect(p == 5 or p == 6);
     }
 
-    /// only true if down this frame and not down the previous frame
-    pub fn keyPressed(self: Input, key: Scancode) bool {
-        return self.keyboard.keys[@as(usize, @intCast(@intFromEnum(key)))] == pressed;
-    }
-
-    /// true the entire time the key is down
-    pub fn keyDown(self: Input, key: Scancode) bool {
-        return self.keyboard.keys[@as(usize, @intCast(@intFromEnum(key)))] > released;
-    }
-
-    /// true only the frame the key is released
-    pub fn keyUp(self: Input, key: Scancode) bool {
-        return self.keyboard.keys[@as(usize, @intCast(@intFromEnum(key)))] == released;
-    }
-
-    /// only true if down this frame and not down the previous frame
-    pub fn mousePressed(self: Input, button: MouseButton) bool {
-        return self.mouse.buttons[@intFromEnum(button)] == pressed;
-    }
-
-    /// true the entire time the button is down
-    pub fn mouseDown(self: Input, button: MouseButton) bool {
-        return self.mouse.buttons[@intFromEnum(button)] > released;
-    }
-
-    /// true only the frame the button is released
-    pub fn mouseUp(self: Input, button: MouseButton) bool {
-        return self.mouse.buttons[@intFromEnum(button)] == released;
-    }
-
-    pub fn mouseWheel(self: Input) i32 {
-        return self.mouse.wheel_y;
-    }
-
-    pub fn mousePos(self: Input) struct { x: f32, y: f32 } {
-        _ = self;
-        var xc: c_int = undefined;
-        var yc: c_int = undefined;
-        _ = sdl.SDL_GetMouseState(&xc, &yc);
-        const window_scale = 1;
-        return .{ .x = @as(f32, @floatFromInt(xc * window_scale)), .y = @as(f32, @floatFromInt(yc * window_scale)) };
-    }
-
-    pub fn mouseRelMotion(self: Input) struct { x: f32, y: f32 } {
-        return .{ .x = @as(f32, @floatFromInt(self.mouse.x_rel)), .y = @as(f32, @floatFromInt(self.mouse.y_rel)) };
-    }
-};
-
-const Mouse = struct {
-    x_rel: f32 = 0,
-    y_rel: f32 = 0,
-    wheel_y: f32 = 0,
-
-    buttons: [4]u2 = [_]u2{0} ** 4,
-    dirty_buttons: std.BoundedArray(u2, 3) = .{},
-};
-
-const Keyboard = struct {
-    keys: [@as(usize, @intCast(@intFromEnum(Scancode.endcall)))]u2 = [_]u2{0} ** @as(usize, @intCast(@intFromEnum(Scancode.endcall))),
-    dirty_keys: std.BoundedArray(u32, 10) = .{},
-};
+    try std.testing.expect(!state.anyPressed(&.{ 1, 2, 3 }));
+    try std.testing.expect(state.anyPressed(&.{ 6, 7, 8 }));
+}

@@ -63,13 +63,20 @@ pub const Resources = struct {
         return self.resources.contains(typeId(T));
     }
 
-    /// Resource types can have an optional init(Allocator) method that will be called if present. If not, they
+    /// Resource types can have an optional init() or init(Allocator) method that will be called if present. If not, they
     /// will be zeroInit'ed
     pub fn initResource(self: *Self, comptime T: type) *T {
         const res = self.allocator.create(T) catch unreachable;
 
         if (@typeInfo(T) == .Struct) {
-            res.* = if (@hasDecl(T, "init") and @typeInfo(@TypeOf(T.init)).Fn.params[0].type.? == std.mem.Allocator) T.init(self.allocator) else std.mem.zeroes(T);
+            res.* = if (@hasDecl(T, "init")) blk: {
+                const params = @typeInfo(@TypeOf(T.init)).Fn.params;
+                if (params.len == 0) break :blk T.init();
+                if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(self.allocator);
+                @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither");
+            } else {
+                std.mem.zeroes(T);
+            };
         } else {
             res.* = std.mem.zeroes(T);
         }

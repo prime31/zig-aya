@@ -3,26 +3,34 @@ const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 
 const App = aya.App;
-const Input = @import("input.zig").Input;
+const Input = aya.Input;
+const Scancode = aya.Scancode;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
 
-// TODO: add way more events
+const eventLoop = @import("runner.zig").eventLoop;
 
-pub const WindowResized = struct {
-    width: f32,
-    height: f32,
-};
-
-pub const WindowMoved = struct {
-    x: f32,
-    y: f32,
-};
-
+// TODO: add way more window events
+pub const WindowResized = struct { width: f32, height: f32 };
+pub const WindowMoved = struct { x: f32, y: f32 };
 pub const WindowFocused = struct { focused: bool };
-
 pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
+// SDL_EVENT_WINDOW_HIDDEN
+// SDL_EVENT_WINDOW_EXPOSED
+// SDL_EVENT_WINDOW_SIZE_CHANGED
+// SDL_EVENT_WINDOW_MINIMIZED
+// SDL_EVENT_WINDOW_MAXIMIZED
+// SDL_EVENT_WINDOW_RESTORED
+// SDL_EVENT_WINDOW_MOUSE_ENTER
+// SDL_EVENT_WINDOW_MOUSE_LEAVE
+// SDL_EVENT_WINDOW_FOCUS_GAINED
+// SDL_EVENT_WINDOW_FOCUS_LOST
+// SDL_EVENT_WINDOW_CLOSE_REQUESTED
+// SDL_EVENT_WINDOW_TAKE_FOCUS
+// SDL_EVENT_WINDOW_HIT_TEST
+// SDL_EVENT_WINDOW_ICCPROF_CHANGED
+// SDL_EVENT_WINDOW_DISPLAY_CHANGED
 
 pub const WindowPlugin = struct {
     window_config: ?WindowConfig = .{},
@@ -44,79 +52,28 @@ pub const WindowPlugin = struct {
                 @panic("no window created");
             };
 
-            _ = app.addEvent(WindowResized)
+            _ = app
+                .setRunner(eventLoop)
+            // window
+                .addEvent(WindowResized)
                 .addEvent(WindowMoved)
                 .addEvent(WindowScaleFactorChanged)
                 .addEvent(WindowFocused)
-                .initResource(Input)
-                .insertResource(Window{
-                .sdl_window = window,
-                .id = sdl.SDL_GetWindowID(window),
-            });
-
-            _ = app.setRunner(eventLoop);
+                .insertResource(Window{ .sdl_window = window, .id = sdl.SDL_GetWindowID(window) })
+            // mouse
+                .addEvent(aya.MouseMotion)
+                .addEvent(aya.MouseWheel)
+                .initResource(Input(aya.MouseButton))
+            // keyboard
+                .initResource(Input(Scancode))
+            // gamepad
+                .addEvent(aya.GamepadConnectionEvent)
+                .initResource(aya.Gamepads)
+                .initResource(Input(aya.GamepadButton))
+                .initResource(aya.Axis(aya.GamepadAxis));
         }
     }
 };
-
-fn eventLoop(app: *App) void {
-    const window = app.world.getResource(Window).?;
-    const input = app.world.getResourceMut(Input).?;
-
-    const exit_event_reader = getEventReader(aya.AppExitEvent, app);
-    const window_resized_writer = getEventWriter(WindowResized, app);
-    const window_moved_writer = getEventWriter(WindowMoved, app);
-    const window_scale_factor_writer = getEventWriter(WindowScaleFactorChanged, app);
-
-    blk: while (true) {
-        if (exit_event_reader.get().len > 0) break :blk;
-
-        input.newFrame();
-
-        var event: sdl.SDL_Event = undefined;
-        while (sdl.SDL_PollEvent(&event) != 0) {
-            // if (imgui.sdl.handleEvent(&event)) continue;
-            switch (event.type) {
-                sdl.SDL_EVENT_QUIT => break :blk,
-                sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => {
-                    std.debug.print("window evt: {}\n", .{event.window.type});
-                },
-                sdl.SDL_EVENT_WINDOW_RESIZED => window_resized_writer.send(.{
-                    .width = @floatFromInt(event.window.data1),
-                    .height = @floatFromInt(event.window.data2),
-                }),
-                sdl.SDL_EVENT_WINDOW_MOVED => window_moved_writer.send(.{
-                    .x = @floatFromInt(event.window.data1),
-                    .y = @floatFromInt(event.window.data2),
-                }),
-                sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => window_scale_factor_writer.send(.{
-                    .scale_factor = sdl.SDL_GetWindowDisplayScale(window.sdl_window),
-                }),
-                sdl.SDL_EVENT_MOUSE_BUTTON_UP, sdl.SDL_EVENT_MOUSE_BUTTON_DOWN => input.handleEvent(&event),
-                sdl.SDL_EVENT_MOUSE_MOTION => {},
-                sdl.SDL_EVENT_MOUSE_WHEEL => {},
-                else => input.handleEvent(&event),
-            }
-        }
-
-        app.world.progress(0);
-    }
-
-    if (app.world.getResource(Window)) |win| sdl.SDL_DestroyWindow(win.sdl_window);
-    sdl.SDL_Quit();
-}
-
-fn getEventWriter(comptime T: type, app: *App) EventWriter(T) {
-    return EventWriter(T){
-        .events = app.world.getResourceMut(Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
-    };
-}
-
-fn getEventReader(comptime T: type, app: *App) EventReader(T) {
-    return EventReader(T){
-        .events = app.world.getResourceMut(Events(T)) orelse @panic("no EventReader found for " ++ @typeName(T)),
-    };
-}
 
 pub const Window = struct {
     sdl_window: *sdl.SDL_Window = undefined,

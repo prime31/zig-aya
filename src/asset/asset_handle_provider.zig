@@ -137,5 +137,5 @@ test "handles" {
 
     e_tmp = hm.create();
     std.debug.assert(hm.alive(e_tmp));
-    std.debug.print("e_tmp: {}\n", .{e_tmp});
+    // std.debug.print("e_tmp: {}\n", .{e_tmp});
 }
