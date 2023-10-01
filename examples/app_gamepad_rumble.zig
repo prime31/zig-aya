@@ -31,7 +31,7 @@ const InputSystem = struct {
         var buttons: *const Input(GamepadButton) = gamepad_btn_res.get() orelse return;
         var gamepads: *const Gamepads = gamepads_res.get() orelse return;
 
-        for (status_events.get()) |evt| {
+        for (status_events.read()) |evt| {
             std.debug.print(
                 "gamepad: {}, status: {}, name: {?s}, type: {}\n",
                 .{ evt.gamepad, evt.status, gamepads.getName(evt.gamepad), gamepads.getType(evt.gamepad) },
@@ -40,8 +40,8 @@ const InputSystem = struct {
 
         while (gamepads.nextGamepad()) |pad| {
             if (buttons.justPressed(.{ .gamepad = pad, .type = .north })) {
-                gamepads.rumble(pad, 0.5, 0.5, 5000);
-                std.debug.print("north\n", .{});
+                std.debug.print("north pressed. starting rumble\n", .{});
+                gamepads.rumble(pad, 0.5, 0.5, 1000);
             }
         }
     }

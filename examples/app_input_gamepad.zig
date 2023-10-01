@@ -32,7 +32,7 @@ const InputSystem = struct {
         var buttons: *const Input(GamepadButton) = gamepad_btn_res.get() orelse return;
         var gamepad_axes = gamepad_axes_res.get() orelse return;
 
-        for (status_events.get()) |evt| {
+        for (status_events.read()) |evt| {
             std.debug.print(
                 "gamepad: {}, status: {}, name: {?s}, type: {}\n",
                 .{ evt.gamepad, evt.status, gamepads.getName(evt.gamepad), gamepads.getType(evt.gamepad) },
