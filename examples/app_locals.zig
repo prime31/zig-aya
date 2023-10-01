@@ -10,8 +10,8 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     App.init()
-        .addSystem(.first, LocalSystem1)
-        .addSystem(.first, LocalSystem2)
+        .addSystems(aya.First, LocalSystem1)
+        .addSystems(aya.First, LocalSystem2)
         .run();
 }
 

@@ -48,7 +48,7 @@ const TimePlugin = struct {
 pub fn main() !void {
     App.init()
         .addPlugin(TimePlugin)
-        .insertPlugin(PhysicsPlugin{ .data = 35 })
+        .addPlugins(PhysicsPlugin{ .data = 35 })
         .addPlugins(.{ TimePlugin, PhysicsPlugin{ .data = 35 } })
         .run();
 }

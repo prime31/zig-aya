@@ -32,16 +32,16 @@ pub fn main() !void {
     App.init()
         .addState(SuperState, .start)
         .addEvent(SuperEvent)
-        .insertPlugin(PhysicsPlugin{ .data = 66 })
+        .addPlugins(PhysicsPlugin{ .data = 66 })
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_set, VelocityObserver.run)
-        .addSystem(.startup, EmptyCallback)
-        .addSystem(.first, WorldAndVelocitySystem)
-        .addSystem(.first, ChangeStateSystem)
-        .addSystem(.pre_update, EmptySystem).inState(SuperState, .middle)
-        .addSystem(.pre_update, OtherSystem).inState(SuperState, .start)
-        .addSystem(.pre_update, WorldSystem).before(EmptySystem)
-        .addSystem(.update, SystemCallbackType)
+        .addSystems(aya.Startup, EmptyCallback)
+        .addSystems(aya.First, WorldAndVelocitySystem)
+        .addSystems(aya.First, ChangeStateSystem)
+        .addSystems(aya.PreUpdate, EmptySystem).inState(SuperState, .middle)
+        .addSystems(aya.PreUpdate, OtherSystem).inState(SuperState, .start)
+        .addSystems(aya.PreUpdate, WorldSystem).before(EmptySystem)
+        .addSystems(aya.Update, SystemCallbackType)
         .run();
 
     // disables an entire phase
@@ -124,7 +124,7 @@ const PhysicsPlugin = struct {
     data: u8 = 250,
 
     pub fn build(self: PhysicsPlugin, app: *App) void {
-        _ = app.addSystem(.last, PhysicsSystem);
+        _ = app.addSystems(aya.Last, PhysicsSystem);
         std.debug.print("--- PhysicsPlugins.build called. data: {}\n", .{self.data});
     }
 };

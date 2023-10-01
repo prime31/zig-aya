@@ -15,7 +15,7 @@ pub fn main() !void {
 
     App.init()
         .addPlugins(aya.DefaultPlugins)
-        .addSystem(.update, InputSystem)
+        .addSystems(aya.Update, InputSystem)
         .run();
 }
 
@@ -38,6 +38,6 @@ const InputSystem = struct {
 
         while (keys.getNextJustPressed()) |key| std.debug.print("{} just pressed\n", .{key});
 
-        for (wheel.get()) |motion| std.debug.print("mouse wheel: {}\n", .{motion});
+        for (wheel.read()) |motion| std.debug.print("mouse wheel: {}\n", .{motion});
     }
 };

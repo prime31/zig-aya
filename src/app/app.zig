@@ -326,7 +326,7 @@ pub const App = struct {
         self.world.insertResource(NextState(T).init(current_state));
 
         // add system for this T that will handle disabling/enabling systems with the state when it changes
-        _ = self.addSystem(.state_transition, StateChangeCheckSystem(T));
+        _ = self.addSystem(phases.StateTransition, StateChangeCheckSystem(T));
 
         return self;
     }

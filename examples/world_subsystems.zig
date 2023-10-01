@@ -10,7 +10,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
 
     App.init()
-        .addSystem(.update, StartupSystem)
+        .addSystems(aya.Update, StartupSystem)
         .run();
 }
 
