@@ -119,10 +119,10 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
             // - when NextState changes, query for all with the base tag of the enum
             //     * any systems in current state OnExit run
             //     * any systems in next state OnEnter run
+            //     * any systems with OnTransitionn with matching from and to states run
             //     * any systems in the current state are disabled
             //     * any systems in the next state are enabled
-            //     * (maybe TODO) install run_enter_schedule system that will run any systems in OnEnter(current_state)
-            //     * (TODO if useful) any systems with OnTransition(T) { .from: T, .to: T } should be called
+            //     * (maybe TODO) install run_enter_schedule system that will run any systems in OnEnter(current_state)any systems with OnTransition(T) { .from: T, .to: T } should be called
 
             while (iter.next()) |comps| {
                 // grab the previous and current State entities and set State(T) to the new state
