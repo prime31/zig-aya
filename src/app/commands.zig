@@ -33,10 +33,10 @@ pub const Commands = struct {
         filter_desc.terms[3].inout = c.EcsInOutNone;
         filter_desc.terms[3].oper = c.EcsOptional;
 
-        const filter = c.ecs_filter_init(self.ecs, &filter_desc);
-        defer c.ecs_filter_fini(filter);
+        const pause_filter = c.ecs_filter_init(self.ecs, &filter_desc);
+        defer c.ecs_filter_fini(pause_filter);
 
-        var it = c.ecs_filter_iter(self.ecs, filter);
+        var it = c.ecs_filter_iter(self.ecs, pause_filter);
         while (c.ecs_filter_next(&it)) {
             var i: usize = 0;
             while (i < it.count) : (i += 1) {
@@ -71,6 +71,16 @@ pub const Commands = struct {
     /// remove all instances of the specified component
     pub fn removeAll(self: Commands, comptime T: type) void {
         c.ecs_remove_all(self.ecs, self.ecs.componentId(T));
+    }
+
+    /// creates a Filter using the passed in struct
+    pub fn filter(self: Commands, comptime Components: type) aya.Filter(Components) {
+        return self.ecs.filter(Components);
+    }
+
+    /// creates a Query using the passed in struct
+    pub fn query(self: Commands, comptime Components: type) aya.Query(Components) {
+        return self.ecs.query(Components);
     }
 
     // Systems

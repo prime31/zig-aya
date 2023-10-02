@@ -41,7 +41,7 @@ pub const ecs_world_t = opaque {
     }
 
     pub fn getTypeStr(self: Self, typ: c.ecs_type_t) [*c]u8 {
-        return c.ecs_type_str(self.world, typ);
+        return c.ecs_type_str(self, typ);
     }
 
     pub fn newId(self: Self) u64 {
@@ -54,7 +54,7 @@ pub const ecs_world_t = opaque {
 
     pub fn newEntityNamed(self: Self, name: [*c]const u8) Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
-        return Entity.init(self.world, c.ecs_entity_init(self.world, &desc));
+        return Entity.init(self, c.ecs_entity_init(self, &desc));
     }
 
     pub fn lookup(self: Self, path: [:0]const u8) ?Entity {
@@ -75,7 +75,7 @@ pub const ecs_world_t = opaque {
             .add = [_]c.ecs_id_t{0} ** 32,
         });
         desc.add[0] = c.EcsPrefab;
-        return Entity.init(self.world, c.ecs_entity_init(self.world, &desc));
+        return Entity.init(self, c.ecs_entity_init(self, &desc));
     }
 
     /// Allowed params: Entity, u64 (entity_id), type
@@ -168,29 +168,29 @@ pub const ecs_world_t = opaque {
             desc.ids[i] = self.componentId(T);
         }
 
-        return c.ecs_type_init(self.world, &desc);
+        return c.ecs_type_init(self, &desc);
     }
 
     pub fn newTypeExpr(self: Self, name: [*c]const u8, expr: [*c]const u8) u64 {
         var desc = std.mem.zeroInit(c.ecs_type_desc_t, .{ .ids_expr = expr });
         desc.entity = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
 
-        return c.ecs_type_init(self.world, &desc);
+        return c.ecs_type_init(self, &desc);
     }
 
     /// removes the entity from the Ecs
     pub fn delete(self: Self, entity: u64) void {
-        c.ecs_delete(self.world, entity);
+        c.ecs_delete(self, entity);
     }
 
     /// deletes all entities with the component
     pub fn deleteWith(self: Self, comptime T: type) void {
-        c.ecs_delete_with(self.world, self.componentId(T));
+        c.ecs_delete_with(self, self.componentId(T));
     }
 
     /// remove all instances of the specified component
     pub fn removeAll(self: Self, comptime T: type) void {
-        c.ecs_remove_all(self.world, self.componentId(T));
+        c.ecs_remove_all(self, self.componentId(T));
     }
 
     pub fn setSingleton(self: Self, ptr_or_struct: anytype) void {
@@ -218,7 +218,7 @@ pub const ecs_world_t = opaque {
 
     pub fn removeSingleton(self: Self, comptime T: type) void {
         std.debug.assert(@typeInfo(T) == .Struct);
-        c.ecs_remove_id(self.world, self.componentId(T), self.componentId(T));
+        c.ecs_remove_id(self, self.componentId(T), self.componentId(T));
     }
 
     /// creates a Filter using the passed in struct
@@ -229,24 +229,9 @@ pub const ecs_world_t = opaque {
     }
 
     /// creates a Query using the passed in struct
-    pub fn query(self: Self, comptime Components: type) Query {
+    pub fn query(self: Self, comptime Components: type) Query(Components) {
         std.debug.assert(@typeInfo(Components) == .Struct);
-        var desc = std.mem.zeroes(c.ecs_query_desc_t);
-        desc.filter = meta.generateFilterDesc(self, Components);
-
-        if (@hasDecl(Components, "order_by")) {
-            meta.validateOrderByFn(Components.order_by);
-            const ti = @typeInfo(@TypeOf(Components.order_by));
-            const OrderByType = meta.FinalChild(ti.Fn.params[1].type.?);
-            meta.validateOrderByType(Components, OrderByType);
-
-            desc.order_by = wrapOrderByFn(OrderByType, Components.order_by);
-            desc.order_by_component = self.componentId(OrderByType);
-        }
-
-        if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
-
-        return Query.init(self, &desc);
+        return Query(Components).init(self);
     }
 
     /// adds an observer system to the Ecs using the passed in struct (see systems)
@@ -256,12 +241,12 @@ pub const ecs_world_t = opaque {
         std.debug.assert(@hasDecl(Components, "name"));
 
         var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-        entity_desc.id = c.ecs_new_id(self.world);
+        entity_desc.id = c.ecs_new_id(self);
         entity_desc.name = Components.name;
         entity_desc.add[0] = event;
 
         var desc = std.mem.zeroes(c.ecs_observer_desc_t);
-        desc.entity = c.ecs_entity_init(self.world, &entity_desc);
+        desc.entity = c.ecs_entity_init(self, &entity_desc);
         desc.events[0] = event;
 
         desc.run = wrapSystemFn(Components, Components.run);
@@ -269,7 +254,7 @@ pub const ecs_world_t = opaque {
 
         if (@hasDecl(Components, "instanced") and Components.instanced) desc.filter.instanced = true;
 
-        _ = c.ecs_observer_init(self.world, &desc);
+        _ = c.ecs_observer_init(self, &desc);
     }
 };
 

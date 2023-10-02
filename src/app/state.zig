@@ -67,6 +67,8 @@ pub fn NextState(comptime T: type) type {
 }
 
 pub fn OnEnter(comptime enum_tag: anytype) type {
+    std.debug.assert(@typeInfo(@TypeOf(enum_tag)) == .Enum);
+
     return struct {
         pub const on_enter = true;
         pub const state_type = @TypeOf(enum_tag);
@@ -75,10 +77,28 @@ pub fn OnEnter(comptime enum_tag: anytype) type {
 }
 
 pub fn OnExit(comptime enum_tag: anytype) type {
+    std.debug.assert(@typeInfo(@TypeOf(enum_tag)) == .Enum);
+
     return struct {
         pub const on_exit = true;
         pub const state_type = @TypeOf(enum_tag);
         pub const state = enum_tag;
+    };
+}
+
+pub const FromTransition = struct {};
+pub const ToTransition = struct {};
+
+pub fn OnTransition(comptime from_enum_tag: anytype, comptime to_enum_tag: anytype) type {
+    std.debug.assert(@typeInfo(@TypeOf(from_enum_tag)) == .Enum);
+    std.debug.assert(@TypeOf(from_enum_tag) == @TypeOf(to_enum_tag));
+    std.debug.assert(from_enum_tag != to_enum_tag);
+
+    return struct {
+        pub const on_transition = true;
+        pub const state_type = @TypeOf(from_enum_tag);
+        pub const from_state = from_enum_tag;
+        pub const to_state = to_enum_tag;
     };
 }
 
@@ -137,6 +157,28 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
                     filter_desc.terms[0].inout = c.EcsInOutNone;
                     filter_desc.terms[1].id = state_res.entityForEnterTag(comps.next_state.next_state);
                     filter_desc.terms[1].inout = c.EcsInOutNone;
+
+                    const filter = c.ecs_filter_init(iter.commands().ecs, &filter_desc);
+                    defer c.ecs_filter_fini(filter);
+
+                    var it = c.ecs_filter_iter(iter.commands().ecs, filter);
+                    while (c.ecs_filter_next(&it)) {
+                        var i: usize = 0;
+                        while (i < it.count) : (i += 1) {
+                            _ = c.ecs_run(iter.iter.real_world, it.entities[i], 0, null);
+                        }
+                    }
+                }
+
+                // run OnTransitions
+                {
+                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    filter_desc.terms[0].id = c.EcsSystem;
+                    filter_desc.terms[0].inout = c.EcsInOutNone;
+                    filter_desc.terms[1].id = iter.commands().ecs.pair(FromTransition, prev_state_entity);
+                    filter_desc.terms[1].inout = c.EcsInOutNone;
+                    filter_desc.terms[2].id = iter.commands().ecs.pair(ToTransition, next_state_entity);
+                    filter_desc.terms[2].inout = c.EcsInOutNone;
 
                     const filter = c.ecs_filter_init(iter.commands().ecs, &filter_desc);
                     defer c.ecs_filter_fini(filter);
