@@ -22,7 +22,7 @@ const ChangeStateSystem = struct {
     vel: ?*const Velocity,
 
     pub fn run(state: ResMut(NextState(SuperState)), iter: *Iterator(ChangeStateSystem)) void {
-        std.debug.print("-- ChangeStateSystem called with count: {d}, state: {}\n", .{ iter.iter.count, state.get().? });
+        std.debug.print("-- ChangeStateSystem called with state: {}. Changing to .middle\n", .{state.get().?.state});
         while (iter.next()) |_| {}
         state.get().?.set(iter.commands(), .middle);
     }
@@ -36,11 +36,10 @@ pub fn main() !void {
         .insertResource(Resource{ .num = 666 })
         .addObserver(.on_set, VelocityObserver.run)
         .addSystems(aya.Startup, EmptyCallback)
-        .addSystems(aya.First, WorldAndVelocitySystem)
-        .addSystems(aya.First, ChangeStateSystem)
-        .addSystems(aya.PreUpdate, EmptySystem).inState(SuperState, .middle)
-        .addSystems(aya.PreUpdate, OtherSystem).inState(SuperState, .start)
-        .addSystems(aya.PreUpdate, WorldSystem).before(EmptySystem)
+        .addSystems(aya.First, .{ WorldAndVelocitySystem, ChangeStateSystem })
+        .addSystems(aya.PreUpdate, MiddleStateSystem).inState(SuperState.middle)
+        .addSystems(aya.PreUpdate, StartStateSystem).inState(SuperState.start)
+        .addSystems(aya.PreUpdate, WorldSystem).before(MiddleStateSystem)
         .addSystems(aya.Update, SystemCallbackType)
         .run();
 
@@ -64,15 +63,15 @@ const EmptyCallback = struct {
     }
 };
 
-const EmptySystem = struct {
+const MiddleStateSystem = struct {
     pub fn run(res: aya.Res(Velocity), res_mut: aya.ResMut(Resource)) void {
-        std.debug.print("-- EmptySystem called res: {?}, res_mut: {?}\n", .{ res.resource, res_mut.resource });
+        std.debug.print("-- MiddleStateSystem called res: {?}, res_mut: {?}\n", .{ res.resource, res_mut.resource });
     }
 };
 
-const OtherSystem = struct {
+const StartStateSystem = struct {
     pub fn run() void {
-        std.debug.print("-- OtherSystem\n", .{});
+        std.debug.print("-- StartStateSystem\n", .{});
     }
 };
 
