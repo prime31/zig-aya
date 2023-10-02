@@ -365,7 +365,7 @@ pub const App = struct {
         };
     }
 
-    pub fn addSystem(self: *Self, comptime Phase: type, comptime T: type) *Self {
+    fn addSystem(self: *Self, comptime Phase: type, comptime T: type) *Self {
         std.debug.assert(@typeInfo(T) == .Struct);
         std.debug.assert(@hasDecl(T, "run"));
 
@@ -385,35 +385,49 @@ pub const App = struct {
     }
 
     /// phase_or_state can either be a tag of Phases or a State enum tag wrapped in OnEnter/OnExit
-    pub fn addSystems(self: *Self, phase_or_state: anytype, comptime T: type) *Self {
-        std.debug.assert(@typeInfo(T) == .Struct);
-        std.debug.assert(@hasDecl(T, "run"));
+    pub fn addSystems(self: *Self, phase_or_state: anytype, comptime Systems: anytype) *Self {
+        std.debug.assert(@typeInfo(@TypeOf(Systems)) == .Struct or @typeInfo(Systems) == .Struct);
 
-        if (@hasDecl(phase_or_state, "state_type")) {
-            // OnEnter/OnExit systems are not associated with a phase or sort
-            var state_res = self.world.getResource(State(phase_or_state.state_type)).?;
-
-            // add our system but without a phase so it isnt in the normal schedule
-            const system_id = systems.addSystem(self.world.ecs, 0, T);
-
-            if (@hasDecl(phase_or_state, "on_transition")) {
-                const from = state_res.entityForTag(phase_or_state.from_state);
-                const to = state_res.entityForTag(phase_or_state.to_state);
-                c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(FromTransition, from));
-                c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(ToTransition, to));
-                std.debug.print("------- from: {}, to: {}\n", .{ from, to });
+        // normalize a single system or a tuple of systems to an array of systems
+        const new_systems = comptime blk: {
+            if (@typeInfo(@TypeOf(Systems)) == .Struct and @typeInfo(@TypeOf(Systems)).Struct.is_tuple) {
+                var tmp: [Systems.len]type = undefined;
+                for (Systems, 0..) |S, i| tmp[i] = S;
+                break :blk tmp[0..Systems.len];
             } else {
-                // find the enter/exit entity so we can put it on the system
-                const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.entityForEnterTag(phase_or_state.state) else state_res.entityForExitTag(phase_or_state.state);
-                c.ecs_add_id(self.world.ecs, system_id, state_entity);
+                const tmp: [1]type = [_]type{Systems};
+                break :blk tmp[0..1];
             }
+        };
 
-            return self;
-        } else if (@typeInfo(@TypeOf(phase_or_state)) == .Type) {
-            return self.addSystem(phase_or_state, T);
+        inline for (new_systems) |T| {
+            std.debug.assert(@hasDecl(T, "run"));
+
+            if (@hasDecl(phase_or_state, "state_type")) {
+                // OnEnter/OnExit systems are not associated with a phase or sort
+                var state_res = self.world.getResource(State(phase_or_state.state_type)).?;
+
+                // add our system but without a phase so it isnt in the normal schedule
+                const system_id = systems.addSystem(self.world.ecs, 0, T);
+
+                if (@hasDecl(phase_or_state, "on_transition")) {
+                    const from = state_res.entityForTag(phase_or_state.from_state);
+                    const to = state_res.entityForTag(phase_or_state.to_state);
+                    c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(FromTransition, from));
+                    c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(ToTransition, to));
+                } else {
+                    // find the enter/exit entity so we can put it on the system
+                    const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.entityForEnterTag(phase_or_state.state) else state_res.entityForExitTag(phase_or_state.state);
+                    c.ecs_add_id(self.world.ecs, system_id, state_entity);
+                }
+            } else if (@typeInfo(@TypeOf(phase_or_state)) == .Type) {
+                _ = self.addSystem(phase_or_state, T);
+            } else {
+                @panic("addSystems called with invalid params. phase_or_state must be OnEnter/OnExit/OnTransition or a phase type. Systems must be a system struct or tuple of system structs");
+            }
         }
 
-        @panic("addSystems called with invalid params. phase_or_state must be OnEnter/OnExit or a Phase type");
+        return self;
     }
 
     pub fn before(self: *Self, comptime T: type) *Self {
