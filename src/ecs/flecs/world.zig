@@ -108,7 +108,11 @@ pub const ecs_world_t = opaque {
     }
 
     pub fn addPair(self: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) void {
-        c.ecs_add_id(self, entity, pair(self, relation, object));
+        c.ecs_add_id(self, entity, self.pair(self, relation, object));
+    }
+
+    pub fn hasPair(self: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) bool {
+        return c.ecs_has_id(self, entity, self.pair(relation, object));
     }
 
     /// bulk registers a tuple of Types

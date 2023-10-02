@@ -45,3 +45,6 @@ const SetVelocityCallback = struct {
     would need to have its set data changed so the sort can be: phase, if_in_set(set) order_in_set else order_in_system
     - `app.configure_sets(PostUpdate, CalculateBoundsFlush.after(CalculateBounds))`
     - `app.add_systems(PostUpdate, apply_deferred.in_set(CalculateBoundsFlush))`
+- maybe do some wrapping of Phase:
+    - phases could be required to be wrapped in Phase(T) for validation: const Update = Phase(Update);
+    - metadata could be stored in the Phase(T) for validation
