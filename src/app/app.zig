@@ -49,7 +49,7 @@ pub const App = struct {
     world: World,
     plugins: std.AutoHashMap(u32, void),
     phase_insert_indices: std.AutoHashMap(u64, i32),
-    last_added_system: ?u64 = null,
+    last_added_systems: std.ArrayList(u64),
     runFn: ?*const fn (*App) void = null,
 
     pub fn init() *Self {
@@ -63,6 +63,7 @@ pub const App = struct {
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
+            .last_added_systems = std.ArrayList(u64).init(allocator),
         };
 
         // register startup phases
@@ -87,6 +88,7 @@ pub const App = struct {
     pub fn deinit(self: *Self) void {
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
+        self.last_added_systems.deinit();
         tmp_allocator_instance.deinit();
         self.world.deinit();
         allocator.destroy(self);
@@ -227,13 +229,8 @@ pub const App = struct {
         return self;
     }
 
-    /// Plugins must implement `build(Self, *App)` and have default values for all fields
-    pub fn addPlugin(self: *Self, comptime T: type) *Self {
-        return self.insertPlugin(T{});
-    }
-
-    /// Allowed types: type (with `fn build(Self, *App)`) and default values for all fields), DefaultPlugins, struct instance
-    /// (with `fn build(Self, *App)`)
+    /// Allowed types: type (with `fn build(Self, *App)`) and default values for all fields), struct instance
+    /// (with `fn build(Self, *App)`), DefaultPlugins or an instance of DefaultPlugins
     pub fn addPlugins(self: *Self, comptime plugins: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(plugins)) == .Struct or @typeInfo(@TypeOf(plugins)) == .Type);
 
@@ -335,8 +332,9 @@ pub const App = struct {
 
     pub fn inState(self: *Self, comptime state: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(state)) == .Enum);
+        std.debug.assert(self.last_added_systems.items.len > 0);
 
-        if (self.last_added_system) |system| {
+        for (self.last_added_systems.items) |system| {
             // add the State tag entity to the system and disable it if the state isnt active
             const state_res = self.world.getResource(State(@TypeOf(state))).?;
 
@@ -345,11 +343,8 @@ pub const App = struct {
 
             if (state_res.state != state)
                 entity.enable(false);
-
-            self.last_added_system = null;
-            return self;
         }
-        @panic("inState called but there is no last_added_system to modify");
+        return self;
     }
 
     // Systems
@@ -373,8 +368,10 @@ pub const App = struct {
         const order_in_phase = self.getNextOrderInPhase(phase);
         const phase_order = if (aya.Entity.init(self.world.ecs, phase).get(PhaseSort)) |sort| sort.order else 0;
 
-        self.last_added_system = systems.addSystem(self.world.ecs, phase, T);
-        const system_entity = ecs.Entity.init(self.world.ecs, self.last_added_system.?);
+        const sys = systems.addSystem(self.world.ecs, phase, T);
+        self.last_added_systems.append(sys) catch unreachable;
+
+        const system_entity = ecs.Entity.init(self.world.ecs, sys);
         system_entity.set(SystemSort{
             .phase = phase,
             .phase_order = phase_order,
@@ -387,6 +384,8 @@ pub const App = struct {
     /// phase_or_state can either be a tag of Phases or a State enum tag wrapped in OnEnter/OnExit
     pub fn addSystems(self: *Self, phase_or_state: anytype, comptime Systems: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(Systems)) == .Struct or @typeInfo(Systems) == .Struct);
+
+        self.last_added_systems.clearRetainingCapacity();
 
         // normalize a single system or a tuple of systems to an array of systems
         const new_systems = comptime blk: {
@@ -431,7 +430,9 @@ pub const App = struct {
     }
 
     pub fn before(self: *Self, comptime T: type) *Self {
-        if (self.last_added_system) |system| {
+        std.debug.assert(self.last_added_systems.items.len > 0);
+
+        for (self.last_added_systems.items) |system| {
             const entity = ecs.Entity.init(self.world.ecs, system);
 
             // find the other system by its name and grab its SystemSort
@@ -444,15 +445,15 @@ pub const App = struct {
 
             current_sort.order_in_phase = other_sort.order_in_phase - 1;
             self.updateSystemOrder(current_sort.phase, other_sort.order_in_phase, -1);
-
-            self.last_added_system = null;
-            return self;
         }
-        unreachable;
+
+        return self;
     }
 
     pub fn after(self: *Self, runFn: anytype) *Self {
-        if (self.last_added_system) |system| {
+        std.debug.assert(self.last_added_systems.items.len > 0);
+
+        for (self.last_added_systems.items) |system| {
             const entity = ecs.Entity.init(self.world.ecs, system);
 
             // find the other system by its name and grab its SystemSort
@@ -464,11 +465,8 @@ pub const App = struct {
 
             current_sort.order_in_phase = other_sort.order_in_phase + 1;
             self.updateSystemOrder(current_sort.phase, other_sort.order_in_phase, 1);
-
-            self.last_added_system = null;
-            return self;
         }
-        unreachable;
+        return self;
     }
 
     fn updateSystemOrder(self: *Self, phase: u64, other_order_in_phase: i32, direction: i32) void {
