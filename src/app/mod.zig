@@ -12,6 +12,7 @@ pub const State = state.State;
 pub const NextState = state.NextState;
 pub const OnEnter = state.OnEnter;
 pub const OnExit = state.OnExit;
+pub const OnTransition = state.OnTransition;
 
 const locals = @import("locals.zig");
 pub const Local = locals.Local;

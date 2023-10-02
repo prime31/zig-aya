@@ -11,6 +11,7 @@ const ResMut = aya.ResMut;
 const NextState = aya.NextState;
 const OnEnter = aya.OnEnter;
 const OnExit = aya.OnExit;
+const OnTransition = aya.OnTransition;
 
 const SuperState = enum {
     start,
@@ -23,9 +24,10 @@ pub fn main() !void {
 
     App.init()
         .addState(SuperState, .start)
-        .addSystems(aya.Update, StartStateSystem).inState(SuperState, .start)
+        .addSystems(OnTransition(SuperState.start, SuperState.middle), StartToMiddleStateSystem)
+        .addSystems(aya.Update, StartStateSystem).inState(SuperState.start)
         .addSystems(OnEnter(SuperState.middle), EnterMiddleStateSystem)
-        .addSystems(aya.Update, MiddleStateSystem).inState(SuperState, .middle)
+        .addSystems(aya.Update, MiddleStateSystem).inState(SuperState.middle)
         .addSystems(OnExit(SuperState.start), ExitStartStateSystem)
         .addSystems(aya.PostUpdate, ChangeStateSystem)
         .run();
@@ -58,6 +60,12 @@ const MiddleStateSystem = struct {
 const EnterMiddleStateSystem = struct {
     pub fn run() void {
         std.debug.print("-- EnterMiddleStateSystem called\n", .{});
+    }
+};
+
+const StartToMiddleStateSystem = struct {
+    pub fn run() void {
+        std.debug.print("-- StartToMiddleStateSystem called\n", .{});
     }
 };
 

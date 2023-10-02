@@ -24,6 +24,8 @@ const AppWrapper = systems.AppWrapper;
 const Events = app.Events;
 const EventUpdateSystem = @import("event.zig").EventUpdateSystem;
 
+const FromTransition = @import("state.zig").FromTransition;
+const ToTransition = @import("state.zig").ToTransition;
 const Res = app.Res;
 const ResMut = app.ResMut;
 const State = app.State;
@@ -308,7 +310,7 @@ pub const App = struct {
     pub fn addState(self: *Self, comptime T: type, current_state: T) *Self {
         std.debug.assert(@typeInfo(T) == .Enum);
 
-        const enum_entity = self.world.ecs.newId();
+        const enum_entity = self.world.ecs.newEntityNamed(@typeName(T)).id;
         _ = c.ecs_add_id(self.world.ecs, enum_entity, c.EcsUnion);
 
         const EnumMap = std.enums.EnumMap(T, u64);
@@ -331,12 +333,12 @@ pub const App = struct {
         return self;
     }
 
-    pub fn inState(self: *Self, comptime T: type, state: T) *Self {
-        std.debug.assert(@typeInfo(T) == .Enum);
+    pub fn inState(self: *Self, comptime state: anytype) *Self {
+        std.debug.assert(@typeInfo(@TypeOf(state)) == .Enum);
 
         if (self.last_added_system) |system| {
             // add the State tag entity to the system and disable it if the state isnt active
-            const state_res = self.world.getResource(State(T)).?;
+            const state_res = self.world.getResource(State(@TypeOf(state))).?;
 
             const entity = ecs.Entity.init(self.world.ecs, system);
             entity.addPair(state_res.base_entity, state_res.entityForTag(state));
@@ -387,18 +389,24 @@ pub const App = struct {
         std.debug.assert(@typeInfo(T) == .Struct);
         std.debug.assert(@hasDecl(T, "run"));
 
-        if (@typeInfo(@TypeOf(phase_or_state)) == .EnumLiteral) {
-            return self.addSystem(phase_or_state, T);
-        } else if (@hasDecl(phase_or_state, "state_type")) {
+        if (@hasDecl(phase_or_state, "state_type")) {
             // OnEnter/OnExit systems are not associated with a phase or sort
             var state_res = self.world.getResource(State(phase_or_state.state_type)).?;
 
-            // find the enter/exit entity so we can put it on the system
-            const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.entityForEnterTag(phase_or_state.state) else state_res.entityForExitTag(phase_or_state.state);
-
             // add our system but without a phase so it isnt in the normal schedule
             const system_id = systems.addSystem(self.world.ecs, 0, T);
-            c.ecs_add_id(self.world.ecs, system_id, state_entity);
+
+            if (@hasDecl(phase_or_state, "on_transition")) {
+                const from = state_res.entityForTag(phase_or_state.from_state);
+                const to = state_res.entityForTag(phase_or_state.to_state);
+                c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(FromTransition, from));
+                c.ecs_add_id(self.world.ecs, system_id, self.world.ecs.pair(ToTransition, to));
+                std.debug.print("------- from: {}, to: {}\n", .{ from, to });
+            } else {
+                // find the enter/exit entity so we can put it on the system
+                const state_entity = if (@hasDecl(phase_or_state, "on_enter")) state_res.entityForEnterTag(phase_or_state.state) else state_res.entityForExitTag(phase_or_state.state);
+                c.ecs_add_id(self.world.ecs, system_id, state_entity);
+            }
 
             return self;
         } else if (@typeInfo(@TypeOf(phase_or_state)) == .Type) {
