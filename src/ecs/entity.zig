@@ -56,7 +56,7 @@ pub const Entity = struct {
 
     /// returns true if the entity has the relation to the object
     pub fn hasPair(self: Entity, relation: anytype, object: anytype) bool {
-        return c.ecs_has_id(self.ecs, self.id, self.ecs.pair(relation, object));
+        return self.ecs.hasPair(self.id, relation, object);
     }
 
     /// removes a relation to the object from the entity.

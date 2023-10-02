@@ -86,6 +86,7 @@ pub fn OnExit(comptime enum_tag: anytype) type {
     };
 }
 
+// Relationships used to tag OnTransitions
 pub const FromTransition = struct {};
 pub const ToTransition = struct {};
 

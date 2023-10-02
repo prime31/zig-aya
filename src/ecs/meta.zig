@@ -289,7 +289,7 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
                         },
 
                         else => {
-                            std.debug.print("unhandled field type: {any}, ti: {any}\n", .{ field.type, @typeInfo(field.type) });
+                            std.debug.print("unhandled field type: {any}\nti: {any}\nroot type: {}\n", .{ field.type, @typeInfo(field.type), T });
                             unreachable;
                         },
                     },

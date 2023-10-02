@@ -8,6 +8,7 @@ const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 
 const Options = struct {
+    build_options: *std.build.Step.Options,
     enable_imgui: bool,
     include_flecs_explorer: bool,
 };
@@ -19,9 +20,13 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const options = Options{
+        .build_options = b.addOptions(),
         .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
         .include_flecs_explorer = b.option(bool, "include_flecs_explorer", "Include/exclude Flecs REST, HTTP, STATS and MONITOR modules") orelse true,
     };
+
+    options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
+    options.build_options.addOption(bool, "include_flecs_explorer", options.include_flecs_explorer);
 
     // const exe = b.addExecutable(.{
     //     .name = "sdl3-tester",
@@ -141,11 +146,12 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
-        .dependencies = &.{
-            .{ .name = "stb", .module = stb_module },
-            .{ .name = "sdl", .module = sdl_module },
-            .{ .name = "imgui", .module = imgui_module },
-        },
+        .dependencies = &.{ .{ .name = "stb", .module = stb_module }, .{ .name = "sdl", .module = sdl_module }, .{ .name = "imgui", .module = imgui_module }, .{
+            .name = "build_options",
+            .module = b.createModule(.{
+                .source_file = options.build_options.getOutput(),
+            }),
+        } },
     });
 
     exe.addModule("aya", aya_module);
