@@ -4,6 +4,7 @@ const c = @import("../ecs/mod.zig").c;
 const app = @import("mod.zig");
 
 const systems = @import("systems.zig");
+const assertMsg = aya.meta.assertMsg;
 
 const Entity = aya.Entity;
 
@@ -43,6 +44,35 @@ pub const Commands = struct {
                 _ = c.ecs_add_id(self.ecs, it.entities[i], self.ecs.componentId(systems.SystemPaused));
             }
         }
+    }
+
+    pub fn spawn(self: Commands, name: ?[:0]const u8) EntityCommands {
+        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
+            .name = if (name) |n| n.ptr else null,
+        });
+
+        return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
+    }
+
+    pub fn spawnWith(self: Commands, name: ?[:0]const u8, ids: anytype) EntityCommands {
+        const ti = @typeInfo(@TypeOf(ids));
+        if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
+            @compileError("Expected tuple or empty struct, got " ++ @typeName(@TypeOf(ids)));
+
+        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
+            .name = if (name) |n| n.ptr else null,
+        });
+
+        inline for (ids, 0..) |id_or_pair, i| {
+            if (comptime std.meta.trait.isTuple(@TypeOf(id_or_pair))) {
+                assertMsg(id_or_pair.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(id_or_pair))});
+                desc.add[i] = self.ecs.pair(id_or_pair[0], id_or_pair[1]);
+            } else {
+                desc.add[i] = self.ecs.componentId(id_or_pair);
+            }
+        }
+
+        return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
     }
 
     pub fn newId(self: Commands) u64 {
@@ -99,6 +129,10 @@ pub const Commands = struct {
     pub fn runSystem(self: Commands, system: u64) void {
         _ = c.ecs_run(self.ecs, system, 0, null);
     }
+};
+
+pub const EntityCommands = struct {
+    entity: Entity,
 };
 
 const DeferredCreateSystem = struct {

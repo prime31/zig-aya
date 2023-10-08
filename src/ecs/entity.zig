@@ -73,10 +73,10 @@ pub const Entity = struct {
     /// Relation can be a type, u64 or Entity
     pub fn getTargetOfPair(self: Entity, Relation: anytype, index: i32) u64 {
         const rel_id = switch (@TypeOf(Relation)) {
-            type => self.componentId(Relation),
+            type => self.ecs.componentId(Relation),
             u64 => Relation,
             Entity => Relation.id,
-            else => unreachable,
+            else => |f| @panic("wtf man: " ++ @typeName(f)),
         };
 
         return c.ecs_get_target(self.ecs, self.id, rel_id, index);
@@ -85,7 +85,7 @@ pub const Entity = struct {
     /// Iterates all targets of a relationship. Relation can be a type, u64 or Entity
     pub fn nextTargetOfPair(self: Entity, Relation: anytype) ?u64 {
         const rel_id = switch (@TypeOf(Relation)) {
-            type => self.componentId(Relation),
+            type => self.ecs.componentId(Relation),
             u64 => Relation,
             Entity => Relation.id,
             else => unreachable,
