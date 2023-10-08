@@ -70,7 +70,7 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
                 system_desc = tmp_system_desc;
             }
 
-            // query_type is on Query(T)
+            // query_type is a Query(T)
             if (@hasDecl(T, "query_type")) {
                 var query = T.init(world);
                 application.world.locals.insert(@TypeOf(query), system_desc.?.entity, query);
@@ -84,6 +84,12 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
             .interval = if (@hasDecl(System, "interval")) System.interval else 0,
             .run = wrapSystemFn(System.run),
         });
+    }
+
+    // no_readonly systems cannot be multi-threaded
+    if (@hasDecl(System, "no_readonly") and System.no_readonly) {
+        system_desc.?.multi_threaded = false;
+        system_desc.?.no_readonly = true;
     }
 
     system_desc.?.binding_ctx = application;
