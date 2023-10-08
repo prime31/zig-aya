@@ -424,7 +424,7 @@ pub fn generateFilterDesc(world: *c.ecs_world_t, comptime Components: type) c.ec
                 } else if (ti.mask == c.EcsIsEntity) {
                     desc.terms[next_term_index].id = world.componentId(ti.term_type);
                     desc.terms[next_term_index].inout = ti.inout;
-                    desc.terms[next_term_index].subj.set.mask = ti.mask;
+                    desc.terms[next_term_index].subj.set.mask = ti.mask; // TODO: should maybe be .src.flags = ti.mask?
                     next_term_index += 1;
                 } else {
                     std.debug.print("invalid inout applied to a term not in the query. only Not and Filter are allowed for terms not present.\n", .{});

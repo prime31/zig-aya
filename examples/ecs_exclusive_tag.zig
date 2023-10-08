@@ -31,6 +31,10 @@ const UpdateSystem = struct {
 
         const entity = commands.ecs.lookup("TagHolder").?;
         std.debug.print("----- has Mother: {any}\n", .{entity.hasPair(Mother, aya.c.EcsWildcard)});
-        std.debug.print("target of Mother pair: {} ({s})\n", .{ entity.getTargetOfPair(Mother, 0), commands.ecs.getEntity(entity.getTargetOfPair(Mother, 0)).getName() });
+
+        // iterate all targets of the pair. Since the Mother tag is exclusive there should only be one even though we added two
+        while (entity.nextTargetOfPair(Mother)) |target| {
+            std.debug.print("------- target of Mother pair: {} ({s})\n", .{ target, commands.ecs.getEntity(target).getName() });
+        }
     }
 };

@@ -36,14 +36,16 @@ const SetVelocityCallback = struct {
 
     // optional (f32). If set, this will be the interval in seconds that the system is called
     pub const interval = 0.5;
+
+    // optional (bool). If true, `system_desc.no_readonly` will be set to true and `system_desc.multi_threaded` will be false.
+    pub const no_readonly = true;
 };
 ```
 
 
 
 ## TODO
-- maybe do some wrapping of Phase:
+- maybe do some wrapping of Phase: (this turns out to make things pretty annoying i think)
     - phases could be required to be wrapped in Phase(T) for validation: const Update = Phase(Update);
     - metadata could be stored in the Phase(T) for validation
-- add the system features (`no_readonly`) from the screenshot on phone
 - add clean validators, perhaps using std.meta.trait for anything that takes comptime params in App, World, ecs_world_t
