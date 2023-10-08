@@ -21,8 +21,8 @@ pub fn main() !void {
 
 const InputSystem = struct {
     pub fn run(mouse_buttons_res: Res(Input(MouseButton)), keys_res: Res(Input(Scancode)), wheel: EventReader(MouseWheel)) void {
-        var mouse_buttons: *const Input(MouseButton) = mouse_buttons_res.get() orelse return;
-        var keys: *const Input(Scancode) = keys_res.get() orelse return;
+        var mouse_buttons: *const Input(MouseButton) = mouse_buttons_res.getAssertExists();
+        var keys: *const Input(Scancode) = keys_res.getAssertExists();
 
         if (mouse_buttons.justPressed(.left)) std.debug.print("left mouse just pressed\n", .{});
         if (mouse_buttons.justReleased(.left)) std.debug.print("left mouse just released\n", .{});
