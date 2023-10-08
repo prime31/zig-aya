@@ -131,11 +131,8 @@ pub const ecs_world_t = opaque {
     }
 
     /// if T is a registered type returns the entity id else asserts
-    pub fn idAssertExists(_: *Self, comptime T: type) u64 {
-        const type_id_ptr = perTypeGlobalStructPtr(T);
-        if (type_id_ptr.* != 0)
-            return type_id_ptr.*;
-        unreachable;
+    pub fn typeId(_: *Self, comptime T: type) u64 {
+        return perTypeGlobalStructPtr(T).*;
     }
 
     /// TODO: rename. T isnt always a component, it can be a tag

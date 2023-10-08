@@ -9,24 +9,15 @@ const RedSet = struct {};
 
 pub fn main() !void {
     App.init()
-        .addPlugins(aya.DefaultPlugins)
         .addSystemSet(aya.Update, RedSet)
         .configureSystemSet(BlueSet, .after, RedSet)
-        .enableWebExplorer()
-        .addSystems(aya.Update, Red1System).inSet(RedSet)
+        .addSystems(RedSet, Red2System)
+        .addSystems(RedSet, Red1System).before(Red2System)
         .addSystems(aya.Update, BeforeRedSetSystem).before(Red1System)
-        .addSystems(aya.Update, AfterRedSetSystem)
-        .addSystems(aya.Update, Red2System).inSet(RedSet).before(Red1System)
-        .addSystems(aya.Update, BlueSetSystem).inSet(BlueSet)
-        .addSystems(aya.Last, PanicSystem)
+        .addSystems(aya.Update, AfterBlueSetSystem)
+        .addSystems(BlueSet, BlueSetSystem)
         .run();
 }
-
-const PanicSystem = struct {
-    pub fn run() void {
-        @panic("fuck");
-    }
-};
 
 const BlueSetSystem = struct {
     pub fn run() void {
@@ -40,9 +31,9 @@ const BeforeRedSetSystem = struct {
     }
 };
 
-const AfterRedSetSystem = struct {
+const AfterBlueSetSystem = struct {
     pub fn run() void {
-        std.debug.print("-- AfterRedSet called\n", .{});
+        std.debug.print("-- AfterBlueSetSystem called\n", .{});
     }
 };
 

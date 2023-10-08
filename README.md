@@ -12,7 +12,7 @@ const SetVelocityCallback = struct {
     // optional. If not present the struct type will be used as the name
     pub const name = "SetVelocity";
 
-    // system. can contain 1 Iterator and n Queries params
+    // system. can contain 1 `Iterator` and n `Query` params
     pub const fn run(iter: *Iterator(SetVelocityCallback)) void {
         while (iter.next()) |_| {
             iter.entity().set(&Velocity{ .x = 1, .y = 2 });
@@ -41,10 +41,8 @@ const SetVelocityCallback = struct {
 
 
 ## TODO
-- system sets. add to `SystemSort`. would need to manage set order and order_in_set. When set order changes every SystemSort
-    would need to have its set data changed so the sort can be: phase, if_in_set(set) order_in_set else order_in_system
-    - `app.configure_sets(PostUpdate, CalculateBoundsFlush.after(CalculateBounds))`
-    - `app.add_systems(PostUpdate, apply_deferred.in_set(CalculateBoundsFlush))`
 - maybe do some wrapping of Phase:
     - phases could be required to be wrapped in Phase(T) for validation: const Update = Phase(Update);
     - metadata could be stored in the Phase(T) for validation
+- add the system features (`no_readonly`) from the screenshot on phone
+- add clean validators, perhaps using std.meta.trait for anything that takes comptime params in App, World, ecs_world_t
