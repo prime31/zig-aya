@@ -16,6 +16,11 @@ pub fn Res(comptime T: type) type {
         pub fn get(self: Self) ?*const T {
             return self.resource;
         }
+
+        pub fn getAssertExists(self: Self) *const T {
+            std.debug.assert(self.resource != null);
+            return self.resource.?;
+        }
     };
 }
 
@@ -30,7 +35,7 @@ pub fn ResMut(comptime T: type) type {
             return self.resource;
         }
 
-        pub fn getAssertContains(self: Self) *T {
+        pub fn getAssertExists(self: Self) *T {
             std.debug.assert(self.resource != null);
             return self.resource.?;
         }

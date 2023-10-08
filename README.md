@@ -12,7 +12,8 @@ const SetVelocityCallback = struct {
     // optional. If not present the struct type will be used as the name
     pub const name = "SetVelocity";
 
-    // system. can contain 1 `Iterator` and n `Query` params
+    // system. can contain 0 or 1 `Iterator`, n `Query` params, 0 or 1 `Commands/World` params and any number of
+    // `Local/Res/ResMut/EventReader/EventWriter` params
     pub const fn run(iter: *Iterator(SetVelocityCallback)) void {
         while (iter.next()) |_| {
             iter.entity().set(&Velocity{ .x = 1, .y = 2 });
@@ -34,7 +35,7 @@ const SetVelocityCallback = struct {
     pub const instanced = true;
 
     // optional (f32). If set, this will be the interval in seconds that the system is called
-    pub cosnt interval = 0.5;
+    pub const interval = 0.5;
 };
 ```
 

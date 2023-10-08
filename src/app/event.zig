@@ -77,7 +77,7 @@ pub fn EventUpdateSystem(comptime T: type) type {
         pub const name = "aya.systems.events.EventUpdateSystem_" ++ aya.utils.typeNameLastComponent(T);
 
         pub fn run(state: ResMut(Events(T))) void {
-            state.getAssertContains().update();
+            state.getAssertExists().update();
         }
     };
 }
