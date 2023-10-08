@@ -6,11 +6,12 @@ const App = aya.App;
 
 const BlueSet = struct {};
 const RedSet = struct {};
+const OrangeSet = struct {};
 
 pub fn main() !void {
     App.init()
-        .addSystemSet(aya.Update, RedSet)
-        .configureSystemSet(BlueSet, .after, RedSet)
+        .addSets(aya.Update, .{ RedSet, OrangeSet })
+        .configureSets(BlueSet, .after, RedSet)
         .addSystems(RedSet, Red2System)
         .addSystems(RedSet, Red1System).before(Red2System)
         .addSystems(aya.Update, BeforeRedSetSystem).before(Red1System)

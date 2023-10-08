@@ -357,50 +357,57 @@ pub const App = struct {
     }
 
     // System Sets
-    fn getOrCreateSystemSetEntity(self: *Self, comptime T: type, phase: u64) Entity {
+    fn createSystemSet(self: *Self, comptime T: type, phase: u64) Entity {
         // create the Set if it doesnt already exist
         const set_entity = self.world.ecs.getEntity(T);
-        if (!set_entity.has(SystemSet)) {
-            const phase_order = self.world.ecs.getEntity(phase).get(PhaseSort).?.order;
-            const order_in_phase = self.getNextOrderInPhase(phase);
+        assertMsg(!set_entity.has(SystemSet), "attempting to create Set {s} but it already exists", .{@typeName(T)});
 
-            set_entity.add(SystemSet);
-            set_entity.set(SystemSort{
-                .phase = phase,
-                .phase_order = phase_order,
-                .order_in_phase = order_in_phase,
-            });
-        }
+        const phase_order = self.world.ecs.getEntity(phase).get(PhaseSort).?.order;
+        const order_in_phase = self.getNextOrderInPhase(phase);
+
+        set_entity.add(SystemSet);
+        set_entity.set(SystemSort{
+            .phase = phase,
+            .phase_order = phase_order,
+            .order_in_phase = order_in_phase,
+        });
 
         return set_entity;
     }
 
     /// adds a system set to Phase. If ordering via configureSystemSet isnt required then system sets can be added
-    /// on-the-fly with inSet.
-    pub fn addSystemSet(self: *Self, comptime Phase: type, comptime Set: type) *Self {
+    /// on-the-fly addSystems
+    pub fn addSets(self: *Self, comptime Phase: type, Sets: anytype) *Self {
         const phase = self.world.ecs.componentId(Phase);
         std.debug.assert(self.world.ecs.getEntity(phase).has(c.EcsPhase));
 
-        _ = self.getOrCreateSystemSetEntity(Set, phase);
+        // normalize a single Set or a tuple of Sets to an array of Sets
+        const new_sets = aya.meta.tupleOrSingleArgToSlice(type, Sets);
+        inline for (new_sets) |Set| _ = self.createSystemSet(Set, phase);
+
         return self;
     }
 
     /// adds a system set relative to SetOrSystem
-    pub fn configureSystemSet(self: *Self, comptime Set: type, where: enum { before, after }, comptime SetOrSystem: type) *Self {
-        std.debug.assert(@typeInfo(Set) == .Struct and @sizeOf(Set) == 0);
-
-        const other_sort: *const SystemSort = if (@hasDecl(SetOrSystem, "run")) blk: {
+    pub fn configureSets(self: *Self, Sets: anytype, where: enum { before, after }, comptime SetOrSystem: type) *Self {
+        const other_sort: SystemSort = if (@hasDecl(SetOrSystem, "run")) blk: {
             break :blk self.getSystemSortForSystemType(SetOrSystem);
-        } else self.world.ecs.getEntity(SetOrSystem).get(SystemSort).?;
+        } else self.world.ecs.getEntity(SetOrSystem).get(SystemSort).?.*; // we want a copy because we are gonna mutate the archtype!
 
-        // create the Set if it doesnt already exist
-        const set_entity = self.getOrCreateSystemSetEntity(Set, other_sort.phase);
-        const set_sort: *SystemSort = set_entity.getMut(SystemSort);
-        assertMsg(set_sort.phase == other_sort.phase, "cannot order System Set with a system or set that is in a different phase", .{});
+        // normalize a single Set or a tuple of Sets to an array of Sets
+        const new_sets = aya.meta.tupleOrSingleArgToSlice(type, Sets);
+        inline for (new_sets) |Set| {
+            std.debug.assert(@typeInfo(Set) == .Struct and @sizeOf(Set) == 0);
 
-        // move Set's order_in_phase relative to the other SetOrSystem then shift all systems
-        set_sort.order_in_phase = if (where == .before) other_sort.order_in_phase - 1 else other_sort.order_in_phase + 1;
-        self.updateSystemOrder(set_sort.phase, other_sort.order_in_phase, if (where == .before) -1 else 1);
+            // create the Set if it doesnt already exist
+            const set_entity = self.createSystemSet(Set, other_sort.phase);
+            const set_sort: *SystemSort = set_entity.getMut(SystemSort);
+            assertMsg(set_sort.phase == other_sort.phase, "cannot order System Set with a system or set that is in a different phase", .{});
+
+            // move Set's order_in_phase relative to the other SetOrSystem then shift all systems
+            set_sort.order_in_phase = if (where == .before) other_sort.order_in_phase - 1 else other_sort.order_in_phase + 1;
+            self.updateSystemOrder(set_sort.phase, other_sort.order_in_phase, if (where == .before) -1 else 1);
+        }
 
         return self;
     }
@@ -462,9 +469,10 @@ pub const App = struct {
         return self;
     }
 
-    fn addSystemInSystemSet(self: *Self, comptime Set: type, comptime T: type) void {
+    fn addSystemInSet(self: *Self, comptime Set: type, comptime T: type) void {
         const set_entity = self.world.ecs.getEntity(Set);
         std.debug.assert(set_entity.has(SystemSet));
+
         const set_sort: *const SystemSort = set_entity.get(SystemSort).?;
         _ = self.addSystem(set_sort.phase, T);
         const system_entity = self.world.ecs.getEntity(self.last_added_systems.getLast());
@@ -487,16 +495,7 @@ pub const App = struct {
         self.last_added_systems.clearRetainingCapacity();
 
         // normalize a single system or a tuple of systems to an array of systems
-        const new_systems = comptime blk: {
-            if (@typeInfo(@TypeOf(Systems)) == .Struct and @typeInfo(@TypeOf(Systems)).Struct.is_tuple) {
-                var tmp: [Systems.len]type = undefined;
-                for (Systems, 0..) |S, i| tmp[i] = S;
-                break :blk tmp[0..Systems.len];
-            } else {
-                const tmp: [1]type = [_]type{Systems};
-                break :blk tmp[0..1];
-            }
-        };
+        const new_systems = aya.meta.tupleOrSingleArgToSlice(type, Systems);
 
         inline for (new_systems) |T| {
             std.debug.assert(@hasDecl(T, "run"));
@@ -524,7 +523,7 @@ pub const App = struct {
                 if (c.ecs_has_id(self.world.ecs, type_id, c.EcsPhase)) {
                     _ = self.addSystem(phase_state_set, T);
                 } else {
-                    self.addSystemInSystemSet(phase_state_set, T);
+                    self.addSystemInSet(phase_state_set, T);
                 }
             } else {
                 @panic("addSystems called with invalid params. phase_or_state must be OnEnter/OnExit/OnTransition or a phase type. Systems must be a system struct or tuple of system structs");
