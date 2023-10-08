@@ -73,6 +73,7 @@ pub const App = struct {
         };
 
         // register startup phases
+        self.world.ecs.getEntity(phases.Startup).add(c.EcsPhase);
         self.world.ecs.registerComponents(.{ phases.PreStartup, phases.Startup, phases.PostStartup });
 
         // register our phases. The first one depends on nothing so we add it manually
@@ -358,7 +359,6 @@ pub const App = struct {
 
     // System Sets
     fn createSystemSet(self: *Self, comptime T: type, phase: u64) Entity {
-        // create the Set if it doesnt already exist
         const set_entity = self.world.ecs.getEntity(T);
         assertMsg(!set_entity.has(SystemSet), "attempting to create Set {s} but it already exists", .{@typeName(T)});
 
@@ -453,7 +453,7 @@ pub const App = struct {
 
         const phase = if (@TypeOf(Phase) == type) self.world.ecs.componentId(Phase) else Phase;
         const order_in_phase = self.getNextOrderInPhase(phase);
-        const phase_order = self.world.ecs.getEntity(phase).get(PhaseSort).?.order;
+        const phase_order = if (self.world.ecs.getEntity(phase).get(PhaseSort)) |sort| sort.order else 0;
 
         const sys = systems.addSystem(self.world.ecs, phase, T);
         self.last_added_systems.append(sys) catch unreachable;

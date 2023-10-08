@@ -82,6 +82,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "app_input", "examples/app_input.zig");
     addExecutable(b, target, optimize, options, "app_input_gamepad", "examples/app_input_gamepad.zig");
     addExecutable(b, target, optimize, options, "app_gamepad_rumble", "examples/app_gamepad_rumble.zig");
+    addExecutable(b, target, optimize, options, "ecs_exclusive_tag", "examples/ecs_exclusive_tag.zig");
     addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
     addExecutable(b, target, optimize, options, "systems_intervals", "examples/systems_intervals.zig");
 

@@ -145,6 +145,9 @@ pub const ecs_world_t = opaque {
         if (@sizeOf(T) == 0) {
             var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = @typeName(T) });
             type_id_ptr.* = c.ecs_entity_init(self, &desc);
+
+            if (@hasDecl(T, "exclusive") and T.exclusive)
+                c.ecs_add_id(self, type_id_ptr.*, c.EcsExclusive);
         } else {
             type_id_ptr.* = c.ecs_component_init(self, &std.mem.zeroInit(c.ecs_component_desc_t, .{
                 .entity = c.ecs_entity_init(self, &std.mem.zeroInit(c.ecs_entity_desc_t, .{
@@ -243,8 +246,7 @@ pub const ecs_world_t = opaque {
     /// creates a Filter using the passed in struct
     pub fn filter(self: *Self, comptime Components: type) Filter(Components) {
         std.debug.assert(@typeInfo(Components) == .Struct);
-        var desc = meta.generateFilterDesc(self, Components);
-        return Filter(Components).init(self, &desc);
+        return Filter(Components).init(self);
     }
 
     /// creates a Query using the passed in struct
