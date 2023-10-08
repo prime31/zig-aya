@@ -74,7 +74,7 @@ pub fn EventReader(comptime T: type) type {
 
 pub fn EventUpdateSystem(comptime T: type) type {
     return struct {
-        pub const name = "EventUpdateSystem_" ++ aya.utils.typeNameLastComponent(T);
+        pub const name = "aya.systems.events.EventUpdateSystem_" ++ aya.utils.typeNameLastComponent(T);
 
         pub fn run(state: ResMut(Events(T))) void {
             state.getAssertContains().update();

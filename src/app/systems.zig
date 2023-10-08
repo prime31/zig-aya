@@ -17,10 +17,12 @@ pub const AppWrapper = struct { app: *App };
 pub const RunWhenPaused = struct {};
 pub const SystemPaused = struct {};
 
-pub const SystemSort = struct {
+pub const SystemSort = extern struct {
     phase: u64,
     phase_order: i32 = 0,
     order_in_phase: i32 = 0,
+    set: u64 = 0,
+    order_in_set: i32 = 0,
 };
 
 pub fn addSystem(world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {

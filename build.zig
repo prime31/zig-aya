@@ -75,6 +75,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "app_states", "examples/app_states.zig");
     addExecutable(b, target, optimize, options, "app_pause", "examples/app_pause.zig");
     addExecutable(b, target, optimize, options, "app_phases", "examples/app_phases.zig");
+    addExecutable(b, target, optimize, options, "app_sets", "examples/app_sets.zig");
     addExecutable(b, target, optimize, options, "app_custom_runner", "examples/app_custom_runner.zig");
     addExecutable(b, target, optimize, options, "app_multi_query_system", "examples/app_multi_query_system.zig");
     addExecutable(b, target, optimize, options, "app_window", "examples/app_window.zig");

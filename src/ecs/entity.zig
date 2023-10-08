@@ -141,12 +141,12 @@ pub const Entity = struct {
         return null;
     }
 
-    pub fn getMut(self: Entity, comptime T: type) ?*T {
+    pub fn getMut(self: Entity, comptime T: type) *T {
         var ptr = c.ecs_get_mut_id(self.ecs, self.id, self.ecs.componentId(T));
         if (ptr) |p| {
             return @as(*T, @ptrCast(@alignCast(p)));
         }
-        return null;
+        unreachable;
     }
 
     /// removes a component from an Entity

@@ -6,6 +6,7 @@ const app = @import("mod.zig");
 const systems = @import("systems.zig");
 
 const phases = @import("phases.zig");
+const assertMsg = aya.meta.assertMsg;
 
 pub const AppExitEvent = struct {};
 
@@ -16,6 +17,7 @@ const Resources = app.Resources;
 const AssetServer = aya.AssetServer;
 const Assets = aya.Assets;
 const AssetLoader = aya.AssetLoader;
+const Entity = aya.Entity;
 
 const SystemSort = systems.SystemSort;
 const SystemPaused = systems.SystemPaused;
@@ -35,6 +37,8 @@ const StateChangeCheckSystem = @import("state.zig").StateChangeCheckSystem;
 const ScratchAllocator = @import("../mem/scratch_allocator.zig").ScratchAllocator;
 
 const PhaseSort = struct { order: i32 };
+// relation tagging system sets
+const SystemSet = struct {};
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub const allocator = gpa.allocator();
@@ -49,6 +53,7 @@ pub const App = struct {
     world: World,
     plugins: std.AutoHashMap(u32, void),
     phase_insert_indices: std.AutoHashMap(u64, i32),
+    set_insert_indices: std.AutoHashMap(u64, i32),
     last_added_systems: std.ArrayList(u64),
     runFn: ?*const fn (*App) void = null,
 
@@ -63,6 +68,7 @@ pub const App = struct {
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
+            .set_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
             .last_added_systems = std.ArrayList(u64).init(allocator),
         };
 
@@ -70,7 +76,7 @@ pub const App = struct {
         self.world.ecs.registerComponents(.{ phases.PreStartup, phases.Startup, phases.PostStartup });
 
         // register our phases. The first one depends on nothing so we add it manually
-        const phase_entity = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(phases.First));
+        const phase_entity = self.world.ecs.getEntity(phases.First);
         phase_entity.add(c.EcsPhase);
         phase_entity.set(PhaseSort{ .order = 0 });
 
@@ -88,6 +94,7 @@ pub const App = struct {
     pub fn deinit(self: *Self) void {
         self.plugins.deinit();
         self.phase_insert_indices.deinit();
+        self.set_insert_indices.deinit();
         self.last_added_systems.deinit();
         tmp_allocator_instance.deinit();
         self.world.deinit();
@@ -123,7 +130,7 @@ pub const App = struct {
     /// available at: https://flecs.dev/explorer
     /// debug check if its running: http://localhost:27750/entity/flecs/core/World
     pub fn enableWebExplorer(self: *Self) *Self {
-        if (!@import("options").include_flecs_explorer) return self;
+        if (!@import("build_options").include_flecs_explorer) return self;
 
         self.world.ecs.enableWebExplorer();
 
@@ -133,8 +140,10 @@ pub const App = struct {
         rest_system.add(phase);
         rest_system.set(systems.SystemSort{
             .phase = phase,
-            .order_in_phase = self.getNextOrderInPhase(.last),
+            .order_in_phase = self.getNextOrderInPhase(self.world.ecs.componentId(aya.Last)),
         });
+
+        std.debug.print("Flecs explorer enabled. Go to: https://flecs.dev/explorer\n", .{});
 
         return self;
     }
@@ -157,7 +166,7 @@ pub const App = struct {
     pub fn addPhase(self: *Self, comptime Phase: type, where: enum { before, after }, comptime OtherPhase: type) *Self {
         std.debug.assert(@sizeOf(Phase) == 0 and @sizeOf(OtherPhase) == 0);
 
-        const other_phase = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(OtherPhase));
+        const other_phase = self.world.ecs.getEntity(OtherPhase);
         const other_sort_order = other_phase.get(PhaseSort).?.order;
 
         var phase_sort_map = std.AutoHashMap(u64, i32).init(aya.tmp_allocator);
@@ -222,7 +231,7 @@ pub const App = struct {
         // create the new phase and assign it an order relative to other_sort_order
         const phase_order = if (where == .before) other_sort_order - 1 else other_sort_order + 1;
 
-        const phase = aya.Entity.init(self.world.ecs, self.world.ecs.componentId(Phase));
+        const phase = self.world.ecs.getEntity(Phase);
         phase.add(c.EcsPhase);
         phase.set(PhaseSort{ .order = phase_order });
 
@@ -334,11 +343,11 @@ pub const App = struct {
         std.debug.assert(@typeInfo(@TypeOf(state)) == .Enum);
         std.debug.assert(self.last_added_systems.items.len > 0);
 
-        for (self.last_added_systems.items) |system| {
-            // add the State tag entity to the system and disable it if the state isnt active
-            const state_res = self.world.getResource(State(@TypeOf(state))).?;
+        // add the State tag entity to the system and disable it if the state isnt active
+        const state_res = self.world.getResource(State(@TypeOf(state))).?;
 
-            const entity = ecs.Entity.init(self.world.ecs, system);
+        for (self.last_added_systems.items) |system| {
+            const entity = self.world.ecs.getEntity(system);
             entity.addPair(state_res.base_entity, state_res.entityForTag(state));
 
             if (state_res.state != state)
@@ -347,7 +356,106 @@ pub const App = struct {
         return self;
     }
 
+    // System Sets
+    fn getOrCreateSystemSetEntity(self: *Self, comptime T: type, phase: u64) Entity {
+        // create the Set if it doesnt already exist
+        const set_entity = self.world.ecs.getEntity(T);
+        if (!set_entity.has(SystemSet)) {
+            const phase_order = self.world.ecs.getEntity(phase).get(PhaseSort).?.order;
+            const order_in_phase = self.getNextOrderInPhase(phase);
+
+            set_entity.add(SystemSet);
+            set_entity.set(SystemSort{
+                .phase = phase,
+                .phase_order = phase_order,
+                .order_in_phase = order_in_phase,
+            });
+        }
+
+        return set_entity;
+    }
+
+    /// adds a system set to Phase. If ordering via configureSystemSet isnt required then system sets can be added
+    /// on-the-fly with inSet.
+    pub fn addSystemSet(self: *Self, comptime Phase: type, comptime Set: type) *Self {
+        const phase = self.world.ecs.componentId(Phase);
+        std.debug.assert(self.world.ecs.getEntity(phase).has(c.EcsPhase));
+
+        _ = self.getOrCreateSystemSetEntity(Set, phase);
+        return self;
+    }
+
+    /// adds a system set relative to SetOrSystem
+    pub fn configureSystemSet(self: *Self, comptime Set: type, where: enum { before, after }, comptime SetOrSystem: type) *Self {
+        std.debug.assert(@typeInfo(Set) == .Struct and @sizeOf(Set) == 0);
+
+        const other_sort: *const SystemSort = if (@hasDecl(SetOrSystem, "run")) blk: {
+            break :blk self.getSystemSortForSystemType(SetOrSystem);
+        } else self.world.ecs.getEntity(SetOrSystem).get(SystemSort).?;
+
+        // create the Set if it doesnt already exist
+        const set_entity = self.getOrCreateSystemSetEntity(Set, other_sort.phase);
+        const set_sort: *SystemSort = set_entity.getMut(SystemSort);
+        assertMsg(set_sort.phase == other_sort.phase, "cannot order System Set with a system or set that is in a different phase", .{});
+
+        // move Set's order_in_phase relative to the other SetOrSystem then shift all systems
+        set_sort.order_in_phase = if (where == .before) other_sort.order_in_phase - 1 else other_sort.order_in_phase + 1;
+        self.updateSystemOrder(set_sort.phase, other_sort.order_in_phase, if (where == .before) -1 else 1);
+
+        return self;
+    }
+
+    pub fn inSet(self: *Self, comptime Set: type) *Self {
+        std.debug.assert(self.last_added_systems.items.len > 0);
+        std.debug.assert(@typeInfo(Set) == .Struct and @sizeOf(Set) == 0);
+
+        // create the Set if it doesnt already exist
+        // grab the phase off the last added system and put the System Set in it
+        const phase = self.world.ecs.getEntity(self.last_added_systems.items[0]).get(SystemSort).?.phase;
+        const set_entity = self.getOrCreateSystemSetEntity(Set, phase);
+        const set_sort = set_entity.get(SystemSort).?;
+
+        for (self.last_added_systems.items) |system| {
+            assertMsg(!self.world.ecs.hasPair(system, SystemSet, c.EcsWildcard), "systems can only be in one SystemSet", .{});
+
+            // ensure the system and the set are in the same phase
+            const system_entity = self.world.ecs.getEntity(system);
+            assertMsg(set_sort.phase == system_entity.get(SystemSort).?.phase, "attempting to add system ({s}) to a set ({s}) that is in a different phase", .{ system_entity.getName(), set_entity.getName() });
+
+            // add the SystemSet pair to the system
+            system_entity.addPair(SystemSet, set_entity.id);
+
+            // update the system's SystemSort with the order_in_phase/set/order_in_set from the set
+            const system_sort = system_entity.getMut(SystemSort);
+            system_sort.order_in_phase = set_sort.order_in_phase;
+            system_sort.set = set_entity.id;
+            system_sort.order_in_set = self.getNextOrderInSet(set_entity.id);
+        }
+
+        return self;
+    }
+
+    /// fetches the last inserted index in the given phase then increments and returns it
+    fn getNextOrderInSet(self: *Self, set: u64) i32 {
+        var set_insertions = self.set_insert_indices.getOrPut(set) catch unreachable;
+        return blk: {
+            if (!set_insertions.found_existing) {
+                set_insertions.value_ptr.* = 0;
+                break :blk 0;
+            }
+            set_insertions.value_ptr.* += 1;
+            break :blk set_insertions.value_ptr.*;
+        };
+    }
+
     // Systems
+    fn getSystemSortForSystemType(self: *const Self, comptime T: type) *const SystemSort {
+        const system_name = if (@hasDecl(T, "name")) T.name else aya.utils.typeNameLastComponent(T);
+        const entity = self.world.ecs.lookupFullPath(system_name) orelse @panic("could not find other system");
+        return entity.get(SystemSort) orelse @panic("other does not appear to be a system");
+    }
+
+    /// fetches the last inserted index in the given phase then increments and returns it
     fn getNextOrderInPhase(self: *Self, phase: u64) i32 {
         var phase_insertions = self.phase_insert_indices.getOrPut(phase) catch unreachable;
         return blk: {
@@ -366,22 +474,24 @@ pub const App = struct {
 
         const phase = self.world.ecs.componentId(Phase);
         const order_in_phase = self.getNextOrderInPhase(phase);
-        const phase_order = if (aya.Entity.init(self.world.ecs, phase).get(PhaseSort)) |sort| sort.order else 0;
+        const phase_order = self.world.ecs.getEntity(phase).get(PhaseSort).?.order;
 
         const sys = systems.addSystem(self.world.ecs, phase, T);
         self.last_added_systems.append(sys) catch unreachable;
 
-        const system_entity = ecs.Entity.init(self.world.ecs, sys);
+        const system_entity = self.world.ecs.getEntity(sys);
         system_entity.set(SystemSort{
             .phase = phase,
             .phase_order = phase_order,
             .order_in_phase = order_in_phase,
+            .set = 0,
         });
 
         return self;
     }
 
     /// phase_or_state can either be a tag of Phases or a State enum tag wrapped in OnEnter/OnExit
+    /// Systems should be a single type or a tuple of types
     pub fn addSystems(self: *Self, phase_or_state: anytype, comptime Systems: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(Systems)) == .Struct or @typeInfo(Systems) == .Struct);
 
@@ -430,43 +540,37 @@ pub const App = struct {
     }
 
     pub fn before(self: *Self, comptime T: type) *Self {
-        std.debug.assert(self.last_added_systems.items.len > 0);
-
-        for (self.last_added_systems.items) |system| {
-            const entity = ecs.Entity.init(self.world.ecs, system);
-
-            // find the other system by its name and grab its SystemSort
-            const system_name = if (@hasDecl(T, "name")) T.name else aya.utils.typeNameLastComponent(T);
-            const other_entity = self.world.ecs.lookupFullPath(system_name) orelse @panic("could not find other system");
-            const other_sort = other_entity.get(SystemSort) orelse @panic("other does not appear to be a system");
-
-            const current_sort = entity.getMut(SystemSort) orelse unreachable;
-            if (other_sort.phase != current_sort.phase) @panic("other_system is in a different phase. Cannot add before unless they are in the same phase");
-
-            current_sort.order_in_phase = other_sort.order_in_phase - 1;
-            self.updateSystemOrder(current_sort.phase, other_sort.order_in_phase, -1);
-        }
-
+        self.shiftLastAddedSystems(.before, T);
         return self;
     }
 
-    pub fn after(self: *Self, runFn: anytype) *Self {
+    pub fn after(self: *Self, comptime T: type) *Self {
+        self.shiftLastAddedSystems(.after, T);
+        return self;
+    }
+
+    fn shiftLastAddedSystems(self: *Self, where: enum { before, after }, comptime T: type) void {
         std.debug.assert(self.last_added_systems.items.len > 0);
 
+        const direction: i32 = if (where == .before) -1 else 1;
         for (self.last_added_systems.items) |system| {
-            const entity = ecs.Entity.init(self.world.ecs, system);
+            const entity = self.world.ecs.getEntity(system);
 
             // find the other system by its name and grab its SystemSort
-            const other_entity = self.world.ecs.lookupFullPath(@typeName(@TypeOf(runFn))) orelse @panic("could not find other system");
-            const other_sort = other_entity.get(SystemSort) orelse @panic("other does not appear to be a system");
+            const other_sort = self.getSystemSortForSystemType(T);
 
-            const current_sort = entity.getMut(SystemSort) orelse unreachable;
+            const current_sort = entity.getMut(SystemSort);
             if (other_sort.phase != current_sort.phase) @panic("other_system is in a different phase. Cannot add before unless they are in the same phase");
 
-            current_sort.order_in_phase = other_sort.order_in_phase + 1;
-            self.updateSystemOrder(current_sort.phase, other_sort.order_in_phase, 1);
+            // if both systems are in the same set we update order_in_set instead of order_in_phase
+            if (other_sort.set > 0 and other_sort.set == current_sort.set) {
+                current_sort.order_in_set = other_sort.order_in_set + direction;
+                self.updateSystemOrderInSet(current_sort.set, other_sort.order_in_set, direction);
+            } else {
+                current_sort.order_in_phase = other_sort.order_in_phase + direction;
+                self.updateSystemOrder(current_sort.phase, other_sort.order_in_phase, direction);
+            }
         }
-        return self;
     }
 
     fn updateSystemOrder(self: *Self, phase: u64, other_order_in_phase: i32, direction: i32) void {
@@ -495,38 +599,38 @@ pub const App = struct {
         }
     }
 
+    fn updateSystemOrderInSet(self: *Self, set: u64, other_order_in_set: i32, direction: i32) void {
+        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
+        filter_desc.terms[0].inout = c.EcsInOut;
+
+        const filter = c.ecs_filter_init(self.world.ecs, &filter_desc);
+        defer c.ecs_filter_fini(filter);
+
+        var it = c.ecs_filter_iter(self.world.ecs, filter);
+        while (c.ecs_filter_next(&it)) {
+            const system_sorts = ecs.field(&it, SystemSort, 1);
+
+            var i: usize = 0;
+            while (i < it.count) : (i += 1) {
+                if (system_sorts[i].set != set) continue;
+                if (direction > 0) {
+                    if (system_sorts[i].order_in_set > other_order_in_set)
+                        system_sorts[i].order_in_set += direction;
+                } else {
+                    if (system_sorts[i].order_in_set < other_order_in_set)
+                        system_sorts[i].order_in_set += direction;
+                }
+            }
+        }
+    }
+
     pub fn addObserver(self: *Self, event: ecs.Event, runFn: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(runFn)) == .Fn);
         systems.addObserver(self.world.ecs, @intFromEnum(event), runFn);
         return self;
     }
 };
-
-fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
-    const sort1 = @as(*const SystemSort, @ptrCast(@alignCast(ptr1)));
-    const sort2 = @as(*const SystemSort, @ptrCast(@alignCast(ptr2)));
-
-    const phase_1: c_int = if (sort1.phase_order > sort2.phase_order) 1 else 0;
-    const phase_2: c_int = if (sort1.phase_order < sort2.phase_order) 1 else 0;
-
-    // sort by: phase_order, order_in_phase then entity_id
-    if (sort1.phase == sort2.phase) {
-        // std.debug.print("SAME PHASE ({}). order_in_phase: {} vs {}, phase_order: {} vs {}, entity: {}, {}\n", .{ sort1.phase, sort1.order_in_phase, sort2.order_in_phase, sort1.phase_order, sort2.phase_order, e1, e2 });
-        const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
-        const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
-
-        const order_in_phase = order_1 - order_2;
-        if (order_in_phase != 0) return order_in_phase;
-
-        // systems that didnt specify order will be sorted by entity
-        const first: c_int = if (e1 > e2) 1 else 0;
-        const second: c_int = if (e1 < e2) 1 else 0;
-
-        return first - second;
-    }
-
-    return phase_1 - phase_2;
-}
 
 /// runs a Pipeline that matches only the startup phases then deletes all systems in those phases
 fn runStartupPipeline(world: *c.ecs_world_t) void {
@@ -594,4 +698,40 @@ fn setCorePipeline(world: *c.ecs_world_t) void {
 
     const pipeline = c.ecs_pipeline_init(world, &pip_desc);
     c.ecs_set_pipeline(world, pipeline);
+}
+
+fn pipelineSystemSortCompare(e1: u64, ptr1: ?*const anyopaque, e2: u64, ptr2: ?*const anyopaque) callconv(.C) c_int {
+    if (e1 == e2) return 0;
+
+    const sort1 = @as(*const SystemSort, @ptrCast(@alignCast(ptr1)));
+    const sort2 = @as(*const SystemSort, @ptrCast(@alignCast(ptr2)));
+
+    // sort by: phase_order, order_in_phase, if(in_set) order_in_set, then entity_id
+    if (sort1.phase == sort2.phase) {
+        // std.debug.print("SAME PHASE ({}). order_in_phase: {} vs {}, phase_order: {} vs {}, entity: {}, {}\n", .{ sort1.phase, sort1.order_in_phase, sort2.order_in_phase, sort1.phase_order, sort2.phase_order, e1, e2 });
+        const order_1: c_int = if (sort1.order_in_phase > sort2.order_in_phase) 1 else 0;
+        const order_2: c_int = if (sort1.order_in_phase < sort2.order_in_phase) 1 else 0;
+
+        const order_in_phase = order_1 - order_2;
+        if (order_in_phase != 0) return order_in_phase;
+
+        // if both systems are in a matching set, use the order_in_set
+        if (sort1.set > 0 and sort1.set == sort2.set) {
+            const order_in_set_1: c_int = if (sort1.order_in_set > sort2.order_in_set) 1 else 0;
+            const order_in_set_2: c_int = if (sort1.order_in_set < sort2.order_in_set) 1 else 0;
+
+            return order_in_set_1 - order_in_set_2;
+        }
+
+        // systems that didnt specify order will be sorted by entity
+        const first: c_int = if (e1 > e2) 1 else 0;
+        const second: c_int = if (e1 < e2) 1 else 0;
+
+        return first - second;
+    }
+
+    const phase_1: c_int = if (sort1.phase_order > sort2.phase_order) 1 else 0;
+    const phase_2: c_int = if (sort1.phase_order < sort2.phase_order) 1 else 0;
+
+    return phase_1 - phase_2;
 }
