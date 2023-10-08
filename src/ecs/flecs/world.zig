@@ -13,19 +13,19 @@ const Query = ecs.Query;
 const Iterator = ecs.Iterator;
 
 pub const ecs_world_t = opaque {
-    const Self = *@This();
+    const Self = @This();
 
-    pub fn deinit(self: Self) void {
+    pub fn deinit(self: *Self) void {
         _ = c.ecs_fini(self);
     }
 
-    pub fn setTargetFps(self: Self, fps: f32) void {
+    pub fn setTargetFps(self: *Self, fps: f32) void {
         c.ecs_set_target_fps(self, fps);
     }
 
     /// available at: https://flecs.dev/explorer
     /// debug check if its running: http://localhost:27750/entity/flecs/core/World
-    pub fn enableWebExplorer(self: Self) void {
+    pub fn enableWebExplorer(self: *Self) void {
         c.FlecsMonitorImport(self);
         _ = c.ecs_set_id(self, c.FLECS_IDEcsRestID_, c.FLECS_IDEcsRestID_, @sizeOf(c.EcsRest), &std.mem.zeroes(c.EcsRest));
     }
@@ -36,40 +36,49 @@ pub const ecs_world_t = opaque {
         _ = c.ecs_log_enable_colors(enable_colors);
     }
 
-    pub fn progress(self: Self, delta_time: f32) void {
+    pub fn progress(self: *Self, delta_time: f32) void {
         _ = c.ecs_progress(self, delta_time);
     }
 
-    pub fn getTypeStr(self: Self, typ: c.ecs_type_t) [*c]u8 {
+    pub fn getTypeStr(self: *Self, typ: c.ecs_type_t) [*c]u8 {
         return c.ecs_type_str(self, typ);
     }
 
-    pub fn newId(self: Self) u64 {
+    pub fn newId(self: *Self) u64 {
         return c.ecs_new_id(self);
     }
 
-    pub fn newEntity(self: Self) Entity {
+    /// accepts an entity id (u64) or a Type and returns it wrapped in an Entity
+    pub fn getEntity(self: *Self, entity_or_type: anytype) Entity {
+        std.debug.assert(@TypeOf(entity_or_type) == u64 or @typeInfo(@TypeOf(entity_or_type)) == .Type);
+
+        if (@typeInfo(@TypeOf(entity_or_type)) == .Type)
+            return Entity.init(self, self.componentId(entity_or_type));
+        return Entity.init(self, entity_or_type);
+    }
+
+    pub fn newEntity(self: *Self) Entity {
         return Entity.init(self, c.ecs_new_id(self));
     }
 
-    pub fn newEntityNamed(self: Self, name: [*c]const u8) Entity {
+    pub fn newEntityNamed(self: *Self, name: [*c]const u8) Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
         return Entity.init(self, c.ecs_entity_init(self, &desc));
     }
 
-    pub fn lookup(self: Self, path: [:0]const u8) ?Entity {
+    pub fn lookup(self: *Self, path: [:0]const u8) ?Entity {
         const entity = c.ecs_lookup(self, path);
         if (entity != 0) return Entity.init(self, entity);
         return null;
     }
 
-    pub fn lookupFullPath(self: Self, path: [:0]const u8) ?Entity {
+    pub fn lookupFullPath(self: *Self, path: [:0]const u8) ?Entity {
         const entity = c.ecs_lookup_path_w_sep(self, 0, path, ".", null, true);
         if (entity != 0) return Entity.init(self, entity);
         return null;
     }
 
-    pub fn newPrefab(self: Self, name: [*c]const u8) c.Entity {
+    pub fn newPrefab(self: *Self, name: [*c]const u8) c.Entity {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
             .name = name,
             .add = [_]c.ecs_id_t{0} ** 32,
@@ -79,7 +88,7 @@ pub const ecs_world_t = opaque {
     }
 
     /// Allowed params: Entity, u64 (entity_id), type
-    pub fn pair(self: Self, relation: anytype, object: anytype) u64 {
+    pub fn pair(self: *Self, relation: anytype, object: anytype) u64 {
         const Relation = @TypeOf(relation);
         const Object = @TypeOf(object);
 
@@ -107,22 +116,31 @@ pub const ecs_world_t = opaque {
         return c.ECS_PAIR | (rel_id << @as(u32, 32)) + @as(u32, @truncate(obj_id));
     }
 
-    pub fn addPair(self: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) void {
+    pub fn addPair(self: *Self, entity: u64, relation: anytype, object: anytype) void {
         c.ecs_add_id(self, entity, self.pair(self, relation, object));
     }
 
-    pub fn hasPair(self: *c.ecs_world_t, entity: u64, relation: anytype, object: anytype) bool {
+    pub fn hasPair(self: *Self, entity: u64, relation: anytype, object: anytype) bool {
         return c.ecs_has_id(self, entity, self.pair(relation, object));
     }
 
     /// bulk registers a tuple of Types
-    pub fn registerComponents(self: Self, types: anytype) void {
+    pub fn registerComponents(self: *Self, types: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(types)) == .Struct);
         inline for (types) |t| _ = self.componentId(t);
     }
 
+    /// if T is a registered type returns the entity id else asserts
+    pub fn idAssertExists(_: *Self, comptime T: type) u64 {
+        const type_id_ptr = perTypeGlobalStructPtr(T);
+        if (type_id_ptr.* != 0)
+            return type_id_ptr.*;
+        unreachable;
+    }
+
+    /// TODO: rename. T isnt always a component, it can be a tag
     /// gets the EntityId for T creating it if it doesn't already exist
-    pub fn componentId(self: Self, comptime T: type) u64 {
+    pub fn componentId(self: *Self, comptime T: type) u64 {
         const type_id_ptr = perTypeGlobalStructPtr(T);
         if (type_id_ptr.* != 0)
             return type_id_ptr.*;
@@ -153,7 +171,7 @@ pub const ecs_world_t = opaque {
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component. The name will be generated
     /// by adding the Ids of each component so that order doesnt matter.
-    pub fn newType(self: Self, comptime Types: anytype) u64 {
+    pub fn newType(self: *Self, comptime Types: anytype) u64 {
         var i: u64 = 0;
         inline for (Types) |T| {
             i += self.componentId(T);
@@ -164,7 +182,7 @@ pub const ecs_world_t = opaque {
     }
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component.
-    pub fn newTypeWithName(self: Self, name: [*c]const u8, comptime Types: anytype) u64 {
+    pub fn newTypeWithName(self: *Self, name: [*c]const u8, comptime Types: anytype) u64 {
         var desc = std.mem.zeroes(c.ecs_type_desc_t);
         desc.entity = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
 
@@ -175,7 +193,7 @@ pub const ecs_world_t = opaque {
         return c.ecs_type_init(self, &desc);
     }
 
-    pub fn newTypeExpr(self: Self, name: [*c]const u8, expr: [*c]const u8) u64 {
+    pub fn newTypeExpr(self: *Self, name: [*c]const u8, expr: [*c]const u8) u64 {
         var desc = std.mem.zeroInit(c.ecs_type_desc_t, .{ .ids_expr = expr });
         desc.entity = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
 
@@ -183,21 +201,21 @@ pub const ecs_world_t = opaque {
     }
 
     /// removes the entity from the Ecs
-    pub fn delete(self: Self, entity: u64) void {
+    pub fn delete(self: *Self, entity: u64) void {
         c.ecs_delete(self, entity);
     }
 
     /// deletes all entities with the component
-    pub fn deleteWith(self: Self, comptime T: type) void {
+    pub fn deleteWith(self: *Self, comptime T: type) void {
         c.ecs_delete_with(self, self.componentId(T));
     }
 
     /// remove all instances of the specified component
-    pub fn removeAll(self: Self, comptime T: type) void {
+    pub fn removeAll(self: *Self, comptime T: type) void {
         c.ecs_remove_all(self, self.componentId(T));
     }
 
-    pub fn setSingleton(self: Self, ptr_or_struct: anytype) void {
+    pub fn setSingleton(self: *Self, ptr_or_struct: anytype) void {
         std.debug.assert(@typeInfo(@TypeOf(ptr_or_struct)) == .Pointer or @typeInfo(@TypeOf(ptr_or_struct)) == .Struct);
 
         const T = meta.FinalChild(@TypeOf(ptr_or_struct));
@@ -205,7 +223,7 @@ pub const ecs_world_t = opaque {
         _ = c.ecs_set_id(self, self.componentId(T), self.componentId(T), @sizeOf(T), component);
     }
 
-    pub fn getSingleton(self: Self, comptime T: type) ?*const T {
+    pub fn getSingleton(self: *Self, comptime T: type) ?*const T {
         std.debug.assert(@typeInfo(T) == .Struct);
 
         var val = c.ecs_get_id(self, self.componentId(T), self.componentId(T));
@@ -213,33 +231,33 @@ pub const ecs_world_t = opaque {
         return @as(*const T, @ptrCast(@alignCast(val)));
     }
 
-    pub fn getSingletonMut(self: Self, comptime T: type) ?*T {
+    pub fn getSingletonMut(self: *Self, comptime T: type) ?*T {
         std.debug.assert(@typeInfo(T) == .Struct);
 
         const val = c.ecs_get_mut_id(self, self.componentId(T), self.componentId(T)) orelse return null;
         return @as(*T, @ptrCast(@alignCast(val)));
     }
 
-    pub fn removeSingleton(self: Self, comptime T: type) void {
+    pub fn removeSingleton(self: *Self, comptime T: type) void {
         std.debug.assert(@typeInfo(T) == .Struct);
         c.ecs_remove_id(self, self.componentId(T), self.componentId(T));
     }
 
     /// creates a Filter using the passed in struct
-    pub fn filter(self: Self, comptime Components: type) Filter(Components) {
+    pub fn filter(self: *Self, comptime Components: type) Filter(Components) {
         std.debug.assert(@typeInfo(Components) == .Struct);
         var desc = meta.generateFilterDesc(self, Components);
         return Filter(Components).init(self, &desc);
     }
 
     /// creates a Query using the passed in struct
-    pub fn query(self: Self, comptime Components: type) Query(Components) {
+    pub fn query(self: *Self, comptime Components: type) Query(Components) {
         std.debug.assert(@typeInfo(Components) == .Struct);
         return Query(Components).init(self);
     }
 
     /// adds an observer system to the Ecs using the passed in struct (see systems)
-    pub fn observer(self: Self, comptime Components: type, event: u64) void {
+    pub fn observer(self: *Self, comptime Components: type, event: u64) void {
         std.debug.assert(@typeInfo(Components) == .Struct);
         std.debug.assert(@hasDecl(Components, "run"));
         std.debug.assert(@hasDecl(Components, "name"));

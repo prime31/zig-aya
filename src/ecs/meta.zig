@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
 const ecs = @import("mod.zig");
 const c = ecs.c;
 
@@ -244,7 +245,7 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
 
             inline for (si.fields, 0..) |field, i| {
                 var member = std.mem.zeroes(c.ecs_member_t);
-                member.name = field.name.ptr;
+                member.name = aya.tmp_allocator.dupeZ(u8, field.name) catch unreachable;
 
                 // TODO: support nested structs
                 member.type = switch (field.type) {
@@ -280,7 +281,7 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
 
                             inline for (@typeInfo(field.type).Enum.fields, 0..) |f, index| {
                                 enum_desc.constants[index] = std.mem.zeroInit(c.ecs_enum_constant_t, .{
-                                    .name = f.name.ptr,
+                                    .name = aya.tmp_allocator.dupeZ(u8, f.name) catch unreachable,
                                     .value = @as(i32, @intCast(f.value)),
                                 });
                             }
