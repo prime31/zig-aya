@@ -37,6 +37,7 @@ pub const AssetServer = struct {
         self.handle_providers.deinit();
     }
 
+    // TODO: make this do the asset loading async and dont require Assets(T) param. pull that from World somehow...maybe push loads to a system
     pub fn load(self: *AssetServer, comptime T: type, assets: *Assets(T), path: []const u8, settings: AssetLoader(T).settings_type) Handle(T) {
         const ptr = self.loaders.get(typeId(T)) orelse @panic("No registered AssetLoader for type " ++ @typeName(T));
 
