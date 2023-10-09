@@ -94,6 +94,21 @@ pub fn eventLoop(app: *App) void {
                 sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => event_writers.window_scale_factor.send(.{
                     .scale_factor = sdl.SDL_GetWindowDisplayScale(window.sdl_window),
                 }),
+
+                sdl.SDL_EVENT_WINDOW_HIDDEN => std.debug.print("SDL_EVENT_WINDOW_HIDDEN\n", .{}),
+                sdl.SDL_EVENT_WINDOW_EXPOSED => std.debug.print("SDL_EVENT_WINDOW_EXPOSED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_MINIMIZED => std.debug.print("SDL_EVENT_WINDOW_MINIMIZED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_MAXIMIZED => std.debug.print("SDL_EVENT_WINDOW_MAXIMIZED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_RESTORED => std.debug.print("SDL_EVENT_WINDOW_RESTORED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => std.debug.print("SDL_EVENT_WINDOW_MOUSE_ENTER\n", .{}),
+                sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => std.debug.print("SDL_EVENT_WINDOW_MOUSE_LEAVE\n", .{}),
+                sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => std.debug.print("SDL_EVENT_WINDOW_FOCUS_GAINED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_FOCUS_LOST => std.debug.print("SDL_EVENT_WINDOW_FOCUS_LOST\n", .{}),
+                sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => std.debug.print("SDL_EVENT_WINDOW_CLOSE_REQUESTED\n", .{}),
+                sdl.SDL_EVENT_WINDOW_TAKE_FOCUS => std.debug.print("SDL_EVENT_WINDOW_TAKE_FOCUS\n", .{}),
+                sdl.SDL_EVENT_WINDOW_HIT_TEST => std.debug.print("SDL_EVENT_WINDOW_HIT_TEST\n", .{}),
+                sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),
+
                 // keyboard
                 sdl.SDL_EVENT_KEY_DOWN, sdl.SDL_EVENT_KEY_UP => {
                     if (event.key.state == 0) {

@@ -18,7 +18,6 @@ pub const WindowFocused = struct { focused: bool };
 pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
 // SDL_EVENT_WINDOW_HIDDEN
 // SDL_EVENT_WINDOW_EXPOSED
-// SDL_EVENT_WINDOW_SIZE_CHANGED
 // SDL_EVENT_WINDOW_MINIMIZED
 // SDL_EVENT_WINDOW_MAXIMIZED
 // SDL_EVENT_WINDOW_RESTORED
@@ -29,7 +28,6 @@ pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
 // SDL_EVENT_WINDOW_CLOSE_REQUESTED
 // SDL_EVENT_WINDOW_TAKE_FOCUS
 // SDL_EVENT_WINDOW_HIT_TEST
-// SDL_EVENT_WINDOW_ICCPROF_CHANGED
 // SDL_EVENT_WINDOW_DISPLAY_CHANGED
 
 pub const WindowPlugin = struct {
@@ -82,7 +80,7 @@ pub const Window = struct {
 };
 
 pub const WindowConfig = struct {
-    title: [:0]const u8 = "zig aya", // the window title as UTF-8 encoded string
+    title: [:0]const u8 = "zig bevyish", // the window title as UTF-8 encoded string
     width: i32 = 1024, // the preferred width of the window / canvas
     height: i32 = 768, // the preferred height of the window / canvas
     resizable: bool = true, // whether the window should be allowed to be resized
