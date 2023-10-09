@@ -46,6 +46,11 @@ pub const Commands = struct {
         }
     }
 
+    // Entities
+    pub fn entity(self: Commands, id: u64) EntityCommands {
+        return .{ .entity = Entity.init(self.ecs, id) };
+    }
+
     pub fn spawn(self: Commands, name: ?[:0]const u8) EntityCommands {
         var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
             .name = if (name) |n| n.ptr else null,
@@ -88,9 +93,23 @@ pub const Commands = struct {
         return Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc));
     }
 
-    /// removes the entity from the Ecs
-    pub fn delete(self: Commands, entity: u64) void {
-        c.ecs_delete(self.ecs, entity);
+    // Resources
+    pub fn initResource(self: Commands, comptime T: type) Commands {
+        _ = T;
+        // _ = self.resources.initResource(T);
+        return self;
+    }
+
+    pub fn insertResource(self: Commands, resource: anytype) Commands {
+        _ = resource;
+        // self.resources.insert(resource);
+        return self;
+    }
+
+    pub fn removeResource(self: Commands, comptime T: type) Commands {
+        _ = T;
+        // self.resources.remove(T);
+        return self;
     }
 
     /// deletes all entities with the component
@@ -103,6 +122,7 @@ pub const Commands = struct {
         c.ecs_remove_all(self.ecs, self.ecs.componentId(T));
     }
 
+    /// Filter, Query, System (need Term and Rules)
     /// creates a Filter using the passed in struct
     pub fn filter(self: Commands, comptime Components: type) aya.Filter(Components) {
         return self.ecs.filter(Components);
@@ -151,6 +171,15 @@ pub const EntityCommands = struct {
                 self.entity.set(component);
             },
         }
+    }
+
+    pub fn remove(self: EntityCommands, id_or_type: anytype) EntityCommands {
+        self.entity.remove(id_or_type);
+        return self;
+    }
+
+    pub fn despawn(self: EntityCommands) void {
+        self.entity.delete();
     }
 };
 
