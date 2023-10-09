@@ -4,6 +4,7 @@ const Builder = std.build.Builder;
 // UPDATING FLECS (or use the `update_flecs` step)
 // - copy flecs.c and flecs.h
 // - zig translate-c flecs.h > ../../src/ecs/flecs/flecs.zig
+// - replace the ecs_world_t struct in flecs.zig (see flecs_world.zig)
 
 pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode, include_flecs_explorer: bool) void {
     exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });
