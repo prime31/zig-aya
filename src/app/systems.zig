@@ -30,9 +30,10 @@ pub fn addSystem(world: *c.ecs_world_t, phase: u64, comptime System: type) u64 {
 }
 
 pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime System: type) u64 {
-    var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-    entity_desc.id = id;
-    entity_desc.name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System);
+    var entity_desc = c.ecs_entity_desc_t{
+        .id = id,
+        .name = if (@hasDecl(System, "name")) System.name else aya.utils.typeNameLastComponent(System),
+    };
 
     // if phase is 0, this is a manually called system so dont give it a phase or it will be picked up by the pipeline
     if (phase > 0) {
@@ -61,13 +62,13 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
 
             // check for known associated types. components_type is on Iterator(T)
             if (@hasDecl(T, "components_type")) {
-                var tmp_system_desc = std.mem.zeroes(c.ecs_system_desc_t);
-                tmp_system_desc.entity = c.ecs_entity_init(world, &entity_desc);
-                tmp_system_desc.multi_threaded = true;
-                tmp_system_desc.run = wrapSystemFn(System.run);
-                tmp_system_desc.query = meta.generateQueryDesc(world, T.components_type);
-                tmp_system_desc.interval = if (@hasDecl(System, "interval")) System.interval else 0;
-                system_desc = tmp_system_desc;
+                system_desc = c.ecs_system_desc_t{
+                    .entity = c.ecs_entity_init(world, &entity_desc),
+                    .multi_threaded = true,
+                    .run = wrapSystemFn(System.run),
+                    .query = meta.generateQueryDesc(world, T.components_type),
+                    .interval = if (@hasDecl(System, "interval")) System.interval else 0,
+                };
             }
 
             // query_type is a Query(T)
@@ -79,11 +80,11 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
     }
 
     if (system_desc == null) {
-        system_desc = std.mem.zeroInit(c.ecs_system_desc_t, .{
+        system_desc = .{
             .entity = c.ecs_entity_init(world, &entity_desc),
             .interval = if (@hasDecl(System, "interval")) System.interval else 0,
             .run = wrapSystemFn(System.run),
-        });
+        };
     }
 
     // no_readonly systems cannot be multi-threaded
@@ -98,9 +99,10 @@ pub fn addSystemToEntity(world: *c.ecs_world_t, id: u64, phase: u64, comptime Sy
 }
 
 pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
-    var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-    entity_desc.id = c.ecs_new_id(world);
-    entity_desc.name = @typeName(@TypeOf(runFn));
+    var entity_desc = c.ecs_entity_desc_t{
+        .id = c.ecs_new_id(world),
+        .name = @typeName(@TypeOf(runFn)),
+    };
 
     // allowed params: *Iterator(T), Res(T), ResMut(T), *World
     const fn_info = @typeInfo(@TypeOf(runFn)).Fn;
@@ -108,11 +110,12 @@ pub fn addObserver(world: *c.ecs_world_t, event: u64, runFn: anytype) void {
         if (@typeInfo(param.type.?) == .Pointer) {
             const T = std.meta.Child(param.type.?);
             if (@hasDecl(T, "components_type")) {
-                var observer_desc = std.mem.zeroes(c.ecs_observer_desc_t);
+                var observer_desc = c.ecs_observer_desc_t{
+                    .entity = c.ecs_entity_init(world, &entity_desc),
+                    .callback = wrapSystemFn(runFn),
+                    .filter = meta.generateFilterDesc(world, T.components_type),
+                };
                 observer_desc.events[0] = event;
-                observer_desc.entity = c.ecs_entity_init(world, &entity_desc);
-                observer_desc.callback = wrapSystemFn(runFn);
-                observer_desc.filter = meta.generateFilterDesc(world, T.components_type);
 
                 if (@hasDecl(T.components_type, "instanced") and T.components_type.instanced) observer_desc.filter.instanced = true;
                 break observer_desc;

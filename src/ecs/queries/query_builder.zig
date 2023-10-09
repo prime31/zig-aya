@@ -10,7 +10,7 @@ pub const QueryBuilder = struct {
     pub fn init(world: *c.ecs_world_t) QueryBuilder {
         return .{
             .world = world,
-            .desc = std.mem.zeroes(c.ecs_system_desc_t),
+            .desc = .{},
         };
     }
 
@@ -44,32 +44,32 @@ pub const QueryBuilder = struct {
     }
 
     pub fn without(self: *QueryBuilder, comptime T: type) *QueryBuilder {
-        self.desc.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
+        self.desc.filter.terms[self.terms_count] = .{
             .id = self.world.componentId(T),
             .oper = c.EcsNot,
-        });
+        };
         self.terms_count += 1;
         return self;
     }
 
     pub fn optional(self: *QueryBuilder, comptime T: type) *QueryBuilder {
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = .{
             .id = self.world.componentId(T),
             .oper = c.EcsOptional,
-        });
+        };
         self.terms_count += 1;
         return self;
     }
 
     pub fn either(self: *QueryBuilder, comptime T1: type, comptime T2: type) *QueryBuilder {
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = .{
             .id = self.world.componentId(T1),
             .oper = c.EcsOr,
-        });
+        };
         self.terms_count += 1;
-        self.desc.query.filter.terms[self.terms_count] = std.mem.zeroInit(c.ecs_term_t, .{
+        self.desc.query.filter.terms[self.terms_count] = .{
             .id = self.world.componentId(T2),
-        });
+        };
         self.terms_count += 1;
         return self;
     }
