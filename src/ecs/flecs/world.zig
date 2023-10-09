@@ -126,7 +126,7 @@ pub const ecs_world_t = opaque {
 
     /// bulk registers a tuple of Types
     pub fn registerComponents(self: *Self, types: anytype) void {
-        std.debug.assert(@typeInfo(@TypeOf(types)) == .Struct);
+        std.debug.assert(@typeInfo(@TypeOf(types)) == .Struct and @typeInfo(@TypeOf(types)).Struct.is_tuple);
         inline for (types) |t| _ = self.componentId(t);
     }
 

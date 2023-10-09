@@ -76,7 +76,7 @@ pub const Entity = struct {
             type => self.ecs.componentId(Relation),
             u64 => Relation,
             Entity => Relation.id,
-            else => |f| @panic("wtf man: " ++ @typeName(f)),
+            else => |f| @panic("getTargetOfPair called with invalid Relation: " ++ @typeName(f)),
         };
 
         return c.ecs_get_target(self.ecs, self.id, rel_id, index);

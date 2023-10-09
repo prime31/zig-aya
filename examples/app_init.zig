@@ -55,9 +55,9 @@ const EmptyCallback = struct {
         while (iter.next()) |_| {}
 
         std.debug.print("\n-- EmptyCallback. delta_time: {d}\n", .{iter.iter.delta_time});
-        iter.commands().newEntity().set(Velocity{ .x = 6 });
+        iter.commands().spawnEmpty().set(Velocity{ .x = 6 });
 
-        const entity = iter.commands().newEntity();
+        const entity = iter.commands().spawnEmpty();
         entity.set(Velocity{ .x = 7 });
         entity.set(Position{ .x = 8 });
     }

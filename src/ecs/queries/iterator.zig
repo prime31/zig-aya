@@ -67,6 +67,16 @@ pub fn Iterator(comptime Components: type) type {
             return error.IteratorSingleError;
         }
 
+        /// only valid on no_readonly systems! Suspends command enqueueing during system iteration.
+        pub fn deferSuspend(self: *Self) void {
+            c.ecs_defer_suspend(self.iter.world);
+        }
+
+        /// only valid on no_readonly systems! Resumes command enqueueing during system iteration.
+        pub fn deferResume(self: *Self) void {
+            c.ecs_defer_resume(self.iter.world);
+        }
+
         /// gets the next Entity from the query results if one is available
         pub inline fn next(self: *Self) ?Components {
             // outer check for when we need to see if there is another table to iterate

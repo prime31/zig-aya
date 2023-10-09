@@ -54,6 +54,10 @@ pub const Commands = struct {
         return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
     }
 
+    pub fn spawnEmpty(self: Commands) EntityCommands {
+        return .{ .entity = Entity.init(self.ecs, c.ecs_new_id(self.ecs)) };
+    }
+
     pub fn spawnWith(self: Commands, name: ?[:0]const u8, ids: anytype) EntityCommands {
         const ti = @typeInfo(@TypeOf(ids));
         if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
@@ -77,10 +81,6 @@ pub const Commands = struct {
 
     pub fn newId(self: Commands) u64 {
         return c.ecs_new_id(self.ecs);
-    }
-
-    pub fn newEntity(self: Commands) Entity {
-        return Entity.init(self.ecs, c.ecs_new_id(self.ecs));
     }
 
     pub fn newEntityNamed(self: Commands, name: [*c]const u8) Entity {
@@ -133,7 +133,32 @@ pub const Commands = struct {
 
 pub const EntityCommands = struct {
     entity: Entity,
+
+    pub fn insert(self: EntityCommands, components: anytype) EntityCommands {
+        if (comptime std.meta.trait.isTuple(@TypeOf(components))) {
+            inline for (components) |comp| self.insertSingle(comp);
+        } else {
+            self.insertSingle(components);
+        }
+        return self;
+    }
+
+    fn insertSingle(self: EntityCommands, component: anytype) void {
+        switch (@TypeOf(component)) {
+            type, u64 => self.entity.add(component),
+            else => {
+                std.debug.assert(@typeInfo(@TypeOf(component)) == .Pointer or @typeInfo(@TypeOf(component)) == .Struct);
+                self.entity.set(component);
+            },
+        }
+    }
 };
+
+pub fn tupleOrSingleArgToSlice(components: anytype) void {
+    if (@typeInfo(@TypeOf(components)) == .Struct and @typeInfo(@TypeOf(components)).Struct.is_tuple) {
+        return components;
+    }
+}
 
 const DeferredCreateSystem = struct {
     id: u64,
