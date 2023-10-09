@@ -1,7 +1,7 @@
 echo "flecs updater got arg: $1"
 cd "$1"
 pwd
-cd libs
+cd lib
 
 echo "----- download flecs.h and flecs.c"
 curl -O https://raw.githubusercontent.com/SanderMertens/flecs/master/flecs.h
