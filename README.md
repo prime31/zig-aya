@@ -49,3 +49,4 @@ const SetVelocityCallback = struct {
     - phases could be required to be wrapped in Phase(T) for validation: const Update = Phase(Update);
     - metadata could be stored in the Phase(T) for validation
 - add clean validators, perhaps using std.meta.trait for anything that takes comptime params in App, World, ecs_world_t
+- add more Window events
