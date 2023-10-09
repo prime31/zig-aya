@@ -1,4 +1,5 @@
 pub const __builtin_va_list = [*c]u8;
+pub const __gnuc_va_list = __builtin_va_list;
 pub const va_list = __builtin_va_list;
 
 pub extern fn memchr(__s: ?*const anyopaque, __c: c_int, __n: c_ulong) ?*anyopaque;
@@ -18,32 +19,6 @@ pub extern fn strncat(__s1: [*c]u8, __s2: [*c]const u8, __n: c_ulong) [*c]u8;
 pub extern fn strncmp(__s1: [*c]const u8, __s2: [*c]const u8, __n: c_ulong) c_int;
 pub extern fn strncpy(__dst: [*c]u8, __src: [*c]const u8, __n: c_ulong) [*c]u8;
 
-pub extern fn memmem(__big: ?*const anyopaque, __big_len: usize, __little: ?*const anyopaque, __little_len: usize) ?*anyopaque;
-pub extern fn memset_pattern4(__b: ?*anyopaque, __pattern4: ?*const anyopaque, __len: usize) void;
-pub extern fn memset_pattern8(__b: ?*anyopaque, __pattern8: ?*const anyopaque, __len: usize) void;
-pub extern fn memset_pattern16(__b: ?*anyopaque, __pattern16: ?*const anyopaque, __len: usize) void;
-pub extern fn strcasestr(__big: [*c]const u8, __little: [*c]const u8) [*c]u8;
-pub extern fn strnstr(__big: [*c]const u8, __little: [*c]const u8, __len: usize) [*c]u8;
-pub extern fn strlcat(__dst: [*c]u8, __source: [*c]const u8, __size: c_ulong) c_ulong;
-pub extern fn strlcpy(__dst: [*c]u8, __source: [*c]const u8, __size: c_ulong) c_ulong;
-pub extern fn strmode(__mode: c_int, __bp: [*c]u8) void;
-pub extern fn strsep(__stringp: [*c][*c]u8, __delim: [*c]const u8) [*c]u8;
-pub extern fn swab(noalias ?*const anyopaque, noalias ?*anyopaque, isize) void;
-pub extern fn timingsafe_bcmp(__b1: ?*const anyopaque, __b2: ?*const anyopaque, __len: usize) c_int;
-pub extern fn strsignal_r(__sig: c_int, __strsignalbuf: [*c]u8, __buflen: usize) c_int;
-pub extern fn bcmp(?*const anyopaque, ?*const anyopaque, c_ulong) c_int;
-pub extern fn bcopy(?*const anyopaque, ?*anyopaque, usize) void;
-pub extern fn bzero(?*anyopaque, c_ulong) void;
-pub extern fn index([*c]const u8, c_int) [*c]u8;
-pub extern fn rindex([*c]const u8, c_int) [*c]u8;
-pub extern fn ffs(c_int) c_int;
-pub extern fn strcasecmp([*c]const u8, [*c]const u8) c_int;
-pub extern fn strncasecmp([*c]const u8, [*c]const u8, c_ulong) c_int;
-pub extern fn ffsl(c_long) c_int;
-pub extern fn ffsll(c_longlong) c_int;
-pub extern fn fls(c_int) c_int;
-pub extern fn flsl(c_long) c_int;
-pub extern fn flsll(c_longlong) c_int;
 pub const int_least8_t = i8;
 pub const int_least16_t = i16;
 pub const int_least32_t = i32;
@@ -68,44 +43,43 @@ pub const ecs_flags32_t = u32;
 pub const ecs_flags64_t = u64;
 pub const ecs_size_t = i32;
 pub const struct_ecs_block_allocator_chunk_header_t = extern struct {
-    next: [*c]struct_ecs_block_allocator_chunk_header_t,
+    next: [*c]struct_ecs_block_allocator_chunk_header_t = @import("std").mem.zeroes([*c]struct_ecs_block_allocator_chunk_header_t),
 };
 pub const ecs_block_allocator_chunk_header_t = struct_ecs_block_allocator_chunk_header_t;
 pub const struct_ecs_block_allocator_block_t = extern struct {
-    memory: ?*anyopaque,
-    next: [*c]struct_ecs_block_allocator_block_t,
+    memory: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    next: [*c]struct_ecs_block_allocator_block_t = @import("std").mem.zeroes([*c]struct_ecs_block_allocator_block_t),
 };
 pub const ecs_block_allocator_block_t = struct_ecs_block_allocator_block_t;
 pub const struct_ecs_block_allocator_t = extern struct {
-    head: [*c]ecs_block_allocator_chunk_header_t,
-    block_head: [*c]ecs_block_allocator_block_t,
-    block_tail: [*c]ecs_block_allocator_block_t,
-    chunk_size: i32,
-    data_size: i32,
-    chunks_per_block: i32,
-    block_size: i32,
-    alloc_count: i32,
+    head: [*c]ecs_block_allocator_chunk_header_t = @import("std").mem.zeroes([*c]ecs_block_allocator_chunk_header_t),
+    block_head: [*c]ecs_block_allocator_block_t = @import("std").mem.zeroes([*c]ecs_block_allocator_block_t),
+    block_tail: [*c]ecs_block_allocator_block_t = @import("std").mem.zeroes([*c]ecs_block_allocator_block_t),
+    chunk_size: i32 = @import("std").mem.zeroes(i32),
+    data_size: i32 = @import("std").mem.zeroes(i32),
+    chunks_per_block: i32 = @import("std").mem.zeroes(i32),
+    block_size: i32 = @import("std").mem.zeroes(i32),
+    alloc_count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_block_allocator_t = struct_ecs_block_allocator_t;
 pub const struct_ecs_vec_t = extern struct {
-    array: ?*anyopaque,
-    count: i32,
-    size: i32,
-    elem_size: ecs_size_t,
+    array: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    count: i32 = @import("std").mem.zeroes(i32),
+    size: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_vec_t = struct_ecs_vec_t;
 pub const struct_ecs_sparse_t = extern struct {
-    dense: ecs_vec_t,
-    pages: ecs_vec_t,
-    size: ecs_size_t,
-    count: i32,
-    max_id: u64,
-    allocator: [*c]struct_ecs_allocator_t,
-    page_allocator: [*c]struct_ecs_block_allocator_t,
+    dense: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    pages: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    count: i32 = @import("std").mem.zeroes(i32),
+    max_id: u64 = @import("std").mem.zeroes(u64),
+    allocator: [*c]struct_ecs_allocator_t = @import("std").mem.zeroes([*c]struct_ecs_allocator_t),
+    page_allocator: [*c]struct_ecs_block_allocator_t = @import("std").mem.zeroes([*c]struct_ecs_block_allocator_t),
 };
 pub const struct_ecs_allocator_t = extern struct {
-    chunks: ecs_block_allocator_t,
-    sizes: struct_ecs_sparse_t,
+    chunks: ecs_block_allocator_t = @import("std").mem.zeroes(ecs_block_allocator_t),
+    sizes: struct_ecs_sparse_t = @import("std").mem.zeroes(struct_ecs_sparse_t),
 };
 pub const ecs_allocator_t = struct_ecs_allocator_t;
 pub extern fn ecs_vec_init(allocator: [*c]struct_ecs_allocator_t, vec: [*c]ecs_vec_t, size: ecs_size_t, elem_count: i32) [*c]ecs_vec_t;
@@ -166,35 +140,35 @@ pub const ecs_map_data_t = u64;
 pub const ecs_map_key_t = ecs_map_data_t;
 pub const ecs_map_val_t = ecs_map_data_t;
 pub const struct_ecs_bucket_entry_t = extern struct {
-    key: ecs_map_key_t,
-    value: ecs_map_val_t,
-    next: [*c]struct_ecs_bucket_entry_t,
+    key: ecs_map_key_t = @import("std").mem.zeroes(ecs_map_key_t),
+    value: ecs_map_val_t = @import("std").mem.zeroes(ecs_map_val_t),
+    next: [*c]struct_ecs_bucket_entry_t = @import("std").mem.zeroes([*c]struct_ecs_bucket_entry_t),
 };
 pub const ecs_bucket_entry_t = struct_ecs_bucket_entry_t;
 pub const struct_ecs_bucket_t = extern struct {
-    first: [*c]ecs_bucket_entry_t,
+    first: [*c]ecs_bucket_entry_t = @import("std").mem.zeroes([*c]ecs_bucket_entry_t),
 };
 pub const ecs_bucket_t = struct_ecs_bucket_t;
 pub const struct_ecs_map_t = extern struct {
-    bucket_shift: u8,
-    shared_allocator: bool,
-    buckets: [*c]ecs_bucket_t,
-    bucket_count: i32,
-    count: i32,
-    entry_allocator: [*c]struct_ecs_block_allocator_t,
-    allocator: [*c]struct_ecs_allocator_t,
+    bucket_shift: u8 = @import("std").mem.zeroes(u8),
+    shared_allocator: bool = @import("std").mem.zeroes(bool),
+    buckets: [*c]ecs_bucket_t = @import("std").mem.zeroes([*c]ecs_bucket_t),
+    bucket_count: i32 = @import("std").mem.zeroes(i32),
+    count: i32 = @import("std").mem.zeroes(i32),
+    entry_allocator: [*c]struct_ecs_block_allocator_t = @import("std").mem.zeroes([*c]struct_ecs_block_allocator_t),
+    allocator: [*c]struct_ecs_allocator_t = @import("std").mem.zeroes([*c]struct_ecs_allocator_t),
 };
 pub const ecs_map_t = struct_ecs_map_t;
 pub const struct_ecs_map_iter_t = extern struct {
-    map: [*c]const ecs_map_t,
-    bucket: [*c]ecs_bucket_t,
-    entry: [*c]ecs_bucket_entry_t,
-    res: [*c]ecs_map_data_t,
+    map: [*c]const ecs_map_t = @import("std").mem.zeroes([*c]const ecs_map_t),
+    bucket: [*c]ecs_bucket_t = @import("std").mem.zeroes([*c]ecs_bucket_t),
+    entry: [*c]ecs_bucket_entry_t = @import("std").mem.zeroes([*c]ecs_bucket_entry_t),
+    res: [*c]ecs_map_data_t = @import("std").mem.zeroes([*c]ecs_map_data_t),
 };
 pub const ecs_map_iter_t = struct_ecs_map_iter_t;
 pub const struct_ecs_map_params_t = extern struct {
-    allocator: [*c]struct_ecs_allocator_t,
-    entry_allocator: struct_ecs_block_allocator_t,
+    allocator: [*c]struct_ecs_allocator_t = @import("std").mem.zeroes([*c]struct_ecs_allocator_t),
+    entry_allocator: struct_ecs_block_allocator_t = @import("std").mem.zeroes(struct_ecs_block_allocator_t),
 };
 pub const ecs_map_params_t = struct_ecs_map_params_t;
 pub extern fn ecs_map_params_init(params: [*c]ecs_map_params_t, allocator: [*c]struct_ecs_allocator_t) void;
@@ -227,38 +201,38 @@ pub extern fn flecs_strdup(a: [*c]ecs_allocator_t, str: [*c]const u8) [*c]u8;
 pub extern fn flecs_strfree(a: [*c]ecs_allocator_t, str: [*c]u8) void;
 pub extern fn flecs_dup(a: [*c]ecs_allocator_t, size: ecs_size_t, src: ?*const anyopaque) ?*anyopaque;
 pub const struct_ecs_strbuf_element = extern struct {
-    buffer_embedded: bool,
-    pos: i32,
-    buf: [*c]u8,
-    next: [*c]struct_ecs_strbuf_element,
+    buffer_embedded: bool = @import("std").mem.zeroes(bool),
+    pos: i32 = @import("std").mem.zeroes(i32),
+    buf: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    next: [*c]struct_ecs_strbuf_element = @import("std").mem.zeroes([*c]struct_ecs_strbuf_element),
 };
 pub const ecs_strbuf_element = struct_ecs_strbuf_element;
 pub const struct_ecs_strbuf_element_embedded = extern struct {
-    super: ecs_strbuf_element,
-    buf: [512]u8,
+    super: ecs_strbuf_element = @import("std").mem.zeroes(ecs_strbuf_element),
+    buf: [512]u8 = @import("std").mem.zeroes([512]u8),
 };
 pub const ecs_strbuf_element_embedded = struct_ecs_strbuf_element_embedded;
 pub const struct_ecs_strbuf_element_str = extern struct {
-    super: ecs_strbuf_element,
-    alloc_str: [*c]u8,
+    super: ecs_strbuf_element = @import("std").mem.zeroes(ecs_strbuf_element),
+    alloc_str: [*c]u8 = @import("std").mem.zeroes([*c]u8),
 };
 pub const ecs_strbuf_element_str = struct_ecs_strbuf_element_str;
 pub const struct_ecs_strbuf_list_elem = extern struct {
-    count: i32,
-    separator: [*c]const u8,
+    count: i32 = @import("std").mem.zeroes(i32),
+    separator: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_strbuf_list_elem = struct_ecs_strbuf_list_elem;
 pub const struct_ecs_strbuf_t = extern struct {
-    buf: [*c]u8,
-    max: i32,
-    size: i32,
-    elementCount: i32,
-    firstElement: ecs_strbuf_element_embedded,
-    current: [*c]ecs_strbuf_element,
-    list_stack: [32]ecs_strbuf_list_elem,
-    list_sp: i32,
-    content: [*c]u8,
-    length: i32,
+    buf: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    max: i32 = @import("std").mem.zeroes(i32),
+    size: i32 = @import("std").mem.zeroes(i32),
+    elementCount: i32 = @import("std").mem.zeroes(i32),
+    firstElement: ecs_strbuf_element_embedded = @import("std").mem.zeroes(ecs_strbuf_element_embedded),
+    current: [*c]ecs_strbuf_element = @import("std").mem.zeroes([*c]ecs_strbuf_element),
+    list_stack: [32]ecs_strbuf_list_elem = @import("std").mem.zeroes([32]ecs_strbuf_list_elem),
+    list_sp: i32 = @import("std").mem.zeroes(i32),
+    content: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    length: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_strbuf_t = struct_ecs_strbuf_t;
 pub extern fn ecs_strbuf_append(buffer: [*c]ecs_strbuf_t, fmt: [*c]const u8, ...) bool;
@@ -288,8 +262,8 @@ pub extern fn ecs_strbuf_written(buffer: [*c]const ecs_strbuf_t) i32;
 pub extern fn __error() [*c]c_int;
 pub extern fn alloca(c_ulong) ?*anyopaque;
 pub const struct_ecs_time_t = extern struct {
-    sec: u32,
-    nanosec: u32,
+    sec: u32 = @import("std").mem.zeroes(u32),
+    nanosec: u32 = @import("std").mem.zeroes(u32),
 };
 pub const ecs_time_t = struct_ecs_time_t;
 pub extern var ecs_os_api_malloc_count: i64;
@@ -338,46 +312,46 @@ pub const ecs_os_api_dlproc_t = ?*const fn (ecs_os_dl_t, [*c]const u8) callconv(
 pub const ecs_os_api_dlclose_t = ?*const fn (ecs_os_dl_t) callconv(.C) void;
 pub const ecs_os_api_module_to_path_t = ?*const fn ([*c]const u8) callconv(.C) [*c]u8;
 pub const struct_ecs_os_api_t = extern struct {
-    init_: ecs_os_api_init_t,
-    fini_: ecs_os_api_fini_t,
-    malloc_: ecs_os_api_malloc_t,
-    realloc_: ecs_os_api_realloc_t,
-    calloc_: ecs_os_api_calloc_t,
-    free_: ecs_os_api_free_t,
-    strdup_: ecs_os_api_strdup_t,
-    thread_new_: ecs_os_api_thread_new_t,
-    thread_join_: ecs_os_api_thread_join_t,
-    thread_self_: ecs_os_api_thread_self_t,
-    task_new_: ecs_os_api_thread_new_t,
-    task_join_: ecs_os_api_thread_join_t,
-    ainc_: ecs_os_api_ainc_t,
-    adec_: ecs_os_api_ainc_t,
-    lainc_: ecs_os_api_lainc_t,
-    ladec_: ecs_os_api_lainc_t,
-    mutex_new_: ecs_os_api_mutex_new_t,
-    mutex_free_: ecs_os_api_mutex_free_t,
-    mutex_lock_: ecs_os_api_mutex_lock_t,
-    mutex_unlock_: ecs_os_api_mutex_lock_t,
-    cond_new_: ecs_os_api_cond_new_t,
-    cond_free_: ecs_os_api_cond_free_t,
-    cond_signal_: ecs_os_api_cond_signal_t,
-    cond_broadcast_: ecs_os_api_cond_broadcast_t,
-    cond_wait_: ecs_os_api_cond_wait_t,
-    sleep_: ecs_os_api_sleep_t,
-    now_: ecs_os_api_now_t,
-    get_time_: ecs_os_api_get_time_t,
-    log_: ecs_os_api_log_t,
-    abort_: ecs_os_api_abort_t,
-    dlopen_: ecs_os_api_dlopen_t,
-    dlproc_: ecs_os_api_dlproc_t,
-    dlclose_: ecs_os_api_dlclose_t,
-    module_to_dl_: ecs_os_api_module_to_path_t,
-    module_to_etc_: ecs_os_api_module_to_path_t,
-    log_level_: i32,
-    log_indent_: i32,
-    log_last_error_: i32,
-    log_last_timestamp_: i64,
-    flags_: ecs_flags32_t,
+    init_: ecs_os_api_init_t = @import("std").mem.zeroes(ecs_os_api_init_t),
+    fini_: ecs_os_api_fini_t = @import("std").mem.zeroes(ecs_os_api_fini_t),
+    malloc_: ecs_os_api_malloc_t = @import("std").mem.zeroes(ecs_os_api_malloc_t),
+    realloc_: ecs_os_api_realloc_t = @import("std").mem.zeroes(ecs_os_api_realloc_t),
+    calloc_: ecs_os_api_calloc_t = @import("std").mem.zeroes(ecs_os_api_calloc_t),
+    free_: ecs_os_api_free_t = @import("std").mem.zeroes(ecs_os_api_free_t),
+    strdup_: ecs_os_api_strdup_t = @import("std").mem.zeroes(ecs_os_api_strdup_t),
+    thread_new_: ecs_os_api_thread_new_t = @import("std").mem.zeroes(ecs_os_api_thread_new_t),
+    thread_join_: ecs_os_api_thread_join_t = @import("std").mem.zeroes(ecs_os_api_thread_join_t),
+    thread_self_: ecs_os_api_thread_self_t = @import("std").mem.zeroes(ecs_os_api_thread_self_t),
+    task_new_: ecs_os_api_thread_new_t = @import("std").mem.zeroes(ecs_os_api_thread_new_t),
+    task_join_: ecs_os_api_thread_join_t = @import("std").mem.zeroes(ecs_os_api_thread_join_t),
+    ainc_: ecs_os_api_ainc_t = @import("std").mem.zeroes(ecs_os_api_ainc_t),
+    adec_: ecs_os_api_ainc_t = @import("std").mem.zeroes(ecs_os_api_ainc_t),
+    lainc_: ecs_os_api_lainc_t = @import("std").mem.zeroes(ecs_os_api_lainc_t),
+    ladec_: ecs_os_api_lainc_t = @import("std").mem.zeroes(ecs_os_api_lainc_t),
+    mutex_new_: ecs_os_api_mutex_new_t = @import("std").mem.zeroes(ecs_os_api_mutex_new_t),
+    mutex_free_: ecs_os_api_mutex_free_t = @import("std").mem.zeroes(ecs_os_api_mutex_free_t),
+    mutex_lock_: ecs_os_api_mutex_lock_t = @import("std").mem.zeroes(ecs_os_api_mutex_lock_t),
+    mutex_unlock_: ecs_os_api_mutex_lock_t = @import("std").mem.zeroes(ecs_os_api_mutex_lock_t),
+    cond_new_: ecs_os_api_cond_new_t = @import("std").mem.zeroes(ecs_os_api_cond_new_t),
+    cond_free_: ecs_os_api_cond_free_t = @import("std").mem.zeroes(ecs_os_api_cond_free_t),
+    cond_signal_: ecs_os_api_cond_signal_t = @import("std").mem.zeroes(ecs_os_api_cond_signal_t),
+    cond_broadcast_: ecs_os_api_cond_broadcast_t = @import("std").mem.zeroes(ecs_os_api_cond_broadcast_t),
+    cond_wait_: ecs_os_api_cond_wait_t = @import("std").mem.zeroes(ecs_os_api_cond_wait_t),
+    sleep_: ecs_os_api_sleep_t = @import("std").mem.zeroes(ecs_os_api_sleep_t),
+    now_: ecs_os_api_now_t = @import("std").mem.zeroes(ecs_os_api_now_t),
+    get_time_: ecs_os_api_get_time_t = @import("std").mem.zeroes(ecs_os_api_get_time_t),
+    log_: ecs_os_api_log_t = @import("std").mem.zeroes(ecs_os_api_log_t),
+    abort_: ecs_os_api_abort_t = @import("std").mem.zeroes(ecs_os_api_abort_t),
+    dlopen_: ecs_os_api_dlopen_t = @import("std").mem.zeroes(ecs_os_api_dlopen_t),
+    dlproc_: ecs_os_api_dlproc_t = @import("std").mem.zeroes(ecs_os_api_dlproc_t),
+    dlclose_: ecs_os_api_dlclose_t = @import("std").mem.zeroes(ecs_os_api_dlclose_t),
+    module_to_dl_: ecs_os_api_module_to_path_t = @import("std").mem.zeroes(ecs_os_api_module_to_path_t),
+    module_to_etc_: ecs_os_api_module_to_path_t = @import("std").mem.zeroes(ecs_os_api_module_to_path_t),
+    log_level_: i32 = @import("std").mem.zeroes(i32),
+    log_indent_: i32 = @import("std").mem.zeroes(i32),
+    log_last_error_: i32 = @import("std").mem.zeroes(i32),
+    log_last_timestamp_: i64 = @import("std").mem.zeroes(i64),
+    flags_: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
 };
 pub const ecs_os_api_t = struct_ecs_os_api_t;
 pub extern var ecs_os_api: ecs_os_api_t;
@@ -408,18 +382,19 @@ pub extern fn ecs_os_has_modules() bool;
 pub const ecs_id_t = u64;
 pub const ecs_entity_t = ecs_id_t;
 pub const ecs_type_t = extern struct {
-    array: [*c]ecs_id_t,
-    count: i32,
+    array: [*c]ecs_id_t = @import("std").mem.zeroes([*c]ecs_id_t),
+    count: i32 = @import("std").mem.zeroes(i32),
 };
-// pub const struct_ecs_world_t = opaque {};
+
 pub const ecs_world_t = @import("world.zig").ecs_world_t;
+
 pub const struct_ecs_table_t = opaque {};
 pub const ecs_table_t = struct_ecs_table_t;
 pub const struct_ecs_term_id_t = extern struct {
-    id: ecs_entity_t,
-    name: [*c]const u8,
-    trav: ecs_entity_t,
-    flags: ecs_flags32_t,
+    id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    trav: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    flags: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
 };
 pub const ecs_term_id_t = struct_ecs_term_id_t;
 pub const EcsInOutDefault: c_int = 0;
@@ -441,80 +416,80 @@ pub const ecs_oper_kind_t = enum_ecs_oper_kind_t;
 pub const struct_ecs_id_record_t = opaque {};
 pub const ecs_id_record_t = struct_ecs_id_record_t;
 pub const struct_ecs_term_t = extern struct {
-    id: ecs_id_t,
-    src: ecs_term_id_t,
-    first: ecs_term_id_t,
-    second: ecs_term_id_t,
-    inout: ecs_inout_kind_t,
-    oper: ecs_oper_kind_t,
-    id_flags: ecs_id_t,
-    name: [*c]u8,
-    field_index: i32,
-    idr: ?*ecs_id_record_t,
-    flags: ecs_flags16_t,
-    move: bool,
+    id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    src: ecs_term_id_t = @import("std").mem.zeroes(ecs_term_id_t),
+    first: ecs_term_id_t = @import("std").mem.zeroes(ecs_term_id_t),
+    second: ecs_term_id_t = @import("std").mem.zeroes(ecs_term_id_t),
+    inout: ecs_inout_kind_t = @import("std").mem.zeroes(ecs_inout_kind_t),
+    oper: ecs_oper_kind_t = @import("std").mem.zeroes(ecs_oper_kind_t),
+    id_flags: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    name: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    field_index: i32 = @import("std").mem.zeroes(i32),
+    idr: ?*ecs_id_record_t = @import("std").mem.zeroes(?*ecs_id_record_t),
+    flags: ecs_flags16_t = @import("std").mem.zeroes(ecs_flags16_t),
+    move: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_term_t = struct_ecs_term_t;
 pub const struct_ecs_mixins_t = opaque {};
 pub const ecs_mixins_t = struct_ecs_mixins_t;
 pub const struct_ecs_header_t = extern struct {
-    magic: i32,
-    type: i32,
-    mixins: ?*ecs_mixins_t,
+    magic: i32 = @import("std").mem.zeroes(i32),
+    type: i32 = @import("std").mem.zeroes(i32),
+    mixins: ?*ecs_mixins_t = @import("std").mem.zeroes(?*ecs_mixins_t),
 };
 pub const ecs_header_t = struct_ecs_header_t;
 pub const ecs_poly_t = anyopaque;
 pub const struct_ecs_table_range_t = extern struct {
-    table: ?*ecs_table_t,
-    offset: i32,
-    count: i32,
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    offset: i32 = @import("std").mem.zeroes(i32),
+    count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_table_range_t = struct_ecs_table_range_t;
 pub const struct_ecs_var_t = extern struct {
-    range: ecs_table_range_t,
-    entity: ecs_entity_t,
+    range: ecs_table_range_t = @import("std").mem.zeroes(ecs_table_range_t),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_var_t = struct_ecs_var_t;
 pub const struct_ecs_table_record_t = opaque {};
 pub const struct_ecs_record_t = extern struct {
-    idr: ?*ecs_id_record_t,
-    table: ?*ecs_table_t,
-    row: u32,
-    dense: i32,
+    idr: ?*ecs_id_record_t = @import("std").mem.zeroes(?*ecs_id_record_t),
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    row: u32 = @import("std").mem.zeroes(u32),
+    dense: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_record_t = struct_ecs_record_t;
 pub const struct_ecs_ref_t = extern struct {
-    entity: ecs_entity_t,
-    id: ecs_entity_t,
-    tr: ?*struct_ecs_table_record_t,
-    record: [*c]ecs_record_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    tr: ?*struct_ecs_table_record_t = @import("std").mem.zeroes(?*struct_ecs_table_record_t),
+    record: [*c]ecs_record_t = @import("std").mem.zeroes([*c]ecs_record_t),
 };
 pub const ecs_ref_t = struct_ecs_ref_t;
-pub const struct_ecs_table_cache_hdr_t = opaque {};
+pub const struct_ecs_table_cache_hdr_t_2 = opaque {};
 pub const struct_ecs_table_cache_iter_t = extern struct {
-    cur: ?*struct_ecs_table_cache_hdr_t,
-    next: ?*struct_ecs_table_cache_hdr_t,
-    next_list: ?*struct_ecs_table_cache_hdr_t,
+    cur: ?*struct_ecs_table_cache_hdr_t_2 = @import("std").mem.zeroes(?*struct_ecs_table_cache_hdr_t_2),
+    next: ?*struct_ecs_table_cache_hdr_t_2 = @import("std").mem.zeroes(?*struct_ecs_table_cache_hdr_t_2),
+    next_list: ?*struct_ecs_table_cache_hdr_t_2 = @import("std").mem.zeroes(?*struct_ecs_table_cache_hdr_t_2),
 };
 pub const ecs_table_cache_iter_t = struct_ecs_table_cache_iter_t;
 pub const struct_ecs_term_iter_t = extern struct {
-    term: ecs_term_t,
-    self_index: ?*ecs_id_record_t,
-    set_index: ?*ecs_id_record_t,
-    cur: ?*ecs_id_record_t,
-    it: ecs_table_cache_iter_t,
-    index: i32,
-    observed_table_count: i32,
-    table: ?*ecs_table_t,
-    cur_match: i32,
-    match_count: i32,
-    last_column: i32,
-    empty_tables: bool,
-    id: ecs_id_t,
-    column: i32,
-    subject: ecs_entity_t,
-    size: ecs_size_t,
-    ptr: ?*anyopaque,
+    term: ecs_term_t = @import("std").mem.zeroes(ecs_term_t),
+    self_index: ?*ecs_id_record_t = @import("std").mem.zeroes(?*ecs_id_record_t),
+    set_index: ?*ecs_id_record_t = @import("std").mem.zeroes(?*ecs_id_record_t),
+    cur: ?*ecs_id_record_t = @import("std").mem.zeroes(?*ecs_id_record_t),
+    it: ecs_table_cache_iter_t = @import("std").mem.zeroes(ecs_table_cache_iter_t),
+    index: i32 = @import("std").mem.zeroes(i32),
+    observed_table_count: i32 = @import("std").mem.zeroes(i32),
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    cur_match: i32 = @import("std").mem.zeroes(i32),
+    match_count: i32 = @import("std").mem.zeroes(i32),
+    last_column: i32 = @import("std").mem.zeroes(i32),
+    empty_tables: bool = @import("std").mem.zeroes(bool),
+    id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    column: i32 = @import("std").mem.zeroes(i32),
+    subject: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    ptr: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_term_iter_t = struct_ecs_term_iter_t;
 pub const ecs_filter_t = struct_ecs_filter_t;
@@ -525,11 +500,11 @@ pub const EcsIterEvalNone: c_int = 3;
 pub const enum_ecs_iter_kind_t = c_uint;
 pub const ecs_iter_kind_t = enum_ecs_iter_kind_t;
 pub const struct_ecs_filter_iter_t = extern struct {
-    filter: [*c]const ecs_filter_t,
-    kind: ecs_iter_kind_t,
-    term_iter: ecs_term_iter_t,
-    matches_left: i32,
-    pivot_term: i32,
+    filter: [*c]const ecs_filter_t = @import("std").mem.zeroes([*c]const ecs_filter_t),
+    kind: ecs_iter_kind_t = @import("std").mem.zeroes(ecs_iter_kind_t),
+    term_iter: ecs_term_iter_t = @import("std").mem.zeroes(ecs_term_iter_t),
+    matches_left: i32 = @import("std").mem.zeroes(i32),
+    pivot_term: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_filter_iter_t = struct_ecs_filter_iter_t;
 pub const struct_ecs_query_t = opaque {};
@@ -537,53 +512,53 @@ pub const ecs_query_t = struct_ecs_query_t;
 pub const struct_ecs_query_table_match_t = opaque {};
 pub const ecs_query_table_match_t = struct_ecs_query_table_match_t;
 pub const struct_ecs_query_iter_t = extern struct {
-    query: ?*ecs_query_t,
-    node: ?*ecs_query_table_match_t,
-    prev: ?*ecs_query_table_match_t,
-    last: ?*ecs_query_table_match_t,
-    sparse_smallest: i32,
-    sparse_first: i32,
-    bitset_first: i32,
-    skip_count: i32,
+    query: ?*ecs_query_t = @import("std").mem.zeroes(?*ecs_query_t),
+    node: ?*ecs_query_table_match_t = @import("std").mem.zeroes(?*ecs_query_table_match_t),
+    prev: ?*ecs_query_table_match_t = @import("std").mem.zeroes(?*ecs_query_table_match_t),
+    last: ?*ecs_query_table_match_t = @import("std").mem.zeroes(?*ecs_query_table_match_t),
+    sparse_smallest: i32 = @import("std").mem.zeroes(i32),
+    sparse_first: i32 = @import("std").mem.zeroes(i32),
+    bitset_first: i32 = @import("std").mem.zeroes(i32),
+    skip_count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_query_iter_t = struct_ecs_query_iter_t;
 pub const struct_ecs_rule_t = opaque {};
 pub const ecs_rule_t = struct_ecs_rule_t;
-pub const struct_ecs_rule_var_t = opaque {};
-pub const struct_ecs_rule_op_t = opaque {};
-pub const struct_ecs_rule_op_ctx_t = opaque {};
+pub const struct_ecs_rule_var_t_3 = opaque {};
+pub const struct_ecs_rule_op_t_4 = opaque {};
+pub const struct_ecs_rule_op_ctx_t_5 = opaque {};
 pub const struct_ecs_rule_op_profile_t = extern struct {
-    count: [2]i32,
+    count: [2]i32 = @import("std").mem.zeroes([2]i32),
 };
 pub const ecs_rule_op_profile_t = struct_ecs_rule_op_profile_t;
 pub const struct_ecs_rule_iter_t = extern struct {
-    rule: ?*const ecs_rule_t,
-    vars: [*c]struct_ecs_var_t,
-    rule_vars: ?*const struct_ecs_rule_var_t,
-    ops: ?*const struct_ecs_rule_op_t,
-    op_ctx: ?*struct_ecs_rule_op_ctx_t,
-    written: [*c]u64,
-    profile: [*c]ecs_rule_op_profile_t,
-    redo: bool,
-    op: i16,
-    sp: i16,
+    rule: ?*const ecs_rule_t = @import("std").mem.zeroes(?*const ecs_rule_t),
+    vars: [*c]struct_ecs_var_t = @import("std").mem.zeroes([*c]struct_ecs_var_t),
+    rule_vars: ?*const struct_ecs_rule_var_t_3 = @import("std").mem.zeroes(?*const struct_ecs_rule_var_t_3),
+    ops: ?*const struct_ecs_rule_op_t_4 = @import("std").mem.zeroes(?*const struct_ecs_rule_op_t_4),
+    op_ctx: ?*struct_ecs_rule_op_ctx_t_5 = @import("std").mem.zeroes(?*struct_ecs_rule_op_ctx_t_5),
+    written: [*c]u64 = @import("std").mem.zeroes([*c]u64),
+    profile: [*c]ecs_rule_op_profile_t = @import("std").mem.zeroes([*c]ecs_rule_op_profile_t),
+    redo: bool = @import("std").mem.zeroes(bool),
+    op: i16 = @import("std").mem.zeroes(i16),
+    sp: i16 = @import("std").mem.zeroes(i16),
 };
 pub const ecs_rule_iter_t = struct_ecs_rule_iter_t;
 pub const struct_ecs_snapshot_iter_t = extern struct {
-    filter: ecs_filter_t,
-    tables: ecs_vec_t,
-    index: i32,
+    filter: ecs_filter_t, // = @import("std").mem.zeroes(ecs_filter_t),
+    tables: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    index: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_snapshot_iter_t = struct_ecs_snapshot_iter_t;
 pub const struct_ecs_page_iter_t = extern struct {
-    offset: i32,
-    limit: i32,
-    remaining: i32,
+    offset: i32 = @import("std").mem.zeroes(i32),
+    limit: i32 = @import("std").mem.zeroes(i32),
+    remaining: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_page_iter_t = struct_ecs_page_iter_t;
 pub const struct_ecs_worker_iter_t = extern struct {
-    index: i32,
-    count: i32,
+    index: i32 = @import("std").mem.zeroes(i32),
+    count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_worker_iter_t = struct_ecs_worker_iter_t;
 const union_unnamed_1 = extern union {
@@ -596,167 +571,164 @@ const union_unnamed_1 = extern union {
     worker: ecs_worker_iter_t,
 };
 pub const struct_ecs_stack_page_t = opaque {};
-pub const struct_ecs_stack_t = opaque {};
+pub const struct_ecs_stack_t_6 = opaque {};
 pub const struct_ecs_stack_cursor_t = extern struct {
-    prev: [*c]struct_ecs_stack_cursor_t,
-    page: ?*struct_ecs_stack_page_t,
-    sp: i16,
-    is_free: bool,
-    owner: ?*struct_ecs_stack_t,
+    prev: [*c]struct_ecs_stack_cursor_t = @import("std").mem.zeroes([*c]struct_ecs_stack_cursor_t),
+    page: ?*struct_ecs_stack_page_t = @import("std").mem.zeroes(?*struct_ecs_stack_page_t),
+    sp: i16 = @import("std").mem.zeroes(i16),
+    is_free: bool = @import("std").mem.zeroes(bool),
+    owner: ?*struct_ecs_stack_t_6 = @import("std").mem.zeroes(?*struct_ecs_stack_t_6),
 };
 pub const ecs_stack_cursor_t = struct_ecs_stack_cursor_t;
 pub const struct_ecs_iter_cache_t = extern struct {
-    stack_cursor: [*c]ecs_stack_cursor_t,
-    used: ecs_flags8_t,
-    allocated: ecs_flags8_t,
+    stack_cursor: [*c]ecs_stack_cursor_t = @import("std").mem.zeroes([*c]ecs_stack_cursor_t),
+    used: ecs_flags8_t = @import("std").mem.zeroes(ecs_flags8_t),
+    allocated: ecs_flags8_t = @import("std").mem.zeroes(ecs_flags8_t),
 };
 pub const ecs_iter_cache_t = struct_ecs_iter_cache_t;
 pub const struct_ecs_iter_private_t = extern struct {
-    iter: union_unnamed_1,
-    entity_iter: ?*anyopaque,
-    cache: ecs_iter_cache_t,
+    iter: union_unnamed_1, // = @import("std").mem.zeroes(union_unnamed_1),
+    entity_iter: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    cache: ecs_iter_cache_t = @import("std").mem.zeroes(ecs_iter_cache_t),
 };
 pub const ecs_iter_private_t = struct_ecs_iter_private_t;
 pub const ecs_iter_next_action_t = ?*const fn ([*c]ecs_iter_t) callconv(.C) bool;
 pub const ecs_iter_action_t = ?*const fn ([*c]ecs_iter_t) callconv(.C) void;
 pub const ecs_iter_fini_action_t = ?*const fn ([*c]ecs_iter_t) callconv(.C) void;
 pub const struct_ecs_iter_t = extern struct {
-    world: ?*ecs_world_t,
-    real_world: ?*ecs_world_t,
-    entities: [*c]ecs_entity_t,
-    ptrs: [*c]?*anyopaque,
-    sizes: [*c]ecs_size_t,
-    table: ?*ecs_table_t,
-    other_table: ?*ecs_table_t,
-    ids: [*c]ecs_id_t,
-    variables: [*c]ecs_var_t,
-    columns: [*c]i32,
-    sources: [*c]ecs_entity_t,
-    match_indices: [*c]i32,
-    references: [*c]ecs_ref_t,
-    constrained_vars: ecs_flags64_t,
-    group_id: u64,
-    field_count: i32,
-    system: ecs_entity_t,
-    event: ecs_entity_t,
-    event_id: ecs_id_t,
-    terms: [*c]ecs_term_t,
-    table_count: i32,
-    term_index: i32,
-    variable_count: i32,
-    variable_names: [*c][*c]u8,
-    param: ?*anyopaque,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    delta_time: f32,
-    delta_system_time: f32,
-    frame_offset: i32,
-    offset: i32,
-    count: i32,
-    instance_count: i32,
-    flags: ecs_flags32_t,
-    interrupted_by: ecs_entity_t,
-    priv: ecs_iter_private_t,
-    next: ecs_iter_next_action_t,
-    // MIKEWASHERE: hack for https://github.com/ziglang/zig/issues/12325
-    // callback: ecs_iter_action_t,
-    // set_var: ecs_iter_action_t,
-    callback: *anyopaque,
-    set_var: *anyopaque,
-    fini: ecs_iter_fini_action_t,
-    chain_it: [*c]ecs_iter_t,
+    world: ?*ecs_world_t = @import("std").mem.zeroes(?*ecs_world_t),
+    real_world: ?*ecs_world_t = @import("std").mem.zeroes(?*ecs_world_t),
+    entities: [*c]ecs_entity_t = @import("std").mem.zeroes([*c]ecs_entity_t),
+    ptrs: [*c]?*anyopaque = @import("std").mem.zeroes([*c]?*anyopaque),
+    sizes: [*c]ecs_size_t = @import("std").mem.zeroes([*c]ecs_size_t),
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    other_table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    ids: [*c]ecs_id_t = @import("std").mem.zeroes([*c]ecs_id_t),
+    variables: [*c]ecs_var_t = @import("std").mem.zeroes([*c]ecs_var_t),
+    columns: [*c]i32 = @import("std").mem.zeroes([*c]i32),
+    sources: [*c]ecs_entity_t = @import("std").mem.zeroes([*c]ecs_entity_t),
+    match_indices: [*c]i32 = @import("std").mem.zeroes([*c]i32),
+    references: [*c]ecs_ref_t = @import("std").mem.zeroes([*c]ecs_ref_t),
+    constrained_vars: ecs_flags64_t = @import("std").mem.zeroes(ecs_flags64_t),
+    group_id: u64 = @import("std").mem.zeroes(u64),
+    field_count: i32 = @import("std").mem.zeroes(i32),
+    system: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    event: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    event_id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    terms: [*c]ecs_term_t = @import("std").mem.zeroes([*c]ecs_term_t),
+    table_count: i32 = @import("std").mem.zeroes(i32),
+    term_index: i32 = @import("std").mem.zeroes(i32),
+    variable_count: i32 = @import("std").mem.zeroes(i32),
+    variable_names: [*c][*c]u8 = @import("std").mem.zeroes([*c][*c]u8),
+    param: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    delta_time: f32 = @import("std").mem.zeroes(f32),
+    delta_system_time: f32 = @import("std").mem.zeroes(f32),
+    frame_offset: i32 = @import("std").mem.zeroes(i32),
+    offset: i32 = @import("std").mem.zeroes(i32),
+    count: i32 = @import("std").mem.zeroes(i32),
+    instance_count: i32 = @import("std").mem.zeroes(i32),
+    flags: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
+    interrupted_by: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    priv: ecs_iter_private_t, // = @import("std").mem.zeroes(ecs_iter_private_t),
+    next: ecs_iter_next_action_t = @import("std").mem.zeroes(ecs_iter_next_action_t),
+    callback: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    set_var: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    fini: ecs_iter_fini_action_t = @import("std").mem.zeroes(ecs_iter_fini_action_t),
+    chain_it: [*c]ecs_iter_t = @import("std").mem.zeroes([*c]ecs_iter_t),
 };
 pub const ecs_iter_t = struct_ecs_iter_t;
 pub const ecs_iter_init_action_t = ?*const fn (?*const ecs_world_t, ?*const ecs_poly_t, [*c]ecs_iter_t, [*c]ecs_term_t) callconv(.C) void;
 pub const struct_ecs_iterable_t = extern struct {
-    init: ecs_iter_init_action_t,
+    init: ecs_iter_init_action_t = @import("std").mem.zeroes(ecs_iter_init_action_t),
 };
 pub const ecs_iterable_t = struct_ecs_iterable_t;
 pub const ecs_poly_dtor_t = ?*const fn (?*ecs_poly_t) callconv(.C) void;
 pub const struct_ecs_filter_t = extern struct {
-    hdr: ecs_header_t,
-    terms: [*c]ecs_term_t,
-    term_count: i32,
-    field_count: i32,
-    owned: bool,
-    terms_owned: bool,
-    flags: ecs_flags32_t,
-    variable_names: [1][*c]u8,
-    sizes: [*c]i32,
-    entity: ecs_entity_t,
-    iterable: ecs_iterable_t,
-    dtor: ecs_poly_dtor_t,
-    world: ?*ecs_world_t,
+    hdr: ecs_header_t = @import("std").mem.zeroes(ecs_header_t),
+    terms: [*c]ecs_term_t = @import("std").mem.zeroes([*c]ecs_term_t),
+    term_count: i32 = @import("std").mem.zeroes(i32),
+    field_count: i32 = @import("std").mem.zeroes(i32),
+    owned: bool = @import("std").mem.zeroes(bool),
+    terms_owned: bool = @import("std").mem.zeroes(bool),
+    flags: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
+    variable_names: [1][*c]u8 = @import("std").mem.zeroes([1][*c]u8),
+    sizes: [*c]i32 = @import("std").mem.zeroes([*c]i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    iterable: ecs_iterable_t = @import("std").mem.zeroes(ecs_iterable_t),
+    dtor: ecs_poly_dtor_t = @import("std").mem.zeroes(ecs_poly_dtor_t),
+    world: ?*ecs_world_t = @import("std").mem.zeroes(?*ecs_world_t),
 };
 pub const ecs_run_action_t = ?*const fn ([*c]ecs_iter_t) callconv(.C) void;
 pub const ecs_ctx_free_t = ?*const fn (?*anyopaque) callconv(.C) void;
-pub const struct_ecs_event_id_record_t = opaque {};
+pub const struct_ecs_event_id_record_t_7 = opaque {};
 pub const struct_ecs_event_record_t = extern struct {
-    any: ?*struct_ecs_event_id_record_t,
-    wildcard: ?*struct_ecs_event_id_record_t,
-    wildcard_pair: ?*struct_ecs_event_id_record_t,
-    event_ids: ecs_map_t,
-    event: ecs_entity_t,
+    any: ?*struct_ecs_event_id_record_t_7 = @import("std").mem.zeroes(?*struct_ecs_event_id_record_t_7),
+    wildcard: ?*struct_ecs_event_id_record_t_7 = @import("std").mem.zeroes(?*struct_ecs_event_id_record_t_7),
+    wildcard_pair: ?*struct_ecs_event_id_record_t_7 = @import("std").mem.zeroes(?*struct_ecs_event_id_record_t_7),
+    event_ids: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
+    event: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_event_record_t = struct_ecs_event_record_t;
 pub const struct_ecs_observable_t = extern struct {
-    on_add: ecs_event_record_t,
-    on_remove: ecs_event_record_t,
-    on_set: ecs_event_record_t,
-    un_set: ecs_event_record_t,
-    on_wildcard: ecs_event_record_t,
-    events: ecs_sparse_t,
+    on_add: ecs_event_record_t = @import("std").mem.zeroes(ecs_event_record_t),
+    on_remove: ecs_event_record_t = @import("std").mem.zeroes(ecs_event_record_t),
+    on_set: ecs_event_record_t = @import("std").mem.zeroes(ecs_event_record_t),
+    un_set: ecs_event_record_t = @import("std").mem.zeroes(ecs_event_record_t),
+    on_wildcard: ecs_event_record_t = @import("std").mem.zeroes(ecs_event_record_t),
+    events: ecs_sparse_t = @import("std").mem.zeroes(ecs_sparse_t),
 };
 pub const ecs_observable_t = struct_ecs_observable_t;
 pub const struct_ecs_observer_t = extern struct {
-    hdr: ecs_header_t,
-    filter: ecs_filter_t,
-    events: [8]ecs_entity_t,
-    event_count: i32,
-    callback: ecs_iter_action_t,
-    run: ecs_run_action_t,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    ctx_free: ecs_ctx_free_t,
-    binding_ctx_free: ecs_ctx_free_t,
-    observable: [*c]ecs_observable_t,
-    last_event_id: [*c]i32,
-    last_event_id_storage: i32,
-    register_id: ecs_id_t,
-    term_index: i32,
-    is_monitor: bool,
-    is_multi: bool,
-    dtor: ecs_poly_dtor_t,
+    hdr: ecs_header_t = @import("std").mem.zeroes(ecs_header_t),
+    filter: ecs_filter_t = @import("std").mem.zeroes(ecs_filter_t),
+    events: [8]ecs_entity_t = @import("std").mem.zeroes([8]ecs_entity_t),
+    event_count: i32 = @import("std").mem.zeroes(i32),
+    callback: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    run: ecs_run_action_t = @import("std").mem.zeroes(ecs_run_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    binding_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    observable: [*c]ecs_observable_t = @import("std").mem.zeroes([*c]ecs_observable_t),
+    last_event_id: [*c]i32 = @import("std").mem.zeroes([*c]i32),
+    last_event_id_storage: i32 = @import("std").mem.zeroes(i32),
+    register_id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    term_index: i32 = @import("std").mem.zeroes(i32),
+    is_monitor: bool = @import("std").mem.zeroes(bool),
+    is_multi: bool = @import("std").mem.zeroes(bool),
+    dtor: ecs_poly_dtor_t = @import("std").mem.zeroes(ecs_poly_dtor_t),
 };
 pub const ecs_observer_t = struct_ecs_observer_t;
 pub const ecs_type_hooks_t = struct_ecs_type_hooks_t;
 pub const struct_ecs_type_info_t = extern struct {
-    size: ecs_size_t,
-    alignment: ecs_size_t,
-    hooks: ecs_type_hooks_t,
-    component: ecs_entity_t,
-    name: [*c]const u8,
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    alignment: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    hooks: ecs_type_hooks_t = @import("std").mem.zeroes(ecs_type_hooks_t),
+    component: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_type_info_t = struct_ecs_type_info_t;
 pub const ecs_xtor_t = ?*const fn (?*anyopaque, i32, [*c]const ecs_type_info_t) callconv(.C) void;
 pub const ecs_copy_t = ?*const fn (?*anyopaque, ?*const anyopaque, i32, [*c]const ecs_type_info_t) callconv(.C) void;
 pub const ecs_move_t = ?*const fn (?*anyopaque, ?*anyopaque, i32, [*c]const ecs_type_info_t) callconv(.C) void;
 pub const struct_ecs_type_hooks_t = extern struct {
-    ctor: ecs_xtor_t,
-    dtor: ecs_xtor_t,
-    copy: ecs_copy_t,
-    move: ecs_move_t,
-    copy_ctor: ecs_copy_t,
-    move_ctor: ecs_move_t,
-    ctor_move_dtor: ecs_move_t,
-    move_dtor: ecs_move_t,
-    on_add: ecs_iter_action_t,
-    on_set: ecs_iter_action_t,
-    on_remove: ecs_iter_action_t,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    ctx_free: ecs_ctx_free_t,
-    binding_ctx_free: ecs_ctx_free_t,
+    ctor: ecs_xtor_t = @import("std").mem.zeroes(ecs_xtor_t),
+    dtor: ecs_xtor_t = @import("std").mem.zeroes(ecs_xtor_t),
+    copy: ecs_copy_t = @import("std").mem.zeroes(ecs_copy_t),
+    move: ecs_move_t = @import("std").mem.zeroes(ecs_move_t),
+    copy_ctor: ecs_copy_t = @import("std").mem.zeroes(ecs_copy_t),
+    move_ctor: ecs_move_t = @import("std").mem.zeroes(ecs_move_t),
+    ctor_move_dtor: ecs_move_t = @import("std").mem.zeroes(ecs_move_t),
+    move_dtor: ecs_move_t = @import("std").mem.zeroes(ecs_move_t),
+    on_add: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    on_set: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    on_remove: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    binding_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
 };
 pub const ecs_table_record_t = struct_ecs_table_record_t;
 pub const ecs_order_by_action_t = ?*const fn (ecs_entity_t, ?*const anyopaque, ecs_entity_t, ?*const anyopaque) callconv(.C) c_int;
@@ -782,28 +754,29 @@ pub extern fn ecs_vasprintf(fmt: [*c]const u8, args: va_list) [*c]u8;
 pub extern fn ecs_asprintf(fmt: [*c]const u8, ...) [*c]u8;
 pub extern fn flecs_to_snake_case(str: [*c]const u8) [*c]u8;
 pub extern fn flecs_table_observed_count(table: ?*const ecs_table_t) i32;
+pub extern fn flecs_dump_backtrace(stream: ?*anyopaque) void;
 pub const ecs_hm_bucket_t = extern struct {
-    keys: ecs_vec_t,
-    values: ecs_vec_t,
+    keys: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    values: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
 };
 pub const ecs_hashmap_t = extern struct {
-    hash: ecs_hash_value_action_t,
-    compare: ecs_compare_action_t,
-    key_size: ecs_size_t,
-    value_size: ecs_size_t,
-    hashmap_allocator: [*c]ecs_block_allocator_t,
-    bucket_allocator: ecs_block_allocator_t,
-    impl: ecs_map_t,
+    hash: ecs_hash_value_action_t = @import("std").mem.zeroes(ecs_hash_value_action_t),
+    compare: ecs_compare_action_t = @import("std").mem.zeroes(ecs_compare_action_t),
+    key_size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    value_size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    hashmap_allocator: [*c]ecs_block_allocator_t = @import("std").mem.zeroes([*c]ecs_block_allocator_t),
+    bucket_allocator: ecs_block_allocator_t = @import("std").mem.zeroes(ecs_block_allocator_t),
+    impl: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
 };
 pub const flecs_hashmap_iter_t = extern struct {
-    it: ecs_map_iter_t,
-    bucket: [*c]ecs_hm_bucket_t,
-    index: i32,
+    it: ecs_map_iter_t = @import("std").mem.zeroes(ecs_map_iter_t),
+    bucket: [*c]ecs_hm_bucket_t = @import("std").mem.zeroes([*c]ecs_hm_bucket_t),
+    index: i32 = @import("std").mem.zeroes(i32),
 };
 pub const flecs_hashmap_result_t = extern struct {
-    key: ?*anyopaque,
-    value: ?*anyopaque,
-    hash: u64,
+    key: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    value: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    hash: u64 = @import("std").mem.zeroes(u64),
 };
 pub extern fn flecs_hashmap_init_(hm: [*c]ecs_hashmap_t, key_size: ecs_size_t, value_size: ecs_size_t, hash: ecs_hash_value_action_t, compare: ecs_compare_action_t, allocator: [*c]ecs_allocator_t) void;
 pub extern fn flecs_hashmap_fini(map: [*c]ecs_hashmap_t) void;
@@ -818,177 +791,177 @@ pub extern fn flecs_hashmap_copy(dst: [*c]ecs_hashmap_t, src: [*c]const ecs_hash
 pub extern fn flecs_hashmap_iter(map: [*c]ecs_hashmap_t) flecs_hashmap_iter_t;
 pub extern fn flecs_hashmap_next_(it: [*c]flecs_hashmap_iter_t, key_size: ecs_size_t, key_out: ?*anyopaque, value_size: ecs_size_t) ?*anyopaque;
 pub const struct_ecs_entity_desc_t = extern struct {
-    _canary: i32,
-    id: ecs_entity_t,
-    name: [*c]const u8,
-    sep: [*c]const u8,
-    root_sep: [*c]const u8,
-    symbol: [*c]const u8,
-    use_low_id: bool,
-    add: [32]ecs_id_t,
-    add_expr: [*c]const u8,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    sep: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    root_sep: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    symbol: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    use_low_id: bool = @import("std").mem.zeroes(bool),
+    add: [32]ecs_id_t = @import("std").mem.zeroes([32]ecs_id_t),
+    add_expr: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_entity_desc_t = struct_ecs_entity_desc_t;
 pub const struct_ecs_bulk_desc_t = extern struct {
-    _canary: i32,
-    entities: [*c]ecs_entity_t,
-    count: i32,
-    ids: [32]ecs_id_t,
-    data: [*c]?*anyopaque,
-    table: ?*ecs_table_t,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entities: [*c]ecs_entity_t = @import("std").mem.zeroes([*c]ecs_entity_t),
+    count: i32 = @import("std").mem.zeroes(i32),
+    ids: [32]ecs_id_t = @import("std").mem.zeroes([32]ecs_id_t),
+    data: [*c]?*anyopaque = @import("std").mem.zeroes([*c]?*anyopaque),
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
 };
 pub const ecs_bulk_desc_t = struct_ecs_bulk_desc_t;
 pub const struct_ecs_component_desc_t = extern struct {
-    _canary: i32,
-    entity: ecs_entity_t,
-    type: ecs_type_info_t,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    type: ecs_type_info_t = @import("std").mem.zeroes(ecs_type_info_t),
 };
 pub const ecs_component_desc_t = struct_ecs_component_desc_t;
 pub const struct_ecs_filter_desc_t = extern struct {
-    _canary: i32,
-    terms: [16]ecs_term_t,
-    terms_buffer: [*c]ecs_term_t,
-    terms_buffer_count: i32,
-    storage: [*c]ecs_filter_t,
-    instanced: bool,
-    flags: ecs_flags32_t,
-    expr: [*c]const u8,
-    entity: ecs_entity_t,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    terms: [16]ecs_term_t = @import("std").mem.zeroes([16]ecs_term_t),
+    terms_buffer: [*c]ecs_term_t = @import("std").mem.zeroes([*c]ecs_term_t),
+    terms_buffer_count: i32 = @import("std").mem.zeroes(i32),
+    storage: [*c]ecs_filter_t = @import("std").mem.zeroes([*c]ecs_filter_t),
+    instanced: bool = @import("std").mem.zeroes(bool),
+    flags: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
+    expr: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_filter_desc_t = struct_ecs_filter_desc_t;
 pub const struct_ecs_query_desc_t = extern struct {
-    _canary: i32,
-    filter: ecs_filter_desc_t,
-    order_by_component: ecs_entity_t,
-    order_by: ecs_order_by_action_t,
-    sort_table: ecs_sort_table_action_t,
-    group_by_id: ecs_id_t,
-    group_by: ecs_group_by_action_t,
-    on_group_create: ecs_group_create_action_t,
-    on_group_delete: ecs_group_delete_action_t,
-    group_by_ctx: ?*anyopaque,
-    group_by_ctx_free: ecs_ctx_free_t,
-    parent: ?*ecs_query_t,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    ctx_free: ecs_ctx_free_t,
-    binding_ctx_free: ecs_ctx_free_t,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    filter: ecs_filter_desc_t = @import("std").mem.zeroes(ecs_filter_desc_t),
+    order_by_component: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    order_by: ecs_order_by_action_t = @import("std").mem.zeroes(ecs_order_by_action_t),
+    sort_table: ecs_sort_table_action_t = @import("std").mem.zeroes(ecs_sort_table_action_t),
+    group_by_id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    group_by: ecs_group_by_action_t = @import("std").mem.zeroes(ecs_group_by_action_t),
+    on_group_create: ecs_group_create_action_t = @import("std").mem.zeroes(ecs_group_create_action_t),
+    on_group_delete: ecs_group_delete_action_t = @import("std").mem.zeroes(ecs_group_delete_action_t),
+    group_by_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    group_by_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    parent: ?*ecs_query_t = @import("std").mem.zeroes(?*ecs_query_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    binding_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
 };
 pub const ecs_query_desc_t = struct_ecs_query_desc_t;
 pub const struct_ecs_observer_desc_t = extern struct {
-    _canary: i32,
-    entity: ecs_entity_t,
-    filter: ecs_filter_desc_t,
-    events: [8]ecs_entity_t,
-    yield_existing: bool,
-    callback: ecs_iter_action_t,
-    run: ecs_run_action_t,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    ctx_free: ecs_ctx_free_t,
-    binding_ctx_free: ecs_ctx_free_t,
-    observable: ?*ecs_poly_t,
-    last_event_id: [*c]i32,
-    term_index: i32,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    filter: ecs_filter_desc_t = @import("std").mem.zeroes(ecs_filter_desc_t),
+    events: [8]ecs_entity_t = @import("std").mem.zeroes([8]ecs_entity_t),
+    yield_existing: bool = @import("std").mem.zeroes(bool),
+    callback: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    run: ecs_run_action_t = @import("std").mem.zeroes(ecs_run_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    binding_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    observable: ?*ecs_poly_t = @import("std").mem.zeroes(?*ecs_poly_t),
+    last_event_id: [*c]i32 = @import("std").mem.zeroes([*c]i32),
+    term_index: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_observer_desc_t = struct_ecs_observer_desc_t;
 pub const struct_ecs_event_desc_t = extern struct {
-    event: ecs_entity_t,
-    ids: [*c]const ecs_type_t,
-    table: ?*ecs_table_t,
-    other_table: ?*ecs_table_t,
-    offset: i32,
-    count: i32,
-    entity: ecs_entity_t,
-    param: ?*const anyopaque,
-    observable: ?*ecs_poly_t,
-    flags: ecs_flags32_t,
+    event: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    ids: [*c]const ecs_type_t = @import("std").mem.zeroes([*c]const ecs_type_t),
+    table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    other_table: ?*ecs_table_t = @import("std").mem.zeroes(?*ecs_table_t),
+    offset: i32 = @import("std").mem.zeroes(i32),
+    count: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    param: ?*const anyopaque = @import("std").mem.zeroes(?*const anyopaque),
+    observable: ?*ecs_poly_t = @import("std").mem.zeroes(?*ecs_poly_t),
+    flags: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
 };
 pub const ecs_event_desc_t = struct_ecs_event_desc_t;
 pub const struct_ecs_value_t = extern struct {
-    type: ecs_entity_t,
-    ptr: ?*anyopaque,
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    ptr: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_value_t = struct_ecs_value_t;
-const struct_unnamed_2 = extern struct {
-    add_count: i64,
-    remove_count: i64,
-    delete_count: i64,
-    clear_count: i64,
-    set_count: i64,
-    get_mut_count: i64,
-    modified_count: i64,
-    other_count: i64,
-    discard_count: i64,
-    batched_entity_count: i64,
-    batched_command_count: i64,
+const struct_unnamed_8 = extern struct {
+    add_count: i64 = @import("std").mem.zeroes(i64),
+    remove_count: i64 = @import("std").mem.zeroes(i64),
+    delete_count: i64 = @import("std").mem.zeroes(i64),
+    clear_count: i64 = @import("std").mem.zeroes(i64),
+    set_count: i64 = @import("std").mem.zeroes(i64),
+    get_mut_count: i64 = @import("std").mem.zeroes(i64),
+    modified_count: i64 = @import("std").mem.zeroes(i64),
+    other_count: i64 = @import("std").mem.zeroes(i64),
+    discard_count: i64 = @import("std").mem.zeroes(i64),
+    batched_entity_count: i64 = @import("std").mem.zeroes(i64),
+    batched_command_count: i64 = @import("std").mem.zeroes(i64),
 };
 pub const struct_ecs_world_info_t = extern struct {
-    last_component_id: ecs_entity_t,
-    min_id: ecs_entity_t,
-    max_id: ecs_entity_t,
-    delta_time_raw: f32,
-    delta_time: f32,
-    time_scale: f32,
-    target_fps: f32,
-    frame_time_total: f32,
-    system_time_total: f32,
-    emit_time_total: f32,
-    merge_time_total: f32,
-    world_time_total: f32,
-    world_time_total_raw: f32,
-    rematch_time_total: f32,
-    frame_count_total: i64,
-    merge_count_total: i64,
-    rematch_count_total: i64,
-    id_create_total: i64,
-    id_delete_total: i64,
-    table_create_total: i64,
-    table_delete_total: i64,
-    pipeline_build_count_total: i64,
-    systems_ran_frame: i64,
-    observers_ran_frame: i64,
-    id_count: i32,
-    tag_id_count: i32,
-    component_id_count: i32,
-    pair_id_count: i32,
-    wildcard_id_count: i32,
-    table_count: i32,
-    tag_table_count: i32,
-    trivial_table_count: i32,
-    empty_table_count: i32,
-    table_record_count: i32,
-    table_storage_count: i32,
-    cmd: struct_unnamed_2,
-    name_prefix: [*c]const u8,
+    last_component_id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    min_id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    max_id: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    delta_time_raw: f32 = @import("std").mem.zeroes(f32),
+    delta_time: f32 = @import("std").mem.zeroes(f32),
+    time_scale: f32 = @import("std").mem.zeroes(f32),
+    target_fps: f32 = @import("std").mem.zeroes(f32),
+    frame_time_total: f32 = @import("std").mem.zeroes(f32),
+    system_time_total: f32 = @import("std").mem.zeroes(f32),
+    emit_time_total: f32 = @import("std").mem.zeroes(f32),
+    merge_time_total: f32 = @import("std").mem.zeroes(f32),
+    world_time_total: f32 = @import("std").mem.zeroes(f32),
+    world_time_total_raw: f32 = @import("std").mem.zeroes(f32),
+    rematch_time_total: f32 = @import("std").mem.zeroes(f32),
+    frame_count_total: i64 = @import("std").mem.zeroes(i64),
+    merge_count_total: i64 = @import("std").mem.zeroes(i64),
+    rematch_count_total: i64 = @import("std").mem.zeroes(i64),
+    id_create_total: i64 = @import("std").mem.zeroes(i64),
+    id_delete_total: i64 = @import("std").mem.zeroes(i64),
+    table_create_total: i64 = @import("std").mem.zeroes(i64),
+    table_delete_total: i64 = @import("std").mem.zeroes(i64),
+    pipeline_build_count_total: i64 = @import("std").mem.zeroes(i64),
+    systems_ran_frame: i64 = @import("std").mem.zeroes(i64),
+    observers_ran_frame: i64 = @import("std").mem.zeroes(i64),
+    id_count: i32 = @import("std").mem.zeroes(i32),
+    tag_id_count: i32 = @import("std").mem.zeroes(i32),
+    component_id_count: i32 = @import("std").mem.zeroes(i32),
+    pair_id_count: i32 = @import("std").mem.zeroes(i32),
+    wildcard_id_count: i32 = @import("std").mem.zeroes(i32),
+    table_count: i32 = @import("std").mem.zeroes(i32),
+    tag_table_count: i32 = @import("std").mem.zeroes(i32),
+    trivial_table_count: i32 = @import("std").mem.zeroes(i32),
+    empty_table_count: i32 = @import("std").mem.zeroes(i32),
+    table_record_count: i32 = @import("std").mem.zeroes(i32),
+    table_storage_count: i32 = @import("std").mem.zeroes(i32),
+    cmd: struct_unnamed_8 = @import("std").mem.zeroes(struct_unnamed_8),
+    name_prefix: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_world_info_t = struct_ecs_world_info_t;
 pub const struct_ecs_query_group_info_t = extern struct {
-    match_count: i32,
-    table_count: i32,
-    ctx: ?*anyopaque,
+    match_count: i32 = @import("std").mem.zeroes(i32),
+    table_count: i32 = @import("std").mem.zeroes(i32),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_query_group_info_t = struct_ecs_query_group_info_t;
 pub const struct_EcsIdentifier = extern struct {
-    value: [*c]u8,
-    length: ecs_size_t,
-    hash: u64,
-    index_hash: u64,
-    index: [*c]ecs_hashmap_t,
+    value: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    length: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    hash: u64 = @import("std").mem.zeroes(u64),
+    index_hash: u64 = @import("std").mem.zeroes(u64),
+    index: [*c]ecs_hashmap_t = @import("std").mem.zeroes([*c]ecs_hashmap_t),
 };
 pub const EcsIdentifier = struct_EcsIdentifier;
 pub const struct_EcsComponent = extern struct {
-    size: ecs_size_t,
-    alignment: ecs_size_t,
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    alignment: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
 };
 pub const EcsComponent = struct_EcsComponent;
 pub const struct_EcsPoly = extern struct {
-    poly: ?*ecs_poly_t,
+    poly: ?*ecs_poly_t = @import("std").mem.zeroes(?*ecs_poly_t),
 };
 pub const EcsPoly = struct_EcsPoly;
 pub const struct_EcsTarget = extern struct {
-    count: i32,
-    target: [*c]ecs_record_t,
+    count: i32 = @import("std").mem.zeroes(i32),
+    target: [*c]ecs_record_t = @import("std").mem.zeroes([*c]ecs_record_t),
 };
 pub const EcsTarget = struct_EcsTarget;
 pub const EcsIterable = ecs_iterable_t;
@@ -1177,8 +1150,8 @@ pub extern fn ecs_get_parent(world: ?*const ecs_world_t, entity: ecs_entity_t) e
 pub extern fn ecs_get_target_for_id(world: ?*const ecs_world_t, entity: ecs_entity_t, rel: ecs_entity_t, id: ecs_id_t) ecs_entity_t;
 pub extern fn ecs_get_depth(world: ?*const ecs_world_t, entity: ecs_entity_t, rel: ecs_entity_t) i32;
 pub const struct_ecs_flatten_desc_t = extern struct {
-    keep_names: bool,
-    lose_depth: bool,
+    keep_names: bool = @import("std").mem.zeroes(bool),
+    lose_depth: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_flatten_desc_t = struct_ecs_flatten_desc_t;
 pub extern fn ecs_flatten(world: ?*ecs_world_t, pair: ecs_id_t, desc: [*c]const ecs_flatten_desc_t) void;
@@ -1354,15 +1327,15 @@ pub extern fn ecs_log_enable_timedelta(enabled: bool) bool;
 pub extern fn ecs_log_last_error() c_int;
 pub const ecs_app_init_action_t = ?*const fn (?*ecs_world_t) callconv(.C) c_int;
 pub const struct_ecs_app_desc_t = extern struct {
-    target_fps: f32,
-    delta_time: f32,
-    threads: i32,
-    frames: i32,
-    enable_rest: bool,
-    enable_monitor: bool,
-    port: u16,
-    init: ecs_app_init_action_t,
-    ctx: ?*anyopaque,
+    target_fps: f32 = @import("std").mem.zeroes(f32),
+    delta_time: f32 = @import("std").mem.zeroes(f32),
+    threads: i32 = @import("std").mem.zeroes(i32),
+    frames: i32 = @import("std").mem.zeroes(i32),
+    enable_rest: bool = @import("std").mem.zeroes(bool),
+    enable_monitor: bool = @import("std").mem.zeroes(bool),
+    port: u16 = @import("std").mem.zeroes(u16),
+    init: ecs_app_init_action_t = @import("std").mem.zeroes(ecs_app_init_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_app_desc_t = struct_ecs_app_desc_t;
 pub const ecs_app_run_action_t = ?*const fn (?*ecs_world_t, [*c]ecs_app_desc_t) callconv(.C) c_int;
@@ -1374,14 +1347,14 @@ pub extern fn ecs_app_set_frame_action(callback: ecs_app_frame_action_t) c_int;
 pub const struct_ecs_http_server_t = opaque {};
 pub const ecs_http_server_t = struct_ecs_http_server_t;
 pub const ecs_http_connection_t = extern struct {
-    id: u64,
-    server: ?*ecs_http_server_t,
-    host: [128]u8,
-    port: [16]u8,
+    id: u64 = @import("std").mem.zeroes(u64),
+    server: ?*ecs_http_server_t = @import("std").mem.zeroes(?*ecs_http_server_t),
+    host: [128]u8 = @import("std").mem.zeroes([128]u8),
+    port: [16]u8 = @import("std").mem.zeroes([16]u8),
 };
 pub const ecs_http_key_value_t = extern struct {
-    key: [*c]const u8,
-    value: [*c]const u8,
+    key: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    value: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const EcsHttpGet: c_int = 0;
 pub const EcsHttpPost: c_int = 1;
@@ -1391,22 +1364,22 @@ pub const EcsHttpOptions: c_int = 4;
 pub const EcsHttpMethodUnsupported: c_int = 5;
 pub const ecs_http_method_t = c_uint;
 pub const ecs_http_request_t = extern struct {
-    id: u64,
-    method: ecs_http_method_t,
-    path: [*c]u8,
-    body: [*c]u8,
-    headers: [32]ecs_http_key_value_t,
-    params: [32]ecs_http_key_value_t,
-    header_count: i32,
-    param_count: i32,
-    conn: [*c]ecs_http_connection_t,
+    id: u64 = @import("std").mem.zeroes(u64),
+    method: ecs_http_method_t = @import("std").mem.zeroes(ecs_http_method_t),
+    path: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    body: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    headers: [32]ecs_http_key_value_t = @import("std").mem.zeroes([32]ecs_http_key_value_t),
+    params: [32]ecs_http_key_value_t = @import("std").mem.zeroes([32]ecs_http_key_value_t),
+    header_count: i32 = @import("std").mem.zeroes(i32),
+    param_count: i32 = @import("std").mem.zeroes(i32),
+    conn: [*c]ecs_http_connection_t = @import("std").mem.zeroes([*c]ecs_http_connection_t),
 };
 pub const ecs_http_reply_t = extern struct {
-    code: c_int,
-    body: ecs_strbuf_t,
-    status: [*c]const u8,
-    content_type: [*c]const u8,
-    headers: ecs_strbuf_t,
+    code: c_int = @import("std").mem.zeroes(c_int),
+    body: ecs_strbuf_t = @import("std").mem.zeroes(ecs_strbuf_t),
+    status: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    content_type: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    headers: ecs_strbuf_t = @import("std").mem.zeroes(ecs_strbuf_t),
 };
 pub extern var ecs_http_request_received_count: i64;
 pub extern var ecs_http_request_invalid_count: i64;
@@ -1419,11 +1392,11 @@ pub extern var ecs_http_send_error_count: i64;
 pub extern var ecs_http_busy_count: i64;
 pub const ecs_http_reply_action_t = ?*const fn ([*c]const ecs_http_request_t, [*c]ecs_http_reply_t, ?*anyopaque) callconv(.C) bool;
 pub const ecs_http_server_desc_t = extern struct {
-    callback: ecs_http_reply_action_t,
-    ctx: ?*anyopaque,
-    port: u16,
-    ipaddr: [*c]const u8,
-    send_queue_wait_ms: i32,
+    callback: ecs_http_reply_action_t = @import("std").mem.zeroes(ecs_http_reply_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    port: u16 = @import("std").mem.zeroes(u16),
+    ipaddr: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    send_queue_wait_ms: i32 = @import("std").mem.zeroes(i32),
 };
 pub extern fn ecs_http_server_init(desc: [*c]const ecs_http_server_desc_t) ?*ecs_http_server_t;
 pub extern fn ecs_http_server_fini(server: ?*ecs_http_server_t) void;
@@ -1437,9 +1410,9 @@ pub extern fn ecs_http_get_header(req: [*c]const ecs_http_request_t, name: [*c]c
 pub extern fn ecs_http_get_param(req: [*c]const ecs_http_request_t, name: [*c]const u8) [*c]const u8;
 pub extern const FLECS_IDEcsRestID_: ecs_entity_t;
 pub const EcsRest = extern struct {
-    port: u16,
-    ipaddr: [*c]u8,
-    impl: ?*anyopaque,
+    port: u16 = @import("std").mem.zeroes(u16),
+    ipaddr: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    impl: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub extern var ecs_rest_request_count: i64;
 pub extern var ecs_rest_entity_count: i64;
@@ -1460,19 +1433,19 @@ pub extern fn ecs_rest_server_init(world: ?*ecs_world_t, desc: [*c]const ecs_htt
 pub extern fn ecs_rest_server_fini(srv: ?*ecs_http_server_t) void;
 pub extern fn FlecsRestImport(world: ?*ecs_world_t) void;
 pub const struct_EcsTimer = extern struct {
-    timeout: f32,
-    time: f32,
-    overshoot: f32,
-    fired_count: i32,
-    active: bool,
-    single_shot: bool,
+    timeout: f32 = @import("std").mem.zeroes(f32),
+    time: f32 = @import("std").mem.zeroes(f32),
+    overshoot: f32 = @import("std").mem.zeroes(f32),
+    fired_count: i32 = @import("std").mem.zeroes(i32),
+    active: bool = @import("std").mem.zeroes(bool),
+    single_shot: bool = @import("std").mem.zeroes(bool),
 };
 pub const EcsTimer = struct_EcsTimer;
 pub const struct_EcsRateFilter = extern struct {
-    src: ecs_entity_t,
-    rate: i32,
-    tick_count: i32,
-    time_elapsed: f32,
+    src: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    rate: i32 = @import("std").mem.zeroes(i32),
+    tick_count: i32 = @import("std").mem.zeroes(i32),
+    time_elapsed: f32 = @import("std").mem.zeroes(f32),
 };
 pub const EcsRateFilter = struct_EcsRateFilter;
 pub extern fn ecs_set_timeout(world: ?*ecs_world_t, tick_source: ecs_entity_t, timeout: f32) ecs_entity_t;
@@ -1487,8 +1460,8 @@ pub extern fn ecs_set_rate(world: ?*ecs_world_t, tick_source: ecs_entity_t, rate
 pub extern fn ecs_set_tick_source(world: ?*ecs_world_t, system: ecs_entity_t, tick_source: ecs_entity_t) void;
 pub extern fn FlecsTimerImport(world: ?*ecs_world_t) void;
 pub const struct_ecs_pipeline_desc_t = extern struct {
-    entity: ecs_entity_t,
-    query: ecs_query_desc_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    query: ecs_query_desc_t = @import("std").mem.zeroes(ecs_query_desc_t),
 };
 pub const ecs_pipeline_desc_t = struct_ecs_pipeline_desc_t;
 pub extern fn ecs_pipeline_init(world: ?*ecs_world_t, desc: [*c]const ecs_pipeline_desc_t) ecs_entity_t;
@@ -1503,25 +1476,25 @@ pub extern fn ecs_set_task_threads(world: ?*ecs_world_t, task_threads: i32) void
 pub extern fn ecs_using_task_threads(world: ?*ecs_world_t) bool;
 pub extern fn FlecsPipelineImport(world: ?*ecs_world_t) void;
 pub const struct_EcsTickSource = extern struct {
-    tick: bool,
-    time_elapsed: f32,
+    tick: bool = @import("std").mem.zeroes(bool),
+    time_elapsed: f32 = @import("std").mem.zeroes(f32),
 };
 pub const EcsTickSource = struct_EcsTickSource;
 pub const struct_ecs_system_desc_t = extern struct {
-    _canary: i32,
-    entity: ecs_entity_t,
-    query: ecs_query_desc_t,
-    run: ecs_run_action_t,
-    callback: ecs_iter_action_t,
-    ctx: ?*anyopaque,
-    binding_ctx: ?*anyopaque,
-    ctx_free: ecs_ctx_free_t,
-    binding_ctx_free: ecs_ctx_free_t,
-    interval: f32,
-    rate: i32,
-    tick_source: ecs_entity_t,
-    multi_threaded: bool,
-    no_readonly: bool,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    query: ecs_query_desc_t = @import("std").mem.zeroes(ecs_query_desc_t),
+    run: ecs_run_action_t = @import("std").mem.zeroes(ecs_run_action_t),
+    callback: ecs_iter_action_t = @import("std").mem.zeroes(ecs_iter_action_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    binding_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    binding_ctx_free: ecs_ctx_free_t = @import("std").mem.zeroes(ecs_ctx_free_t),
+    interval: f32 = @import("std").mem.zeroes(f32),
+    rate: i32 = @import("std").mem.zeroes(i32),
+    tick_source: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    multi_threaded: bool = @import("std").mem.zeroes(bool),
+    no_readonly: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_system_desc_t = struct_ecs_system_desc_t;
 pub extern fn ecs_system_init(world: ?*ecs_world_t, desc: [*c]const ecs_system_desc_t) ecs_entity_t;
@@ -1533,14 +1506,14 @@ pub extern fn ecs_system_get_ctx(world: ?*const ecs_world_t, system: ecs_entity_
 pub extern fn ecs_system_get_binding_ctx(world: ?*const ecs_world_t, system: ecs_entity_t) ?*anyopaque;
 pub extern fn FlecsSystemImport(world: ?*ecs_world_t) void;
 pub const struct_ecs_gauge_t = extern struct {
-    avg: [60]f32,
-    min: [60]f32,
-    max: [60]f32,
+    avg: [60]f32 = @import("std").mem.zeroes([60]f32),
+    min: [60]f32 = @import("std").mem.zeroes([60]f32),
+    max: [60]f32 = @import("std").mem.zeroes([60]f32),
 };
 pub const ecs_gauge_t = struct_ecs_gauge_t;
 pub const struct_ecs_counter_t = extern struct {
-    rate: ecs_gauge_t,
-    value: [60]f64,
+    rate: ecs_gauge_t = @import("std").mem.zeroes(ecs_gauge_t),
+    value: [60]f64 = @import("std").mem.zeroes([60]f64),
 };
 pub const ecs_counter_t = struct_ecs_counter_t;
 pub const union_ecs_metric_t = extern union {
@@ -1548,159 +1521,159 @@ pub const union_ecs_metric_t = extern union {
     counter: ecs_counter_t,
 };
 pub const ecs_metric_t = union_ecs_metric_t;
-const struct_unnamed_3 = extern struct {
-    count: ecs_metric_t,
-    not_alive_count: ecs_metric_t,
-};
-const struct_unnamed_4 = extern struct {
-    count: ecs_metric_t,
-    tag_count: ecs_metric_t,
-    component_count: ecs_metric_t,
-    pair_count: ecs_metric_t,
-    wildcard_count: ecs_metric_t,
-    type_count: ecs_metric_t,
-    create_count: ecs_metric_t,
-    delete_count: ecs_metric_t,
-};
-const struct_unnamed_5 = extern struct {
-    count: ecs_metric_t,
-    empty_count: ecs_metric_t,
-    tag_only_count: ecs_metric_t,
-    trivial_only_count: ecs_metric_t,
-    record_count: ecs_metric_t,
-    storage_count: ecs_metric_t,
-    create_count: ecs_metric_t,
-    delete_count: ecs_metric_t,
-};
-const struct_unnamed_6 = extern struct {
-    query_count: ecs_metric_t,
-    observer_count: ecs_metric_t,
-    system_count: ecs_metric_t,
-};
-const struct_unnamed_7 = extern struct {
-    add_count: ecs_metric_t,
-    remove_count: ecs_metric_t,
-    delete_count: ecs_metric_t,
-    clear_count: ecs_metric_t,
-    set_count: ecs_metric_t,
-    get_mut_count: ecs_metric_t,
-    modified_count: ecs_metric_t,
-    other_count: ecs_metric_t,
-    discard_count: ecs_metric_t,
-    batched_entity_count: ecs_metric_t,
-    batched_count: ecs_metric_t,
-};
-const struct_unnamed_8 = extern struct {
-    frame_count: ecs_metric_t,
-    merge_count: ecs_metric_t,
-    rematch_count: ecs_metric_t,
-    pipeline_build_count: ecs_metric_t,
-    systems_ran: ecs_metric_t,
-    observers_ran: ecs_metric_t,
-    event_emit_count: ecs_metric_t,
-};
 const struct_unnamed_9 = extern struct {
-    world_time_raw: ecs_metric_t,
-    world_time: ecs_metric_t,
-    frame_time: ecs_metric_t,
-    system_time: ecs_metric_t,
-    emit_time: ecs_metric_t,
-    merge_time: ecs_metric_t,
-    rematch_time: ecs_metric_t,
-    fps: ecs_metric_t,
-    delta_time: ecs_metric_t,
+    count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    not_alive_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
 };
 const struct_unnamed_10 = extern struct {
-    alloc_count: ecs_metric_t,
-    realloc_count: ecs_metric_t,
-    free_count: ecs_metric_t,
-    outstanding_alloc_count: ecs_metric_t,
-    block_alloc_count: ecs_metric_t,
-    block_free_count: ecs_metric_t,
-    block_outstanding_alloc_count: ecs_metric_t,
-    stack_alloc_count: ecs_metric_t,
-    stack_free_count: ecs_metric_t,
-    stack_outstanding_alloc_count: ecs_metric_t,
+    count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    tag_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    component_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    pair_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    wildcard_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    type_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    create_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    delete_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
 };
 const struct_unnamed_11 = extern struct {
-    request_count: ecs_metric_t,
-    entity_count: ecs_metric_t,
-    entity_error_count: ecs_metric_t,
-    query_count: ecs_metric_t,
-    query_error_count: ecs_metric_t,
-    query_name_count: ecs_metric_t,
-    query_name_error_count: ecs_metric_t,
-    query_name_from_cache_count: ecs_metric_t,
-    enable_count: ecs_metric_t,
-    enable_error_count: ecs_metric_t,
-    world_stats_count: ecs_metric_t,
-    pipeline_stats_count: ecs_metric_t,
-    stats_error_count: ecs_metric_t,
+    count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    empty_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    tag_only_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    trivial_only_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    record_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    storage_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    create_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    delete_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
 };
 const struct_unnamed_12 = extern struct {
-    request_received_count: ecs_metric_t,
-    request_invalid_count: ecs_metric_t,
-    request_handled_ok_count: ecs_metric_t,
-    request_handled_error_count: ecs_metric_t,
-    request_not_handled_count: ecs_metric_t,
-    request_preflight_count: ecs_metric_t,
-    send_ok_count: ecs_metric_t,
-    send_error_count: ecs_metric_t,
-    busy_count: ecs_metric_t,
+    query_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    observer_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    system_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_13 = extern struct {
+    add_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    remove_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    delete_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    clear_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    set_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    get_mut_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    modified_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    other_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    discard_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    batched_entity_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    batched_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_14 = extern struct {
+    frame_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    merge_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    rematch_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    pipeline_build_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    systems_ran: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    observers_ran: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    event_emit_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_15 = extern struct {
+    world_time_raw: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    world_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    frame_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    system_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    emit_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    merge_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    rematch_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    fps: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    delta_time: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_16 = extern struct {
+    alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    realloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    free_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    outstanding_alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    block_alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    block_free_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    block_outstanding_alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    stack_alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    stack_free_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    stack_outstanding_alloc_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_17 = extern struct {
+    request_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    entity_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    entity_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    query_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    query_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    query_name_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    query_name_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    query_name_from_cache_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    enable_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    enable_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    world_stats_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    pipeline_stats_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    stats_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+};
+const struct_unnamed_18 = extern struct {
+    request_received_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    request_invalid_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    request_handled_ok_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    request_handled_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    request_not_handled_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    request_preflight_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    send_ok_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    send_error_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    busy_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
 };
 pub const struct_ecs_world_stats_t = extern struct {
-    first_: i64,
-    entities: struct_unnamed_3,
-    ids: struct_unnamed_4,
-    tables: struct_unnamed_5,
-    queries: struct_unnamed_6,
-    commands: struct_unnamed_7,
-    frame: struct_unnamed_8,
-    performance: struct_unnamed_9,
-    memory: struct_unnamed_10,
-    rest: struct_unnamed_11,
-    http: struct_unnamed_12,
-    last_: i64,
-    t: i32,
+    first_: i64 = @import("std").mem.zeroes(i64),
+    entities: struct_unnamed_9 = @import("std").mem.zeroes(struct_unnamed_9),
+    ids: struct_unnamed_10 = @import("std").mem.zeroes(struct_unnamed_10),
+    tables: struct_unnamed_11 = @import("std").mem.zeroes(struct_unnamed_11),
+    queries: struct_unnamed_12 = @import("std").mem.zeroes(struct_unnamed_12),
+    commands: struct_unnamed_13 = @import("std").mem.zeroes(struct_unnamed_13),
+    frame: struct_unnamed_14 = @import("std").mem.zeroes(struct_unnamed_14),
+    performance: struct_unnamed_15 = @import("std").mem.zeroes(struct_unnamed_15),
+    memory: struct_unnamed_16 = @import("std").mem.zeroes(struct_unnamed_16),
+    rest: struct_unnamed_17 = @import("std").mem.zeroes(struct_unnamed_17),
+    http: struct_unnamed_18 = @import("std").mem.zeroes(struct_unnamed_18),
+    last_: i64 = @import("std").mem.zeroes(i64),
+    t: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_world_stats_t = struct_ecs_world_stats_t;
 pub const struct_ecs_query_stats_t = extern struct {
-    first_: i64,
-    matched_table_count: ecs_metric_t,
-    matched_empty_table_count: ecs_metric_t,
-    matched_entity_count: ecs_metric_t,
-    last_: i64,
-    t: i32,
+    first_: i64 = @import("std").mem.zeroes(i64),
+    matched_table_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    matched_empty_table_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    matched_entity_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    last_: i64 = @import("std").mem.zeroes(i64),
+    t: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_query_stats_t = struct_ecs_query_stats_t;
 pub const struct_ecs_system_stats_t = extern struct {
-    first_: i64,
-    time_spent: ecs_metric_t,
-    invoke_count: ecs_metric_t,
-    last_: i64,
-    task: bool,
-    query: ecs_query_stats_t,
+    first_: i64 = @import("std").mem.zeroes(i64),
+    time_spent: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    invoke_count: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    last_: i64 = @import("std").mem.zeroes(i64),
+    task: bool = @import("std").mem.zeroes(bool),
+    query: ecs_query_stats_t = @import("std").mem.zeroes(ecs_query_stats_t),
 };
 pub const ecs_system_stats_t = struct_ecs_system_stats_t;
 pub const struct_ecs_sync_stats_t = extern struct {
-    first_: i64,
-    time_spent: ecs_metric_t,
-    commands_enqueued: ecs_metric_t,
-    last_: i64,
-    system_count: i32,
-    multi_threaded: bool,
-    no_readonly: bool,
+    first_: i64 = @import("std").mem.zeroes(i64),
+    time_spent: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    commands_enqueued: ecs_metric_t = @import("std").mem.zeroes(ecs_metric_t),
+    last_: i64 = @import("std").mem.zeroes(i64),
+    system_count: i32 = @import("std").mem.zeroes(i32),
+    multi_threaded: bool = @import("std").mem.zeroes(bool),
+    no_readonly: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_sync_stats_t = struct_ecs_sync_stats_t;
 pub const struct_ecs_pipeline_stats_t = extern struct {
-    canary_: i8,
-    systems: ecs_vec_t,
-    sync_points: ecs_vec_t,
-    system_stats: ecs_map_t,
-    t: i32,
-    system_count: i32,
-    active_system_count: i32,
-    rebuild_count: i32,
+    canary_: i8 = @import("std").mem.zeroes(i8),
+    systems: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    sync_points: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    system_stats: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
+    t: i32 = @import("std").mem.zeroes(i32),
+    system_count: i32 = @import("std").mem.zeroes(i32),
+    active_system_count: i32 = @import("std").mem.zeroes(i32),
+    rebuild_count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_pipeline_stats_t = struct_ecs_pipeline_stats_t;
 pub extern fn ecs_world_stats_get(world: ?*const ecs_world_t, stats: [*c]ecs_world_stats_t) void;
@@ -1744,21 +1717,22 @@ pub extern var FLECS_IDEcsMetricInstanceID_: ecs_entity_t;
 pub extern var FLECS_IDEcsMetricValueID_: ecs_entity_t;
 pub extern var FLECS_IDEcsMetricSourceID_: ecs_entity_t;
 pub const struct_EcsMetricValue = extern struct {
-    value: f64,
+    value: f64 = @import("std").mem.zeroes(f64),
 };
 pub const EcsMetricValue = struct_EcsMetricValue;
 pub const struct_EcsMetricSource = extern struct {
-    entity: ecs_entity_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const EcsMetricSource = struct_EcsMetricSource;
 pub const struct_ecs_metric_desc_t = extern struct {
-    _canary: i32,
-    entity: ecs_entity_t,
-    member: ecs_entity_t,
-    id: ecs_id_t,
-    targets: bool,
-    kind: ecs_entity_t,
-    brief: [*c]const u8,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    member: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    dotmember: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    targets: bool = @import("std").mem.zeroes(bool),
+    kind: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    brief: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_metric_desc_t = struct_ecs_metric_desc_t;
 pub extern fn ecs_metric_init(world: ?*ecs_world_t, desc: [*c]const ecs_metric_desc_t) ecs_entity_t;
@@ -1777,36 +1751,36 @@ pub extern var FLECS_IDEcsAlertErrorID_: ecs_entity_t;
 pub extern var EcsAlertCritical: ecs_entity_t;
 pub extern var FLECS_IDEcsAlertCriticalID_: ecs_entity_t;
 pub const struct_EcsAlertInstance = extern struct {
-    message: [*c]u8,
+    message: [*c]u8 = @import("std").mem.zeroes([*c]u8),
 };
 pub const EcsAlertInstance = struct_EcsAlertInstance;
 pub const struct_EcsAlertsActive = extern struct {
-    info_count: i32,
-    warning_count: i32,
-    error_count: i32,
-    alerts: ecs_map_t,
+    info_count: i32 = @import("std").mem.zeroes(i32),
+    warning_count: i32 = @import("std").mem.zeroes(i32),
+    error_count: i32 = @import("std").mem.zeroes(i32),
+    alerts: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
 };
 pub const EcsAlertsActive = struct_EcsAlertsActive;
 pub const struct_ecs_alert_severity_filter_t = extern struct {
-    severity: ecs_entity_t,
-    with: ecs_id_t,
-    @"var": [*c]const u8,
-    _var_index: i32,
+    severity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    with: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    @"var": [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    _var_index: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_alert_severity_filter_t = struct_ecs_alert_severity_filter_t;
 pub const struct_ecs_alert_desc_t = extern struct {
-    _canary: i32,
-    entity: ecs_entity_t,
-    filter: ecs_filter_desc_t,
-    message: [*c]const u8,
-    doc_name: [*c]const u8,
-    brief: [*c]const u8,
-    severity: ecs_entity_t,
-    severity_filters: [4]ecs_alert_severity_filter_t,
-    retain_period: f32,
-    member: ecs_entity_t,
-    id: ecs_id_t,
-    @"var": [*c]const u8,
+    _canary: i32 = @import("std").mem.zeroes(i32),
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    filter: ecs_filter_desc_t = @import("std").mem.zeroes(ecs_filter_desc_t),
+    message: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    doc_name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    brief: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    severity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    severity_filters: [4]ecs_alert_severity_filter_t = @import("std").mem.zeroes([4]ecs_alert_severity_filter_t),
+    retain_period: f32 = @import("std").mem.zeroes(f32),
+    member: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    id: ecs_id_t = @import("std").mem.zeroes(ecs_id_t),
+    @"var": [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_alert_desc_t = struct_ecs_alert_desc_t;
 pub extern fn ecs_alert_init(world: ?*ecs_world_t, desc: [*c]const ecs_alert_desc_t) ecs_entity_t;
@@ -1823,25 +1797,25 @@ pub extern var EcsPeriod1h: ecs_entity_t;
 pub extern var EcsPeriod1d: ecs_entity_t;
 pub extern var EcsPeriod1w: ecs_entity_t;
 pub const EcsStatsHeader = extern struct {
-    elapsed: f32,
-    reduce_count: i32,
+    elapsed: f32 = @import("std").mem.zeroes(f32),
+    reduce_count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const EcsWorldStats = extern struct {
-    hdr: EcsStatsHeader,
-    stats: ecs_world_stats_t,
+    hdr: EcsStatsHeader = @import("std").mem.zeroes(EcsStatsHeader),
+    stats: ecs_world_stats_t = @import("std").mem.zeroes(ecs_world_stats_t),
 };
 pub const EcsPipelineStats = extern struct {
-    hdr: EcsStatsHeader,
-    stats: ecs_pipeline_stats_t,
+    hdr: EcsStatsHeader = @import("std").mem.zeroes(EcsStatsHeader),
+    stats: ecs_pipeline_stats_t = @import("std").mem.zeroes(ecs_pipeline_stats_t),
 };
 pub const EcsWorldSummary = extern struct {
-    target_fps: f64,
-    frame_time_total: f64,
-    system_time_total: f64,
-    merge_time_total: f64,
-    frame_time_last: f64,
-    system_time_last: f64,
-    merge_time_last: f64,
+    target_fps: f64 = @import("std").mem.zeroes(f64),
+    frame_time_total: f64 = @import("std").mem.zeroes(f64),
+    system_time_total: f64 = @import("std").mem.zeroes(f64),
+    merge_time_total: f64 = @import("std").mem.zeroes(f64),
+    frame_time_last: f64 = @import("std").mem.zeroes(f64),
+    system_time_last: f64 = @import("std").mem.zeroes(f64),
+    merge_time_last: f64 = @import("std").mem.zeroes(f64),
 };
 pub extern fn FlecsMonitorImport(world: ?*ecs_world_t) void;
 pub extern fn FlecsCoreDocImport(world: ?*ecs_world_t) void;
@@ -1851,7 +1825,7 @@ pub extern const EcsDocDetail: ecs_entity_t;
 pub extern const EcsDocLink: ecs_entity_t;
 pub extern const EcsDocColor: ecs_entity_t;
 pub const struct_EcsDocDescription = extern struct {
-    value: [*c]u8,
+    value: [*c]u8 = @import("std").mem.zeroes([*c]u8),
 };
 pub const EcsDocDescription = struct_EcsDocDescription;
 pub extern fn ecs_doc_set_name(world: ?*ecs_world_t, entity: ecs_entity_t, name: [*c]const u8) void;
@@ -1866,10 +1840,10 @@ pub extern fn ecs_doc_get_link(world: ?*const ecs_world_t, entity: ecs_entity_t)
 pub extern fn ecs_doc_get_color(world: ?*const ecs_world_t, entity: ecs_entity_t) [*c]const u8;
 pub extern fn FlecsDocImport(world: ?*ecs_world_t) void;
 pub const struct_ecs_from_json_desc_t = extern struct {
-    name: [*c]const u8,
-    expr: [*c]const u8,
-    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t,
-    lookup_ctx: ?*anyopaque,
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    expr: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t = @import("std").mem.zeroes(?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t),
+    lookup_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_from_json_desc_t = struct_ecs_from_json_desc_t;
 pub extern fn ecs_ptr_from_json(world: ?*const ecs_world_t, @"type": ecs_entity_t, ptr: ?*anyopaque, json: [*c]const u8, desc: [*c]const ecs_from_json_desc_t) [*c]const u8;
@@ -1882,52 +1856,52 @@ pub extern fn ecs_ptr_to_json_buf(world: ?*const ecs_world_t, @"type": ecs_entit
 pub extern fn ecs_type_info_to_json(world: ?*const ecs_world_t, @"type": ecs_entity_t) [*c]u8;
 pub extern fn ecs_type_info_to_json_buf(world: ?*const ecs_world_t, @"type": ecs_entity_t, buf_out: [*c]ecs_strbuf_t) c_int;
 pub const struct_ecs_entity_to_json_desc_t = extern struct {
-    serialize_path: bool,
-    serialize_label: bool,
-    serialize_brief: bool,
-    serialize_link: bool,
-    serialize_color: bool,
-    serialize_ids: bool,
-    serialize_id_labels: bool,
-    serialize_base: bool,
-    serialize_private: bool,
-    serialize_hidden: bool,
-    serialize_values: bool,
-    serialize_type_info: bool,
-    serialize_alerts: bool,
-    serialize_refs: ecs_entity_t,
-    serialize_matches: bool,
+    serialize_path: bool = @import("std").mem.zeroes(bool),
+    serialize_label: bool = @import("std").mem.zeroes(bool),
+    serialize_brief: bool = @import("std").mem.zeroes(bool),
+    serialize_link: bool = @import("std").mem.zeroes(bool),
+    serialize_color: bool = @import("std").mem.zeroes(bool),
+    serialize_ids: bool = @import("std").mem.zeroes(bool),
+    serialize_id_labels: bool = @import("std").mem.zeroes(bool),
+    serialize_base: bool = @import("std").mem.zeroes(bool),
+    serialize_private: bool = @import("std").mem.zeroes(bool),
+    serialize_hidden: bool = @import("std").mem.zeroes(bool),
+    serialize_values: bool = @import("std").mem.zeroes(bool),
+    serialize_type_info: bool = @import("std").mem.zeroes(bool),
+    serialize_alerts: bool = @import("std").mem.zeroes(bool),
+    serialize_refs: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    serialize_matches: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_entity_to_json_desc_t = struct_ecs_entity_to_json_desc_t;
 pub extern fn ecs_entity_to_json(world: ?*const ecs_world_t, entity: ecs_entity_t, desc: [*c]const ecs_entity_to_json_desc_t) [*c]u8;
 pub extern fn ecs_entity_to_json_buf(world: ?*const ecs_world_t, entity: ecs_entity_t, buf_out: [*c]ecs_strbuf_t, desc: [*c]const ecs_entity_to_json_desc_t) c_int;
 pub const struct_ecs_iter_to_json_desc_t = extern struct {
-    serialize_term_ids: bool,
-    serialize_term_labels: bool,
-    serialize_ids: bool,
-    serialize_id_labels: bool,
-    serialize_sources: bool,
-    serialize_variables: bool,
-    serialize_is_set: bool,
-    serialize_values: bool,
-    serialize_private: bool,
-    serialize_entities: bool,
-    serialize_entity_labels: bool,
-    serialize_entity_ids: bool,
-    serialize_entity_names: bool,
-    serialize_variable_labels: bool,
-    serialize_variable_ids: bool,
-    serialize_colors: bool,
-    measure_eval_duration: bool,
-    serialize_type_info: bool,
-    serialize_table: bool,
+    serialize_term_ids: bool = @import("std").mem.zeroes(bool),
+    serialize_term_labels: bool = @import("std").mem.zeroes(bool),
+    serialize_ids: bool = @import("std").mem.zeroes(bool),
+    serialize_id_labels: bool = @import("std").mem.zeroes(bool),
+    serialize_sources: bool = @import("std").mem.zeroes(bool),
+    serialize_variables: bool = @import("std").mem.zeroes(bool),
+    serialize_is_set: bool = @import("std").mem.zeroes(bool),
+    serialize_values: bool = @import("std").mem.zeroes(bool),
+    serialize_private: bool = @import("std").mem.zeroes(bool),
+    serialize_entities: bool = @import("std").mem.zeroes(bool),
+    serialize_entity_labels: bool = @import("std").mem.zeroes(bool),
+    serialize_entity_ids: bool = @import("std").mem.zeroes(bool),
+    serialize_entity_names: bool = @import("std").mem.zeroes(bool),
+    serialize_variable_labels: bool = @import("std").mem.zeroes(bool),
+    serialize_variable_ids: bool = @import("std").mem.zeroes(bool),
+    serialize_colors: bool = @import("std").mem.zeroes(bool),
+    measure_eval_duration: bool = @import("std").mem.zeroes(bool),
+    serialize_type_info: bool = @import("std").mem.zeroes(bool),
+    serialize_table: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_iter_to_json_desc_t = struct_ecs_iter_to_json_desc_t;
 pub extern fn ecs_iter_to_json(world: ?*const ecs_world_t, iter: [*c]ecs_iter_t, desc: [*c]const ecs_iter_to_json_desc_t) [*c]u8;
 pub extern fn ecs_iter_to_json_buf(world: ?*const ecs_world_t, iter: [*c]ecs_iter_t, buf_out: [*c]ecs_strbuf_t, desc: [*c]const ecs_iter_to_json_desc_t) c_int;
 pub const struct_ecs_world_to_json_desc_t = extern struct {
-    serialize_builtin: bool,
-    serialize_modules: bool,
+    serialize_builtin: bool = @import("std").mem.zeroes(bool),
+    serialize_modules: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_world_to_json_desc_t = struct_ecs_world_to_json_desc_t;
 pub extern fn ecs_world_to_json(world: ?*ecs_world_t, desc: [*c]const ecs_world_to_json_desc_t) [*c]u8;
@@ -2215,9 +2189,9 @@ pub const EcsTypeKindLast: c_int = 6;
 pub const enum_ecs_type_kind_t = c_uint;
 pub const ecs_type_kind_t = enum_ecs_type_kind_t;
 pub const struct_EcsMetaType = extern struct {
-    kind: ecs_type_kind_t,
-    existing: bool,
-    partial: bool,
+    kind: ecs_type_kind_t = @import("std").mem.zeroes(ecs_type_kind_t),
+    existing: bool = @import("std").mem.zeroes(bool),
+    partial: bool = @import("std").mem.zeroes(bool),
 };
 pub const EcsMetaType = struct_EcsMetaType;
 pub const EcsBool: c_int = 1;
@@ -2241,115 +2215,115 @@ pub const EcsPrimitiveKindLast: c_int = 17;
 pub const enum_ecs_primitive_kind_t = c_uint;
 pub const ecs_primitive_kind_t = enum_ecs_primitive_kind_t;
 pub const struct_EcsPrimitive = extern struct {
-    kind: ecs_primitive_kind_t,
+    kind: ecs_primitive_kind_t = @import("std").mem.zeroes(ecs_primitive_kind_t),
 };
 pub const EcsPrimitive = struct_EcsPrimitive;
 pub const struct_EcsMember = extern struct {
-    type: ecs_entity_t,
-    count: i32,
-    unit: ecs_entity_t,
-    offset: i32,
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    count: i32 = @import("std").mem.zeroes(i32),
+    unit: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    offset: i32 = @import("std").mem.zeroes(i32),
 };
 pub const EcsMember = struct_EcsMember;
 pub const struct_ecs_member_value_range_t = extern struct {
-    min: f64,
-    max: f64,
+    min: f64 = @import("std").mem.zeroes(f64),
+    max: f64 = @import("std").mem.zeroes(f64),
 };
 pub const ecs_member_value_range_t = struct_ecs_member_value_range_t;
 pub const struct_EcsMemberRanges = extern struct {
-    value: ecs_member_value_range_t,
-    warning: ecs_member_value_range_t,
-    @"error": ecs_member_value_range_t,
+    value: ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
+    warning: ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
+    @"error": ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
 };
 pub const EcsMemberRanges = struct_EcsMemberRanges;
 pub const struct_ecs_member_t = extern struct {
-    name: [*c]const u8,
-    type: ecs_entity_t,
-    count: i32,
-    offset: i32,
-    unit: ecs_entity_t,
-    range: ecs_member_value_range_t,
-    error_range: ecs_member_value_range_t,
-    warning_range: ecs_member_value_range_t,
-    size: ecs_size_t,
-    member: ecs_entity_t,
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    count: i32 = @import("std").mem.zeroes(i32),
+    offset: i32 = @import("std").mem.zeroes(i32),
+    unit: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    range: ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
+    error_range: ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
+    warning_range: ecs_member_value_range_t = @import("std").mem.zeroes(ecs_member_value_range_t),
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    member: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_member_t = struct_ecs_member_t;
 pub const struct_EcsStruct = extern struct {
-    members: ecs_vec_t,
+    members: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
 };
 pub const EcsStruct = struct_EcsStruct;
 pub const struct_ecs_enum_constant_t = extern struct {
-    name: [*c]const u8,
-    value: i32,
-    constant: ecs_entity_t,
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    value: i32 = @import("std").mem.zeroes(i32),
+    constant: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_enum_constant_t = struct_ecs_enum_constant_t;
 pub const struct_EcsEnum = extern struct {
-    constants: ecs_map_t,
+    constants: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
 };
 pub const EcsEnum = struct_EcsEnum;
 pub const struct_ecs_bitmask_constant_t = extern struct {
-    name: [*c]const u8,
-    value: ecs_flags32_t,
-    constant: ecs_entity_t,
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    value: ecs_flags32_t = @import("std").mem.zeroes(ecs_flags32_t),
+    constant: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_bitmask_constant_t = struct_ecs_bitmask_constant_t;
 pub const struct_EcsBitmask = extern struct {
-    constants: ecs_map_t,
+    constants: ecs_map_t = @import("std").mem.zeroes(ecs_map_t),
 };
 pub const EcsBitmask = struct_EcsBitmask;
 pub const struct_EcsArray = extern struct {
-    type: ecs_entity_t,
-    count: i32,
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const EcsArray = struct_EcsArray;
 pub const struct_EcsVector = extern struct {
-    type: ecs_entity_t,
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const EcsVector = struct_EcsVector;
 pub const struct_ecs_serializer_t = extern struct {
-    value: ?*const fn ([*c]const struct_ecs_serializer_t, ecs_entity_t, ?*const anyopaque) callconv(.C) c_int,
-    member: ?*const fn ([*c]const struct_ecs_serializer_t, [*c]const u8) callconv(.C) c_int,
-    world: ?*const ecs_world_t,
-    ctx: ?*anyopaque,
+    value: ?*const fn ([*c]const struct_ecs_serializer_t, ecs_entity_t, ?*const anyopaque) callconv(.C) c_int = @import("std").mem.zeroes(?*const fn ([*c]const struct_ecs_serializer_t, ecs_entity_t, ?*const anyopaque) callconv(.C) c_int),
+    member: ?*const fn ([*c]const struct_ecs_serializer_t, [*c]const u8) callconv(.C) c_int = @import("std").mem.zeroes(?*const fn ([*c]const struct_ecs_serializer_t, [*c]const u8) callconv(.C) c_int),
+    world: ?*const ecs_world_t = @import("std").mem.zeroes(?*const ecs_world_t),
+    ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_serializer_t = struct_ecs_serializer_t;
 pub const ecs_meta_serialize_t = ?*const fn ([*c]const ecs_serializer_t, ?*const anyopaque) callconv(.C) c_int;
 pub const struct_EcsOpaque = extern struct {
-    as_type: ecs_entity_t,
-    serialize: ecs_meta_serialize_t,
-    assign_bool: ?*const fn (?*anyopaque, bool) callconv(.C) void,
-    assign_char: ?*const fn (?*anyopaque, u8) callconv(.C) void,
-    assign_int: ?*const fn (?*anyopaque, i64) callconv(.C) void,
-    assign_uint: ?*const fn (?*anyopaque, u64) callconv(.C) void,
-    assign_float: ?*const fn (?*anyopaque, f64) callconv(.C) void,
-    assign_string: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) void,
-    assign_entity: ?*const fn (?*anyopaque, ?*ecs_world_t, ecs_entity_t) callconv(.C) void,
-    assign_null: ?*const fn (?*anyopaque) callconv(.C) void,
-    clear: ?*const fn (?*anyopaque) callconv(.C) void,
-    ensure_element: ?*const fn (?*anyopaque, usize) callconv(.C) ?*anyopaque,
-    ensure_member: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) ?*anyopaque,
-    count: ?*const fn (?*const anyopaque) callconv(.C) usize,
-    resize: ?*const fn (?*anyopaque, usize) callconv(.C) void,
+    as_type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    serialize: ecs_meta_serialize_t = @import("std").mem.zeroes(ecs_meta_serialize_t),
+    assign_bool: ?*const fn (?*anyopaque, bool) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, bool) callconv(.C) void),
+    assign_char: ?*const fn (?*anyopaque, u8) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, u8) callconv(.C) void),
+    assign_int: ?*const fn (?*anyopaque, i64) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, i64) callconv(.C) void),
+    assign_uint: ?*const fn (?*anyopaque, u64) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, u64) callconv(.C) void),
+    assign_float: ?*const fn (?*anyopaque, f64) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, f64) callconv(.C) void),
+    assign_string: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.C) void),
+    assign_entity: ?*const fn (?*anyopaque, ?*ecs_world_t, ecs_entity_t) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*ecs_world_t, ecs_entity_t) callconv(.C) void),
+    assign_null: ?*const fn (?*anyopaque) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) void),
+    clear: ?*const fn (?*anyopaque) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) void),
+    ensure_element: ?*const fn (?*anyopaque, usize) callconv(.C) ?*anyopaque = @import("std").mem.zeroes(?*const fn (?*anyopaque, usize) callconv(.C) ?*anyopaque),
+    ensure_member: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) ?*anyopaque = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.C) ?*anyopaque),
+    count: ?*const fn (?*const anyopaque) callconv(.C) usize = @import("std").mem.zeroes(?*const fn (?*const anyopaque) callconv(.C) usize),
+    resize: ?*const fn (?*anyopaque, usize) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, usize) callconv(.C) void),
 };
 pub const EcsOpaque = struct_EcsOpaque;
 pub const struct_ecs_unit_translation_t = extern struct {
-    factor: i32,
-    power: i32,
+    factor: i32 = @import("std").mem.zeroes(i32),
+    power: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_unit_translation_t = struct_ecs_unit_translation_t;
 pub const struct_EcsUnit = extern struct {
-    symbol: [*c]u8,
-    prefix: ecs_entity_t,
-    base: ecs_entity_t,
-    over: ecs_entity_t,
-    translation: ecs_unit_translation_t,
+    symbol: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    prefix: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    base: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    over: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    translation: ecs_unit_translation_t = @import("std").mem.zeroes(ecs_unit_translation_t),
 };
 pub const EcsUnit = struct_EcsUnit;
 pub const struct_EcsUnitPrefix = extern struct {
-    symbol: [*c]u8,
-    translation: ecs_unit_translation_t,
+    symbol: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    translation: ecs_unit_translation_t = @import("std").mem.zeroes(ecs_unit_translation_t),
 };
 pub const EcsUnitPrefix = struct_EcsUnitPrefix;
 pub const EcsOpArray: c_int = 0;
@@ -2382,46 +2356,46 @@ pub const EcsMetaTypeOpKindLast: c_int = 25;
 pub const enum_ecs_meta_type_op_kind_t = c_uint;
 pub const ecs_meta_type_op_kind_t = enum_ecs_meta_type_op_kind_t;
 pub const struct_ecs_meta_type_op_t = extern struct {
-    kind: ecs_meta_type_op_kind_t,
-    offset: ecs_size_t,
-    count: i32,
-    name: [*c]const u8,
-    op_count: i32,
-    size: ecs_size_t,
-    type: ecs_entity_t,
-    member_index: i32,
-    members: [*c]ecs_hashmap_t,
+    kind: ecs_meta_type_op_kind_t = @import("std").mem.zeroes(ecs_meta_type_op_kind_t),
+    offset: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    count: i32 = @import("std").mem.zeroes(i32),
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    op_count: i32 = @import("std").mem.zeroes(i32),
+    size: ecs_size_t = @import("std").mem.zeroes(ecs_size_t),
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    member_index: i32 = @import("std").mem.zeroes(i32),
+    members: [*c]ecs_hashmap_t = @import("std").mem.zeroes([*c]ecs_hashmap_t),
 };
 pub const ecs_meta_type_op_t = struct_ecs_meta_type_op_t;
 pub const struct_EcsMetaTypeSerialized = extern struct {
-    ops: ecs_vec_t,
+    ops: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
 };
 pub const EcsMetaTypeSerialized = struct_EcsMetaTypeSerialized;
 pub const struct_ecs_meta_scope_t = extern struct {
-    type: ecs_entity_t,
-    ops: [*c]ecs_meta_type_op_t,
-    op_count: i32,
-    op_cur: i32,
-    elem_cur: i32,
-    prev_depth: i32,
-    ptr: ?*anyopaque,
-    comp: [*c]const EcsComponent,
-    @"opaque": [*c]const EcsOpaque,
-    vector: [*c]ecs_vec_t,
-    members: [*c]ecs_hashmap_t,
-    is_collection: bool,
-    is_inline_array: bool,
-    is_empty_scope: bool,
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    ops: [*c]ecs_meta_type_op_t = @import("std").mem.zeroes([*c]ecs_meta_type_op_t),
+    op_count: i32 = @import("std").mem.zeroes(i32),
+    op_cur: i32 = @import("std").mem.zeroes(i32),
+    elem_cur: i32 = @import("std").mem.zeroes(i32),
+    prev_depth: i32 = @import("std").mem.zeroes(i32),
+    ptr: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    comp: [*c]const EcsComponent = @import("std").mem.zeroes([*c]const EcsComponent),
+    @"opaque": [*c]const EcsOpaque = @import("std").mem.zeroes([*c]const EcsOpaque),
+    vector: [*c]ecs_vec_t = @import("std").mem.zeroes([*c]ecs_vec_t),
+    members: [*c]ecs_hashmap_t = @import("std").mem.zeroes([*c]ecs_hashmap_t),
+    is_collection: bool = @import("std").mem.zeroes(bool),
+    is_inline_array: bool = @import("std").mem.zeroes(bool),
+    is_empty_scope: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_meta_scope_t = struct_ecs_meta_scope_t;
 pub const struct_ecs_meta_cursor_t = extern struct {
-    world: ?*const ecs_world_t,
-    scope: [32]ecs_meta_scope_t,
-    depth: i32,
-    valid: bool,
-    is_primitive_scope: bool,
-    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t,
-    lookup_ctx: ?*anyopaque,
+    world: ?*const ecs_world_t = @import("std").mem.zeroes(?*const ecs_world_t),
+    scope: [32]ecs_meta_scope_t = @import("std").mem.zeroes([32]ecs_meta_scope_t),
+    depth: i32 = @import("std").mem.zeroes(i32),
+    valid: bool = @import("std").mem.zeroes(bool),
+    is_primitive_scope: bool = @import("std").mem.zeroes(bool),
+    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t = @import("std").mem.zeroes(?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t),
+    lookup_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
 };
 pub const ecs_meta_cursor_t = struct_ecs_meta_cursor_t;
 pub extern fn ecs_meta_cursor(world: ?*const ecs_world_t, @"type": ecs_entity_t, ptr: ?*anyopaque) ecs_meta_cursor_t;
@@ -2436,6 +2410,7 @@ pub extern fn ecs_meta_is_collection(cursor: [*c]const ecs_meta_cursor_t) bool;
 pub extern fn ecs_meta_get_type(cursor: [*c]const ecs_meta_cursor_t) ecs_entity_t;
 pub extern fn ecs_meta_get_unit(cursor: [*c]const ecs_meta_cursor_t) ecs_entity_t;
 pub extern fn ecs_meta_get_member(cursor: [*c]const ecs_meta_cursor_t) [*c]const u8;
+pub extern fn ecs_meta_get_member_id(cursor: [*c]const ecs_meta_cursor_t) ecs_entity_t;
 pub extern fn ecs_meta_set_bool(cursor: [*c]ecs_meta_cursor_t, value: bool) c_int;
 pub extern fn ecs_meta_set_char(cursor: [*c]ecs_meta_cursor_t, value: u8) c_int;
 pub extern fn ecs_meta_set_int(cursor: [*c]ecs_meta_cursor_t, value: i64) c_int;
@@ -2455,63 +2430,63 @@ pub extern fn ecs_meta_get_string(cursor: [*c]const ecs_meta_cursor_t) [*c]const
 pub extern fn ecs_meta_get_entity(cursor: [*c]const ecs_meta_cursor_t) ecs_entity_t;
 pub extern fn ecs_meta_ptr_to_float(type_kind: ecs_primitive_kind_t, ptr: ?*const anyopaque) f64;
 pub const struct_ecs_primitive_desc_t = extern struct {
-    entity: ecs_entity_t,
-    kind: ecs_primitive_kind_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    kind: ecs_primitive_kind_t = @import("std").mem.zeroes(ecs_primitive_kind_t),
 };
 pub const ecs_primitive_desc_t = struct_ecs_primitive_desc_t;
 pub extern fn ecs_primitive_init(world: ?*ecs_world_t, desc: [*c]const ecs_primitive_desc_t) ecs_entity_t;
 pub const struct_ecs_enum_desc_t = extern struct {
-    entity: ecs_entity_t,
-    constants: [32]ecs_enum_constant_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    constants: [32]ecs_enum_constant_t = @import("std").mem.zeroes([32]ecs_enum_constant_t),
 };
 pub const ecs_enum_desc_t = struct_ecs_enum_desc_t;
 pub extern fn ecs_enum_init(world: ?*ecs_world_t, desc: [*c]const ecs_enum_desc_t) ecs_entity_t;
 pub const struct_ecs_bitmask_desc_t = extern struct {
-    entity: ecs_entity_t,
-    constants: [32]ecs_bitmask_constant_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    constants: [32]ecs_bitmask_constant_t = @import("std").mem.zeroes([32]ecs_bitmask_constant_t),
 };
 pub const ecs_bitmask_desc_t = struct_ecs_bitmask_desc_t;
 pub extern fn ecs_bitmask_init(world: ?*ecs_world_t, desc: [*c]const ecs_bitmask_desc_t) ecs_entity_t;
 pub const struct_ecs_array_desc_t = extern struct {
-    entity: ecs_entity_t,
-    type: ecs_entity_t,
-    count: i32,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    count: i32 = @import("std").mem.zeroes(i32),
 };
 pub const ecs_array_desc_t = struct_ecs_array_desc_t;
 pub extern fn ecs_array_init(world: ?*ecs_world_t, desc: [*c]const ecs_array_desc_t) ecs_entity_t;
 pub const struct_ecs_vector_desc_t = extern struct {
-    entity: ecs_entity_t,
-    type: ecs_entity_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    type: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_vector_desc_t = struct_ecs_vector_desc_t;
 pub extern fn ecs_vector_init(world: ?*ecs_world_t, desc: [*c]const ecs_vector_desc_t) ecs_entity_t;
 pub const struct_ecs_struct_desc_t = extern struct {
-    entity: ecs_entity_t,
-    members: [32]ecs_member_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    members: [32]ecs_member_t = @import("std").mem.zeroes([32]ecs_member_t),
 };
 pub const ecs_struct_desc_t = struct_ecs_struct_desc_t;
 pub extern fn ecs_struct_init(world: ?*ecs_world_t, desc: [*c]const ecs_struct_desc_t) ecs_entity_t;
 pub const struct_ecs_opaque_desc_t = extern struct {
-    entity: ecs_entity_t,
-    type: EcsOpaque,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    type: EcsOpaque = @import("std").mem.zeroes(EcsOpaque),
 };
 pub const ecs_opaque_desc_t = struct_ecs_opaque_desc_t;
 pub extern fn ecs_opaque_init(world: ?*ecs_world_t, desc: [*c]const ecs_opaque_desc_t) ecs_entity_t;
 pub const struct_ecs_unit_desc_t = extern struct {
-    entity: ecs_entity_t,
-    symbol: [*c]const u8,
-    quantity: ecs_entity_t,
-    base: ecs_entity_t,
-    over: ecs_entity_t,
-    translation: ecs_unit_translation_t,
-    prefix: ecs_entity_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    symbol: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    quantity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    base: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    over: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    translation: ecs_unit_translation_t = @import("std").mem.zeroes(ecs_unit_translation_t),
+    prefix: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
 };
 pub const ecs_unit_desc_t = struct_ecs_unit_desc_t;
 pub extern fn ecs_unit_init(world: ?*ecs_world_t, desc: [*c]const ecs_unit_desc_t) ecs_entity_t;
 pub const struct_ecs_unit_prefix_desc_t = extern struct {
-    entity: ecs_entity_t,
-    symbol: [*c]const u8,
-    translation: ecs_unit_translation_t,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    symbol: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    translation: ecs_unit_translation_t = @import("std").mem.zeroes(ecs_unit_translation_t),
 };
 pub const ecs_unit_prefix_desc_t = struct_ecs_unit_prefix_desc_t;
 pub extern fn ecs_unit_prefix_init(world: ?*ecs_world_t, desc: [*c]const ecs_unit_prefix_desc_t) ecs_entity_t;
@@ -2522,21 +2497,21 @@ pub extern fn ecs_chrparse(in: [*c]const u8, out: [*c]u8) [*c]const u8;
 pub extern fn ecs_stresc(out: [*c]u8, size: ecs_size_t, delimiter: u8, in: [*c]const u8) ecs_size_t;
 pub extern fn ecs_astresc(delimiter: u8, in: [*c]const u8) [*c]u8;
 pub const struct_ecs_expr_var_t = extern struct {
-    name: [*c]u8,
-    value: ecs_value_t,
-    owned: bool,
+    name: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    value: ecs_value_t = @import("std").mem.zeroes(ecs_value_t),
+    owned: bool = @import("std").mem.zeroes(bool),
 };
 pub const ecs_expr_var_t = struct_ecs_expr_var_t;
 pub const struct_ecs_expr_var_scope_t = extern struct {
-    var_index: ecs_hashmap_t,
-    vars: ecs_vec_t,
-    parent: [*c]struct_ecs_expr_var_scope_t,
+    var_index: ecs_hashmap_t = @import("std").mem.zeroes(ecs_hashmap_t),
+    vars: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    parent: [*c]struct_ecs_expr_var_scope_t = @import("std").mem.zeroes([*c]struct_ecs_expr_var_scope_t),
 };
 pub const ecs_expr_var_scope_t = struct_ecs_expr_var_scope_t;
 pub const struct_ecs_vars_t = extern struct {
-    world: ?*ecs_world_t,
-    root: ecs_expr_var_scope_t,
-    cur: [*c]ecs_expr_var_scope_t,
+    world: ?*ecs_world_t = @import("std").mem.zeroes(?*ecs_world_t),
+    root: ecs_expr_var_scope_t = @import("std").mem.zeroes(ecs_expr_var_scope_t),
+    cur: [*c]ecs_expr_var_scope_t = @import("std").mem.zeroes([*c]ecs_expr_var_scope_t),
 };
 pub const ecs_vars_t = struct_ecs_vars_t;
 pub extern fn ecs_vars_init(world: ?*ecs_world_t, vars: [*c]ecs_vars_t) void;
@@ -2547,11 +2522,11 @@ pub extern fn ecs_vars_declare(vars: [*c]ecs_vars_t, name: [*c]const u8, @"type"
 pub extern fn ecs_vars_declare_w_value(vars: [*c]ecs_vars_t, name: [*c]const u8, value: [*c]ecs_value_t) [*c]ecs_expr_var_t;
 pub extern fn ecs_vars_lookup(vars: [*c]const ecs_vars_t, name: [*c]const u8) [*c]ecs_expr_var_t;
 pub const struct_ecs_parse_expr_desc_t = extern struct {
-    name: [*c]const u8,
-    expr: [*c]const u8,
-    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t,
-    lookup_ctx: ?*anyopaque,
-    vars: [*c]ecs_vars_t,
+    name: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    expr: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    lookup_action: ?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t = @import("std").mem.zeroes(?*const fn (?*const ecs_world_t, [*c]const u8, ?*anyopaque) callconv(.C) ecs_entity_t),
+    lookup_ctx: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
+    vars: [*c]ecs_vars_t = @import("std").mem.zeroes([*c]ecs_vars_t),
 };
 pub const ecs_parse_expr_desc_t = struct_ecs_parse_expr_desc_t;
 pub extern fn ecs_parse_expr(world: ?*ecs_world_t, ptr: [*c]const u8, value: [*c]ecs_value_t, desc: [*c]const ecs_parse_expr_desc_t) [*c]const u8;
@@ -2566,18 +2541,18 @@ pub extern fn ecs_iter_to_vars(it: [*c]const ecs_iter_t, vars: [*c]ecs_vars_t, o
 pub extern fn ecs_meta_from_desc(world: ?*ecs_world_t, component: ecs_entity_t, kind: ecs_type_kind_t, desc: [*c]const u8) c_int;
 pub extern var FLECS_IDEcsScriptID_: ecs_entity_t;
 pub const struct_EcsScript = extern struct {
-    using_: ecs_vec_t,
-    script: [*c]u8,
-    prop_defaults: ecs_vec_t,
-    world: ?*ecs_world_t,
+    using_: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    script: [*c]u8 = @import("std").mem.zeroes([*c]u8),
+    prop_defaults: ecs_vec_t = @import("std").mem.zeroes(ecs_vec_t),
+    world: ?*ecs_world_t = @import("std").mem.zeroes(?*ecs_world_t),
 };
 pub const EcsScript = struct_EcsScript;
 pub extern fn ecs_plecs_from_str(world: ?*ecs_world_t, name: [*c]const u8, str: [*c]const u8) c_int;
 pub extern fn ecs_plecs_from_file(world: ?*ecs_world_t, filename: [*c]const u8) c_int;
 pub const struct_ecs_script_desc_t = extern struct {
-    entity: ecs_entity_t,
-    filename: [*c]const u8,
-    str: [*c]const u8,
+    entity: ecs_entity_t = @import("std").mem.zeroes(ecs_entity_t),
+    filename: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
+    str: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const ecs_script_desc_t = struct_ecs_script_desc_t;
 pub extern fn ecs_script_init(world: ?*ecs_world_t, desc: [*c]const ecs_script_desc_t) ecs_entity_t;
@@ -2789,8 +2764,38 @@ pub const ECS_TARGET_POSIX = "";
 pub const ECS_TARGET_CLANG = "";
 pub const ECS_TARGET_GNU = "";
 
-pub const NULL = @import("std").zig.c_translation.cast(?*anyopaque, @as(c_int, 0));
+pub const _SIZE_T = "";
 
+pub const _BSD_MACHINE_TYPES_H_ = "";
+pub const _ARM_MACHTYPES_H_ = "";
+pub const _MACHTYPES_H_ = "";
+pub const _INT8_T = "";
+pub const _INT16_T = "";
+pub const _INT32_T = "";
+pub const _INT64_T = "";
+pub const _U_INT8_T = "";
+pub const _U_INT16_T = "";
+pub const _U_INT32_T = "";
+pub const _U_INT64_T = "";
+pub const _INTPTR_T = "";
+pub const _UINTPTR_T = "";
+pub const _ERRNO_T = "";
+pub const _SSIZE_T = "";
+pub const _STRINGS_H_ = "";
+pub const _SECURE__STRINGS_H_ = "";
+pub const _SECURE__COMMON_H_ = "";
+pub const _USE_FORTIFY_LEVEL = @as(c_int, 2);
+pub const _SECURE__STRING_H_ = "";
+pub const __HAS_FIXED_CHK_PROTOTYPES = @as(c_int, 1);
+pub const __CLANG_STDINT_H = "";
+pub const _STDINT_H_ = "";
+pub const __WORDSIZE = @as(c_int, 64);
+pub const _UINT8_T = "";
+pub const _UINT16_T = "";
+pub const _UINT32_T = "";
+pub const _UINT64_T = "";
+pub const _INTMAX_T = "";
+pub const _UINTMAX_T = "";
 pub inline fn INT8_C(v: anytype) @TypeOf(v) {
     return v;
 }
@@ -2857,6 +2862,7 @@ pub const PTRDIFF_MIN = INTMAX_MIN;
 pub const PTRDIFF_MAX = INTMAX_MAX;
 pub const SIZE_MAX = UINTPTR_MAX;
 pub const RSIZE_MAX = SIZE_MAX >> @as(c_int, 1);
+
 pub const WINT_MIN = INT32_MIN;
 pub const WINT_MAX = INT32_MAX;
 pub const SIG_ATOMIC_MIN = INT32_MIN;
@@ -2951,6 +2957,7 @@ pub inline fn ecs_entity_t_comb(lo: anytype, hi: anytype) @TypeOf((ECS_CAST(u64,
 pub inline fn ecs_pair(pred: anytype, obj: anytype) @TypeOf(ECS_PAIR | ecs_entity_t_comb(obj, pred)) {
     return ECS_PAIR | ecs_entity_t_comb(obj, pred);
 }
+
 pub inline fn ecs_pair_first(world: anytype, pair: anytype) @TypeOf(ecs_get_alive(world, ECS_PAIR_FIRST(pair))) {
     return ecs_get_alive(world, ECS_PAIR_FIRST(pair));
 }
@@ -2960,6 +2967,9 @@ pub inline fn ecs_pair_second(world: anytype, pair: anytype) @TypeOf(ecs_get_ali
 pub const ecs_pair_relation = ecs_pair_first;
 pub const ecs_pair_object = ecs_pair_second;
 
+pub inline fn ECS_TABLE_LOCK(world: anytype, table: anytype) @TypeOf(ecs_table_lock(world, table)) {
+    return ecs_table_lock(world, table);
+}
 pub inline fn ECS_TABLE_UNLOCK(world: anytype, table: anytype) @TypeOf(ecs_table_unlock(world, table)) {
     return ecs_table_unlock(world, table);
 }
@@ -3416,6 +3426,21 @@ pub inline fn ECS_BIT_IS_SET(flags: anytype, bit: anytype) @TypeOf(flags & bit) 
     return flags & bit;
 }
 pub const FLECS_HASHMAP_H = "";
+pub inline fn flecs_hashmap_init(hm: anytype, K: anytype, V: anytype, hash: anytype, compare: anytype, allocator: anytype) @TypeOf(flecs_hashmap_init_(hm, ECS_SIZEOF(K), ECS_SIZEOF(V), hash, compare, allocator)) {
+    return flecs_hashmap_init_(hm, ECS_SIZEOF(K), ECS_SIZEOF(V), hash, compare, allocator);
+}
+pub inline fn flecs_hashmap_ensure(map: anytype, key: anytype, V: anytype) @TypeOf(flecs_hashmap_ensure_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V))) {
+    return flecs_hashmap_ensure_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V));
+}
+pub inline fn flecs_hashmap_set(map: anytype, key: anytype, value: anytype) @TypeOf(flecs_hashmap_set_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(value.*), value)) {
+    return flecs_hashmap_set_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(value.*), value);
+}
+pub inline fn flecs_hashmap_remove(map: anytype, key: anytype, V: anytype) @TypeOf(flecs_hashmap_remove_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V))) {
+    return flecs_hashmap_remove_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V));
+}
+pub inline fn flecs_hashmap_remove_w_hash(map: anytype, key: anytype, V: anytype, hash: anytype) @TypeOf(flecs_hashmap_remove_w_hash_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V), hash)) {
+    return flecs_hashmap_remove_w_hash_(map, ECS_SIZEOF(key.*), key, ECS_SIZEOF(V), hash);
+}
 
 pub const EcsFirstUserComponentId = @as(c_int, 8);
 pub const EcsFirstUserEntityId = FLECS_HI_COMPONENT_ID + @as(c_int, 128);
@@ -3501,6 +3526,7 @@ pub const ECS_REST_DEFAULT_PORT = @as(c_int, 27750);
 pub const FLECS_TIMER_H = "";
 pub const FLECS_PIPELINE_H = "";
 pub const FLECS_SYSTEM_H = "";
+
 pub const FLECS_STATS_H = "";
 pub const ECS_STAT_WINDOW = @as(c_int, 60);
 pub const FLECS_METRICS_H = "";
@@ -3554,11 +3580,4 @@ pub const FLECS_PARSER_H = "";
 pub const FLECS_OS_API_IMPL_H = "";
 pub const FLECS_MODULE_H = "";
 pub const FLECS_CPP_H = "";
-
-pub const ecs_table_cache_hdr_t = struct_ecs_table_cache_hdr_t;
-pub const ecs_rule_var_t = struct_ecs_rule_var_t;
-pub const ecs_rule_op_t = struct_ecs_rule_op_t;
-pub const ecs_rule_op_ctx_t = struct_ecs_rule_op_ctx_t;
 pub const ecs_stack_page_t = struct_ecs_stack_page_t;
-pub const ecs_stack_t = struct_ecs_stack_t;
-pub const ecs_event_id_record_t = struct_ecs_event_id_record_t;

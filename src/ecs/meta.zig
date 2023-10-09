@@ -248,8 +248,7 @@ pub fn isConst(comptime T: type) bool {
 
 /// https://github.com/SanderMertens/flecs/tree/master/examples/c/reflection
 pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u64) void {
-    var desc = std.mem.zeroes(c.ecs_struct_desc_t);
-    desc.entity = entity;
+    var desc = c.ecs_struct_desc_t{ .entity = entity };
 
     switch (@typeInfo(T)) {
         .Struct => |si| {
@@ -257,8 +256,7 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
             if (@sizeOf(T) == 0) return;
 
             inline for (si.fields, 0..) |field, i| {
-                var member = std.mem.zeroes(c.ecs_member_t);
-                member.name = aya.tmp_allocator.dupeZ(u8, field.name) catch unreachable;
+                var member = c.ecs_member_t{ .name = aya.tmp_allocator.dupeZ(u8, field.name) catch unreachable };
 
                 // TODO: support nested structs
                 member.type = switch (field.type) {
@@ -289,14 +287,12 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
                             // flecs expects enums to be C style ints so if we are packed smaller abandon ship
                             if (@sizeOf(T) != 4) return;
 
-                            var enum_desc = std.mem.zeroes(c.ecs_enum_desc_t);
-                            enum_desc.entity = world.componentId(T);
-
+                            var enum_desc = c.ecs_enum_desc_t{ .entity = world.componentId(T) };
                             inline for (@typeInfo(field.type).Enum.fields, 0..) |f, index| {
-                                enum_desc.constants[index] = std.mem.zeroInit(c.ecs_enum_constant_t, .{
+                                enum_desc.constants[index] = .{
                                     .name = aya.tmp_allocator.dupeZ(u8, f.name) catch unreachable,
                                     .value = @as(i32, @intCast(f.value)),
-                                });
+                                };
                             }
 
                             break :blk c.ecs_enum_init(world, &enum_desc);
@@ -318,8 +314,7 @@ pub fn registerReflectionData(world: *c.ecs_world_t, comptime T: type, entity: u
 
 /// given a struct of Components with optional embedded metadata (order_by, instanced, modifiers, eptr) it generates an ecs_query_desc_t
 pub fn generateQueryDesc(world: *c.ecs_world_t, comptime Components: type) c.ecs_query_desc_t {
-    var query_desc = std.mem.zeroes(c.ecs_query_desc_t);
-    query_desc.filter = generateFilterDesc(world, Components);
+    var query_desc = c.ecs_query_desc_t{ .filter = generateFilterDesc(world, Components) };
 
     if (@hasDecl(Components, "order_by")) {
         validateOrderByFn(Components.order_by);
@@ -339,7 +334,7 @@ pub fn generateQueryDesc(world: *c.ecs_world_t, comptime Components: type) c.ecs
 /// given a struct of Components with optional embedded "metadata", "name", "order_by" data it generates an ecs_filter_desc_t
 pub fn generateFilterDesc(world: *c.ecs_world_t, comptime Components: type) c.ecs_filter_desc_t {
     assert(@typeInfo(Components) == .Struct);
-    var desc = std.mem.zeroes(c.ecs_filter_desc_t);
+    var desc = c.ecs_filter_desc_t{};
 
     // first, extract what we can from the Components fields
     const component_info = @typeInfo(Components).Struct;

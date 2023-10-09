@@ -27,7 +27,7 @@ pub const ecs_world_t = opaque {
     /// debug check if its running: http://localhost:27750/entity/flecs/core/World
     pub fn enableWebExplorer(self: *Self) void {
         c.FlecsMonitorImport(self);
-        _ = c.ecs_set_id(self, c.FLECS_IDEcsRestID_, c.FLECS_IDEcsRestID_, @sizeOf(c.EcsRest), &std.mem.zeroes(c.EcsRest));
+        _ = c.ecs_set_id(self, c.FLECS_IDEcsRestID_, c.FLECS_IDEcsRestID_, @sizeOf(c.EcsRest), &c.EcsRest{});
     }
 
     /// -1 log level turns off logging
@@ -62,8 +62,7 @@ pub const ecs_world_t = opaque {
     }
 
     pub fn newEntityNamed(self: *Self, name: [*c]const u8) Entity {
-        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
-        return Entity.init(self, c.ecs_entity_init(self, &desc));
+        return Entity.init(self, c.ecs_entity_init(self, &.{ .name = name }));
     }
 
     pub fn lookup(self: *Self, path: [:0]const u8) ?Entity {
@@ -79,10 +78,7 @@ pub const ecs_world_t = opaque {
     }
 
     pub fn newPrefab(self: *Self, name: [*c]const u8) c.Entity {
-        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
-            .name = name,
-            .add = [_]c.ecs_id_t{0} ** 32,
-        });
+        var desc = c.ecs_entity_desc_t{ .name = name };
         desc.add[0] = c.EcsPrefab;
         return Entity.init(self, c.ecs_entity_init(self, &desc));
     }
@@ -143,23 +139,22 @@ pub const ecs_world_t = opaque {
             return type_id_ptr.*;
 
         if (@sizeOf(T) == 0) {
-            var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = @typeName(T) });
-            type_id_ptr.* = c.ecs_entity_init(self, &desc);
+            type_id_ptr.* = c.ecs_entity_init(self, &.{ .name = @typeName(T) });
 
             if (@hasDecl(T, "exclusive") and T.exclusive)
                 c.ecs_add_id(self, type_id_ptr.*, c.EcsExclusive);
         } else {
-            type_id_ptr.* = c.ecs_component_init(self, &std.mem.zeroInit(c.ecs_component_desc_t, .{
-                .entity = c.ecs_entity_init(self, &std.mem.zeroInit(c.ecs_entity_desc_t, .{
+            type_id_ptr.* = c.ecs_component_init(self, &.{
+                .entity = c.ecs_entity_init(self, &.{
                     .use_low_id = true,
                     .name = @typeName(T),
                     .symbol = @typeName(T),
-                })),
+                }),
                 .type = .{
                     .alignment = @alignOf(T),
                     .size = @sizeOf(T),
                 },
-            }));
+            });
         }
 
         // allow disabling reflection data with a root bool
@@ -183,8 +178,7 @@ pub const ecs_world_t = opaque {
 
     /// creates a new type entity, or finds an existing one. A type entity is an entity with the EcsType component.
     pub fn newTypeWithName(self: *Self, name: [*c]const u8, comptime Types: anytype) u64 {
-        var desc = std.mem.zeroes(c.ecs_type_desc_t);
-        desc.entity = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
+        var desc = c.ecs_type_desc_t{ .entity = .{ .name = name } };
 
         inline for (Types, 0..) |T, i| {
             desc.ids[i] = self.componentId(T);
@@ -194,10 +188,10 @@ pub const ecs_world_t = opaque {
     }
 
     pub fn newTypeExpr(self: *Self, name: [*c]const u8, expr: [*c]const u8) u64 {
-        var desc = std.mem.zeroInit(c.ecs_type_desc_t, .{ .ids_expr = expr });
-        desc.entity = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
-
-        return c.ecs_type_init(self, &desc);
+        return c.ecs_type_init(self, &.{
+            .ids_expr = expr,
+            .entity = .{ .name = name },
+        });
     }
 
     /// removes the entity from the Ecs
@@ -261,13 +255,13 @@ pub const ecs_world_t = opaque {
         std.debug.assert(@hasDecl(Components, "run"));
         std.debug.assert(@hasDecl(Components, "name"));
 
-        var entity_desc = std.mem.zeroes(c.ecs_entity_desc_t);
-        entity_desc.id = c.ecs_new_id(self);
-        entity_desc.name = Components.name;
+        var entity_desc = c.ecs_entity_desc_t{
+            .id = c.ecs_new_id(self),
+            .name = Components.name,
+        };
         entity_desc.add[0] = event;
 
-        var desc = std.mem.zeroes(c.ecs_observer_desc_t);
-        desc.entity = c.ecs_entity_init(self, &entity_desc);
+        var desc = c.ecs_observer_desc_t{ .entity = c.ecs_entity_init(self, &entity_desc) };
         desc.events[0] = event;
 
         desc.run = wrapSystemFn(Components, Components.run);

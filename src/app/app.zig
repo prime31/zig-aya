@@ -175,7 +175,7 @@ pub const App = struct {
 
         {
             // update any affected phases, those before/after the inserted phase
-            var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+            var filter_desc = c.ecs_filter_desc_t{};
             filter_desc.terms[0].id = self.world.ecs.componentId(PhaseSort);
             filter_desc.terms[0].inout = c.EcsInOut;
             filter_desc.terms[1].id = c.EcsPhase;
@@ -207,7 +207,7 @@ pub const App = struct {
 
         {
             // update any systems that are in the phases that changed their sort order
-            var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+            var filter_desc = c.ecs_filter_desc_t{};
             filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
             filter_desc.terms[0].inout = c.EcsInOut;
 
@@ -570,7 +570,7 @@ pub const App = struct {
     }
 
     fn updateSystemOrder(self: *Self, phase: u64, other_order_in_phase: i32, direction: i32) void {
-        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        var filter_desc = c.ecs_filter_desc_t{};
         filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
         filter_desc.terms[0].inout = c.EcsInOut;
 
@@ -596,7 +596,7 @@ pub const App = struct {
     }
 
     fn updateSystemOrderInSet(self: *Self, set: u64, other_order_in_set: i32, direction: i32) void {
-        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        var filter_desc = c.ecs_filter_desc_t{};
         filter_desc.terms[0].id = self.world.ecs.componentId(SystemSort);
         filter_desc.terms[0].inout = c.EcsInOut;
 
@@ -630,25 +630,28 @@ pub const App = struct {
 
 /// runs a Pipeline that matches only the startup phases then deletes all systems in those phases
 fn runStartupPipeline(world: *c.ecs_world_t) void {
-    var pip_desc = std.mem.zeroes(c.ecs_pipeline_desc_t);
-    pip_desc.entity = c.ecs_entity_init(world, &std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = "StartupPipeline" }));
-    pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = world.componentId(SystemSort);
+    var pip_desc = c.ecs_pipeline_desc_t{
+        .entity = c.ecs_entity_init(world, &.{ .name = "StartupPipeline" }),
+        .query = .{
+            .order_by = pipelineSystemSortCompare,
+            .order_by_component = world.componentId(SystemSort),
+        },
+    };
 
     pip_desc.query.filter.terms[0].id = c.EcsSystem;
-    pip_desc.query.filter.terms[1] = std.mem.zeroInit(c.ecs_term_t, .{
+    pip_desc.query.filter.terms[1] = .{
         .id = world.componentId(phases.PreStartup),
         .oper = c.EcsOr,
-    });
-    pip_desc.query.filter.terms[2] = std.mem.zeroInit(c.ecs_term_t, .{
+    };
+    pip_desc.query.filter.terms[2] = .{
         .id = world.componentId(phases.Startup),
         .oper = c.EcsOr,
-    });
+    };
     pip_desc.query.filter.terms[3].id = world.componentId(phases.PostStartup);
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(c.ecs_term_t, .{
+    pip_desc.query.filter.terms[4] = .{
         .id = world.componentId(SystemSort),
         .inout = c.EcsIn,
-    });
+    };
 
     const startup_pipeline = c.ecs_pipeline_init(world, &pip_desc);
     c.ecs_set_pipeline(world, startup_pipeline);
@@ -661,10 +664,13 @@ fn runStartupPipeline(world: *c.ecs_world_t) void {
 
 /// creates and sets a Pipeline that handles system sorting
 fn setCorePipeline(world: *c.ecs_world_t) void {
-    var pip_desc = std.mem.zeroes(c.ecs_pipeline_desc_t);
-    pip_desc.entity = c.ecs_entity_init(world, &std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = "CorePipeline" }));
-    pip_desc.query.order_by = pipelineSystemSortCompare;
-    pip_desc.query.order_by_component = world.componentId(SystemSort);
+    var pip_desc = c.ecs_pipeline_desc_t{
+        .entity = c.ecs_entity_init(world, &.{ .name = "CorePipeline" }),
+        .query = .{
+            .order_by = pipelineSystemSortCompare,
+            .order_by_component = world.componentId(SystemSort),
+        },
+    };
 
     pip_desc.query.filter.terms[0].id = c.EcsSystem;
 
@@ -675,22 +681,22 @@ fn setCorePipeline(world: *c.ecs_world_t) void {
     pip_desc.query.filter.terms[2].inout = c.EcsInOutNone;
     pip_desc.query.filter.terms[2].oper = c.EcsNot;
 
-    pip_desc.query.filter.terms[3] = std.mem.zeroInit(c.ecs_term_t, .{
+    pip_desc.query.filter.terms[3] = .{
         .id = c.EcsDisabled,
-        .src = std.mem.zeroInit(c.ecs_term_id_t, .{
+        .src = .{
             .flags = c.EcsUp,
             .trav = c.EcsDependsOn,
-        }),
+        },
         .oper = c.EcsNot,
-    });
-    pip_desc.query.filter.terms[4] = std.mem.zeroInit(c.ecs_term_t, .{
+    };
+    pip_desc.query.filter.terms[4] = .{
         .id = c.EcsDisabled,
-        .src = std.mem.zeroInit(c.ecs_term_id_t, .{
+        .src = .{
             .flags = c.EcsUp,
             .trav = c.EcsChildOf,
-        }),
+        },
         .oper = c.EcsNot,
-    });
+    };
 
     const pipeline = c.ecs_pipeline_init(world, &pip_desc);
     c.ecs_set_pipeline(world, pipeline);

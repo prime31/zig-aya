@@ -56,14 +56,13 @@ pub fn Term(comptime T: anytype) type {
         };
 
         pub fn init(world: *c.ecs_world_t) Self {
-            var term = std.mem.zeroInit(c.ecs_term_t, .{ .id = world.componentId(T) });
+            var term = .{ .id = world.componentId(T) };
             return .{ .ecs = world, .term = term };
         }
 
         pub fn initWithPair(world: c.World, pair: u64) Self {
             std.debug.assert(@TypeOf(T) == void);
-            var term = std.mem.zeroInit(c.ecs_term_t, .{ .id = pair });
-            return .{ .world = world, .term = term };
+            return .{ .world = world, .term = .{ .id = pair } };
         }
 
         pub fn deinit(self: *Self) void {

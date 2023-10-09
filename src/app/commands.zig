@@ -21,7 +21,7 @@ pub const Commands = struct {
             return;
         }
 
-        var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+        var filter_desc = c.ecs_filter_desc_t{};
         filter_desc.terms[0].id = c.EcsSystem;
         filter_desc.terms[0].inout = c.EcsInOutNone;
         filter_desc.terms[0].inout = c.EcsInOutNone;
@@ -52,9 +52,9 @@ pub const Commands = struct {
     }
 
     pub fn spawn(self: Commands, name: ?[:0]const u8) EntityCommands {
-        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
+        var desc = c.ecs_entity_desc_t{
             .name = if (name) |n| n.ptr else null,
-        });
+        };
 
         return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
     }
@@ -68,9 +68,7 @@ pub const Commands = struct {
         if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
             @compileError("Expected tuple or empty struct, got " ++ @typeName(@TypeOf(ids)));
 
-        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{
-            .name = if (name) |n| n.ptr else null,
-        });
+        var desc = c.ecs_entity_desc_t{ .name = if (name) |n| n.ptr else null };
 
         inline for (ids, 0..) |id_or_pair, i| {
             if (comptime std.meta.trait.isTuple(@TypeOf(id_or_pair))) {
@@ -89,7 +87,7 @@ pub const Commands = struct {
     }
 
     pub fn newEntityNamed(self: Commands, name: [*c]const u8) Entity {
-        var desc = std.mem.zeroInit(c.ecs_entity_desc_t, .{ .name = name });
+        var desc = c.ecs_entity_desc_t{ .name = name };
         return Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc));
     }
 

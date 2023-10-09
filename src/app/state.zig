@@ -133,7 +133,7 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
 
                 // run OnExits
                 {
-                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    var filter_desc = c.ecs_filter_desc_t{};
                     filter_desc.terms[0].id = c.EcsSystem;
                     filter_desc.terms[0].inout = c.EcsInOutNone;
                     filter_desc.terms[1].id = state_res.entityForExitTag(state_res.state);
@@ -153,7 +153,7 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
 
                 // run OnEnters
                 {
-                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    var filter_desc = c.ecs_filter_desc_t{};
                     filter_desc.terms[0].id = c.EcsSystem;
                     filter_desc.terms[0].inout = c.EcsInOutNone;
                     filter_desc.terms[1].id = state_res.entityForEnterTag(comps.next_state.next_state);
@@ -173,7 +173,7 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
 
                 // run OnTransitions
                 {
-                    var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                    var filter_desc = c.ecs_filter_desc_t{};
                     filter_desc.terms[0].id = c.EcsSystem;
                     filter_desc.terms[0].inout = c.EcsInOutNone;
                     filter_desc.terms[1].id = iter.commands().ecs.pair(FromTransition, prev_state_entity);
@@ -196,7 +196,7 @@ pub fn StateChangeCheckSystem(comptime T: type) type {
                 state.get().?.state = comps.next_state.next_state;
 
                 // disable all systems with prev_state and enable all systems with next_state
-                var filter_desc = std.mem.zeroes(c.ecs_filter_desc_t);
+                var filter_desc = c.ecs_filter_desc_t{};
                 filter_desc.terms[0].id = iter.commands().ecs.pair(state_res.base_entity, c.EcsWildcard);
                 filter_desc.terms[1].id = c.EcsSystem;
                 filter_desc.terms[1].inout = c.EcsInOutNone;
