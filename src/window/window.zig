@@ -77,6 +77,20 @@ pub const Window = struct {
     sdl_window: *sdl.SDL_Window = undefined,
     focused: bool = true,
     id: u32 = 0,
+
+    pub fn sizeInPixels(self: Window) struct { w: c_int, h: c_int } {
+        var w: c_int = 0;
+        var h: c_int = 0;
+        _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &w, &h);
+        return .{ .w = w, .h = h };
+    }
+
+    pub fn size(self: Window) struct { w: c_int, h: c_int } {
+        var w: c_int = 0;
+        var h: c_int = 0;
+        _ = sdl.SDL_GetWindowSize(self.sdl_window, &w, &h);
+        return .{ .w = w, .h = h };
+    }
 };
 
 pub const WindowConfig = struct {
