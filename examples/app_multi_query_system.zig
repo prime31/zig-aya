@@ -18,9 +18,9 @@ pub fn main() !void {
 
 const AddEntitiesSystem = struct {
     pub fn run(commands: Commands) void {
-        commands.newEntity().set(Position{});
-        commands.newEntity().set(Position{});
-        commands.newEntity().set(Velocity{});
+        commands.spawnEmpty().insert(Position{});
+        commands.spawnEmpty().insert(Position{});
+        commands.spawnEmpty().insert(Velocity{});
     }
 };
 

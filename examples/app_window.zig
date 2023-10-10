@@ -10,7 +10,7 @@ pub fn main() !void {
 
     App.init()
         .addPlugins(aya.DefaultPlugins)
-        .addSystem(aya.Update, AppExitEventSystem)
+        .addSystems(aya.Update, AppExitEventSystem)
         .run();
 }
 

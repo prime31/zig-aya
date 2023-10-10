@@ -104,7 +104,6 @@ pub fn eventLoop(app: *App) void {
                 sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => std.debug.print("SDL_EVENT_WINDOW_MOUSE_LEAVE\n", .{}),
                 sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => std.debug.print("SDL_EVENT_WINDOW_FOCUS_GAINED\n", .{}),
                 sdl.SDL_EVENT_WINDOW_FOCUS_LOST => std.debug.print("SDL_EVENT_WINDOW_FOCUS_LOST\n", .{}),
-                sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => std.debug.print("SDL_EVENT_WINDOW_CLOSE_REQUESTED\n", .{}),
                 sdl.SDL_EVENT_WINDOW_TAKE_FOCUS => std.debug.print("SDL_EVENT_WINDOW_TAKE_FOCUS\n", .{}),
                 sdl.SDL_EVENT_WINDOW_HIT_TEST => std.debug.print("SDL_EVENT_WINDOW_HIT_TEST\n", .{}),
                 sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),
