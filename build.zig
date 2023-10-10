@@ -150,6 +150,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
         .target = target,
         .optimize = optimize,
     });
+    exe.linkLibrary(sokol_dep.artifact("sokol"));
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
