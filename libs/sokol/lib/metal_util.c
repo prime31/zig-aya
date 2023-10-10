@@ -8,6 +8,7 @@
 #import <SDL.h>
 
 static void* _window;
+SDL_MetalView _view;
 static CAMetalLayer* _metal_layer;
 static id<CAMetalDrawable> _drawable;
 static MTLRenderPassDescriptor* _render_pass_descriptor;
@@ -27,16 +28,12 @@ CGSize _mu_calculate_drawable_size() {
 
 void mu_create_metal_layer(void* window) {
     _window = window;
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, NULL, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-	_metal_layer = (__bridge __typeof__ (CAMetalLayer*))SDL_GetRenderMetalLayer(renderer);
 
-    // TODO: switch over to SDL_Metal when 2.0.11 releases
-    // pub extern fn SDL_Metal_CreateView(window: ?*SDL_Window) SDL_MetalView;
-    // pub extern fn SDL_Metal_DestroyView(view: SDL_MetalView) void;
-    // pub extern fn SDL_Metal_GetLayer(view: SDL_MetalView) ?*anyopaque;
-
-    // SDL_DestroyRenderer(renderer);
-
+	id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+	_view = SDL_Metal_CreateView(window);
+	_metal_layer = SDL_Metal_GetLayer(_view);
+	_metal_layer.device = device;
+	_metal_layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     _metal_layer.framebufferOnly = YES;
 }
 
@@ -46,14 +43,11 @@ const void* mu_get_metal_device() {
 
 // [_sapp.macos.view currentRenderPassDescriptor];
 const void* mu_get_render_pass_descriptor() {
-    // todo: do we need to set the drawableSize? doesnt seem like we do...
-    // _metal_layer.drawableSize = _mu_calculate_drawable_size();
-
     _drawable = [_metal_layer nextDrawable];
     _fb_size = _metal_layer.drawableSize;
 
     _render_pass_descriptor = NULL;
-    _render_pass_descriptor = [[MTLRenderPassDescriptor alloc] init];
+    _render_pass_descriptor = [MTLRenderPassDescriptor new];
     _render_pass_descriptor.colorAttachments[0].texture = _drawable.texture;
 
     return (__bridge const void*)_render_pass_descriptor;
@@ -91,23 +85,14 @@ void mu_set_display_sync_enabled(bool enabled) {
 #else
 
 void mu_create_metal_layer(void* window) {}
-
 const void* mu_get_metal_device() { return 0; }
-
 const void* mu_get_render_pass_descriptor() { return 0; }
-
 const void* mu_get_drawable() { return 0; }
-
 float mu_dpi_scale() { return 0; }
-
 float mu_width() { return 0; }
-
 float mu_height() { return 0; }
-
 void mu_set_framebuffer_only(bool framebuffer_only) {}
-
 void mu_set_drawable_size(int width, int height) {}
-
 void mu_set_display_sync_enabled(bool enabled) {}
 
 #endif

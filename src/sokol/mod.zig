@@ -5,10 +5,19 @@ const sokol = @import("sokol");
 const aya = @import("../aya.zig");
 
 const App = aya.App;
+const Window = aya.Window;
+const Res = aya.Res;
+
+pub const ClearColor = struct {
+    r: f32 = 0.8,
+    g: f32 = 0.2,
+    b: f32 = 0.3,
+    a: f32 = 1,
+};
 
 pub const SokolPlugin = struct {
     pub fn build(_: SokolPlugin, app: *App) void {
-        const window = app.world.resources.get(aya.Window).?;
+        const window = app.world.resources.get(Window).?;
         metal.mu_create_metal_layer(window.sdl_window);
 
         sokol.gfx.setup(.{
@@ -21,19 +30,21 @@ pub const SokolPlugin = struct {
             },
         });
 
-        _ = app.addSystems(aya.Last, RenderClear);
+        _ = app
+            .insertResource(ClearColor{})
+            .addSystems(aya.Last, RenderClear);
     }
 };
 
-var pass_action: sokol.gfx.PassAction = .{};
-
 const RenderClear = struct {
-    pub fn run(window_res: aya.Res(aya.Window)) void {
+    pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor)) void {
         const window = window_res.getAssertExists();
+        const clear_color = clear_color_res.getAssertExists();
 
+        var pass_action = sokol.gfx.PassAction{};
         pass_action.colors[0] = .{
             .load_action = .CLEAR,
-            .clear_value = .{ .r = 1, .g = 1, .b = 0, .a = 1 },
+            .clear_value = .{ .r = clear_color.r, .g = clear_color.g, .b = clear_color.b, .a = clear_color.a },
         };
 
         const size = window.sizeInPixels();
