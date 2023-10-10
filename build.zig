@@ -85,6 +85,7 @@ pub fn build(b: *std.Build) void {
     addExecutable(b, target, optimize, options, "ecs_exclusive_tag", "examples/ecs_exclusive_tag.zig");
     addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
     addExecutable(b, target, optimize, options, "systems_intervals", "examples/systems_intervals.zig");
+    addExecutable(b, target, optimize, options, "gfx_clear", "examples/gfx_clear.zig");
 
     addTests(b, target, optimize);
 
@@ -145,15 +146,26 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
         imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
     const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
 
+    const sokol_dep = b.dependency("sokol", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
-        .dependencies = &.{ .{ .name = "stb", .module = stb_module }, .{ .name = "sdl", .module = sdl_module }, .{ .name = "imgui", .module = imgui_module }, .{
-            .name = "build_options",
-            .module = b.createModule(.{
-                .source_file = options.build_options.getOutput(),
-            }),
-        } },
+        .dependencies = &.{
+            .{ .name = "stb", .module = stb_module },
+            .{ .name = "sdl", .module = sdl_module },
+            .{ .name = "imgui", .module = imgui_module },
+            .{ .name = "sokol", .module = sokol_dep.module("sokol") },
+            .{
+                .name = "build_options",
+                .module = b.createModule(.{
+                    .source_file = options.build_options.getOutput(),
+                }),
+            },
+        },
     });
 
     exe.addModule("aya", aya_module);
