@@ -6,6 +6,7 @@ const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
+const sokol_build = @import("libs/sokol/build.zig");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
@@ -152,6 +153,10 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     });
     exe.linkLibrary(sokol_dep.artifact("sokol"));
 
+    // macos metal helpers
+    sokol_build.linkArtifact(b, exe);
+    const sokol_module = sokol_build.getModule(b);
+
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
@@ -160,6 +165,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "imgui", .module = imgui_module },
             .{ .name = "sokol", .module = sokol_dep.module("sokol") },
+            .{ .name = "metal", .module = sokol_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
