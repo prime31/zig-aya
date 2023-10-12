@@ -61,7 +61,7 @@ pub fn NextState(comptime T: type) type {
 
         pub fn set(self: *Self, commands: Commands, new_state: T) void {
             self.state = new_state;
-            commands.spawnEmpty().insert(StateChanged(T){ .next_state = new_state });
+            _ = commands.spawnEmpty().insert(StateChanged(T){ .next_state = new_state });
         }
     };
 }

@@ -229,38 +229,6 @@ pub const EntityCommands = struct {
         return self;
     }
 
-    fn insertSingle(self: EntityCommands, component: anytype) void {
-        switch (@TypeOf(component)) {
-            type, u64 => self.entity.add(component),
-            else => {
-                std.debug.assert(@typeInfo(@TypeOf(component)) == .Pointer or @typeInfo(@TypeOf(component)) == .Struct);
-                self.entity.set(component);
-            },
-        }
-    }
-
-    fn insertBundle(self: EntityCommands, bundle: anytype) void {
-        const ti = @typeInfo(@TypeOf(bundle));
-        const bundle_type = if (ti == .Type) bundle else @TypeOf(bundle);
-
-        if (ti == .Type) {
-            // loop and set any components that have default values
-            inline for (std.meta.fields(bundle)) |field| {
-                if (field.default_value) |ptr| {
-                    const comp = @as(*const field.type, @ptrCast(@alignCast(ptr)));
-                    self.entity.set(comp);
-                } else {
-                    self.entity.add(field.type);
-                }
-            }
-        } else {
-            // loop and set any components using the field value
-            inline for (std.meta.fields(bundle_type)) |field| {
-                self.entity.set(@field(bundle, field.name));
-            }
-        }
-    }
-
     pub fn remove(self: EntityCommands, id_or_type: anytype) EntityCommands {
         self.entity.remove(id_or_type);
         return self;
@@ -270,12 +238,6 @@ pub const EntityCommands = struct {
         self.entity.delete();
     }
 };
-
-pub fn tupleOrSingleArgToSlice(components: anytype) void {
-    if (@typeInfo(@TypeOf(components)) == .Struct and @typeInfo(@TypeOf(components)).Struct.is_tuple) {
-        return components;
-    }
-}
 
 const DeferredCreateSystem = struct {
     id: u64,
