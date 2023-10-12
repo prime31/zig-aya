@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
 const app = @import("mod.zig");
 
 const Allocator = std.mem.Allocator;
@@ -21,8 +22,8 @@ pub fn Local(comptime T: type) type {
 pub const LocalResources = struct {
     locals: std.AutoHashMap(u64, Resources),
 
-    pub fn init(allocator: Allocator) LocalResources {
-        return .{ .locals = std.AutoHashMap(u64, Resources).init(allocator) };
+    pub fn init() LocalResources {
+        return .{ .locals = std.AutoHashMap(u64, Resources).init(aya.allocator) };
     }
 
     pub fn deinit(self: *LocalResources) void {
@@ -35,7 +36,7 @@ pub const LocalResources = struct {
 
     pub fn insert(self: *LocalResources, comptime T: type, system: u64, local: T) void {
         var resources: *Resources = self.locals.getPtr(system) orelse blk: {
-            self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;
+            self.locals.put(system, Resources.init()) catch unreachable;
             break :blk self.locals.getPtr(system).?;
         };
 
@@ -44,7 +45,7 @@ pub const LocalResources = struct {
 
     pub fn getLocalMut(self: *LocalResources, comptime T: type, system: u64) *T {
         var resources = self.locals.getPtr(system) orelse blk: {
-            self.locals.put(system, Resources.init(self.locals.allocator)) catch unreachable;
+            self.locals.put(system, Resources.init()) catch unreachable;
             break :blk self.locals.getPtr(system).?;
         };
 

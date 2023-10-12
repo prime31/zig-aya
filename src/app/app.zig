@@ -63,7 +63,7 @@ pub const App = struct {
         tmp_allocator_instance = ScratchAllocator.init(allocator);
         tmp_allocator = tmp_allocator_instance.allocator();
 
-        var self: *App = allocator.create(App) catch unreachable;
+        var self: *App = aya.mem.create(App);
         self.* = .{
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),

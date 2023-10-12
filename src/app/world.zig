@@ -15,10 +15,11 @@ pub const World = struct {
     locals: LocalServer,
 
     pub fn init(allocator: Allocator) Self {
+        _ = allocator;
         return .{
             .ecs = c.ecs_init().?,
-            .resources = Resources.init(allocator),
-            .locals = LocalServer.init(allocator),
+            .resources = Resources.init(),
+            .locals = LocalServer.init(),
         };
     }
 
