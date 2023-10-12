@@ -142,14 +142,14 @@ pub fn addAyaToArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target:
 
 // add tests.zig file runnable via "zig build test"
 pub fn addTests(b: *Builder, target: Target, comptime prefix_path: []const u8) void {
-    _ = target;
-    _ = b;
     if (prefix_path.len > 0 and !std.mem.endsWith(u8, prefix_path, "/")) @panic("prefix-path must end with '/' if it is not empty");
 
-    // var tst = b.addTest(prefix_path ++ "aya/tests.zig");
-    // addAyaToArtifact(b, tst, target, prefix_path);
-    // const test_step = b.step("test", "Run tests in tests.zig");
-    // test_step.dependOn(&tst.step);
+    var tst = b.addTest(.{
+        .root_source_file = .{ .path = prefix_path ++ "aya/tests.zig" },
+    });
+    addAyaToArtifact(b, tst, target, prefix_path);
+    const test_step = b.step("test", "Run tests in tests.zig");
+    test_step.dependOn(&tst.step);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {

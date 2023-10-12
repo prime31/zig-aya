@@ -39,14 +39,14 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
     exe.addIncludePath(std.Build.LazyPath.relative(base_path ++ "cimgui/imgui/examples"));
 
     const cpp_args = [_][]const u8{"-Wno-return-type-c-linkage"};
-    exe.addCSourceFiles(&[_][]const u8{
+    exe.addCSourceFiles(.{ .files = &[_][]const u8{
         base_path ++ "cimgui/imgui/imgui.cpp",
         base_path ++ "cimgui/imgui/imgui_demo.cpp",
         base_path ++ "cimgui/imgui/imgui_draw.cpp",
         base_path ++ "cimgui/imgui/imgui_widgets.cpp",
         base_path ++ "cimgui/cimgui.cpp",
         base_path ++ "temporary_hacks.cpp",
-    }, &cpp_args);
+    }, .flags = &cpp_args });
 
     addImGuiGlImplementation(b, exe, target, prefix_path);
 }
@@ -61,11 +61,11 @@ fn addImGuiGlImplementation(_: *Builder, exe: *std.build.LibExeObjStep, _: std.z
     exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/usr/local/include/SDL2" });
     exe.addIncludePath(std.Build.LazyPath{ .cwd_relative = "/opt/homebrew/include/SDL2" });
 
-    exe.addCSourceFiles(&[_][]const u8{
+    exe.addCSourceFiles(.{ .files = &[_][]const u8{
         base_path ++ "cimgui/imgui/examples/libs/gl3w/GL/gl3w.c",
         base_path ++ "cimgui/imgui/examples/imgui_impl_opengl3.cpp",
         base_path ++ "cimgui/imgui/examples/imgui_impl_sdl.cpp",
-    }, &cpp_args);
+    }, .flags = &cpp_args });
 }
 
 /// helper function to get SDK path on Mac

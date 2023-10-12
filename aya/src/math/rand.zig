@@ -37,7 +37,7 @@ pub fn range(comptime T: type, at_least: T, less_than: T) T {
 
 /// Returns an evenly distributed random unsigned integer `0 <= i < less_than`.
 pub fn uintLessThan(comptime T: type, less_than: T) T {
-    return rng.random.uintLessThanBiased(T, less_than);
+    return rng.random().uintLessThanBiased(T, less_than);
 }
 
 /// returns true if the next random is less than percent. Percent should be between 0 and 1

@@ -64,7 +64,7 @@ pub const SpatialHash = struct {
     }
 };
 
-test "" {
+test {
     var hash = SpatialHash.init(std.testing.allocator, 150);
     defer hash.deinit();
 
@@ -76,4 +76,5 @@ test "" {
         },
     });
     const circle_id = hash.add(circle);
+    _ = circle_id;
 }

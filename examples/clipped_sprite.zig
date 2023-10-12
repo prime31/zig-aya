@@ -311,13 +311,13 @@ pub const TexturePolygon = struct {
         var res: f32 = 0;
 
         if (start.x == end.x) {
-            res = std.math.fabs(i.x - end.x);
+            res = @abs(i.x - end.x);
         } else if (start.y == end.y) {
-            res = std.math.fabs(i.y - end.y);
+            res = @abs(i.y - end.y);
         } else {
             const slope = (end.y - start.y) / (end.x - start.x);
             const intercept = start.y - (slope * start.x);
-            res = std.math.fabs(slope * i.x - i.y + intercept) / std.math.sqrt(std.math.pow(f32, slope, 2) + 1);
+            res = @abs(slope * i.x - i.y + intercept) / std.math.sqrt(std.math.pow(f32, slope, 2) + 1);
         }
 
         return res;
