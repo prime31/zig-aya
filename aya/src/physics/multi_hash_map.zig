@@ -38,7 +38,7 @@ pub fn MultiHashMap(comptime K: type, comptime V: type) type {
     };
 }
 
-test "" {
+test {
     var map = MultiHashMap(u64, i32).init(std.testing.allocator);
     defer map.deinit();
 

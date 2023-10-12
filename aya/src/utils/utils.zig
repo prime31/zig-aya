@@ -132,11 +132,11 @@ pub fn inspectValue(comptime label: []const u8, comptime parent: anytype, compti
 
 test "test cstr" {
     // const std = @import("std");
-    const slice = try std.cstr.addNullByte(std.testing.allocator, "hello"[0..4]);
+    const slice = try std.testing.allocator.dupeZ(u8, "hello"[0..4]);
     defer std.testing.allocator.free(slice);
-    const span = std.mem.span(slice);
+    const span = std.mem.span(slice.ptr);
 
-    std.testing.expect(cstr_u8_cmp(slice, span) == 0);
-    std.testing.expect(cstr_u8_cmp(slice, "hell") == 0);
-    std.testing.expect(cstr_u8_cmp(span, "hell") == 0);
+    try std.testing.expect(cstr_u8_cmp(slice, span) == 0);
+    try std.testing.expect(cstr_u8_cmp(slice, "hell") == 0);
+    try std.testing.expect(cstr_u8_cmp(span, "hell") == 0);
 }

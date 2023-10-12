@@ -14,6 +14,7 @@ pub const Collider = struct {
     }
 
     pub fn bounds(self: Collider) math.Rect {
+        _ = self;
         return .{};
     }
 };
