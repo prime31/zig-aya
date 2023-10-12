@@ -51,88 +51,65 @@ pub const Commands = struct {
         return .{ .entity = Entity.init(self.ecs, id) };
     }
 
-    pub fn spawn(self: Commands, name: ?[:0]const u8) EntityCommands {
-        var desc = c.ecs_entity_desc_t{
-            .name = if (name) |n| n.ptr else null,
-        };
+    /// accepts a tuple or single instance that contains any of: component type, component instance, tag, tag id, pair tuple,
+    /// bundle type, bundle instance, name ([]const u8)
+    pub fn spawn(self: Commands, args: anytype) EntityCommands {
+        const ti = @typeInfo(@TypeOf(args));
+        const tuple = if (ti == .Struct and ti.Struct.is_tuple) args else .{args};
 
-        return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
-    }
-
-    pub fn spawnEmpty(self: Commands) EntityCommands {
-        return .{ .entity = Entity.init(self.ecs, c.ecs_new_id(self.ecs)) };
-    }
-
-    /// accepts a tuple that contains any of: component type, component instance, tag, tag id, pair tuple, bundle type, bundle instance
-    pub fn spawnWith(self: Commands, name: ?[:0]const u8, ids: anytype) EntityCommands {
-        const ti = @typeInfo(@TypeOf(ids));
-        if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
-            @compileError("Expected tuple, got " ++ @typeName(@TypeOf(ids)));
-
-        var desc = c.ecs_entity_desc_t{ .name = if (name) |n| n.ptr else null };
+        var desc = c.ecs_entity_desc_t{};
 
         var i: usize = 0;
-        inline for (ids) |id_or_pair| {
-            const id_ti = @typeInfo(@TypeOf(id_or_pair));
-            const is_bundle = (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(id_or_pair), "is_bundle"));
+        inline for (tuple) |obj| {
+            const id_ti = @typeInfo(@TypeOf(obj));
+            const is_bundle = (@TypeOf(obj) == type and @hasDecl(obj, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(obj), "is_bundle"));
 
-            if (comptime std.meta.trait.isTuple(@TypeOf(id_or_pair))) {
-                assertMsg(id_or_pair.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(id_or_pair))});
-                desc.add[i] = self.ecs.pair(id_or_pair[0], id_or_pair[1]);
+            if (comptime std.meta.trait.isTuple(@TypeOf(obj))) {
+                assertMsg(obj.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(obj))});
+                desc.add[i] = self.ecs.pair(obj[0], obj[1]);
                 i += 1;
             } else if (is_bundle) {
-                // bulk-add all bundle types first
-                const bundle_type = if (id_ti == .Type) id_or_pair else @TypeOf(id_or_pair);
+                // bulk-add all bundle types. we'll set them after creating the entity
+                const bundle_type = if (id_ti == .Type) obj else @TypeOf(obj);
                 inline for (std.meta.fields(bundle_type)) |field| {
                     desc.add[i] = self.ecs.componentId(field.type);
                     i += 1;
                 }
             } else if (id_ti == .Struct) {
-                desc.add[i] = self.ecs.componentId(@TypeOf(id_or_pair));
-            } else if (@TypeOf(id_or_pair) == type) {
-                desc.add[i] = self.ecs.componentId(id_or_pair);
+                desc.add[i] = self.ecs.componentId(@TypeOf(obj));
                 i += 1;
-            } else if (@TypeOf(id_or_pair) == u64) {
-                desc.add[i] = id_or_pair;
+            } else if (@TypeOf(obj) == type) {
+                desc.add[i] = self.ecs.componentId(obj);
                 i += 1;
+            } else if (@TypeOf(obj) == u64) {
+                desc.add[i] = obj;
+                i += 1;
+            } else if (comptime std.meta.trait.isZigString(@TypeOf(obj))) {
+                desc.name = obj;
             } else {
-                @panic("attempting to add unhandled type");
+                @panic("attempting to add unhandled type" ++ @typeName(@TypeOf(obj)));
             }
         }
 
         const entity_commands = EntityCommands{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
 
-        // loop again and set any struct or bundles values
-        inline for (ids) |id_or_pair| {
-            const id_ti = @typeInfo(@TypeOf(id_or_pair));
-            const is_bundle = (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(id_or_pair), "is_bundle"));
+        // loop again and set any struct or bundle values
+        inline for (tuple) |obj| {
+            const id_ti = @typeInfo(@TypeOf(obj));
+            const is_bundle = (@TypeOf(obj) == type and @hasDecl(obj, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(obj), "is_bundle"));
 
             if (is_bundle) {
-                _ = entity_commands.insertBundle(id_or_pair);
+                _ = entity_commands.insert(obj);
             } else if (id_ti == .Struct) {
-                _ = entity_commands.insert(id_or_pair);
+                _ = entity_commands.insert(obj);
             }
         }
 
         return entity_commands;
     }
 
-    pub fn spawnWithBundle(self: Commands, name: ?[:0]const u8, bundle: anytype) EntityCommands {
-        const ti = @typeInfo(@TypeOf(bundle));
-        const bundle_type = if (ti == .Type) bundle else @TypeOf(bundle);
-        std.debug.assert(@hasDecl(bundle_type, "is_bundle"));
-
-        var desc = c.ecs_entity_desc_t{ .name = if (name) |n| n.ptr else null };
-
-        // bulk-add all bundle types first
-        inline for (std.meta.fields(bundle_type), 0..) |field, i| {
-            desc.add[i] = self.ecs.componentId(field.type);
-        }
-
-        // create the entity and insert any values from the bundle that are present as defaults or set fields
-        const entity_commands = EntityCommands{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
-        entity_commands.insertBundle(bundle);
-        return entity_commands;
+    pub fn spawnEmpty(self: Commands) EntityCommands {
+        return .{ .entity = Entity.init(self.ecs, c.ecs_new_id(self.ecs)) };
     }
 
     pub fn newId(self: Commands) u64 {
@@ -205,12 +182,50 @@ pub const Commands = struct {
 pub const EntityCommands = struct {
     entity: Entity,
 
-    pub fn insert(self: EntityCommands, components: anytype) EntityCommands {
-        if (comptime std.meta.trait.isTuple(@TypeOf(components))) {
-            inline for (components) |comp| self.insertSingle(comp);
-        } else {
-            self.insertSingle(components);
+    /// accepts a tuple or single instance that contains any of: component type, component instance, tag type, tag id, pair tuple,
+    /// bundle type, bundle instance, name ([]const u8)
+    pub fn insert(self: EntityCommands, args: anytype) EntityCommands {
+        const ti = @typeInfo(@TypeOf(args));
+
+        const tuple = if (ti == .Struct and ti.Struct.is_tuple) args else .{args};
+
+        inline for (tuple) |obj| {
+            const id_ti = @typeInfo(@TypeOf(obj));
+            const is_bundle = (@TypeOf(obj) == type and @hasDecl(obj, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(obj), "is_bundle"));
+
+            if (comptime std.meta.trait.isTuple(@TypeOf(obj))) {
+                assertMsg(obj.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(obj))});
+                self.entity.addPair(obj[0], obj[1]);
+            } else if (is_bundle) {
+                const bundle_type = if (id_ti == .Type) obj else @TypeOf(obj);
+
+                if (ti == .Type) {
+                    // loop and set any components that have default values
+                    inline for (std.meta.fields(bundle_type)) |field| {
+                        if (field.default_value) |ptr| {
+                            const comp = @as(*const field.type, @ptrCast(@alignCast(ptr)));
+                            self.entity.set(comp);
+                        } else {
+                            self.entity.add(field.type);
+                        }
+                    }
+                } else {
+                    // loop and set any components using the field value
+                    inline for (std.meta.fields(bundle_type)) |field| {
+                        self.entity.set(@field(obj, field.name));
+                    }
+                }
+            } else if (id_ti == .Struct) {
+                self.entity.set(obj);
+            } else if (@TypeOf(obj) == u64 or @TypeOf(obj) == type) {
+                self.entity.add(obj);
+            } else if (comptime std.meta.trait.isZigString(@TypeOf(obj))) {
+                self.entity.setName(obj);
+            } else {
+                @panic("attempting to add unhandled type" ++ @typeName(@TypeOf(obj)));
+            }
         }
+
         return self;
     }
 
