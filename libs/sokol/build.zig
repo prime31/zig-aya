@@ -1,8 +1,7 @@
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
-    _ = b;
+pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
     if (@import("builtin").os.tag == .macos) {
         exe.linkFramework("MetalKit");
         exe.linkFramework("Metal");
