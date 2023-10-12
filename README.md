@@ -42,6 +42,32 @@ const SetVelocityCallback = struct {
 };
 ```
 
+Tags can optionally be made exclusive by adding the following metadata. Exclusive tags are used in relationships to limit the pair to a single instance on the entity.
+```zig
+const Relationship = struct {
+    pub const exclusive = true;
+};
+```
+
+Bundles
+```zig
+const VecBundle = struct {
+    pub const is_bundle = true;
+
+    vec2: Vec2 = .{},
+    vec3: Vec3 = .{},
+};
+const Vec2 = struct { x: f32 = 0, .y = 0 };
+const Vec3 = struct { x: f32 = 0, .y = 0, .z = 0 };
+
+// add the bundle's components with their default values
+_ = commands.spawnWithBundle("Name", VecBundle);
+
+// override default values for a component
+_ = commands.spawnWithBundle("Name", VecBundle{
+    .vec2 = .{ .x = 55 }
+});
+```
 
 
 ## TODO
@@ -50,7 +76,6 @@ const SetVelocityCallback = struct {
     - metadata could be stored in the Phase(T) for validation
 - add clean validators, perhaps using std.meta.trait for anything that takes comptime params in App, World, ecs_world_t
 - add more Window events
-- add bundle support (see below). Bundles will probably need to have some marker `pub const bundle = true;`
 
 
 ```c++
