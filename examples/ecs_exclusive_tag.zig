@@ -10,15 +10,6 @@ const Mother = struct {
 const Janet = struct {};
 const Helen = struct {};
 
-const VecBundle = struct {
-    pub const is_bundle = true;
-
-    vec2: Vec2 = .{},
-    vec3: Vec3 = .{},
-};
-const Vec2 = struct { x: f32 = 2 };
-const Vec3 = struct { x: f32 = 5 };
-
 pub fn main() !void {
     App.init()
         .addSystems(aya.Startup, StartupSystem)
@@ -31,8 +22,7 @@ const StartupSystem = struct {
         std.debug.print("\n-- StartupSystem called\n", .{});
 
         // Mother is exclusive so only the last added pair will be on the entity
-        _ = commands.spawnWith("TagHolder", .{ .{ Mother, Helen }, .{ Mother, Janet }, VecBundle, Vec2{}, VecBundle{} });
-        _ = commands.spawnWithBundle("TagHolder2", VecBundle);
+        _ = commands.spawn(.{ "TagHolder", .{ Mother, Helen }, .{ Mother, Janet } });
     }
 };
 
