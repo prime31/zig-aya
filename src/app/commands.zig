@@ -63,23 +63,60 @@ pub const Commands = struct {
         return .{ .entity = Entity.init(self.ecs, c.ecs_new_id(self.ecs)) };
     }
 
+    /// accepts a tuple
     pub fn spawnWith(self: Commands, name: ?[:0]const u8, ids: anytype) EntityCommands {
         const ti = @typeInfo(@TypeOf(ids));
         if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
-            @compileError("Expected tuple or empty struct, got " ++ @typeName(@TypeOf(ids)));
+            @compileError("Expected tuple, got " ++ @typeName(@TypeOf(ids)));
 
         var desc = c.ecs_entity_desc_t{ .name = if (name) |n| n.ptr else null };
 
-        inline for (ids, 0..) |id_or_pair, i| {
+        var i: usize = 0;
+        inline for (ids) |id_or_pair| {
+            const id_ti = @typeInfo(@TypeOf(id_or_pair));
             if (comptime std.meta.trait.isTuple(@TypeOf(id_or_pair))) {
                 assertMsg(id_or_pair.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(id_or_pair))});
                 desc.add[i] = self.ecs.pair(id_or_pair[0], id_or_pair[1]);
-            } else {
+                i += 1;
+            } else if (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) {
+                std.debug.print("-------------- shit BUNDLE\n", .{});
+            } else if (id_ti == .Struct) {
+                // could be a normal compoent or a bundle
+                if (@hasDecl(@TypeOf(id_or_pair), "is_bundle")) {
+                    std.debug.print("++++ BUNDLE\n", .{});
+                } else {
+                    std.debug.print("++++ STRUCT\n", .{});
+                }
+            } else if (@TypeOf(id_or_pair) == type) {
                 desc.add[i] = self.ecs.componentId(id_or_pair);
+                i += 1;
+            } else if (@TypeOf(id_or_pair) == u64) {
+                desc.add[i] = id_or_pair;
+                i += 1;
+            } else {
+                @panic("attempting to add unhandled type");
             }
         }
 
         return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
+    }
+
+    pub fn spawnWithBundle(self: Commands, name: ?[:0]const u8, bundle: anytype) EntityCommands {
+        const ti = @typeInfo(@TypeOf(bundle));
+        const bundle_type = if (ti == .Type) bundle else @TypeOf(bundle);
+        std.debug.assert(@hasDecl(bundle_type, "is_bundle"));
+
+        var desc = c.ecs_entity_desc_t{ .name = if (name) |n| n.ptr else null };
+
+        // bulk-add all bundle types first
+        inline for (std.meta.fields(bundle_type), 0..) |field, i| {
+            desc.add[i] = self.ecs.componentId(field.type);
+        }
+
+        // create the entity and insert any values from the bundle that are present as defaults or set fields
+        const entity_commands = EntityCommands{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
+        entity_commands.insertBundle(bundle);
+        return entity_commands;
     }
 
     pub fn newId(self: Commands) u64 {
@@ -168,6 +205,28 @@ pub const EntityCommands = struct {
                 std.debug.assert(@typeInfo(@TypeOf(component)) == .Pointer or @typeInfo(@TypeOf(component)) == .Struct);
                 self.entity.set(component);
             },
+        }
+    }
+
+    fn insertBundle(self: EntityCommands, bundle: anytype) void {
+        const ti = @typeInfo(@TypeOf(bundle));
+        const bundle_type = if (ti == .Type) bundle else @TypeOf(bundle);
+
+        if (ti == .Type) {
+            // loop and set any components that have default values
+            inline for (std.meta.fields(bundle)) |field| {
+                if (field.default_value) |ptr| {
+                    const comp = @as(*const field.type, @ptrCast(@alignCast(ptr)));
+                    self.entity.set(comp);
+                } else {
+                    self.entity.add(field.type);
+                }
+            }
+        } else {
+            // loop and set any components using the field value
+            inline for (std.meta.fields(bundle_type)) |field| {
+                self.entity.set(@field(bundle, field.name));
+            }
         }
     }
 
