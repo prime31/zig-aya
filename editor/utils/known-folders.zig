@@ -131,7 +131,7 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
 
     // TODO: add caching so we only need to read once in a run
     if (env_opt == null and folder_spec.env.user_dir) block: {
-        const config_dir_path = getPathXdg(&arena.allocator, arena, .local_configuration) catch null orelse break :block;
+        const config_dir_path = getPathXdg(arena.allocator(), arena, .local_configuration) catch null orelse break :block;
         const config_dir = std.fs.cwd().openDir(config_dir_path, .{}) catch break :block;
         const home = std.os.getenv("HOME") orelse break :block;
         const user_dirs = config_dir.openFile("user-dirs.dirs", .{}) catch null orelse break :block;
@@ -140,7 +140,7 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
         _ = user_dirs.readAll(&read) catch null orelse break :block;
         const start = folder_spec.env.name.len + "=\"$HOME".len;
 
-        var line_it = std.mem.split(&read, "\n");
+        var line_it = std.mem.split(u8, &read, "\n");
         while (line_it.next()) |line| {
             if (std.mem.startsWith(u8, line, folder_spec.env.name)) {
                 const end = line.len - 1;
@@ -150,7 +150,7 @@ fn getPathXdg(allocator: std.mem.Allocator, arena: *std.heap.ArenaAllocator, fol
 
                 var subdir = line[start..end];
 
-                env_opt = std.mem.concat(&arena.allocator, u8, &[_][]const u8{ home, subdir }) catch null;
+                env_opt = std.mem.concatWithSentinel(arena.allocator(), u8, &[_][]const u8{ home, subdir }, 0) catch null;
                 break;
             }
         }

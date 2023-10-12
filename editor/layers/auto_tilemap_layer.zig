@@ -690,8 +690,8 @@ pub const AutoTilemapLayer = struct {
     /// TODO: duplicated in TilemapLayer
     fn commitInBetweenTiles(self: *@This(), state: *AppState, tile: Point, camera: Camera, color: u16) void {
         if (root.utils.tileIndexUnderMouse(state, self.prev_mouse_pos, self.tileset.tile_size, camera)) |prev_tile| {
-            const abs_x = std.math.absInt(@as(i32, @intCast(tile.x)) - @as(i32, @intCast(prev_tile.x))) catch unreachable;
-            const abs_y = std.math.absInt(@as(i32, @intCast(tile.y)) - @as(i32, @intCast(prev_tile.y))) catch unreachable;
+            const abs_x = @abs(@as(i32, @intCast(tile.x)) - @as(i32, @intCast(prev_tile.x)));
+            const abs_y = @abs(@as(i32, @intCast(tile.y)) - @as(i32, @intCast(prev_tile.y)));
             if (abs_x <= 1 and abs_y <= 1) {
                 return;
             }

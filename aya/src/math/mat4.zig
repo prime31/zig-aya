@@ -65,7 +65,7 @@ pub const Mat4 = extern struct {
 
     // taken from GLM implementation
     pub fn createPerspective(fov: f32, aspect: f32, near: f32, far: f32) Mat4 {
-        std.debug.assert(std.math.fabs(aspect - 0.001) > 0);
+        std.debug.assert(@abs(aspect - 0.001) > 0);
         std.debug.assert(far > near);
         const tanHalfFov = std.math.tan(fov / 2);
 

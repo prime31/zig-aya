@@ -111,7 +111,7 @@ pub const RectI = struct {
     }
 
     pub fn expandEdge(self: *RectI, edge: Edge, move_x: i32) void {
-        const amt = std.math.absInt(move_x) catch unreachable;
+        const amt = @as(i32, @intCast(@abs(move_x)));
 
         switch (edge) {
             .top => {

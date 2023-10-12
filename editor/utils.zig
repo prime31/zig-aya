@@ -37,7 +37,7 @@ pub fn bresenham(tilemap: *Tilemap, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f
     var x2 = in_x2;
     var y2 = in_y2;
 
-    const steep = @fabs(y2 - y1) > @fabs(x2 - x1);
+    const steep = @abs(y2 - y1) > @abs(x2 - x1);
     if (steep) {
         std.mem.swap(f32, &x1, &y1);
         std.mem.swap(f32, &x2, &y2);
@@ -49,7 +49,7 @@ pub fn bresenham(tilemap: *Tilemap, in_x1: f32, in_y1: f32, in_x2: f32, in_y2: f
     }
 
     const dx: f32 = x2 - x1;
-    const dy: f32 = @fabs(y2 - y1);
+    const dy: f32 = @abs(y2 - y1);
 
     var err: f32 = dx / 2.0;
     var ystep: i32 = if (y1 < y2) 1 else -1;

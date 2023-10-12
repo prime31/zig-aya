@@ -51,24 +51,24 @@ pub fn repeat(t: f32, len: f32) f32 {
 
 pub fn pingpong(t: f32, len: f32) f32 {
     const tt = repeat(t, len * 2);
-    return len - std.math.fabs(tt - len);
+    return len - @abs(tt - len);
 }
 
 test "test math.rand" {
     rand.seed(0);
 
-    std.testing.expect(rand.int(i32) >= 0);
+    try std.testing.expect(rand.int(i32) >= 0);
 
-    std.testing.expect(rand.range(i32, 5, 10) >= 5);
-    std.testing.expect(rand.range(i32, 5, 10) < 10);
+    try std.testing.expect(rand.range(i32, 5, 10) >= 5);
+    try std.testing.expect(rand.range(i32, 5, 10) < 10);
 
-    std.testing.expect(rand.range(u32, 5, 10) >= 5);
-    std.testing.expect(rand.range(u32, 5, 10) < 10);
+    try std.testing.expect(rand.range(u32, 5, 10) >= 5);
+    try std.testing.expect(rand.range(u32, 5, 10) < 10);
 
-    std.testing.expect(rand.range(f32, 5.0, 10.0) >= 5);
-    std.testing.expect(rand.range(f32, 5.0, 10.0) < 10);
+    try std.testing.expect(rand.range(f32, 5.0, 10.0) >= 5);
+    try std.testing.expect(rand.range(f32, 5.0, 10.0) < 10);
 
-    std.testing.expect(rand.uintLessThan(u32, 5) < 5);
+    try std.testing.expect(rand.uintLessThan(u32, 5) < 5);
 
-    std.testing.expect(isEven(666));
+    try std.testing.expect(isEven(666));
 }

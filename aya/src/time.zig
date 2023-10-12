@@ -145,7 +145,7 @@ pub const Time = struct {
 
             // vsync time snapping
             for (self.snap_frequencies) |snap| {
-                if (std.math.absCast(delta_time - snap) < self.vsync_maxerror) {
+                if (@abs(delta_time - snap) < self.vsync_maxerror) {
                     delta_time = snap;
                     break;
                 }
