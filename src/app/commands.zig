@@ -63,7 +63,7 @@ pub const Commands = struct {
         return .{ .entity = Entity.init(self.ecs, c.ecs_new_id(self.ecs)) };
     }
 
-    /// accepts a tuple
+    /// accepts a tuple that contains any of: component type, component instance, tag, tag id, pair tuple, bundle type, bundle instance
     pub fn spawnWith(self: Commands, name: ?[:0]const u8, ids: anytype) EntityCommands {
         const ti = @typeInfo(@TypeOf(ids));
         if (ti != .Struct or (ti.Struct.is_tuple == false and ti.Struct.fields.len > 0))
@@ -74,19 +74,21 @@ pub const Commands = struct {
         var i: usize = 0;
         inline for (ids) |id_or_pair| {
             const id_ti = @typeInfo(@TypeOf(id_or_pair));
+            const is_bundle = (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(id_or_pair), "is_bundle"));
+
             if (comptime std.meta.trait.isTuple(@TypeOf(id_or_pair))) {
                 assertMsg(id_or_pair.len == 2, "Value of type {s} must be a tuple with 2 elements to be a pair", .{@typeName(@TypeOf(id_or_pair))});
                 desc.add[i] = self.ecs.pair(id_or_pair[0], id_or_pair[1]);
                 i += 1;
-            } else if (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) {
-                std.debug.print("-------------- shit BUNDLE\n", .{});
-            } else if (id_ti == .Struct) {
-                // could be a normal compoent or a bundle
-                if (@hasDecl(@TypeOf(id_or_pair), "is_bundle")) {
-                    std.debug.print("++++ BUNDLE\n", .{});
-                } else {
-                    std.debug.print("++++ STRUCT\n", .{});
+            } else if (is_bundle) {
+                // bulk-add all bundle types first
+                const bundle_type = if (id_ti == .Type) id_or_pair else @TypeOf(id_or_pair);
+                inline for (std.meta.fields(bundle_type)) |field| {
+                    desc.add[i] = self.ecs.componentId(field.type);
+                    i += 1;
                 }
+            } else if (id_ti == .Struct) {
+                desc.add[i] = self.ecs.componentId(@TypeOf(id_or_pair));
             } else if (@TypeOf(id_or_pair) == type) {
                 desc.add[i] = self.ecs.componentId(id_or_pair);
                 i += 1;
@@ -98,7 +100,21 @@ pub const Commands = struct {
             }
         }
 
-        return .{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
+        const entity_commands = EntityCommands{ .entity = Entity.init(self.ecs, c.ecs_entity_init(self.ecs, &desc)) };
+
+        // loop again and set any struct or bundles values
+        inline for (ids) |id_or_pair| {
+            const id_ti = @typeInfo(@TypeOf(id_or_pair));
+            const is_bundle = (@TypeOf(id_or_pair) == type and @hasDecl(id_or_pair, "is_bundle")) or (id_ti == .Struct and @hasDecl(@TypeOf(id_or_pair), "is_bundle"));
+
+            if (is_bundle) {
+                _ = entity_commands.insertBundle(id_or_pair);
+            } else if (id_ti == .Struct) {
+                _ = entity_commands.insert(id_or_pair);
+            }
+        }
+
+        return entity_commands;
     }
 
     pub fn spawnWithBundle(self: Commands, name: ?[:0]const u8, bundle: anytype) EntityCommands {
