@@ -6,6 +6,7 @@ const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
+const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
 const sokol_build = @import("libs/sokol/build.zig");
 
 const Options = struct {
@@ -147,6 +148,10 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
         imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
     const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
 
+    zig_gamedev_build.linkArtifact(b, exe, target, optimize);
+    const zmath_module = zig_gamedev_build.getMathModule(b);
+    const zmesh_module = zig_gamedev_build.getMeshModule();
+
     const sokol_dep = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
@@ -154,7 +159,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.linkLibrary(sokol_dep.artifact("sokol"));
 
     // macos metal helpers
-    sokol_build.linkArtifact(b, exe);
+    sokol_build.linkArtifact(exe);
     const sokol_module = sokol_build.getModule(b);
 
     // aya module gets all previous modules as dependencies
@@ -164,6 +169,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "imgui", .module = imgui_module },
+            .{ .name = "zmath", .module = zmath_module },
+            .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "sokol", .module = sokol_dep.module("sokol") },
             .{ .name = "metal", .module = sokol_module },
             .{
@@ -179,6 +186,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("stb", stb_module);
     exe.addModule("sdl", sdl_module);
     exe.addModule("imgui", imgui_module);
+    exe.addModule("zmath", zmath_module);
 }
 
 inline fn thisDir() []const u8 {

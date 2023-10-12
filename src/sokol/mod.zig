@@ -8,11 +8,22 @@ const App = aya.App;
 const Window = aya.Window;
 const Res = aya.Res;
 
+/// Resource. stores the color that is used to clear the screen between frames
 pub const ClearColor = struct {
     r: f32 = 0.8,
     g: f32 = 0.2,
     b: f32 = 0.3,
     a: f32 = 1,
+};
+
+/// Component. controls a Camera's clear behavior
+pub const ClearColorConfig = union {
+    /// The clear color is taken from the world's [`ClearColor`] resource.
+    default: void,
+    /// The given clear color is used, overriding the [`ClearColor`] resource defined in the world
+    custom: ClearColor,
+    /// No clear color is used: the camera will simply draw on top of anything already in the viewport
+    none: void,
 };
 
 pub const SokolPlugin = struct {
@@ -33,8 +44,40 @@ pub const SokolPlugin = struct {
         _ = app
             .insertResource(ClearColor{})
             .addSystems(aya.Last, RenderClear);
+
+        fart();
     }
 };
+
+const zmesh = @import("zmesh");
+
+fn fart() void {
+    zmesh.init(aya.allocator);
+    defer zmesh.deinit();
+
+    const data = zmesh.io.parseAndLoadFile("/Users/mikedesaro/Desktop/Monkey.gltf") catch unreachable;
+    defer zmesh.io.freeData(data);
+
+    var mesh_indices = std.ArrayList(u32).init(aya.allocator);
+    defer mesh_indices.deinit();
+    var mesh_positions = std.ArrayList([3]f32).init(aya.allocator);
+    defer mesh_positions.deinit();
+    var mesh_normals = std.ArrayList([3]f32).init(aya.allocator);
+    defer mesh_normals.deinit();
+
+    zmesh.io.appendMeshPrimitive(
+        data, // *zmesh.io.cgltf.Data
+        0, // mesh index
+        0, // gltf primitive index (submesh index)
+        &mesh_indices,
+        &mesh_positions,
+        &mesh_normals, // normals (optional)
+        null, // texcoords (optional)
+        null, // tangents (optional)
+    ) catch unreachable;
+
+    std.debug.print("\ndata: {any}\n", .{mesh_positions.items});
+}
 
 const RenderClear = struct {
     pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor)) void {
