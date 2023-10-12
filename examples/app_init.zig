@@ -55,11 +55,11 @@ const EmptyCallback = struct {
         while (iter.next()) |_| {}
 
         std.debug.print("\n-- EmptyCallback. delta_time: {d}\n", .{iter.iter.delta_time});
-        iter.commands().spawnEmpty().set(Velocity{ .x = 6 });
+        _ = iter.commands().spawnEmpty().insert(Velocity{ .x = 6 });
 
-        const entity = iter.commands().spawnEmpty();
-        entity.set(Velocity{ .x = 7 });
-        entity.set(Position{ .x = 8 });
+        _ = iter.commands().spawnEmpty()
+            .insert(Velocity{ .x = 7 })
+            .insert(Position{ .x = 8 });
     }
 };
 

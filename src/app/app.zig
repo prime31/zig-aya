@@ -382,7 +382,8 @@ pub const App = struct {
         std.debug.assert(self.world.ecs.getEntity(phase).has(c.EcsPhase));
 
         // normalize a single Set or a tuple of Sets to an array of Sets
-        const new_sets = aya.meta.tupleOrSingleArgToSlice(type, Sets);
+        const ti = @typeInfo(@TypeOf(Sets));
+        const new_sets = if (ti == .Struct and ti.Struct.is_tuple) Sets else .{Sets};
         inline for (new_sets) |Set| _ = self.createSystemSet(Set, phase);
 
         return self;
@@ -395,7 +396,8 @@ pub const App = struct {
         } else self.world.ecs.getEntity(SetOrSystem).get(SystemSort).?.*; // we want a copy because we are gonna mutate the archtype!
 
         // normalize a single Set or a tuple of Sets to an array of Sets
-        const new_sets = aya.meta.tupleOrSingleArgToSlice(type, Sets);
+        const ti = @typeInfo(@TypeOf(Sets));
+        const new_sets = if (ti == .Struct and ti.Struct.is_tuple) Sets else .{Sets};
         inline for (new_sets) |Set| {
             std.debug.assert(@typeInfo(Set) == .Struct and @sizeOf(Set) == 0);
 
@@ -495,7 +497,8 @@ pub const App = struct {
         self.last_added_systems.clearRetainingCapacity();
 
         // normalize a single system or a tuple of systems to an array of systems
-        const new_systems = aya.meta.tupleOrSingleArgToSlice(type, Systems);
+        const ti = @typeInfo(@TypeOf(Systems));
+        const new_systems = if (ti == .Struct and ti.Struct.is_tuple) Systems else .{Systems};
 
         inline for (new_systems) |T| {
             std.debug.assert(@hasDecl(T, "run"));

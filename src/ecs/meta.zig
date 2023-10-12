@@ -77,19 +77,6 @@ pub fn PointerToSlice(comptime T: type) type {
     return InnerType;
 }
 
-/// normalizes a single T or tuple of T's into a tuple of T's allowing functions to take in an anytype param
-/// that is one ore more T's
-pub fn tupleOrSingleArgToSlice(comptime T: type, args: anytype) []const T {
-    if (@typeInfo(@TypeOf(args)) == .Struct and @typeInfo(@TypeOf(args)).Struct.is_tuple) {
-        var tmp: [args.len]T = undefined;
-        for (args, 0..) |S, i| tmp[i] = S;
-        return tmp[0..args.len];
-    }
-
-    const tmp: [1]T = [_]T{args};
-    return tmp[0..1];
-}
-
 /// gets the number of arguments in the function
 pub fn argCount(comptime function: anytype) usize {
     return switch (@typeInfo(@TypeOf(function))) {
