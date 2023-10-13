@@ -4,7 +4,10 @@ const aya = @import("../aya.zig");
 const App = aya.App;
 const Allocator = std.mem.Allocator;
 const AssetServer = @import("asset_server.zig").AssetServer;
+const Res = aya.Res;
+const ResMut = aya.ResMut;
 
+pub const AssetIndex = @import("asset_handle_provider.zig").AssetIndex;
 pub const AssetId = @import("asset_handle_provider.zig").AssetId;
 
 pub usingnamespace @import("assets.zig");
@@ -21,26 +24,30 @@ pub const AssetPlugin = struct {
 pub fn RenderAssetPlugin(comptime T: type) type {
     return struct {
         pub fn build(_: AssetPlugin, app: *App) void {
-            _ = app.initResource(ExtractedAssets(T))
-                .initResource(RenderAssets(T));
+            _ = app
+                .initResource(ExtractedAssets(T))
+                .initResource(RenderAssets(T))
+                .add_systems(aya.PostUpdate, ExtractAssetSystem(T))
+                .addSystems(aya.PostUpdate, PrepareRenderAssetSystem(T));
         }
     };
 }
 
+/// Resource
 pub fn ExtractedAssets(comptime T: type) type {
     return struct {
         pub const asset_type = T;
         const Self = @This();
 
-        const Fook = struct { id: AssetId, asset: T.extracted_asset };
+        const RenderAssetData = struct { id: AssetIndex, asset: T.extracted_asset };
 
-        extracted: std.ArrayList(Fook),
-        removed: std.ArrayList(AssetId),
+        extracted: std.ArrayList(RenderAssetData),
+        removed: std.ArrayList(AssetIndex),
 
         pub fn init() Self {
             return .{
-                .extracted = std.ArrayList(Fook).init(aya.allocator),
-                .removed = std.ArrayList(AssetId).init(aya.allocator),
+                .extracted = std.ArrayList(RenderAssetData).init(aya.allocator),
+                .removed = std.ArrayList(AssetIndex).init(aya.allocator),
             };
         }
 
@@ -48,35 +55,47 @@ pub fn ExtractedAssets(comptime T: type) type {
             self.extracted.deinit();
             self.removed.deinit();
         }
+
+        pub fn clear(self: *Self) void {
+            self.extracted.clearRetainingCapacity();
+            self.removed.clearRetainingCapacity();
+        }
     };
 }
 
+/// Resource. stores the converted/processed assets
 pub fn RenderAssets(comptime T: type) type {
     return struct {
         pub const asset_type = T;
         const Self = @This();
 
-        assets: std.AutoHashMap(AssetId, T.prepared_asset),
+        assets: std.AutoHashMap(AssetIndex, T.prepared_asset),
 
         pub fn init() Self {
-            return .{ .assets = std.AutoHashMap(AssetId, T.extracted_asset).init(aya.allocator) };
+            return .{ .assets = std.AutoHashMap(AssetIndex, T.extracted_asset).init(aya.allocator) };
         }
 
         pub fn deinit(self: Self) void {
             self.assets.deinit();
         }
 
-        pub fn insert(self: *Self, id: AssetId, asset: T.prepared_asset) void {
+        pub fn insert(self: *Self, id: AssetIndex, asset: T.prepared_asset) void {
             self.assets.put(id, asset) catch unreachable;
+        }
+
+        pub fn remove(self: *Self, id: AssetIndex) void {
+            _ = self.assets.remove(id);
         }
     };
 }
 
-pub fn RenderAssetSystem(comptime T: type) type {
+/// prepares all assets of the corresponding `RenderAsset` type which where extracted this frame for the GPU. Calls
+/// `prepareAsset(AssetIndex, Asset)` on the asset type.
+pub fn PrepareRenderAssetSystem(comptime T: type) type {
     return struct {
         pub const name = "aya.systems.assets.RenderAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
 
-        pub fn run(extracted_assets_res: aya.ResMut(ExtractedAssets(T)), render_assets_res: aya.ResMut(RenderAssets(T))) void {
+        pub fn run(extracted_assets_res: ResMut(ExtractedAssets(T)), render_assets_res: ResMut(RenderAssets(T))) void {
             const extracted_assets = extracted_assets_res.getAssertExists();
             const render_assets = render_assets_res.getAssertExists();
 
@@ -85,24 +104,40 @@ pub fn RenderAssetSystem(comptime T: type) type {
                 const render_asset = T.prepareAsset(obj.id, obj.asset);
                 render_assets.insert(obj.id, render_asset);
             }
+
+            for (extracted_assets.removed) |rem| {
+                render_assets.remove(rem);
+            }
+
+            extracted_assets.clear();
         }
     };
 }
 
-// impl<A: RenderAsset, AFTER: RenderAssetDependency + 'static> Plugin
-//     for RenderAssetPlugin<A, AFTER>
-// {
-//     fn build(&self, app: &mut App) {
-//         if let Ok(render_app) = app.get_sub_app_mut(RenderApp) {
-//             render_app
-//                 .init_resource::<ExtractedAssets<A>>()
-//                 .init_resource::<RenderAssets<A>>()
-//                 .init_resource::<PrepareNextFrameAssets<A>>()
-//                 .add_systems(ExtractSchedule, extract_render_asset::<A>);
-//             AFTER::register_system(
-//                 render_app,
-//                 prepare_assets::<A>.in_set(RenderSet::PrepareAssets),
-//             );
-//         }
-//     }
-// }
+/// extracts all created or modified assets
+pub fn ExtractAssetSystem(comptime T: type) type {
+    return struct {
+        pub const name = "aya.systems.assets.ExtractAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
+
+        pub fn run(
+            extracted_assets_res: ResMut(ExtractedAssets(T)),
+            event_reader: aya.EventReader(aya.AssetEvent(T)),
+            assets_res: Res(aya.Assets(T)),
+        ) void {
+            const extracted_assets = extracted_assets_res.getAssertExists();
+            const asset: *aya.Assets(T) = assets_res.getAssertExists();
+
+            // TODO: use a HashSet to ensure we dont queue up multiple evnets if an asset is added and removed in one frame for example
+            for (event_reader.read()) |evt| {
+                switch (evt) {
+                    .added, .modified => |mod| {
+                        if (asset.get(mod.index)) |ass| {
+                            extracted_assets.extracted.append(.{ .id = mod.index, .asset = ass });
+                        }
+                    },
+                    .removed => |rem| extracted_assets.removed.append(rem.index),
+                }
+            }
+        }
+    };
+}

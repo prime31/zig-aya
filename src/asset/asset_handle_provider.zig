@@ -3,15 +3,23 @@ const assets = @import("mod.zig");
 
 const Allocator = std.mem.Allocator;
 
-pub const AssetId = struct {
+pub const AssetIndex = struct {
     index: u32 = 0,
     generation: u32 = 0,
 };
 
+pub fn AssetId(comptime T: type) type {
+    return struct {
+        pub const phantom = T;
+
+        index: AssetIndex,
+    };
+}
+
 pub const AssetHandleProvider = struct {
     const Self = @This();
 
-    handles: []AssetId,
+    handles: []AssetIndex,
     append_cursor: u32 = 0,
     last_destroyed: ?u32 = null,
     allocator: std.mem.Allocator,
@@ -26,7 +34,7 @@ pub const AssetHandleProvider = struct {
             return .{ .hm = hm };
         }
 
-        pub fn next(self: *@This()) ?AssetId {
+        pub fn next(self: *@This()) ?AssetIndex {
             if (self.index == self.hm.append_cursor) return null;
 
             for (self.hm.handles[self.index..self.hm.append_cursor]) |h| {
@@ -45,7 +53,7 @@ pub const AssetHandleProvider = struct {
 
     pub fn initWithCapacity(allocator: std.mem.Allocator, capacity: usize) Self {
         return Self{
-            .handles = allocator.alloc(AssetId, capacity) catch unreachable,
+            .handles = allocator.alloc(AssetIndex, capacity) catch unreachable,
             .allocator = allocator,
         };
     }
@@ -54,7 +62,7 @@ pub const AssetHandleProvider = struct {
         self.allocator.free(self.handles);
     }
 
-    pub fn create(self: *Self) AssetId {
+    pub fn create(self: *Self) AssetIndex {
         if (self.last_destroyed == null) {
             // ensure capacity and grow if needed
             if (self.handles.len - 1 == self.append_cursor) {
@@ -62,7 +70,7 @@ pub const AssetHandleProvider = struct {
             }
 
             const id = self.append_cursor;
-            const handle = AssetId{ .index = self.append_cursor };
+            const handle = AssetIndex{ .index = self.append_cursor };
             self.handles[id] = handle;
 
             self.append_cursor += 1;
@@ -72,7 +80,7 @@ pub const AssetHandleProvider = struct {
         const version = self.handles[self.last_destroyed.?].generation;
         const destroyed_id = self.handles[self.last_destroyed.?].index;
 
-        const handle = AssetId{ .index = self.last_destroyed.?, .generation = version };
+        const handle = AssetIndex{ .index = self.last_destroyed.?, .generation = version };
         self.handles[self.last_destroyed.?] = handle;
 
         self.last_destroyed = if (destroyed_id == invalid_id) null else destroyed_id;
@@ -80,18 +88,18 @@ pub const AssetHandleProvider = struct {
         return handle;
     }
 
-    pub fn remove(self: *Self, handle: AssetId) !void {
+    pub fn remove(self: *Self, handle: AssetIndex) !void {
         if (handle.index > self.append_cursor or self.handles[handle.index].index != handle.index or self.handles[handle.index].generation != handle.generation)
             return error.RemovedInvalidHandle;
 
         const next_id = self.last_destroyed orelse invalid_id;
         if (next_id == handle.index) return error.ExhaustedEntityRemoval;
 
-        self.handles[handle.index] = AssetId{ .index = next_id, .generation = handle.generation +% 1 };
+        self.handles[handle.index] = AssetIndex{ .index = next_id, .generation = handle.generation +% 1 };
         self.last_destroyed = handle.index;
     }
 
-    pub fn alive(self: Self, handle: AssetId) bool {
+    pub fn alive(self: Self, handle: AssetIndex) bool {
         return handle.index < self.append_cursor and self.handles[handle.index].index == handle.index and self.handles[handle.index].generation == handle.generation;
     }
 

@@ -44,7 +44,7 @@ pub const AssetServer = struct {
         const handle = Handle(T).init(assets.handle_provider.create());
         const loader = ptr.asPtr(AssetLoader(T));
         const asset = loader.load(path, settings);
-        assets.insert(handle.asset_id, asset);
+        assets.insert(handle.asset_index, asset);
         return handle;
     }
 
