@@ -92,6 +92,19 @@ pub const Mesh = struct {
     pub fn setIndices(self: *Mesh, indices: Indices) void {
         self.indices = indices;
     }
+
+    pub fn prepareAsset(asset: Mesh.ExtractedAsset, param: Mesh.Param) Mesh.PreparedAsset {
+        _ = param;
+        return asset;
+    }
+
+    pub const ExtractedAsset = Mesh;
+    pub const PreparedAsset = Mesh;
+
+    /// only Resources allowed
+    pub const Param = struct {
+        assets: *aya.Assets(Mesh),
+    };
 };
 
 test "mesh.insertAttribute" {

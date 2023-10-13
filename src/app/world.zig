@@ -57,4 +57,15 @@ pub const World = struct {
     pub fn getResourceMut(self: *Self, comptime T: type) ?*T {
         return self.resources.get(T);
     }
+
+    /// accepts a struct that contains fields which are Resources and sets each field
+    pub fn extractResources(self: *Self, comptime T: type) T {
+        var res: T = undefined;
+
+        inline for (std.meta.fields(T)) |field| {
+            @field(res, field.name) = self.getResourceMut(aya.meta.FinalChild(field.type)).?;
+        }
+
+        return res;
+    }
 };
