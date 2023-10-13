@@ -31,13 +31,14 @@ pub fn Assets(comptime T: type) type {
             self.queued_events.deinit();
         }
 
-        pub fn add(self: *Self, asset: T) void {
+        pub fn add(self: *Self, asset: T) Handle(T) {
             const id = self.handle_provider.create();
-            self.instances.ensureTotalCapacity(id.index) catch unreachable;
+            self.instances.ensureTotalCapacity(id.index + 1) catch unreachable;
             self.instances.expandToCapacity();
             self.instances.items[id.index] = asset;
 
-            self.queued_events.append(AssetEvent(T){ .added = AssetId(T){ .index = id } });
+            self.queued_events.append(AssetEvent(T){ .added = AssetId(T){ .index = id } }) catch unreachable;
+            return Handle(T).init(id);
         }
 
         pub fn insert(self: *Self, id: AssetIndex, asset: T) void {
@@ -45,7 +46,7 @@ pub fn Assets(comptime T: type) type {
             self.instances.expandToCapacity();
             self.instances.items[id.index] = asset;
 
-            self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } });
+            self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } }) catch unreachable;
         }
 
         pub fn get(self: Self, handle: Handle(T)) ?T {
@@ -57,16 +58,30 @@ pub fn Assets(comptime T: type) type {
             _ = self.instances.remove(handle.asset_index.index);
             self.handle_provider.remove(handle.asset_index);
 
-            self.queued_events.append(AssetEvent(T){ .removed = AssetId(T){ .index = handle.asset_index } });
+            self.queued_events.append(AssetEvent(T){ .removed = AssetId(T){ .index = handle.asset_index } }) catch unreachable;
         }
     };
 }
 
 pub fn AssetEvent(comptime T: type) type {
-    return union {
+    return union(enum) {
+        const Self = @This();
+
         added: AssetId(T),
         modified: AssetId(T),
         removed: AssetId(T),
+
+        pub fn isAdded(self: Self) bool {
+            return std.meta.activeTag(self) == .added;
+        }
+
+        pub fn isModified(self: Self) bool {
+            return std.meta.activeTag(self) == .modified;
+        }
+
+        pub fn isRemoved(self: Self) bool {
+            return std.meta.activeTag(self) == .removed;
+        }
     };
 }
 

@@ -69,32 +69,16 @@ pub fn build(b: *std.Build) void {
     // const run_step = b.step("sdl3-tester", "Run sdl3-tester");
     // run_step.dependOn(&run_cmd.step);
 
-    addExecutable(b, target, optimize, options, "sdl3_gpu", "examples/sdl_gpu.zig");
-    addExecutable(b, target, optimize, options, "tester", "examples/tester.zig");
-    addExecutable(b, target, optimize, options, "app_init", "examples/app_init.zig");
-    addExecutable(b, target, optimize, options, "app_events", "examples/app_events.zig");
-    addExecutable(b, target, optimize, options, "app_locals", "examples/app_locals.zig");
-    addExecutable(b, target, optimize, options, "app_states", "examples/app_states.zig");
-    addExecutable(b, target, optimize, options, "app_pause", "examples/app_pause.zig");
-    addExecutable(b, target, optimize, options, "app_phases", "examples/app_phases.zig");
-    addExecutable(b, target, optimize, options, "app_sets", "examples/app_sets.zig");
-    addExecutable(b, target, optimize, options, "app_custom_runner", "examples/app_custom_runner.zig");
-    addExecutable(b, target, optimize, options, "app_multi_query_system", "examples/app_multi_query_system.zig");
-    addExecutable(b, target, optimize, options, "app_window", "examples/app_window.zig");
-    addExecutable(b, target, optimize, options, "app_input", "examples/app_input.zig");
-    addExecutable(b, target, optimize, options, "app_input_gamepad", "examples/app_input_gamepad.zig");
-    addExecutable(b, target, optimize, options, "app_gamepad_rumble", "examples/app_gamepad_rumble.zig");
-    addExecutable(b, target, optimize, options, "ecs_exclusive_tag", "examples/ecs_exclusive_tag.zig");
-    addExecutable(b, target, optimize, options, "world_subsystems", "examples/world_subsystems.zig");
-    addExecutable(b, target, optimize, options, "systems_intervals", "examples/systems_intervals.zig");
-    addExecutable(b, target, optimize, options, "gfx_clear", "examples/gfx_clear.zig");
+    for (getAllExamples(b, "examples")) |p| {
+        addExecutable(b, target, optimize, options, p[0], p[1]);
+    }
 
     addTests(b, target, optimize);
 
     flecs_build.addFlecsUpdateStep(b, target);
 }
 
-fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, comptime name: []const u8, source: []const u8) void {
+fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = .{ .path = source },
@@ -114,7 +98,9 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
         run_cmd.step.dependOn(b.getInstallStep());
     }
 
-    const run_step = b.step(name, "Run '" ++ name ++ "'");
+    var buffer: [100]u8 = undefined;
+    const description = std.fmt.bufPrint(buffer[0..], "Run {s}", .{name}) catch unreachable;
+    const run_step = b.step(name, description);
     run_step.dependOn(&run_cmd.step);
 }
 
@@ -187,6 +173,44 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("sdl", sdl_module);
     exe.addModule("imgui", imgui_module);
     exe.addModule("zmath", zmath_module);
+}
+
+fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {
+    var list = std.ArrayList([2][]const u8).init(b.allocator);
+
+    const recursor = struct {
+        fn search(alloc: std.mem.Allocator, directory: []const u8, filelist: *std.ArrayList([2][]const u8)) void {
+            if (std.mem.eql(u8, directory, "examples/assets") or std.mem.eql(u8, directory, "examples\\assets")) return;
+
+            var dir = std.fs.cwd().openIterableDir(directory, .{}) catch unreachable;
+            defer dir.close();
+
+            var iter = dir.iterate();
+            while (iter.next() catch unreachable) |entry| {
+                if (entry.kind == .file) {
+                    if (std.mem.endsWith(u8, entry.name, ".zig")) {
+                        const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
+                        const name = std.fs.path.basename(abs_path);
+
+                        // if in a subfolder, prefix the exe name with `folder_`
+                        const name_prefix = if (std.mem.indexOf(u8, directory, std.fs.path.sep_str)) |index| blk: {
+                            break :blk std.fmt.allocPrint(alloc, "{s}_", .{directory[index + 1 ..]}) catch unreachable;
+                        } else "";
+
+                        const exe_name = std.fmt.allocPrint(alloc, "{s}{s}", .{ name_prefix, name[0 .. name.len - 4] }) catch unreachable;
+                        filelist.append([2][]const u8{ exe_name, abs_path }) catch unreachable;
+                    }
+                } else if (entry.kind == .directory) {
+                    const abs_path = std.fs.path.join(alloc, &[_][]const u8{ directory, entry.name }) catch unreachable;
+                    search(alloc, abs_path, filelist);
+                }
+            }
+        }
+    }.search;
+
+    recursor(b.allocator, root_directory, &list);
+
+    return list.toOwnedSlice() catch unreachable;
 }
 
 inline fn thisDir() []const u8 {

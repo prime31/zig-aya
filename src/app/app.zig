@@ -322,6 +322,7 @@ pub const App = struct {
     }
 
     // States
+    /// adds a new system state and sets up State(T) and NextState(T) resources. Also adds a system to track State transitions
     pub fn addState(self: *Self, comptime T: type, current_state: T) *Self {
         std.debug.assert(@typeInfo(T) == .Enum);
 
@@ -348,6 +349,7 @@ pub const App = struct {
         return self;
     }
 
+    /// adds the previously added system/s to the State. Note that a fully qualified state is required (ex Enum.value)!
     pub fn inState(self: *Self, comptime state: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(state)) == .Enum);
         std.debug.assert(self.last_added_systems.items.len > 0);
@@ -397,7 +399,7 @@ pub const App = struct {
         return self;
     }
 
-    /// adds a system set relative to SetOrSystem
+    /// adds one re more system sets relative to SetOrSystem. Do not add systems to a set before configuring it! TODO: fix that.
     pub fn configureSets(self: *Self, Sets: anytype, where: enum { before, after }, comptime SetOrSystem: type) *Self {
         const other_sort: SystemSort = if (@hasDecl(SetOrSystem, "run")) blk: {
             break :blk self.getSystemSortForSystemType(SetOrSystem);
@@ -544,11 +546,13 @@ pub const App = struct {
         return self;
     }
 
+    /// moves the last added system/s before SystemOrSet
     pub fn before(self: *Self, comptime SystemOrSet: type) *Self {
         self.shiftLastAddedSystems(.before, SystemOrSet);
         return self;
     }
 
+    /// moves the last added system/s after SystemOrSet
     pub fn after(self: *Self, comptime SystemOrSet: type) *Self {
         self.shiftLastAddedSystems(.after, SystemOrSet);
         return self;
