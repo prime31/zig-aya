@@ -49,9 +49,10 @@ pub fn Assets(comptime T: type) type {
             self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } }) catch unreachable;
         }
 
-        pub fn get(self: Self, handle: Handle(T)) ?T {
-            std.debug.assert(self.handle_provider.alive(handle.asset_index));
-            return self.instances.items[handle.asset_index.index];
+        pub fn get(self: Self, handle: anytype) ?T {
+            const asset_index = if (@TypeOf(handle) == Handle(T)) handle.asset_index else handle;
+            std.debug.assert(self.handle_provider.alive(asset_index));
+            return self.instances.items[asset_index.index];
         }
 
         pub fn remove(self: Self, handle: Handle(T)) void {

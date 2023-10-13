@@ -23,11 +23,13 @@ pub const AssetPlugin = struct {
 /// Plugin used for any Asset types that need further processing after being loaded (ex Image => GpuImage)
 pub fn RenderAssetPlugin(comptime T: type) type {
     return struct {
-        pub fn build(_: AssetPlugin, app: *App) void {
+        const Self = @This();
+
+        pub fn build(_: Self, app: *App) void {
             _ = app
                 .initResource(ExtractedAssets(T))
                 .initResource(RenderAssets(T))
-                .add_systems(aya.PostUpdate, ExtractAssetSystem(T))
+                .addSystems(aya.PostUpdate, ExtractAssetSystem(T))
                 .addSystems(aya.PostUpdate, PrepareRenderAssetSystem(T));
         }
     };
@@ -39,7 +41,7 @@ pub fn ExtractedAssets(comptime T: type) type {
         pub const asset_type = T;
         const Self = @This();
 
-        const RenderAssetData = struct { id: AssetIndex, asset: T.extracted_asset };
+        const RenderAssetData = struct { id: AssetIndex, asset: T.ExtractedAsset };
 
         extracted: std.ArrayList(RenderAssetData),
         removed: std.ArrayList(AssetIndex),
@@ -69,17 +71,17 @@ pub fn RenderAssets(comptime T: type) type {
         pub const asset_type = T;
         const Self = @This();
 
-        assets: std.AutoHashMap(AssetIndex, T.prepared_asset),
+        assets: std.AutoHashMap(AssetIndex, T.PreparedAsset),
 
         pub fn init() Self {
-            return .{ .assets = std.AutoHashMap(AssetIndex, T.extracted_asset).init(aya.allocator) };
+            return .{ .assets = std.AutoHashMap(AssetIndex, T.ExtractedAsset).init(aya.allocator) };
         }
 
-        pub fn deinit(self: Self) void {
+        pub fn deinit(self: *Self) void {
             self.assets.deinit();
         }
 
-        pub fn insert(self: *Self, id: AssetIndex, asset: T.prepared_asset) void {
+        pub fn insert(self: *Self, id: AssetIndex, asset: T.PreparedAsset) void {
             self.assets.put(id, asset) catch unreachable;
         }
 
@@ -95,17 +97,17 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
     return struct {
         pub const name = "aya.systems.assets.RenderAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
 
-        pub fn run(extracted_assets_res: ResMut(ExtractedAssets(T)), render_assets_res: ResMut(RenderAssets(T))) void {
+        pub fn run(world: *aya.World, extracted_assets_res: ResMut(ExtractedAssets(T)), render_assets_res: ResMut(RenderAssets(T))) void {
             const extracted_assets = extracted_assets_res.getAssertExists();
             const render_assets = render_assets_res.getAssertExists();
 
             // process all ExtractedAssets
-            for (extracted_assets.extracted) |obj| {
-                const render_asset = T.prepareAsset(obj.id, obj.asset);
+            for (extracted_assets.extracted.items) |obj| {
+                const render_asset = T.prepareAsset(obj.asset, world.extractResources(T.Param));
                 render_assets.insert(obj.id, render_asset);
             }
 
-            for (extracted_assets.removed) |rem| {
+            for (extracted_assets.removed.items) |rem| {
                 render_assets.remove(rem);
             }
 
@@ -125,17 +127,17 @@ pub fn ExtractAssetSystem(comptime T: type) type {
             assets_res: Res(aya.Assets(T)),
         ) void {
             const extracted_assets = extracted_assets_res.getAssertExists();
-            const asset: *aya.Assets(T) = assets_res.getAssertExists();
+            const asset: *const aya.Assets(T) = assets_res.getAssertExists();
 
             // TODO: use a HashSet to ensure we dont queue up multiple evnets if an asset is added and removed in one frame for example
             for (event_reader.read()) |evt| {
                 switch (evt) {
                     .added, .modified => |mod| {
                         if (asset.get(mod.index)) |ass| {
-                            extracted_assets.extracted.append(.{ .id = mod.index, .asset = ass });
+                            extracted_assets.extracted.append(.{ .id = mod.index, .asset = ass }) catch unreachable;
                         }
                     },
-                    .removed => |rem| extracted_assets.removed.append(rem.index),
+                    .removed => |rem| extracted_assets.removed.append(rem.index) catch unreachable,
                 }
             }
         }
