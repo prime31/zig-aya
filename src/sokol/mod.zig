@@ -45,7 +45,7 @@ pub const SokolPlugin = struct {
             .insertResource(ClearColor{})
             .addSystems(aya.Last, RenderClear);
 
-        fart();
+        // fart();
     }
 };
 

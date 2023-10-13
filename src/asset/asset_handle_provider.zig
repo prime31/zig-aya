@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 
 pub const AssetIndex = struct {
     index: u32 = 0,
-    generation: u32 = 0,
+    generation: u32 = 1,
 };
 
 pub fn AssetId(comptime T: type) type {

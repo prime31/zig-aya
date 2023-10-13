@@ -11,7 +11,7 @@ pub fn Handle(comptime T: type) type {
         asset_index: AssetIndex,
 
         pub fn init(asset_index: AssetIndex) Self {
-            return .{ .asset_id = asset_index };
+            return .{ .asset_index = asset_index };
         }
     };
 }

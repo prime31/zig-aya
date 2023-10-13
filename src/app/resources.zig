@@ -93,7 +93,7 @@ pub const Resources = struct {
         const T = @TypeOf(resource);
         std.debug.assert(@typeInfo(T) != .Pointer);
 
-        const res = self.allocator.create(T) catch unreachable;
+        const res = aya.allocator.create(T) catch unreachable;
         res.* = resource;
         self.resources.put(typeId(T), ErasedPtr.initWithPtr(T, @intFromPtr(res))) catch unreachable;
     }
@@ -105,7 +105,7 @@ pub const Resources = struct {
 
     pub fn remove(self: *Self, comptime T: type) void {
         if (self.resources.fetchRemove(typeId(T))) |kv| {
-            kv.value.deinit(kv.value, self.allocator);
+            kv.value.deinit(kv.value, aya.allocator);
         }
     }
 };
