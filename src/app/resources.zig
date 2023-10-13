@@ -57,8 +57,8 @@ pub const Resources = struct {
     }
 
     pub fn deinit(self: *Self) void {
-        var iter = self.resources.iterator();
-        while (iter.next()) |entry| entry.value_ptr.deinit(entry.value_ptr.*, aya.allocator);
+        var iter = self.resources.valueIterator();
+        while (iter.next()) |entry| entry.deinit(entry);
         self.resources.deinit();
     }
 

@@ -54,6 +54,9 @@ pub fn ExtractedAssets(comptime T: type) type {
         }
 
         pub fn deinit(self: Self) void {
+            for (self.extracted.items) |*data| {
+                data.asset.deinit();
+            }
             self.extracted.deinit();
             self.removed.deinit();
         }
@@ -74,15 +77,23 @@ pub fn RenderAssets(comptime T: type) type {
         assets: std.AutoHashMap(AssetIndex, T.PreparedAsset),
 
         pub fn init() Self {
-            return .{ .assets = std.AutoHashMap(AssetIndex, T.ExtractedAsset).init(aya.allocator) };
+            return .{ .assets = std.AutoHashMap(AssetIndex, T.PreparedAsset).init(aya.allocator) };
         }
 
         pub fn deinit(self: *Self) void {
+            if (@hasDecl(T.PreparedAsset, "deinit")) {
+                var iter = self.assets.valueIterator();
+                while (iter.next()) |asset| asset.deinit();
+            }
             self.assets.deinit();
         }
 
         pub fn insert(self: *Self, id: AssetIndex, asset: T.PreparedAsset) void {
             self.assets.put(id, asset) catch unreachable;
+        }
+
+        pub fn get(self: *Self, id: AssetIndex) ?T.PreparedAsset {
+            return self.assets.get(id);
         }
 
         pub fn remove(self: *Self, id: AssetIndex) void {
@@ -103,7 +114,7 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
 
             // process all ExtractedAssets
             for (extracted_assets.extracted.items) |obj| {
-                const render_asset = T.prepareAsset(obj.asset, world.extractResources(T.Param));
+                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param));
                 render_assets.insert(obj.id, render_asset);
             }
 

@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("aya.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -40,11 +41,11 @@ pub fn hashStringFnv(comptime ReturnType: type, comptime str: []const u8) Return
 /// if T.init(Allocator) or T.deinit() exists it will be called
 pub const ErasedPtr = struct {
     ptr: usize,
-    deinit: *const fn (ErasedPtr, Allocator) void,
+    deinit: *const fn (*ErasedPtr) void,
 
-    pub fn init(comptime T: type, allocator: Allocator) ErasedPtr {
-        const res = allocator.create(T) catch unreachable;
-        res.* = if (@hasDecl(T, "init")) T.init(allocator) else std.mem.zeroes(T);
+    pub fn init(comptime T: type) ErasedPtr {
+        const res = aya.mem.create(T);
+        res.* = if (@hasDecl(T, "init")) T.init(aya.allocator) else std.mem.zeroes(T);
         return initWithPtr(T, @intFromPtr(res));
     }
 
@@ -52,11 +53,11 @@ pub const ErasedPtr = struct {
         return .{
             .ptr = ptr,
             .deinit = struct {
-                fn deinit(self: ErasedPtr, allocator: Allocator) void {
+                fn deinit(self: *ErasedPtr) void {
                     const res = self.asPtr(T);
                     if (@typeInfo(T) == .Struct)
                         if (@hasDecl(T, "deinit")) res.deinit();
-                    allocator.destroy(res);
+                    aya.mem.destroy(res);
                 }
             }.deinit,
         };
