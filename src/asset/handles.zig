@@ -1,17 +1,17 @@
 const std = @import("std");
 const assets = @import("mod.zig");
 
-const AssetId = assets.AssetId;
+const AssetIndex = assets.AssetIndex;
 
 pub fn Handle(comptime T: type) type {
     return struct {
         const Self = @This();
         const phantom = T;
 
-        asset_id: AssetId,
+        asset_index: AssetIndex,
 
-        pub fn init(asset_id: AssetId) Self {
-            return .{ .asset_id = asset_id };
+        pub fn init(asset_index: AssetIndex) Self {
+            return .{ .asset_id = asset_index };
         }
     };
 }

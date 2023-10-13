@@ -6,6 +6,7 @@ const App = aya.App;
 const Allocator = std.mem.Allocator;
 const Handle = assets.Handle;
 const AssetId = assets.AssetId;
+const AssetIndex = assets.AssetIndex;
 const AssetHandleProvider = @import("asset_handle_provider.zig").AssetHandleProvider;
 
 /// Resource. Manages the storage assets of type T.
@@ -14,33 +15,70 @@ pub fn Assets(comptime T: type) type {
         const Self = @This();
         instances: std.ArrayList(T),
         handle_provider: AssetHandleProvider,
+        queued_events: std.ArrayList(AssetEvent(T)),
 
         pub fn init(allocator: Allocator) Self {
             return .{
                 .instances = std.ArrayList(T).init(allocator),
                 .handle_provider = AssetHandleProvider.init(allocator),
+                .queued_events = std.ArrayList(AssetEvent(T)).init(allocator),
             };
         }
 
         pub fn deinit(self: *Self) void {
             self.instances.deinit();
             self.handle_provider.deinit();
+            self.queued_events.deinit();
         }
 
-        pub fn insert(self: *Self, id: AssetId, asset: T) void {
+        pub fn add(self: *Self, asset: T) void {
+            const id = self.handle_provider.create();
             self.instances.ensureTotalCapacity(id.index) catch unreachable;
             self.instances.expandToCapacity();
             self.instances.items[id.index] = asset;
+
+            self.queued_events.append(AssetEvent(T){ .added = AssetId(T){ .index = id } });
+        }
+
+        pub fn insert(self: *Self, id: AssetIndex, asset: T) void {
+            self.instances.ensureTotalCapacity(id.index) catch unreachable;
+            self.instances.expandToCapacity();
+            self.instances.items[id.index] = asset;
+
+            self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } });
         }
 
         pub fn get(self: Self, handle: Handle(T)) ?T {
-            std.debug.assert(self.handle_provider.alive(handle.asset_id));
-            return self.instances.items[handle.asset_id.index];
+            std.debug.assert(self.handle_provider.alive(handle.asset_index));
+            return self.instances.items[handle.asset_index.index];
         }
 
         pub fn remove(self: Self, handle: Handle(T)) void {
-            _ = self.instances.remove(handle.asset_id.index);
-            self.handle_provider.remove(handle.asset_id);
+            _ = self.instances.remove(handle.asset_index.index);
+            self.handle_provider.remove(handle.asset_index);
+
+            self.queued_events.append(AssetEvent(T){ .removed = AssetId(T){ .index = handle.asset_index } });
+        }
+    };
+}
+
+pub fn AssetEvent(comptime T: type) type {
+    return union {
+        added: AssetId(T),
+        modified: AssetId(T),
+        removed: AssetId(T),
+    };
+}
+
+/// A system that applies accumulated asset change events to the Events resource.
+pub fn AssetChangeEventSystem(comptime T: type) type {
+    return struct {
+        pub const name = "aya.systems.assets.AssetChangeEventSystem_" ++ aya.utils.typeNameLastComponent(T);
+
+        pub fn run(assets_res: aya.ResMut(Assets(T)), event_writer: aya.EventWriter(AssetEvent(T))) void {
+            const asset = assets_res.getAssertExists();
+            event_writer.sendBatch(asset.queued_events.items);
+            asset.queued_events.clearRetainingCapacity();
         }
     };
 }

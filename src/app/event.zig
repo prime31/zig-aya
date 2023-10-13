@@ -34,6 +34,10 @@ pub fn Events(comptime T: type) type {
             self.events_next_frame.append(event) catch unreachable;
         }
 
+        pub fn sendBatch(self: *Self, events: []T) void {
+            self.events_next_frame.appendSlice(events) catch unreachable;
+        }
+
         pub fn sendDefault(self: *Self) void {
             self.send(T{});
         }
@@ -50,6 +54,10 @@ pub fn EventWriter(comptime T: type) type {
 
         pub fn send(self: Self, event: T) void {
             self.events.send(event);
+        }
+
+        pub fn sendBatch(self: Self, events: []T) void {
+            self.events.sendBatch(events);
         }
 
         pub fn sendDefault(self: Self) void {

@@ -281,9 +281,17 @@ pub const App = struct {
     }
 
     // Assets
+    /// adds relevant resources, events and systems for handling an asset. If T.prepareAsset exists, RenderAssetPlugin will also
+    /// be added which allows converteing an asset to a different format (eg Image -> GpuImage).
     pub fn initAsset(self: *Self, comptime T: type) *Self {
-        _ = self.world.resources.initResource(Assets(T));
-        return self;
+        // if the asset has a `prepareAsset` method add the RenderAssetPlugin so that it can process the asset after loading it
+        if (@hasDecl(T, "prepareAsset"))
+            _ = self.addPlugins(aya.RenderAssetPlugin(T));
+
+        return self
+            .initResource(Assets(T))
+            .addEvent(aya.AssetEvent(T))
+            .addSystems(aya.PostUpdate, aya.AssetChangeEventSystem(T)); // TODO: add AssetEvents phase after PostUpdate perhaps?
     }
 
     pub fn initAssetLoader(self: *Self, comptime T: type, loadFn: *const fn ([]const u8, AssetLoader(T).settings_type) T) *Self {
