@@ -31,7 +31,7 @@ pub const AssetServer = struct {
 
     pub fn deinit(self: *AssetServer) void {
         var iter = self.loaders.iterator();
-        while (iter.next()) |entry| entry.value_ptr.deinit(entry.value_ptr.*, self.loaders.allocator);
+        while (iter.next()) |entry| entry.value_ptr.deinit(entry.value_ptr);
         self.loaders.deinit();
 
         self.handle_providers.deinit();

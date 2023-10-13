@@ -13,19 +13,24 @@ const AssetHandleProvider = @import("asset_handle_provider.zig").AssetHandleProv
 pub fn Assets(comptime T: type) type {
     return struct {
         const Self = @This();
-        instances: std.ArrayList(T),
+
+        instances: std.AutoHashMap(u32, T),
         handle_provider: AssetHandleProvider,
         queued_events: std.ArrayList(AssetEvent(T)),
 
         pub fn init(allocator: Allocator) Self {
             return .{
-                .instances = std.ArrayList(T).init(allocator),
+                .instances = std.AutoHashMap(u32, T).init(allocator),
                 .handle_provider = AssetHandleProvider.init(allocator),
                 .queued_events = std.ArrayList(AssetEvent(T)).init(allocator),
             };
         }
 
         pub fn deinit(self: *Self) void {
+            if (@hasDecl(T, "deinit")) {
+                var iter = self.instances.valueIterator();
+                while (iter.next()) |asset| asset.deinit();
+            }
             self.instances.deinit();
             self.handle_provider.deinit();
             self.queued_events.deinit();
@@ -33,33 +38,35 @@ pub fn Assets(comptime T: type) type {
 
         pub fn add(self: *Self, asset: T) Handle(T) {
             const id = self.handle_provider.create();
-            self.instances.ensureTotalCapacity(id.index + 1) catch unreachable;
-            self.instances.expandToCapacity();
-            self.instances.items[id.index] = asset;
+            self.instances.put(id.index, asset) catch unreachable;
 
             self.queued_events.append(AssetEvent(T){ .added = AssetId(T){ .index = id } }) catch unreachable;
             return Handle(T).init(id);
         }
 
         pub fn insert(self: *Self, id: AssetIndex, asset: T) void {
-            self.instances.ensureTotalCapacity(id.index) catch unreachable;
-            self.instances.expandToCapacity();
-            self.instances.items[id.index] = asset;
-
-            self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } }) catch unreachable;
+            const res = self.instances.getOrPut(id.index, asset) catch unreachable;
+            if (res.found_existing) {
+                if (@hasDecl(T, "deinit")) res.value_ptr.deinit();
+                self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } }) catch unreachable;
+            } else {
+                self.queued_events.append(AssetEvent(T){ .added = AssetId(T){ .index = id } }) catch unreachable;
+            }
         }
 
+        /// gets an asset using a Handle(T) or AssetIndex
         pub fn get(self: Self, handle: anytype) ?T {
             const asset_index = if (@TypeOf(handle) == Handle(T)) handle.asset_index else handle;
             std.debug.assert(self.handle_provider.alive(asset_index));
-            return self.instances.items[asset_index.index];
+            return self.instances.get(asset_index.index);
         }
 
         pub fn remove(self: Self, handle: Handle(T)) void {
-            _ = self.instances.remove(handle.asset_index.index);
-            self.handle_provider.remove(handle.asset_index);
-
-            self.queued_events.append(AssetEvent(T){ .removed = AssetId(T){ .index = handle.asset_index } }) catch unreachable;
+            if (self.instances.fetchRemove(handle.asset_index.index)) |kv| {
+                if (@hasDecl(T, "deinit")) kv.value.deinit();
+                self.handle_provider.remove(handle.asset_index);
+                self.queued_events.append(AssetEvent(T){ .removed = AssetId(T){ .index = handle.asset_index } }) catch unreachable;
+            }
         }
     };
 }

@@ -79,10 +79,15 @@ fn fart() void {
     std.debug.print("\ndata: {any}\n", .{mesh_positions.items});
 }
 
+const sg = sokol.gfx;
+var pips: [2]?sg.Pipeline = [_]?sg.Pipeline{ null, null };
+var bindings: [2]sg.Bindings = undefined;
+
 const RenderClear = struct {
-    pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor)) void {
+    pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor), meshes_res: aya.ResMut(aya.RenderAssets(aya.Mesh))) void {
         const window = window_res.getAssertExists();
         const clear_color = clear_color_res.getAssertExists();
+        const meshes = meshes_res.getAssertExists();
 
         var pass_action = sokol.gfx.PassAction{};
         pass_action.colors[0] = .{
@@ -92,7 +97,88 @@ const RenderClear = struct {
 
         const size = window.sizeInPixels();
         sokol.gfx.beginDefaultPass(pass_action, size.w, size.h);
+
+        var iter = meshes.assets.valueIterator();
+        var i: usize = 0;
+        while (iter.next()) |mesh| {
+            if (pips[i] == null) {
+                var pip_desc = mesh.getPipelineDesc();
+                pip_desc.shader = sg.makeShader(.{
+                    .vs = .{
+                        .source = vs,
+                        .entry = "main0",
+                    },
+                    .fs = .{
+                        .source = fs,
+                        .entry = "main0",
+                    },
+                    .label = "Fooking Shader",
+                });
+                pips[i] = sg.makePipeline(pip_desc);
+
+                // create bindings
+                bindings[i] = mesh.getBindings();
+            }
+
+            sokol.gfx.applyPipeline(pips[i].?);
+            sokol.gfx.applyBindings(bindings[i]);
+            sokol.gfx.draw(0, mesh.buffer_info.indexed.count, 1);
+
+            i += 1;
+        }
+
         sokol.gfx.endPass();
         sokol.gfx.commit();
     }
 };
+
+const vs =
+    \\ #include <metal_stdlib>
+    \\ #include <simd/simd.h>
+    \\
+    \\ using namespace metal;
+    \\
+    \\ struct main0_out
+    \\ {
+    \\     float4 color [[user(locn0)]];
+    \\     float4 gl_Position [[position]];
+    \\ };
+    \\
+    \\ struct main0_in
+    \\ {
+    \\     float4 position [[attribute(0)]];
+    \\     float4 color0 [[attribute(1)]];
+    \\ };
+    \\
+    \\ vertex main0_out main0(main0_in in [[stage_in]])
+    \\ {
+    \\     main0_out out = {};
+    \\     out.gl_Position = in.position;
+    \\     out.color = in.color0;
+    \\     return out;
+    \\ }
+;
+
+const fs =
+    \\ #include <metal_stdlib>
+    \\ #include <simd/simd.h>
+    \\
+    \\ using namespace metal;
+    \\
+    \\ struct main0_out
+    \\ {
+    \\     float4 frag_color [[color(0)]];
+    \\ };
+    \\
+    \\ struct main0_in
+    \\ {
+    \\     float4 color [[user(locn0)]];
+    \\ };
+    \\
+    \\ fragment main0_out main0(main0_in in [[stage_in]])
+    \\ {
+    \\     main0_out out = {};
+    \\     out.frag_color = in.color;
+    \\     return out;
+    \\ }
+;
