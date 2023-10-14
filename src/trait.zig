@@ -1,0 +1,137 @@
+const std = @import("std");
+
+pub fn implementsTrait(comptime Trait: type, comptime TypeOrInstance: anytype) bool {
+    const T = if (@TypeOf(TypeOrInstance) == type) TypeOrInstance else @TypeOf(TypeOrInstance);
+
+    if (!@hasDecl(Trait, "validate"))
+        @compileError("Trait " ++ @typeName(Trait) ++ " has no function named validate");
+    Trait.validate(T);
+
+    return true;
+}
+
+pub fn hasOptionalStringDecl(comptime T: type, comptime name: []const u8) void {
+    if (comptime @hasDecl(T, name)) {
+        if (comptime !std.meta.trait.isZigString(@TypeOf(@field(T, name)))) {
+            @compileError("Trait not satisfied. Optional decl '" ++ name ++ "' should be a string. Found type " ++ @typeName(@TypeOf(@field(T, name))));
+        }
+    }
+}
+
+pub fn hasOptionalTupleDecl(comptime T: type, comptime name: []const u8) void {
+    if (comptime @hasDecl(T, name)) {
+        if (comptime !std.meta.trait.isTuple(@TypeOf(@field(T, name)))) {
+            @compileError("Trait not satisfied. Optional decl '" ++ name ++ "' should be a tuple. Found type " ++ @typeName(@TypeOf(@field(T, name))));
+        }
+    }
+}
+
+pub fn hasOptionalDeclOfType(comptime T: type, comptime name: []const u8, comptime DeclType: type) void {
+    if (comptime @hasDecl(T, name)) hasDeclOfType(T, name, DeclType);
+}
+
+pub fn hasDeclOfType(comptime T: type, comptime name: []const u8, comptime DeclType: type) void {
+    if (comptime !@hasDecl(T, name)) {
+        @compileError("Trait not satisfied. Missing decl '" ++ name ++ "' of type " ++ @typeName(DeclType));
+    }
+
+    const decl_type = @TypeOf(@field(T, name));
+    if (decl_type != DeclType) {
+        // handle comptime_int/float
+        if (comptime std.meta.trait.isFloat(decl_type) and std.meta.trait.isFloat(DeclType)) return;
+        if (comptime std.meta.trait.isIntegral(decl_type) and std.meta.trait.isIntegral(DeclType)) return;
+
+        @compileError("Trait not satisfied. Decl " ++ name ++ " should be of type " ++ @typeName(DeclType) ++ " but it is of type " ++ @typeName(decl_type));
+    }
+}
+
+/// validates T.name has arguments args. Use null for anytype args
+pub fn hasFnWithArgs(comptime T: type, comptime name: []const u8, comptime args: anytype) void {
+    if (comptime !@hasDecl(T, name)) {
+        @compileError("Trait not satisfied. Missing function " ++ name);
+    }
+
+    const Function = @TypeOf(@field(T, name));
+    const info = @typeInfo(Function);
+    if (info != .Fn)
+        @compileError("hasFnWithArgs expects a function type");
+
+    const function_info = info.Fn;
+    if (function_info.is_var_args)
+        @compileError("Cannot use hasFnWithArgs for variadic functions");
+
+    inline for (function_info.params, 0..) |arg, i| {
+        if (arg.type != args[i]) {
+            if (arg.type != null and args[i] != null)
+                @compileError("Trait not satisfied. Function '" ++ name ++ "' argument should have type " ++ @typeName(args[i]) ++ " but it is of type " ++ @typeName(arg.type.?));
+            @compileError("Trait not satisfied. Function '" ++ name ++ "' arguments don't match trait");
+        }
+    }
+}
+
+pub fn hasFn(comptime T: type, comptime name: []const u8) void {
+    if (comptime !@hasDecl(T, name) or @typeInfo(@TypeOf(@field(T, name))) != .Fn) {
+        @compileError("Trait not satified. Missing function '" ++ name ++ "'");
+    }
+}
+
+const ComponentBundleTrait = struct {
+    pub fn validate(comptime T: type) void {
+        hasDeclOfType(T, "is_bundle", bool);
+    }
+};
+
+const SystemTrait = struct {
+    pub fn validate(comptime T: type) void {
+        // run params can be vast so we cant easily validate here
+        hasFn(T, "run");
+        hasOptionalDeclOfType(T, "no_readonly", bool);
+        hasOptionalDeclOfType(T, "interval", f32);
+        hasOptionalDeclOfType(T, "instanced", bool);
+        hasOptionalDeclOfType(T, "run_when_paused", bool);
+        hasOptionalTupleDecl(T, "modifiers");
+
+        hasOptionalStringDecl(T, "name");
+    }
+};
+
+pub const AssetTypeTrait = struct {
+    pub fn validate(comptime T: type) void {
+        hasDeclOfType(T, "ExtractedAsset", type);
+        hasDeclOfType(T, "PreparedAsset", type);
+        hasDeclOfType(T, "Param", type);
+        hasFnWithArgs(T, "prepareAsset", .{ *const T.ExtractedAsset, T.PreparedAsset });
+    }
+};
+
+test "trait.has" {
+    const TestBundle = struct {
+        pub const is_bundle = true;
+    };
+
+    const TestAsset = struct {
+        pub const ExtractedAsset = u1;
+        pub const PreparedAsset = u8;
+
+        pub const Param = struct {};
+
+        pub fn prepareAsset(_: *const ExtractedAsset, _: PreparedAsset) void {}
+    };
+
+    const TestSystem = struct {
+        pub const no_readonly = true;
+        pub const interval = 0.5;
+        pub const name = "SetVelocity";
+        pub const modifiers = .{ u8, u16 };
+
+        pub fn run(_: @This()) void {}
+    };
+
+    try std.testing.expect(implementsTrait(ComponentBundleTrait, TestBundle));
+    try std.testing.expect(implementsTrait(ComponentBundleTrait, TestBundle{}));
+
+    try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset));
+    try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset{}));
+
+    try std.testing.expect(implementsTrait(SystemTrait, TestSystem));
+}

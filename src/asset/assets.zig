@@ -45,7 +45,9 @@ pub fn Assets(comptime T: type) type {
         }
 
         pub fn insert(self: *Self, id: AssetIndex, asset: T) void {
-            const res = self.instances.getOrPut(id.index, asset) catch unreachable;
+            const res = self.instances.getOrPut(id.index) catch unreachable;
+            res.value_ptr.* = asset;
+
             if (res.found_existing) {
                 if (@hasDecl(T, "deinit")) res.value_ptr.deinit();
                 self.queued_events.append(AssetEvent(T){ .modified = AssetId(T){ .index = id } }) catch unreachable;
@@ -107,43 +109,72 @@ pub fn AssetChangeEventSystem(comptime T: type) type {
 }
 
 test "assets" {
+    const Image = struct {};
+
+    const Thing = struct {
+        pub const settings_type: type = u8;
+    };
+
+    const ImageHandle = Handle(Image);
+    _ = ImageHandle;
+
+    const Funcs = struct {
+        fn loadImage(path: []const u8, _: void) Image {
+            _ = path;
+            return Image{};
+        }
+
+        fn loadThing(path: []const u8, settings: u8) Thing {
+            _ = settings;
+            _ = path;
+            return Thing{};
+        }
+    };
+
     const AssetServer = assets.AssetServer;
 
-    var asset_server = AssetServer.init(std.testing.allocator);
+    var asset_server = AssetServer.init(aya.allocator);
     defer asset_server.deinit();
 
-    var images = Assets(Image).init(std.testing.allocator);
+    var images = Assets(Image).init(aya.allocator);
     defer images.deinit();
 
-    var things = Assets(Thing).init(std.testing.allocator);
+    var things = Assets(Thing).init(aya.allocator);
     defer things.deinit();
 
-    asset_server.registerLoader(Image, loadImage);
+    asset_server.registerLoader(Image, Funcs.loadImage);
     const img_handle = asset_server.load(Image, &images, "fook", {});
     const img = images.get(img_handle);
     try std.testing.expect(img != null);
 
-    asset_server.registerLoader(Thing, loadThing);
+    asset_server.registerLoader(Thing, Funcs.loadThing);
     const thing_handle = asset_server.load(Thing, &things, "fook", 55);
     _ = thing_handle;
     // std.debug.print("----------- thing_handle: {}\n", .{thing_handle});
+
+    var slice = aya.mem.alloc(u8, 3);
+    setSlice(u8, slice, .{ 55, 1, 2 });
+    std.debug.print("{} -> {} -> {}\n", .{ slice[0], slice[1], slice[2] });
+
+    var slice2 = aya.mem.alloc([2]u8, 3);
+    setSlice([2]u8, slice2, .{ [_]u8{ 4, 5 }, [_]u8{ 77, 25 } });
+    try std.testing.expectEqual([_]u8{ 4, 5 }, slice2[0]);
+    std.debug.print("{any} -> {any}\n", .{ slice2[0], slice2[1] });
+
+    var slice3 = aya.mem.alloc([2]u8, 3);
+    slice3[0..2].* = .{ .{ 23, 24 }, .{ 25, 26 } };
+    std.debug.print("{any} -> {any}\n", .{ slice3[0], slice3[1] });
 }
 
-const Image = struct {};
-
-const Thing = struct {
-    pub const settings_type: type = u8;
-};
-
-const ImageHandle = Handle(Image);
-
-fn loadImage(path: []const u8, _: void) Image {
-    _ = path;
-    return Image{};
-}
-
-fn loadThing(path: []const u8, settings: u8) Thing {
-    _ = settings;
-    _ = path;
-    return Thing{};
+fn setSlice(comptime T: type, slice: []T, init: anytype) void {
+    switch (@typeInfo(@TypeOf(init))) {
+        .Struct => |init_info| {
+            if (init_info.is_tuple) {
+                inline for (init, 0..) |item, i| {
+                    slice[i] = item;
+                }
+            }
+        },
+        else => {},
+    }
 }
