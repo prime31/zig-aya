@@ -30,9 +30,11 @@ const CreateTriMeshSystem = struct {
         mesh.insertAttribute(Mesh.ATTRIBUTE_POSITION, values);
 
         const colors = aya.mem.alloc([4]f32, 3);
-        colors[0] = [_]f32{ 1, 0, 0, 1 };
-        colors[1] = [_]f32{ 0, 1, 0, 1 };
-        colors[2] = [_]f32{ 0, 0, 1, 1 };
+        colors[0..3].* = .{
+            .{ 1, 0, 0, 1 },
+            .{ 0, 1, 0, 1 },
+            .{ 0, 0, 1, 1 },
+        };
         mesh.insertAttribute(Mesh.ATTRIBUTE_COLOR, colors);
 
         var indices = aya.mem.alloc(u16, 3);
