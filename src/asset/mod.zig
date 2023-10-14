@@ -127,7 +127,7 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
     };
 }
 
-/// extracts all created or modified assets
+/// extracts all created or modified assets and puts them in ExtractedAssets
 pub fn ExtractAssetSystem(comptime T: type) type {
     return struct {
         pub const name = "aya.systems.assets.ExtractAssetSystem_" ++ aya.utils.typeNameLastComponent(T);

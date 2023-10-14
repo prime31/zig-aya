@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @This();
 
 pub const utils = @import("utils.zig");
+pub const trait = @import("trait.zig");
 
 // inner modules
 pub usingnamespace @import("app/mod.zig");
