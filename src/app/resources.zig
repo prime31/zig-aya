@@ -92,6 +92,7 @@ pub const Resources = struct {
     pub fn insert(self: *Self, resource: anytype) void {
         const T = @TypeOf(resource);
         std.debug.assert(@typeInfo(T) != .Pointer);
+        std.debug.assert(T != type);
 
         const res = aya.allocator.create(T) catch unreachable;
         res.* = resource;

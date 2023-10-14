@@ -1,8 +1,10 @@
 const std = @import("std");
 const sdl = @import("sdl");
+const aya = @import("../aya.zig");
 const metal = @import("metal");
 const sokol = @import("sokol");
-const aya = @import("../aya.zig");
+const sg = sokol.gfx;
+const sdtx = sokol.debugtext;
 
 const App = aya.App;
 const Window = aya.Window;
@@ -28,6 +30,11 @@ pub const ClearColorConfig = union {
 
 pub const SokolPlugin = struct {
     pub fn build(_: SokolPlugin, app: *App) void {
+        _ = app
+            .insertResource(ClearColor{})
+            .addSystems(aya.Last, .{RenderClear});
+
+        // setup sokol gfx and debug text
         const window = app.world.resources.get(Window).?;
         metal.mu_create_metal_layer(window.sdl_window);
 
@@ -39,11 +46,17 @@ pub const SokolPlugin = struct {
                     .drawable_cb = metal.mu_get_drawable,
                 },
             },
+            .logger = .{ .func = sokol.log.func },
         });
 
-        _ = app
-            .insertResource(ClearColor{})
-            .addSystems(aya.Last, RenderClear);
+        var sdtx_desc: sdtx.Desc = .{
+            .logger = .{ .func = sokol.log.func },
+        };
+        sdtx_desc.fonts[0] = sdtx.sdtx_font_z1013();
+        sdtx.setup(sdtx_desc);
+
+        sdtx.canvas(@as(f32, @floatFromInt(window.size().w)) * 0.5, @as(f32, @floatFromInt(window.size().h)) * 0.5);
+        sdtx.origin(0.0, 0.2);
 
         // fart();
     }
@@ -79,11 +92,10 @@ fn fart() void {
     std.debug.print("\ndata: {any}\n", .{mesh_positions.items});
 }
 
-const sg = sokol.gfx;
-var pips: [2]?sg.Pipeline = [_]?sg.Pipeline{ null, null };
-var bindings: [2]sg.Bindings = undefined;
-
 const RenderClear = struct {
+    var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };
+    var bindings: [3]sg.Bindings = undefined;
+
     pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor), meshes_res: aya.ResMut(aya.RenderAssets(aya.Mesh))) void {
         const window = window_res.getAssertExists();
         const clear_color = clear_color_res.getAssertExists();
@@ -126,6 +138,8 @@ const RenderClear = struct {
 
             i += 1;
         }
+
+        sdtx.draw();
 
         sokol.gfx.endPass();
         sokol.gfx.commit();

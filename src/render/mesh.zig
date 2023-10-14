@@ -295,7 +295,7 @@ pub const GpuMesh = struct {
 
         for (self.layout.layout.attributes, 0..) |attribute, i| {
             bindings.vertex_buffers[i] = self.vertex_buffer;
-            bindings.vertex_buffer_offsets[i] = @intCast(attribute.offset);
+            bindings.vertex_buffer_offsets[i] = @intCast(attribute.offset * self.vertex_count);
         }
 
         switch (self.buffer_info) {
