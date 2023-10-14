@@ -7,6 +7,7 @@ const systems = @import("systems.zig");
 
 const phases = @import("phases.zig");
 const assertMsg = aya.meta.assertMsg;
+const implementsTrait = aya.trait.implementsTrait;
 
 pub const AppExitEvent = struct {};
 
@@ -285,8 +286,10 @@ pub const App = struct {
     /// be added which allows converteing an asset to a different format (eg Image -> GpuImage).
     pub fn initAsset(self: *Self, comptime T: type) *Self {
         // if the asset has a `prepareAsset` method add the RenderAssetPlugin so that it can process the asset after loading it
-        if (@hasDecl(T, "prepareAsset"))
+        if (@hasDecl(T, "prepareAsset")) {
+            std.debug.assert(implementsTrait(aya.trait.AssetTypeTrait, T));
             _ = self.addPlugins(aya.RenderAssetPlugin(T));
+        }
 
         return self
             .initResource(Assets(T))
@@ -459,8 +462,7 @@ pub const App = struct {
 
     // Phase can be a Phase type or a phase entity (64)
     fn addSystem(self: *Self, Phase: anytype, comptime T: type) *Self {
-        std.debug.assert(@typeInfo(T) == .Struct);
-        std.debug.assert(@hasDecl(T, "run"));
+        std.debug.assert(implementsTrait(aya.trait.SystemTrait, T));
         std.debug.assert(@TypeOf(Phase) == type or @TypeOf(Phase) == u64);
 
         const phase = if (@TypeOf(Phase) == type) self.world.ecs.componentId(Phase) else Phase;
@@ -511,7 +513,7 @@ pub const App = struct {
         const new_systems = if (ti == .Struct and ti.Struct.is_tuple) Systems else .{Systems};
 
         inline for (new_systems) |T| {
-            std.debug.assert(@hasDecl(T, "run"));
+            std.debug.assert(implementsTrait(aya.trait.SystemTrait, T));
 
             if (@hasDecl(phase_state_set, "state_type")) {
                 // OnEnter/OnExit systems are not associated with a phase or sort

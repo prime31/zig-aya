@@ -46,7 +46,7 @@ pub fn hasDeclOfType(comptime T: type, comptime name: []const u8, comptime DeclT
 }
 
 /// validates T.name has arguments args. Use null for anytype args
-pub fn hasFnWithArgs(comptime T: type, comptime name: []const u8, comptime args: anytype) void {
+pub fn hasFnWithArgs(comptime T: type, comptime name: []const u8, comptime args: anytype, comptime ReturnT: type) void {
     if (comptime !@hasDecl(T, name)) {
         @compileError("Trait not satisfied. Missing function " ++ name);
     }
@@ -62,9 +62,15 @@ pub fn hasFnWithArgs(comptime T: type, comptime name: []const u8, comptime args:
 
     inline for (function_info.params, 0..) |arg, i| {
         if (arg.type != args[i]) {
-            if (arg.type != null and args[i] != null)
+            if (arg.type != null)
                 @compileError("Trait not satisfied. Function '" ++ name ++ "' argument should have type " ++ @typeName(args[i]) ++ " but it is of type " ++ @typeName(arg.type.?));
             @compileError("Trait not satisfied. Function '" ++ name ++ "' arguments don't match trait");
+        }
+    }
+
+    if (function_info.return_type) |ret_type| {
+        if (ret_type != ReturnT) {
+            @compileError("Trait not satisfied. Function '" ++ name ++ "' return type should be " ++ @typeName(ReturnT) ++ " but it is of type " ++ @typeName(ret_type));
         }
     }
 }
@@ -75,13 +81,7 @@ pub fn hasFn(comptime T: type, comptime name: []const u8) void {
     }
 }
 
-const ComponentBundleTrait = struct {
-    pub fn validate(comptime T: type) void {
-        hasDeclOfType(T, "is_bundle", bool);
-    }
-};
-
-const SystemTrait = struct {
+pub const SystemTrait = struct {
     pub fn validate(comptime T: type) void {
         // run params can be vast so we cant easily validate here
         hasFn(T, "run");
@@ -100,15 +100,11 @@ pub const AssetTypeTrait = struct {
         hasDeclOfType(T, "ExtractedAsset", type);
         hasDeclOfType(T, "PreparedAsset", type);
         hasDeclOfType(T, "Param", type);
-        hasFnWithArgs(T, "prepareAsset", .{ *const T.ExtractedAsset, T.PreparedAsset });
+        hasFnWithArgs(T, "prepareAsset", .{ *const T.ExtractedAsset, T.Param }, T.PreparedAsset);
     }
 };
 
 test "trait.has" {
-    const TestBundle = struct {
-        pub const is_bundle = true;
-    };
-
     const TestAsset = struct {
         pub const ExtractedAsset = u1;
         pub const PreparedAsset = u8;
@@ -126,9 +122,6 @@ test "trait.has" {
 
         pub fn run(_: @This()) void {}
     };
-
-    try std.testing.expect(implementsTrait(ComponentBundleTrait, TestBundle));
-    try std.testing.expect(implementsTrait(ComponentBundleTrait, TestBundle{}));
 
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset));
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset{}));
