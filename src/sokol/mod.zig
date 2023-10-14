@@ -1,6 +1,7 @@
 const std = @import("std");
 const sdl = @import("sdl");
 const aya = @import("../aya.zig");
+const imgui = @import("imgui");
 const metal = @import("metal");
 const sokol = @import("sokol");
 const sg = sokol.gfx;
@@ -32,7 +33,8 @@ pub const SokolPlugin = struct {
     pub fn build(_: SokolPlugin, app: *App) void {
         _ = app
             .insertResource(ClearColor{})
-            .addSystems(aya.Last, .{RenderClear});
+            .addSystems(aya.First, SetupRenderClear)
+            .addSystems(aya.Last, RenderClear);
 
         // setup sokol gfx and debug text
         const window = app.world.resources.get(Window).?;
@@ -58,13 +60,16 @@ pub const SokolPlugin = struct {
         sdtx.canvas(@as(f32, @floatFromInt(window.size().w)) * 0.5, @as(f32, @floatFromInt(window.size().h)) * 0.5);
         sdtx.origin(0.0, 0.2);
 
+        // setup Dear ImGui
+        imgui.sokol.init(window);
+
         // fart();
     }
 };
 
-const zmesh = @import("zmesh");
-
 fn fart() void {
+    const zmesh = @import("zmesh");
+
     zmesh.init(aya.allocator);
     defer zmesh.deinit();
 
@@ -91,6 +96,17 @@ fn fart() void {
 
     std.debug.print("\ndata: {any}\n", .{mesh_positions.items});
 }
+
+const SetupRenderClear = struct {
+    var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };
+    var bindings: [3]sg.Bindings = undefined;
+
+    pub fn run(window_res: Res(Window)) void {
+        const window = window_res.getAssertExists();
+        const size = window.sizeInPixels();
+        imgui.sokol.newFrame(size.w, size.h);
+    }
+};
 
 const RenderClear = struct {
     var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };
@@ -140,6 +156,7 @@ const RenderClear = struct {
         }
 
         sdtx.draw();
+        imgui.sokol.render();
 
         sokol.gfx.endPass();
         sokol.gfx.commit();

@@ -5,9 +5,9 @@ const imgui_enabled = @import("imgui.zig").enabled;
 // all references to SDL_Window, SDL_Event and SDL_Renderer were changed to anyopaque
 
 // imgui_impl_sdl3
-extern fn ImGui_ImplSDL3_InitForSDLRenderer(window: ?*anyopaque, renderer: ?*anyopaque) bool;
-extern fn ImGui_ImplSDL3_Shutdown() void;
-extern fn ImGui_ImplSDL3_NewFrame() void;
+pub extern fn ImGui_ImplSDL3_InitForSDLRenderer(window: ?*anyopaque, renderer: ?*anyopaque) bool;
+pub extern fn ImGui_ImplSDL3_Shutdown() void;
+pub extern fn ImGui_ImplSDL3_NewFrame() void;
 extern fn ImGui_ImplSDL3_ProcessEvent(event: ?*anyopaque) bool;
 
 extern fn ImGui_ImplSDLRenderer3_Init(renderer: ?*anyopaque) bool;
@@ -31,7 +31,8 @@ pub fn init(window: ?*anyopaque, renderer: ?*anyopaque) void {
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
 
     _ = ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
-    _ = ImGui_ImplSDLRenderer3_Init(renderer);
+    if (renderer != null)
+        _ = ImGui_ImplSDLRenderer3_Init(renderer);
 }
 
 /// returns true if the event is handled by imgui and should be ignored

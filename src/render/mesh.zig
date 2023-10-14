@@ -69,15 +69,11 @@ pub const VertexFormat = enum {
 pub const MeshVertexAttributeId = u8;
 
 pub const MeshVertexAttribute = struct {
-    /// The friendly name of the vertex attribute
     name: []const u8,
-
     /// The _unique_ id of the vertex attribute. This will also determine sort ordering
     /// when generating vertex buffers. Built-in / standard attributes will use "close to zero"
-    /// indices. When in doubt, use a random / very large usize to avoid conflicts.
+    /// indices. When in doubt, use a random / very large u8 to avoid conflicts.
     id: MeshVertexAttributeId,
-
-    /// The format of the vertex attribute.
     format: VertexFormat,
 };
 
