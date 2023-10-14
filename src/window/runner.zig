@@ -78,7 +78,8 @@ pub fn eventLoop(app: *App) void {
 
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
-            // if (imgui.sdl.handleEvent(&event)) continue;
+            if (@import("imgui").sdl.handleEvent(&event)) continue;
+
             switch (event.type) {
                 sdl.SDL_EVENT_QUIT => break :blk,
                 // window

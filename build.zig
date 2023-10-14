@@ -7,7 +7,7 @@ const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
-const sokol_build = @import("libs/sokol/build.zig");
+const sokol_metal_build = @import("libs/sokol/build.zig");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
@@ -130,23 +130,25 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     sdl_build.linkArtifact(b, exe);
     const sdl_module = sdl_build.getModule(b, stb_module);
 
-    if (options.enable_imgui)
-        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
-    const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
-
     zig_gamedev_build.linkArtifact(b, exe, target, optimize);
     const zmath_module = zig_gamedev_build.getMathModule(b);
     const zmesh_module = zig_gamedev_build.getMeshModule();
 
+    // sokol package
     const sokol_dep = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
     });
     exe.linkLibrary(sokol_dep.artifact("sokol"));
+    const sokol_module = sokol_dep.module("sokol");
 
     // macos metal helpers
-    sokol_build.linkArtifact(exe);
-    const sokol_module = sokol_build.getModule(b);
+    sokol_metal_build.linkArtifact(exe);
+    const sokol_metal_module = sokol_metal_build.getModule(b);
+
+    if (options.enable_imgui)
+        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
+    const imgui_module = imgui_build.getModule(b, sdl_module, sokol_module, options.enable_imgui);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
@@ -157,8 +159,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "imgui", .module = imgui_module },
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
-            .{ .name = "sokol", .module = sokol_dep.module("sokol") },
-            .{ .name = "metal", .module = sokol_module },
+            .{ .name = "sokol", .module = sokol_module },
+            .{ .name = "metal", .module = sokol_metal_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{

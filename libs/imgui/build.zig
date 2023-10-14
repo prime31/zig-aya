@@ -34,10 +34,15 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
         thisDir() ++ "/lib/cimgui.cpp",
     }, cflags);
 
+    lib.addCSourceFile(.{
+        .file = .{ .path = thisDir() ++ "/lib/backends/sokol_imgui.c" },
+        .flags = &.{ "-Wno-return-type-c-linkage", "-std=c99", "-fno-sanitize=undefined" },
+    });
+
     return lib;
 }
 
-pub fn getModule(b: *std.Build, sdl_module: *std.build.Module, enable_imgui: bool) *std.build.Module {
+pub fn getModule(b: *std.Build, sdl_module: *std.build.Module, sokol_module: *std.build.Module, enable_imgui: bool) *std.build.Module {
     const step = b.addOptions();
     step.addOption(bool, "enable_imgui", enable_imgui);
 
@@ -45,6 +50,7 @@ pub fn getModule(b: *std.Build, sdl_module: *std.build.Module, enable_imgui: boo
         .source_file = .{ .path = thisDir() ++ "/src/imgui.zig" },
         .dependencies = &.{
             .{ .name = "sdl", .module = sdl_module },
+            .{ .name = "sokol", .module = sokol_module },
             .{ .name = "options", .module = step.createModule() },
         },
     });
