@@ -198,7 +198,7 @@ pub const Mesh = struct {
             const attribute_len = entry.value_ptr.values.getLength();
             if (vertex_count) |prev_vertex_count| {
                 if (prev_vertex_count != attribute_len) {
-                    std.log.warn("{} has a different vertex count ({}) than other attributes ({}) in this mesh. all attributes will be truncated to match the smallest.", .{ entry.key_ptr.*, attribute_len, prev_vertex_count });
+                    std.log.warn("[{s}] ({}) has a different vertex count ({}) than other attributes ({}) in this mesh. all attributes will be truncated to match the smallest.", .{ entry.value_ptr.attribute.name, entry.key_ptr.*, attribute_len, prev_vertex_count });
                     vertex_count = @min(prev_vertex_count, attribute_len);
                 }
             } else {
