@@ -62,40 +62,8 @@ pub const SokolPlugin = struct {
 
         // setup Dear ImGui
         imgui.sokol.init(window);
-
-        // fart();
     }
 };
-
-fn fart() void {
-    const zmesh = @import("zmesh");
-
-    zmesh.init(aya.allocator);
-    defer zmesh.deinit();
-
-    const data = zmesh.io.parseAndLoadFile("/Users/mikedesaro/Desktop/Monkey.gltf") catch unreachable;
-    defer zmesh.io.freeData(data);
-
-    var mesh_indices = std.ArrayList(u32).init(aya.allocator);
-    defer mesh_indices.deinit();
-    var mesh_positions = std.ArrayList([3]f32).init(aya.allocator);
-    defer mesh_positions.deinit();
-    var mesh_normals = std.ArrayList([3]f32).init(aya.allocator);
-    defer mesh_normals.deinit();
-
-    zmesh.io.appendMeshPrimitive(
-        data, // *zmesh.io.cgltf.Data
-        0, // mesh index
-        0, // gltf primitive index (submesh index)
-        &mesh_indices,
-        &mesh_positions,
-        &mesh_normals, // normals (optional)
-        null, // texcoords (optional)
-        null, // tangents (optional)
-    ) catch unreachable;
-
-    std.debug.print("\ndata: {any}\n", .{mesh_positions.items});
-}
 
 const SetupRenderClear = struct {
     var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };

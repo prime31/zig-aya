@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
+const zmesh = @import("zmesh");
 
 const App = aya.App;
 const ResMut = aya.ResMut;
@@ -12,7 +13,7 @@ pub fn main() !void {
 
     App.init()
         .addPlugins(aya.DefaultPlugins)
-        .addSystems(aya.Startup, .{ CreateTriMeshSystem, CreateQuadMeshSystem })
+        .addSystems(aya.Startup, .{ CreateTriMeshSystem, CreateQuadMeshSystem, GltfSystem })
         .addSystems(aya.Startup, LoadAssetSystem)
         .addSystems(aya.Update, AssetEventSystem)
         .run();
@@ -94,5 +95,49 @@ const AssetEventSystem = struct {
             _ = evt;
             // std.debug.print("AssetEvent: {}, added: {}\n", .{ evt, evt.isAdded() });
         }
+    }
+};
+
+const GltfSystem = struct {
+    pub fn run(assets_res: ResMut(Assets(Mesh))) void {
+        const assets = assets_res.getAssertExists();
+
+        zmesh.init(aya.allocator);
+        defer zmesh.deinit();
+
+        const data = zmesh.io.parseAndLoadFile("examples/assets/monkey.glb") catch unreachable;
+        defer zmesh.io.freeData(data);
+
+        var mesh_indices = std.ArrayList(u32).init(aya.allocator);
+        defer mesh_indices.deinit();
+        var mesh_positions = std.ArrayList([3]f32).init(aya.allocator);
+        defer mesh_positions.deinit();
+        var mesh_colors = std.ArrayList([4]f32).init(aya.allocator);
+        defer mesh_colors.deinit();
+
+        zmesh.io.appendMeshPrimitive(
+            data, // *zmesh.io.cgltf.Data
+            0, // mesh index
+            0, // gltf primitive index (submesh index)
+            &mesh_indices,
+            &mesh_positions,
+            null, // normals (optional)
+            null, // texcoords (optional)
+            null, // tangents (optional)
+            &mesh_colors, // colors (optional)
+        ) catch unreachable;
+
+        // mesh_colors.ensureTotalCapacityPrecise(mesh_positions.items.len) catch unreachable;
+        // mesh_colors.expandToCapacity();
+        // for (mesh_colors.items) |*col| col.* = [_]f32{ 1, 1, 1, 1 };
+        // std.debug.print("pos: {}\n", .{mesh_positions.items.len});
+
+        var mesh = Mesh.init(.triangles);
+        mesh.insertAttribute(Mesh.ATTRIBUTE_POSITION, mesh_positions.toOwnedSlice() catch unreachable);
+        mesh.insertAttribute(Mesh.ATTRIBUTE_COLOR, mesh_colors.toOwnedSlice() catch unreachable);
+        mesh.setIndices(.{ .u32 = mesh_indices.toOwnedSlice() catch unreachable });
+
+        const handle = assets.add(mesh);
+        _ = handle;
     }
 };

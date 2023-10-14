@@ -32,6 +32,7 @@ pub fn appendMeshPrimitive(
     normals: ?*std.ArrayList([3]f32),
     texcoords0: ?*std.ArrayList([2]f32),
     tangents: ?*std.ArrayList([4]f32),
+    colors: ?*std.ArrayList([4]f32),
 ) !void {
     assert(mesh_index < data.meshes_count);
     assert(prim_index < data.meshes.?[mesh_index].primitives_count);
@@ -102,6 +103,12 @@ pub fn appendMeshPrimitive(
                 assert(accessor.type == .vec3);
                 const slice = @as([*]const [3]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                 try positions.appendSlice(slice);
+            } else if (attrib.type == .color) {
+                if (colors) |col| {
+                    assert(accessor.type == .vec4);
+                    const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                    try col.appendSlice(slice);
+                }
             } else if (attrib.type == .normal) {
                 if (normals) |n| {
                     assert(accessor.type == .vec3);
