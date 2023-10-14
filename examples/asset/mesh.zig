@@ -53,6 +53,10 @@ const CreateQuadMeshSystem = struct {
     pub fn run(assets_res: ResMut(Assets(Mesh))) void {
         const assets = assets_res.getAssertExists();
 
+        var box = aya.Cube.init(1.0).toMesh();
+        // box.deinit();
+        _ = assets.add(box);
+
         var mesh = Mesh.init(.triangles);
         const values = aya.mem.alloc([3]f32, 4);
         values[0] = [_]f32{ -0.25, -0.05, 0.0 };

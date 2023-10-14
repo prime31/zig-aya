@@ -231,8 +231,7 @@ pub const Mesh = struct {
         return attributes_interleaved_buffer;
     }
 
-    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, param: Mesh.Param) Mesh.PreparedAsset {
-        _ = param;
+    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, _: Mesh.Param) Mesh.PreparedAsset {
         var vertex_buffer_data = mesh.getVertexBufferData();
         var vertex_buffer = sg.makeBuffer(.{
             .type = .VERTEXBUFFER,
@@ -264,6 +263,7 @@ pub const Mesh = struct {
         };
     }
 
+    // Asset trait types
     pub const ExtractedAsset = Mesh;
     pub const PreparedAsset = GpuMesh;
 

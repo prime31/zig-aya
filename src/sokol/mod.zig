@@ -33,7 +33,7 @@ pub const SokolPlugin = struct {
     pub fn build(_: SokolPlugin, app: *App) void {
         _ = app
             .insertResource(ClearColor{})
-            .addSystems(aya.First, SetupRenderClear)
+            .addSystems(aya.First, PrepareFrame)
             .addSystems(aya.Last, RenderClear);
 
         // setup sokol gfx and debug text
@@ -65,10 +65,7 @@ pub const SokolPlugin = struct {
     }
 };
 
-const SetupRenderClear = struct {
-    var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };
-    var bindings: [3]sg.Bindings = undefined;
-
+const PrepareFrame = struct {
     pub fn run(window_res: Res(Window)) void {
         const window = window_res.getAssertExists();
         const size = window.sizeInPixels();
@@ -77,8 +74,8 @@ const SetupRenderClear = struct {
 };
 
 const RenderClear = struct {
-    var pips: [3]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null };
-    var bindings: [3]sg.Bindings = undefined;
+    var pips: [4]?sg.Pipeline = [_]?sg.Pipeline{ null, null, null, null };
+    var bindings: [4]sg.Bindings = undefined;
 
     pub fn run(window_res: Res(Window), clear_color_res: Res(ClearColor), meshes_res: aya.ResMut(aya.RenderAssets(aya.Mesh))) void {
         const window = window_res.getAssertExists();
