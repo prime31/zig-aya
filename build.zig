@@ -175,6 +175,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("sdl", sdl_module);
     exe.addModule("imgui", imgui_module);
     exe.addModule("zmath", zmath_module);
+    exe.addModule("sokol", sokol_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {

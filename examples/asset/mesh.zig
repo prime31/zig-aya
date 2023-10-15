@@ -53,10 +53,6 @@ const CreateQuadMeshSystem = struct {
     pub fn run(assets_res: ResMut(Assets(Mesh))) void {
         const assets = assets_res.getAssertExists();
 
-        var box = aya.Cube.init(1.0).toMesh();
-        // box.deinit();
-        _ = assets.add(box);
-
         var mesh = Mesh.init(.triangles);
         const values = aya.mem.alloc([3]f32, 4);
         values[0] = [_]f32{ -0.25, -0.05, 0.0 };
@@ -90,15 +86,6 @@ const LoadAssetSystem = struct {
     pub fn run(asset_server_res: ResMut(AssetServer)) void {
         const asset_server: *AssetServer = asset_server_res.getAssertExists();
         _ = asset_server;
-    }
-};
-
-const AssetEventSystem = struct {
-    pub fn run(event_reader: aya.EventReader(aya.AssetEvent(Mesh))) void {
-        for (event_reader.read()) |evt| {
-            _ = evt;
-            // std.debug.print("AssetEvent: {}, added: {}\n", .{ evt, evt.isAdded() });
-        }
     }
 };
 
@@ -143,5 +130,14 @@ const GltfSystem = struct {
 
         const handle = assets.add(mesh);
         _ = handle;
+    }
+};
+
+const AssetEventSystem = struct {
+    pub fn run(event_reader: aya.EventReader(aya.AssetEvent(Mesh))) void {
+        for (event_reader.read()) |evt| {
+            _ = evt;
+            // std.debug.print("AssetEvent: {}, added: {}\n", .{ evt, evt.isAdded() });
+        }
     }
 };

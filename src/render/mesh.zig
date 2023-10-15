@@ -302,7 +302,12 @@ pub const GpuMesh = struct {
     }
 
     pub fn getPipelineDesc(self: GpuMesh) sg.PipelineDesc {
-        var pip_desc = sg.PipelineDesc{};
+        var pip_desc = sg.PipelineDesc{
+            .depth = .{
+                .compare = .LESS_EQUAL,
+                .write_enabled = true,
+            },
+        };
 
         switch (self.buffer_info) {
             .indexed => |indexed| {
