@@ -5,6 +5,7 @@ const imgui = @import("imgui");
 const metal = @import("metal");
 const sokol = @import("sokol");
 const sg = sokol.gfx;
+const sgl = sokol.gl;
 const sdtx = sokol.debugtext;
 
 const App = aya.App;
@@ -36,7 +37,7 @@ pub const SokolPlugin = struct {
             .addSystems(aya.First, PrepareFrame)
             .addSystems(aya.Last, RenderClear);
 
-        // setup sokol gfx and debug text
+        // setup sokol gfx, gl and debug text
         const window = app.world.resources.get(Window).?;
         metal.mu_create_metal_layer(window.sdl_window);
 
@@ -51,6 +52,12 @@ pub const SokolPlugin = struct {
             .logger = .{ .func = sokol.log.func },
         });
 
+        // gl
+        sgl.setup(.{
+            .logger = .{ .func = sokol.log.func },
+        });
+
+        // debug text
         var sdtx_desc: sdtx.Desc = .{
             .logger = .{ .func = sokol.log.func },
         };
@@ -121,6 +128,7 @@ const RenderClear = struct {
         }
 
         sdtx.draw();
+        sgl.draw();
         imgui.sokol.render();
 
         sokol.gfx.endPass();
