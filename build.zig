@@ -86,6 +86,8 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
         .optimize = optimize,
     });
 
+    if (exe.optimize == .ReleaseFast) exe.strip = true;
+
     linkLibs(b, exe, target, optimize, options);
 
     const run_cmd = b.addRunArtifact(exe);
