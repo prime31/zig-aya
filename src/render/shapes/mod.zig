@@ -1,6 +1,8 @@
 const aya = @import("../../aya.zig");
 const Mesh = @import("../mesh.zig").Mesh;
 
+pub usingnamespace @import("icosphere.zig");
+
 pub const Cube = struct {
     size: f32,
 

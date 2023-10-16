@@ -6,6 +6,7 @@ const imgui_enabled = @import("imgui.zig").enabled;
 
 // imgui_impl_sdl3
 pub extern fn ImGui_ImplSDL3_InitForSDLRenderer(window: ?*anyopaque, renderer: ?*anyopaque) bool;
+pub extern fn ImGui_ImplSDL3_InitForOther(window: ?*anyopaque) bool;
 pub extern fn ImGui_ImplSDL3_Shutdown() void;
 pub extern fn ImGui_ImplSDL3_NewFrame() void;
 extern fn ImGui_ImplSDL3_ProcessEvent(event: ?*anyopaque) bool;
@@ -14,12 +15,6 @@ extern fn ImGui_ImplSDLRenderer3_Init(renderer: ?*anyopaque) bool;
 extern fn ImGui_ImplSDLRenderer3_Shutdown() void;
 extern fn ImGui_ImplSDLRenderer3_NewFrame() void;
 extern fn ImGui_ImplSDLRenderer3_RenderDrawData(draw_data: *imgui.ImDrawData) void;
-
-// Called by Init/NewFrame/Shutdown
-extern fn ImGui_ImplSDLRenderer3_CreateFontsTexture() bool;
-extern fn ImGui_ImplSDLRenderer3_DestroyFontsTexture() void;
-extern fn ImGui_ImplSDLRenderer3_CreateDeviceObjects() bool;
-extern fn ImGui_ImplSDLRenderer3_DestroyDeviceObjects() void;
 
 // ImGui lifecycle helpers, wrapping ImGui, SDL3 Impl and SDL3 Renderer Impl methods
 pub fn init(window: ?*anyopaque, renderer: ?*anyopaque) void {
