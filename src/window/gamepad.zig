@@ -136,6 +136,11 @@ pub const Gamepads = struct {
         return pad.getAxes();
     }
 
+    pub fn getButtons(_: *const Gamepads, id: GamepadId) ?[]const u8 {
+        const pad = glfw.Joystick{ .jid = id };
+        return pad.getButtons();
+    }
+
     // method on SDL_GamePad. should we make these on a struct that wraps GamepadId?
     pub fn getName(self: *const Gamepads, id: GamepadId) ?[]const u8 {
         _ = id;
