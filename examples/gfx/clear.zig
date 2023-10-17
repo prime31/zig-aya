@@ -1,15 +1,16 @@
 const std = @import("std");
 const aya = @import("aya");
 
+pub const Bootstrap = aya.Bootstrap;
+
 const App = aya.App;
 const ResMut = aya.ResMut;
 const ClearColor = aya.ClearColor;
 
-pub fn main() !void {
+pub fn run(app: *App) void {
     std.debug.print("\n", .{});
 
-    App.init()
-        .addPlugins(aya.DefaultPlugins)
+    app.addPlugins(aya.DefaultPlugins)
         .addSystems(aya.Update, ClearColorSystem)
         .run();
 }

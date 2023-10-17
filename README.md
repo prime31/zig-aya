@@ -1,5 +1,7 @@
 # aya 2D Zig Framework
 
+`export NO_ENSURE_SUBMODULES=true` until Mach fixes it
+
 Import aya via `const aya = @import("aya");` to gain access to the public interface.
 
 

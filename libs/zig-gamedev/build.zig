@@ -3,13 +3,15 @@ const std = @import("std");
 const zmath = @import("zmath/build.zig");
 const zmesh = @import("zmesh/build.zig");
 
-var zmesh_module: *std.build.Module = undefined;
+var zmesh_pkg: zmesh.Package = undefined;
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
-    const zmesh_pkg = zmesh.package(b, target, optimize, .{});
+pub fn prepare(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) void {
+    zmesh_pkg = zmesh.package(b, target, optimize);
+}
+
+pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
     exe.linkLibrary(zmesh_pkg.zmesh_c_cpp);
     zmesh_pkg.link(exe);
-    zmesh_module = zmesh_pkg.zmesh;
 }
 
 pub fn getMathModule(b: *std.Build) *std.build.Module {
@@ -17,7 +19,7 @@ pub fn getMathModule(b: *std.Build) *std.build.Module {
 }
 
 pub fn getMeshModule() *std.build.Module {
-    return zmesh_module;
+    return zmesh_pkg.zmesh;
 }
 
 inline fn thisDir() []const u8 {
