@@ -67,6 +67,8 @@ pub const backend = struct {
         _ = zgui.zguiCreateContext(null);
         if (!ImGui_ImplWGPU_Init(core.device, 1, @intFromEnum(core.descriptor.format), &.{})) unreachable;
         if (!ImGui_ImplWGPU_CreateDeviceObjects()) unreachable;
+
+        zgui.getStyle().scaleAllSizes(2.0);
     }
 
     pub fn deinit() void {

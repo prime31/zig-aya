@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya.zig");
 const core = @import("mach-core");
 const zgui = @import("zgui");
+const glfw = @import("mach-glfw");
 
 const App = aya.App;
 const Window = aya.Window;
@@ -42,6 +43,8 @@ pub const Bootstrap = struct {
         });
         zgui.backend.init();
         @import("root").run(self.app);
+
+        initJoysticks(self.app);
     }
 
     pub fn update(self: *Bootstrap) !bool {
@@ -58,12 +61,47 @@ pub const Bootstrap = struct {
         return false;
     }
 
+    // pub fn updateMainThread(_: *Bootstrap) !bool {
+    //     return false;
+    // }
+
     pub fn deinit(self: *Bootstrap) void {
         zgui.backend.deinit();
         self.app.deinit();
         core.deinit();
     }
 };
+
+fn joystickCallback(joystick: glfw.Joystick, event: glfw.Joystick.Event) void {
+    const app: *App = joystick.getUserPointer(*App).?;
+    const gamepad_connected_writer = EventWriter(GamepadConnectionEvent){
+        .events = app.world.getResourceMut(Events(GamepadConnectionEvent)) orelse @panic("no EventReader found for " ++ @typeName(GamepadConnectionEvent)),
+    };
+
+    const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
+
+    gamepad_connected_writer.send(.{
+        .gamepad = joystick.jid,
+        .status = if (event == .connected) .connected else .disconnected,
+    });
+
+    if (event == .connected) {
+        gamepads.register(joystick.jid);
+    } else {
+        gamepads.deregister(joystick.jid);
+    }
+}
+
+fn initJoysticks(app: *aya.App) void {
+    inline for (std.meta.fields(glfw.Joystick.Id)) |jid| {
+        const gamepad = glfw.Joystick{ .jid = @enumFromInt(jid.value) };
+        gamepad.setUserPointer(App, app);
+
+        if (gamepad.present()) joystickCallback(gamepad, .connected);
+    }
+
+    glfw.Joystick.setCallback(joystickCallback);
+}
 
 const WindowAndInputEventWriters = struct {
     window_resized: EventWriter(WindowResized),
@@ -103,6 +141,7 @@ fn handleEvents(app: *aya.App) bool {
     const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
     const keys: *Input(core.Key) = app.world.getResourceMut(Input(core.Key)).?;
     const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
+    _ = gamepads;
     const gamepad_buttons: *Input(GamepadButton) = app.world.getResourceMut(Input(GamepadButton)).?;
     const gamepad_axes: *Axis(GamepadAxis) = app.world.getResourceMut(Axis(GamepadAxis)).?;
     _ = gamepad_axes;
@@ -120,9 +159,7 @@ fn handleEvents(app: *aya.App) bool {
             .key_press => |e| keys.press(e.key),
             .key_repeat => {},
             .key_release => |e| keys.release(e.key),
-            .char_input => |e| {
-                std.debug.print("char_input evt. codepoint: {}\n", .{e.codepoint});
-            },
+            .char_input => {},
             .mouse_motion => |e| event_writers.mouse_motion.send(.{
                 .x = @floatCast(e.pos.x),
                 .y = @floatCast(e.pos.y),
@@ -135,7 +172,6 @@ fn handleEvents(app: *aya.App) bool {
             }),
             .joystick_connected => |e| {
                 std.debug.print("joystick_connected evt: {}\n", .{e});
-                gamepads.register(@intFromEnum(e));
                 // gamepads.register(event.gdevice.which);
                 // event_writers.gamepad_connected.send(.{ .gamepad = event.gdevice.which, .status = .connected });
 
@@ -145,7 +181,6 @@ fn handleEvents(app: *aya.App) bool {
             },
             .joystick_disconnected => |e| {
                 std.debug.print("joystick_disconnected evt: {}\n", .{e});
-                gamepads.deregister(@intFromEnum(e));
                 // gamepads.deregister(event.gdevice.which);
                 // event_writers.gamepad_connected.send(.{ .gamepad = event.gdevice.which, .status = .disconnected });
 

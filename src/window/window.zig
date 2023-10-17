@@ -1,14 +1,13 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const core = @import("mach-core");
+const glfw = @import("mach-glfw");
 
 const App = aya.App;
 const Input = aya.Input;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
-
-// const eventLoop = @import("runner.zig").eventLoop;
 
 // TODO: add way more window events
 pub const WindowResized = struct { width: f32, height: f32 };
@@ -22,6 +21,9 @@ pub const WindowPlugin = struct {
     pub fn build(self: WindowPlugin, app: *App) void {
         if (self.window_config) |config| {
             _ = config;
+            if (!glfw.Joystick.updateGamepadMappings(@embedFile("gamecontrollerdb.txt")))
+                std.log.warn("updateGamepadMappings returned false\n", .{});
+
             _ = app
             // window
                 .addEvent(WindowResized)

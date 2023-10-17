@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const glfw = @import("mach-glfw");
 
 pub const GamepadConnectionEvent = struct {
     gamepad: GamepadId,
@@ -8,7 +9,7 @@ pub const GamepadConnectionEvent = struct {
 
 const GamepadConnectionStatus = enum { connected, disconnected };
 
-pub const GamepadId = u32;
+pub const GamepadId = @import("mach-glfw").Joystick.Id;
 
 pub const GamepadButton = struct {
     gamepad: GamepadId,
@@ -75,10 +76,10 @@ pub const GamepadType = enum(u8) {
 
 /// Resource. A collection of connected gamepads
 pub const Gamepads = struct {
-    pads: std.AutoHashMap(GamepadId, u32),
+    pads: std.AutoHashMap(GamepadId, void),
 
     pub fn init() Gamepads {
-        return .{ .pads = std.AutoHashMap(GamepadId, u32).init(aya.allocator) };
+        return .{ .pads = std.AutoHashMap(GamepadId, void).init(aya.allocator) };
     }
 
     pub fn deinit(self: *Gamepads) void {
@@ -91,11 +92,10 @@ pub const Gamepads = struct {
 
     /// Registers the `gamepad`, marking it as connected.
     pub fn register(self: *Gamepads, id: GamepadId) void {
-        _ = id;
-        _ = self;
-        // if (sdl.SDL_OpenGamepad(id)) |pad| {
-        //     self.pads.put(id, pad) catch unreachable;
-        // }
+        const pad = glfw.Joystick{ .jid = id };
+        if (pad.present()) {
+            self.pads.put(id, {}) catch unreachable;
+        }
     }
 
     /// Deregisters the `gamepad`, marking it as disconnected.
@@ -105,7 +105,7 @@ pub const Gamepads = struct {
 
     pub fn nextGamepad(self: *const Gamepads) ?GamepadId {
         const I = struct {
-            var iter: ?std.AutoHashMap(GamepadId, u32).Iterator = null;
+            var iter: ?std.AutoHashMap(GamepadId, void).Iterator = null;
         };
 
         if (I.iter == null) I.iter = self.pads.iterator();
@@ -116,6 +116,20 @@ pub const Gamepads = struct {
         }
 
         return null;
+    }
+
+    fn MimicReturnType(comptime T: type) type {
+        const ti = @typeInfo(T);
+        if (ti == .Fn) {
+            return ti.Fn.return_type.?;
+        }
+        @compileError("T is not a Fn: " ++ T);
+    }
+
+    pub fn getGamepad(_: *const Gamepads, id: GamepadId) MimicReturnType(@TypeOf(glfw.Joystick.getGamepadState)) {
+        const pad = glfw.Joystick{ .jid = id };
+
+        return pad.getGamepadState();
     }
 
     // method on SDL_GamePad. should we make these on a struct that wraps GamepadId?
