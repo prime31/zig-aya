@@ -4,10 +4,10 @@ const Builder = std.build.Builder;
 // libs
 const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
-const sdl_build = @import("libs/sdl/build.zig");
-const imgui_build = @import("libs/imgui/build.zig");
+const zgui_build = @import("libs/zgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
-const sokol_metal_build = @import("libs/sokol/build.zig");
+
+const mach_core = @import("mach_core");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
@@ -17,7 +17,7 @@ const Options = struct {
 
 const install_options: enum { all, only_current } = .only_current;
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -30,73 +30,76 @@ pub fn build(b: *std.Build) void {
     options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
     options.build_options.addOption(bool, "include_flecs_explorer", options.include_flecs_explorer);
 
-    // const exe = b.addExecutable(.{
-    //     .name = "sdl3-tester",
-    //     .root_source_file = .{ .path = "src/main.zig" },
-    //     .target = target,
-    //     .optimize = optimize,
-    // });
-
-    // const aya_module = b.createModule(.{
-    //     .source_file = .{ .path = "src/aya.zig" },
-    // });
-    // exe.addModule("aya", aya_module);
-
-    // // libs
-    // sdl_build.linkArtifact(exe);
-    // const sdl_module = sdl_build.getModule(b);
-    // exe.addModule("sdl", sdl_module);
-
-    // // This declares intent for the executable to be installed into the
-    // // standard location when the user invokes the "install" step (the default
-    // // step when running `zig build`).
-    // b.installArtifact(exe);
-
-    // // This *creates* a Run step in the build graph, to be executed when another
-    // // step is evaluated that depends on it. The next line below will establish
-    // // such a dependency.
-    // const run_cmd = b.addRunArtifact(exe);
-
-    // // By making the run step depend on the install step, it will be run from the
-    // // installation directory rather than directly from within the cache directory.
-    // // This is not necessary, however, if the application depends on other installed
-    // // files, this ensures they will be present and in the expected location.
-    // run_cmd.step.dependOn(b.getInstallStep());
-
-    // // This creates a build step. It will be visible in the `zig build --help` menu,
-    // // and can be selected like this: `zig build run`
-    // // This will evaluate the `run` step rather than the default, which is "install".
-    // const run_step = b.step("sdl3-tester", "Run sdl3-tester");
-    // run_step.dependOn(&run_cmd.step);
-
     for (getAllExamples(b, "examples")) |p| {
-        addExecutable(b, target, optimize, options, p[0], p[1]);
+        try addExecutable(b, target, optimize, options, p[0], p[1]);
     }
+    try addExecutable(b, target, optimize, options, "shit", "examples/app/locals.zig");
 
     addTests(b, target, optimize);
 
     flecs_build.addFlecsUpdateStep(b, target);
 }
 
-fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
-    const exe = b.addExecutable(.{
-        .name = name,
-        .root_source_file = .{ .path = source },
+fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) !void {
+    const mach_core_dep = b.dependency("mach_core", .{
         .target = target,
         .optimize = optimize,
     });
 
-    if (exe.optimize == .ReleaseFast) exe.strip = true;
+    // gather modules
+    zig_gamedev_build.prepare(b, target, optimize);
+    const stb_module = stb_build.getModule(b);
+    const zmath_module = zig_gamedev_build.getMathModule(b);
+    const zmesh_module = zig_gamedev_build.getMeshModule();
+    const zgui_module = zgui_build.getModule(b, mach_core_dep.module("mach-core"), options.enable_imgui);
 
-    linkLibs(b, exe, target, optimize, options);
+    // aya module gets all previous modules as dependencies
+    const aya_module = b.createModule(.{
+        .source_file = .{ .path = "src/aya.zig" },
+        .dependencies = &.{
+            .{ .name = "stb", .module = stb_module },
+            .{ .name = "zgui", .module = zgui_module },
+            .{ .name = "zmath", .module = zmath_module },
+            .{ .name = "zmesh", .module = zmesh_module },
+            .{ .name = "mach-core", .module = mach_core_dep.module("mach-core") },
+            .{
+                .name = "build_options",
+                .module = b.createModule(.{
+                    .source_file = options.build_options.getOutput(),
+                }),
+            },
+        },
+    });
 
-    const run_cmd = b.addRunArtifact(exe);
+    const native_target = (try std.zig.system.NativeTargetInfo.detect(target)).target;
+    const app = try mach_core.App.init(b, mach_core_dep.builder, .{
+        .name = name,
+        .src = source,
+        .target = target,
+        .deps = &.{
+            .{ .name = "zgui", .module = zgui_module },
+            .{ .name = "aya", .module = aya_module },
+        },
+        .optimize = optimize,
+        .custom_entrypoint = if (native_target.cpu.arch != .wasm32) thisDir() ++ "/src/mach_main.zig" else null,
+    });
+
+    app.compile.addModule("aya", aya_module);
+
+    // link all libs
+    flecs_build.linkArtifact(b, app.compile, target, optimize, options.include_flecs_explorer);
+    stb_build.linkArtifact(app.compile);
+    zig_gamedev_build.linkArtifact(app.compile);
+    if (options.enable_imgui)
+        zgui_build.linkArtifact(b, app.compile, target, optimize);
+
+    const run_cmd = b.addRunArtifact(app.compile);
 
     if (install_options == .only_current) {
-        const add_install_step = b.addInstallArtifact(exe, .{});
+        const add_install_step = b.addInstallArtifact(app.compile, .{});
         run_cmd.step.dependOn(&add_install_step.step);
     } else {
-        b.installArtifact(exe);
+        b.installArtifact(app.compile);
         run_cmd.step.dependOn(b.getInstallStep());
     }
 
@@ -121,63 +124,6 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
     const run_tests = b.addRunArtifact(tests);
     const run_step = b.step("test", "Run tests");
     run_step.dependOn(&run_tests.step);
-}
-
-fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
-    flecs_build.linkArtifact(b, exe, target, optimize, options.include_flecs_explorer);
-
-    stb_build.linkArtifact(exe);
-    const stb_module = stb_build.getModule(b);
-
-    sdl_build.linkArtifact(b, exe);
-    const sdl_module = sdl_build.getModule(b, stb_module);
-
-    zig_gamedev_build.linkArtifact(b, exe, target, optimize);
-    const zmath_module = zig_gamedev_build.getMathModule(b);
-    const zmesh_module = zig_gamedev_build.getMeshModule();
-
-    // sokol package
-    const sokol_dep = b.dependency("sokol", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    exe.linkLibrary(sokol_dep.artifact("sokol"));
-    const sokol_module = sokol_dep.module("sokol");
-
-    // macos metal helpers
-    sokol_metal_build.linkArtifact(exe);
-    const sokol_metal_module = sokol_metal_build.getModule(b);
-
-    if (options.enable_imgui)
-        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
-    const imgui_module = imgui_build.getModule(b, sdl_module, sokol_module, options.enable_imgui);
-
-    // aya module gets all previous modules as dependencies
-    const aya_module = b.createModule(.{
-        .source_file = .{ .path = "src/aya.zig" },
-        .dependencies = &.{
-            .{ .name = "stb", .module = stb_module },
-            .{ .name = "sdl", .module = sdl_module },
-            .{ .name = "imgui", .module = imgui_module },
-            .{ .name = "zmath", .module = zmath_module },
-            .{ .name = "zmesh", .module = zmesh_module },
-            .{ .name = "sokol", .module = sokol_module },
-            .{ .name = "metal", .module = sokol_metal_module },
-            .{
-                .name = "build_options",
-                .module = b.createModule(.{
-                    .source_file = options.build_options.getOutput(),
-                }),
-            },
-        },
-    });
-
-    exe.addModule("aya", aya_module);
-    exe.addModule("stb", stb_module);
-    exe.addModule("sdl", sdl_module);
-    exe.addModule("imgui", imgui_module);
-    exe.addModule("zmath", zmath_module);
-    exe.addModule("sokol", sokol_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {

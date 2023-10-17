@@ -1,6 +1,5 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const sg = @import("sokol").gfx;
 
 pub const IndexFormat = enum { u16, u32 };
 
@@ -54,16 +53,16 @@ pub const VertexFormat = enum {
         };
     }
 
-    pub fn toSokol(self: VertexFormat) sg.VertexFormat {
-        return switch (self) {
-            .float32 => .FLOAT,
-            .float32x2 => .FLOAT2,
-            .float32x3 => .FLOAT3,
-            .float32x4 => .FLOAT4,
-            .float16x2 => .HALF2,
-            .float16x4 => .HALF4,
-        };
-    }
+    // pub fn toSokol(self: VertexFormat) sg.VertexFormat {
+    //     return switch (self) {
+    //         .float32 => .FLOAT,
+    //         .float32x2 => .FLOAT2,
+    //         .float32x3 => .FLOAT3,
+    //         .float32x4 => .FLOAT4,
+    //         .float16x2 => .HALF2,
+    //         .float16x4 => .HALF4,
+    //     };
+    // }
 };
 
 pub const MeshVertexAttributeId = u8;
@@ -233,21 +232,21 @@ pub const Mesh = struct {
 
     pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, _: Mesh.Param) Mesh.PreparedAsset {
         var vertex_buffer_data = mesh.getVertexBufferData();
-        var vertex_buffer = sg.makeBuffer(.{
-            .type = .VERTEXBUFFER,
-            .label = "Mesh Vertex Buffer",
-            .data = sg.asRange(vertex_buffer_data),
-        });
+        // var vertex_buffer = sg.makeBuffer(.{
+        //     .type = .VERTEXBUFFER,
+        //     .label = "Mesh Vertex Buffer",
+        //     .data = sg.asRange(vertex_buffer_data),
+        // });
         aya.mem.free(vertex_buffer_data);
 
         const buffer_info: GpuBufferInfo = if (mesh.indices) |indices| blk: {
             break :blk .{
                 .indexed = .{
-                    .buffer = sg.makeBuffer(.{
-                        .type = .INDEXBUFFER,
-                        .label = "Mesh Index Buffer",
-                        .data = sg.asRange(indices.getBytes()),
-                    }),
+                    // .buffer = sg.makeBuffer(.{
+                    //     .type = .INDEXBUFFER,
+                    //     .label = "Mesh Index Buffer",
+                    //     .data = sg.asRange(indices.getBytes()),
+                    // }),
                     .count = @intCast(indices.getLength()),
                     .index_format = std.meta.activeTag(indices),
                 },
@@ -255,7 +254,7 @@ pub const Mesh = struct {
         } else .{ .non_indexed = {} };
 
         return .{
-            .vertex_buffer = vertex_buffer,
+            // .vertex_buffer = vertex_buffer,
             .vertex_count = @intCast(mesh.countVertices()),
             .buffer_info = buffer_info,
             .primitive_topology = mesh.topology,
@@ -274,58 +273,58 @@ pub const Mesh = struct {
 };
 
 pub const GpuMesh = struct {
-    vertex_buffer: sg.Buffer,
+    // vertex_buffer: sg.Buffer,
     vertex_count: u32,
     buffer_info: GpuBufferInfo,
     primitive_topology: PrimitiveTopology,
     layout: MeshVertexBufferLayout,
 
     pub fn deinit(self: GpuMesh) void {
-        sg.destroyBuffer(self.vertex_buffer);
+        // sg.destroyBuffer(self.vertex_buffer);
         self.buffer_info.deinit();
         self.layout.deinit();
     }
 
-    pub fn getBindings(self: GpuMesh) sg.Bindings {
-        var bindings = sg.Bindings{};
+    // pub fn getBindings(self: GpuMesh) sg.Bindings {
+    //     var bindings = sg.Bindings{};
 
-        for (self.layout.layout.attributes, 0..) |attribute, i| {
-            bindings.vertex_buffers[i] = self.vertex_buffer;
-            bindings.vertex_buffer_offsets[i] = @intCast(attribute.offset * self.vertex_count);
-        }
+    //     for (self.layout.layout.attributes, 0..) |attribute, i| {
+    //         bindings.vertex_buffers[i] = self.vertex_buffer;
+    //         bindings.vertex_buffer_offsets[i] = @intCast(attribute.offset * self.vertex_count);
+    //     }
 
-        switch (self.buffer_info) {
-            .indexed => |indexed| bindings.index_buffer = indexed.buffer,
-            else => {},
-        }
-        return bindings;
-    }
+    //     switch (self.buffer_info) {
+    //         .indexed => |indexed| bindings.index_buffer = indexed.buffer,
+    //         else => {},
+    //     }
+    //     return bindings;
+    // }
 
-    pub fn getPipelineDesc(self: GpuMesh) sg.PipelineDesc {
-        var pip_desc = sg.PipelineDesc{
-            .depth = .{
-                .compare = .LESS_EQUAL,
-                .write_enabled = true,
-            },
-        };
+    // pub fn getPipelineDesc(self: GpuMesh) sg.PipelineDesc {
+    //     var pip_desc = sg.PipelineDesc{
+    //         .depth = .{
+    //             .compare = .LESS_EQUAL,
+    //             .write_enabled = true,
+    //         },
+    //     };
 
-        switch (self.buffer_info) {
-            .indexed => |indexed| {
-                switch (indexed.index_format) {
-                    .u16 => pip_desc.index_type = .UINT16,
-                    .u32 => pip_desc.index_type = .UINT32,
-                }
-            },
-            else => {},
-        }
+    //     switch (self.buffer_info) {
+    //         .indexed => |indexed| {
+    //             switch (indexed.index_format) {
+    //                 .u16 => pip_desc.index_type = .UINT16,
+    //                 .u32 => pip_desc.index_type = .UINT32,
+    //             }
+    //         },
+    //         else => {},
+    //     }
 
-        for (self.layout.layout.attributes, 0..) |attribute, i| {
-            pip_desc.layout.attrs[i].format = attribute.format.toSokol();
-            pip_desc.layout.attrs[i].buffer_index = @intCast(i);
-        }
+    //     for (self.layout.layout.attributes, 0..) |attribute, i| {
+    //         pip_desc.layout.attrs[i].format = attribute.format.toSokol();
+    //         pip_desc.layout.attrs[i].buffer_index = @intCast(i);
+    //     }
 
-        return pip_desc;
-    }
+    //     return pip_desc;
+    // }
 };
 
 pub const VertexStepMode = enum {
@@ -364,7 +363,7 @@ pub const MeshVertexBufferLayout = struct {
 
 pub const GpuBufferInfo = union(enum) {
     indexed: struct {
-        buffer: sg.Buffer,
+        // buffer: sg.Buffer,
         count: u32,
         index_format: IndexFormat,
     },
@@ -372,7 +371,7 @@ pub const GpuBufferInfo = union(enum) {
 
     pub fn deinit(self: GpuBufferInfo) void {
         switch (self) {
-            .indexed => |indexed| sg.destroyBuffer(indexed.buffer),
+            // .indexed => |indexed| sg.destroyBuffer(indexed.buffer),
             else => {},
         }
     }

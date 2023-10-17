@@ -1,17 +1,20 @@
 const std = @import("std");
+const core = @import("mach-core");
 const aya = @This();
 
 pub const utils = @import("utils.zig");
 pub const trait = @import("trait.zig");
 
+pub const Bootstrap = @import("bootstrap.zig").Bootstrap;
+
 // inner modules
+// TODO: be more restrictive with exports and possibly dump them into sub-structs per module
 pub usingnamespace @import("app/mod.zig");
 pub usingnamespace @import("asset/mod.zig");
 pub usingnamespace @import("window/mod.zig");
 pub usingnamespace @import("ecs/mod.zig");
 pub usingnamespace @import("gizmos/mod.zig");
 pub usingnamespace @import("render/mod.zig");
-pub usingnamespace @import("sokol/mod.zig");
 
 pub const mem = struct {
     pub fn create(comptime T: type) *T {
@@ -30,5 +33,3 @@ pub const mem = struct {
         aya.allocator.free(memory);
     }
 };
-
-// TODO: be more restrictive with exports and possibly dump them into sub-structs per module
