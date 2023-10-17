@@ -4,12 +4,12 @@
     .paths = .{""},
     .dependencies = .{
         .mach_core = .{
-            .url = "https://pkg.machengine.org/mach-core/71ea86090c3095acdbc13bcc45b0666e39b53114.tar.gz",
-            .hash = "12203917ad7153ba955004d3b436ead6fc314de29d21ef0a7fda142025dd631c2709",
+            .url = "https://pkg.machengine.org/mach-core/331ce61cb8c075be6d7c46e49da8ccbd5967d9b7.tar.gz",
+            .hash = "12203bdeb8af9b1da2a521beafb51e3657e1c4f49b058cdd114f607b75dbb95ad306",
         },
         .mach_gpu_dawn = .{
-            .url = "https://pkg.machengine.org/mach-gpu-dawn/3690dfbd0b8b64203b83d651ca95b8c0d776019e.tar.gz",
-            .hash = "122037f1ecd3b4b4da9bb1b0507984d1d5286720ca8a39d562c3b6178d6dfdd199e4",
+            .url = "https://pkg.machengine.org/mach-gpu-dawn/ee2fb5066a774238a97ab18dc5620acce538d2e6.tar.gz",
+            .hash = "1220120328740b87b10f373b8b716d5fb7f73b437c770d18cc9012137328f2dd30e2",
         },
     },
 }

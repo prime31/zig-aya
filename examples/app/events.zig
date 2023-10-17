@@ -1,17 +1,18 @@
 const std = @import("std");
 const aya = @import("aya");
 
+pub const Bootstrap = aya.Bootstrap;
+
 const App = aya.App;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
 
 const SuperEvent = struct {};
 
-pub fn main() !void {
+pub fn run(app: *App) void {
     std.debug.print("\n", .{});
 
-    App.init()
-        .addEvent(SuperEvent)
+    app.addEvent(SuperEvent)
         .addSystems(aya.Startup, WriteEventSystem)
         .addSystems(aya.First, ReadEventSystem)
         .run();
