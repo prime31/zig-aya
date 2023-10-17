@@ -117,8 +117,6 @@ pub const App = struct {
             self.world.ecs.progress(0);
             self.world.ecs.progress(0);
         }
-
-        self.deinit();
     }
 
     /// Sets the function that will be called when the app is run. The runner function is called only once. If the

@@ -1,9 +1,9 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const core = @import("mach-core");
 
 const App = aya.App;
 const Input = aya.Input;
-const Scancode = aya.Scancode;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
@@ -23,7 +23,6 @@ pub const WindowPlugin = struct {
         if (self.window_config) |config| {
             _ = config;
             _ = app
-            // .setRunner(eventLoop)
             // window
                 .addEvent(WindowResized)
                 .addEvent(WindowMoved)
@@ -35,18 +34,18 @@ pub const WindowPlugin = struct {
                 .addEvent(aya.MouseWheel)
                 .initResource(Input(aya.MouseButton))
             // keyboard
-                .initResource(Input(Scancode));
+                .initResource(Input(aya.Key))
             // gamepad
-            // .addEvent(aya.GamepadConnectionEvent)
-            // .initResource(aya.Gamepads)
-            // .initResource(Input(aya.GamepadButton))
-            // .initResource(aya.Axis(aya.GamepadAxis));
+                .addEvent(aya.GamepadConnectionEvent)
+                .initResource(aya.Gamepads)
+                .initResource(Input(aya.GamepadButton))
+                .initResource(aya.Axis(aya.GamepadAxis));
         }
     }
 };
 
 pub const Window = struct {
-    sdl_window: *anyopaque = undefined,
+    glfw_window: *anyopaque = undefined,
     focused: bool = true,
     id: u32 = 0,
 
@@ -74,29 +73,4 @@ pub const WindowConfig = struct {
     resizable: bool = true, // whether the window should be allowed to be resized
     fullscreen: bool = false, // whether the window should be created in fullscreen mode
     high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
-};
-
-pub const WindowFlags = enum(c_int) {
-    fullscreen = 1,
-    opengl = 2,
-    occluded = 4,
-    hidden = 8,
-    borderless = 16,
-    resizable = 32,
-    minimized = 64,
-    maximized = 128,
-    mouse_grabbed = 256,
-    input_focus = 512,
-    mouse_focus = 1024,
-    foreign = 2048,
-    high_pixel_density = 8192,
-    mouse_capture = 16384,
-    always_on_top = 32768,
-    utility = 131072,
-    tooltip = 262144,
-    popupmenu = 524288,
-    keyboard_grabbed = 1048576,
-    vulkan = 268435456,
-    metal = 536870912,
-    transparent = 1073741824,
 };

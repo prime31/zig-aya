@@ -7,8 +7,6 @@ const stb_build = @import("libs/stb/build.zig");
 const zgui_build = @import("libs/zgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
 
-const mach_core = @import("mach_core");
-
 const Options = struct {
     build_options: *std.build.Step.Options,
     enable_imgui: bool,
@@ -53,6 +51,11 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
     const zmesh_module = zig_gamedev_build.getMeshModule();
     const zgui_module = zgui_build.getModule(b, mach_core_dep.module("mach-core"), options.enable_imgui);
 
+    const glfw_dep = b.dependency("mach_glfw", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
@@ -62,6 +65,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "mach-core", .module = mach_core_dep.module("mach-core") },
+            .{ .name = "mach-glfw", .module = glfw_dep.module("mach-glfw") }, // TODO: do we need this?
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
@@ -72,7 +76,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
     });
 
     const native_target = (try std.zig.system.NativeTargetInfo.detect(target)).target;
-    const app = try mach_core.App.init(b, mach_core_dep.builder, .{
+    const app = try @import("mach_core").App.init(b, mach_core_dep.builder, .{
         .name = name,
         .src = source,
         .target = target,
