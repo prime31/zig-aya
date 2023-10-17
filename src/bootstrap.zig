@@ -44,7 +44,7 @@ pub const Bootstrap = struct {
         zgui.backend.init();
         @import("root").run(self.app);
 
-        initJoysticks(self.app);
+        joysticks.initJoysticks(self.app);
     }
 
     pub fn update(self: *Bootstrap) !bool {
@@ -72,36 +72,39 @@ pub const Bootstrap = struct {
     }
 };
 
-fn joystickCallback(joystick: glfw.Joystick, event: glfw.Joystick.Event) void {
-    const app: *App = joystick.getUserPointer(*App).?;
-    const gamepad_connected_writer = EventWriter(GamepadConnectionEvent){
-        .events = app.world.getResourceMut(Events(GamepadConnectionEvent)) orelse @panic("no EventReader found for " ++ @typeName(GamepadConnectionEvent)),
-    };
+const joysticks = struct {
+    var app: *App = undefined; // TODO: not very happy about this. would be better if connection events worked...
 
-    const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
+    fn joystickCallback(joystick: glfw.Joystick, event: glfw.Joystick.Event) void {
+        const gamepad_connected_writer = EventWriter(GamepadConnectionEvent){
+            .events = app.world.getResourceMut(Events(GamepadConnectionEvent)) orelse @panic("no EventReader found for " ++ @typeName(GamepadConnectionEvent)),
+        };
 
-    gamepad_connected_writer.send(.{
-        .gamepad = joystick.jid,
-        .status = if (event == .connected) .connected else .disconnected,
-    });
+        const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
 
-    if (event == .connected) {
-        gamepads.register(joystick.jid);
-    } else {
-        gamepads.deregister(joystick.jid);
-    }
-}
+        gamepad_connected_writer.send(.{
+            .gamepad = joystick.jid,
+            .status = if (event == .connected) .connected else .disconnected,
+        });
 
-fn initJoysticks(app: *aya.App) void {
-    inline for (std.meta.fields(glfw.Joystick.Id)) |jid| {
-        const gamepad = glfw.Joystick{ .jid = @enumFromInt(jid.value) };
-        gamepad.setUserPointer(App, app);
-
-        if (gamepad.present()) joystickCallback(gamepad, .connected);
+        if (event == .connected) {
+            gamepads.register(joystick.jid);
+        } else {
+            gamepads.deregister(joystick.jid);
+        }
     }
 
-    glfw.Joystick.setCallback(joystickCallback);
-}
+    fn initJoysticks(application: *aya.App) void {
+        app = application;
+
+        inline for (std.meta.fields(glfw.Joystick.Id)) |jid| {
+            const joystick = glfw.Joystick{ .jid = @enumFromInt(jid.value) };
+            if (joystick.present()) joystickCallback(joystick, .connected);
+        }
+
+        glfw.Joystick.setCallback(joystickCallback);
+    }
+};
 
 const WindowAndInputEventWriters = struct {
     window_resized: EventWriter(WindowResized),

@@ -34,7 +34,9 @@ const InputSystem = struct {
         }
 
         while (gamepads.nextGamepad()) |pad| {
-            std.debug.print("{} have pad, {?}\n", .{ pad, gamepads.getGamepad(pad) });
+            std.debug.print("pad id: {}, state, {?}\n", .{ pad, gamepads.getGamepadState(pad) });
+            std.debug.print("axis {any}\n", .{gamepads.getAxis(pad)});
+
             // const axis = GamepadAxis{ .gamepad = pad, .type = .left_x };
             // if (gamepad_axes.get(axis)) |_| {
             // do something with the axis value which will be clamped from -1 to 1

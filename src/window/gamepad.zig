@@ -126,10 +126,14 @@ pub const Gamepads = struct {
         @compileError("T is not a Fn: " ++ T);
     }
 
-    pub fn getGamepad(_: *const Gamepads, id: GamepadId) MimicReturnType(@TypeOf(glfw.Joystick.getGamepadState)) {
+    pub fn getGamepadState(_: *const Gamepads, id: GamepadId) MimicReturnType(@TypeOf(glfw.Joystick.getGamepadState)) {
         const pad = glfw.Joystick{ .jid = id };
-
         return pad.getGamepadState();
+    }
+
+    pub fn getAxis(_: *const Gamepads, id: GamepadId) ?[]const f32 {
+        const pad = glfw.Joystick{ .jid = id };
+        return pad.getAxes();
     }
 
     // method on SDL_GamePad. should we make these on a struct that wraps GamepadId?
