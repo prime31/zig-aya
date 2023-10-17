@@ -65,10 +65,10 @@ pub const backend = struct {
         if (!enable_imgui) return;
 
         _ = zgui.zguiCreateContext(null);
+        _ = zgui.io.addFontFromFile("examples/assets/Roboto-Medium.ttf", std.math.floor(12.0 * 2.0));
+
         if (!ImGui_ImplWGPU_Init(core.device, 1, @intFromEnum(core.descriptor.format), &.{})) unreachable;
         if (!ImGui_ImplWGPU_CreateDeviceObjects()) unreachable;
-
-        zgui.getStyle().scaleAllSizes(2.0);
     }
 
     pub fn deinit() void {

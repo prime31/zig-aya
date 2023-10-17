@@ -65,7 +65,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "mach-core", .module = mach_core_dep.module("mach-core") },
-            .{ .name = "mach-glfw", .module = glfw_dep.module("mach-glfw") }, // TODO: do we need this?
+            .{ .name = "mach-glfw", .module = glfw_dep.module("mach-glfw") },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
