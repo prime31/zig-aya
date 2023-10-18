@@ -21,7 +21,7 @@ pub fn run(app: *App) void {
 }
 
 const InputSystem = struct {
-    pub fn run(status_events: EventReader(GamepadConnectionEvent), gamepads_res: Res(aya.Gamepads)) void {
+    pub fn run(status_events: EventReader(GamepadConnectionEvent), gamepads_res: Res(Gamepads)) void {
         var gamepads: *const Gamepads = gamepads_res.get() orelse return;
 
         for (status_events.read()) |evt| {
@@ -32,7 +32,6 @@ const InputSystem = struct {
         }
 
         while (gamepads.nextGamepad()) |gamepad| {
-            // std.debug.print("pad id: {}, name, {?s}\n", .{ gamepad.id, gamepad.getName() });
             // std.debug.print("axis {d:.2}\n", .{gamepad.getAxis(.left_x)});
 
             while (gamepad.buttons.getNextJustPressed()) |btn| std.debug.print("{} just pressed\n", .{btn});

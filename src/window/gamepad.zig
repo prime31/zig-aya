@@ -57,7 +57,6 @@ pub const Gamepad = struct {
     axes: [6]f32 = [_]f32{0} ** 6,
 
     pub fn update(self: *Gamepad) void {
-        std.debug.print("clear pressed and released\n", .{});
         self.buttons.clear();
 
         const joystick = glfw.Joystick{ .jid = self.id };
@@ -98,21 +97,9 @@ pub const Gamepad = struct {
 
 /// Resource. A collection of connected gamepads
 pub const Gamepads = struct {
-    pads: std.AutoHashMap(GamepadId, Gamepad),
     gamepads: [4]?Gamepad = [_]?Gamepad{null} ** 4,
 
-    pub fn init() Gamepads {
-        return .{ .pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.allocator) };
-    }
-
-    pub fn deinit(self: *Gamepads) void {
-        self.pads.deinit();
-    }
-
     pub fn update(self: *Gamepads) void {
-        // var iter = self.pads.valueIterator();
-        // while (iter.next()) |gamepad| gamepad.update();
-
         for (&self.gamepads) |*maybe_gamepad| {
             if (maybe_gamepad.*) |*gamepad| gamepad.update();
         }
@@ -120,54 +107,36 @@ pub const Gamepads = struct {
 
     /// Registers the `gamepad`, marking it as connected.
     pub fn register(self: *Gamepads, id: GamepadId) void {
-        self.pads.put(id, Gamepad{ .id = id }) catch unreachable;
         self.gamepads[@intCast(@intFromEnum(id))] = Gamepad{ .id = id };
     }
 
     /// Deregisters the `gamepad`, marking it as disconnected.
     pub fn deregister(self: *Gamepads, id: GamepadId) void {
-        _ = self.pads.remove(id);
         self.gamepads[@intCast(@intFromEnum(id))] = null;
     }
 
     pub fn getGamepad(self: *const Gamepads, id: GamepadId) ?*const Gamepad {
-        if (self.pads.contains(id)) return self.pads.getPtr(id);
-        // if (self.gamepads[@intCast(@intFromEnum(id))]) |*gamepad| return gamepad;
+        if (self.gamepads[@intCast(@intFromEnum(id))]) |*gamepad| return gamepad;
         return null;
     }
 
     /// iterates all connected gamepads. Always fully use the iterator!
     pub fn nextGamepad(self: *const Gamepads) ?*const Gamepad {
         const I = struct {
-            var iter: ?Iterator = null;
+            var index: ?usize = 0;
         };
 
-        if (I.iter == null) I.iter = .{ .gamepads = self };
+        if (I.index == null) I.index = 0;
 
-        if (I.iter) |*iter| {
-            if (iter.next()) |next| return next;
-            I.iter = null;
+        while (I.index.? < 4) : (I.index.? += 1) {
+            if (self.gamepads[I.index.?]) |*gamepad| {
+                I.index.? += 1;
+                return gamepad;
+            }
         }
+
+        I.index = null;
 
         return null;
     }
-
-    const Iterator = struct {
-        gamepads: *const Gamepads,
-        index: usize = 0,
-
-        pub fn next(it: *Iterator) ?*const Gamepad {
-            if (it.index == 4) return null;
-
-            while (it.index < 4) : (it.index += 1) {
-                const maybe_gamepad = it.gamepads.gamepads[it.index];
-                if (maybe_gamepad) |*gamepad| {
-                    it.index += 1;
-                    return gamepad;
-                }
-            }
-
-            return null;
-        }
-    };
 };
