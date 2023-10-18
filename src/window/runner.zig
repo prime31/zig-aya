@@ -1,6 +1,8 @@
 const std = @import("std");
 const sdl = @import("sdl");
 const aya = @import("../aya.zig");
+const ig = @import("imgui");
+const zgpu = @import("zgpu");
 
 const App = aya.App;
 const Window = aya.Window;
@@ -56,6 +58,7 @@ const WindowAndInputEventWriters = struct {
 
 pub fn eventLoop(app: *App) void {
     const window = app.world.getResource(Window).?;
+    const gctx = app.world.getResourceMut(zgpu.GraphicsContext).?;
 
     const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
     const keys: *Input(Scancode) = app.world.getResourceMut(Input(Scancode)).?;
@@ -78,7 +81,7 @@ pub fn eventLoop(app: *App) void {
 
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
-            if (@import("imgui").sdl.handleEvent(&event)) continue;
+            if (ig.sdl.handleEvent(&event)) continue;
 
             switch (event.type) {
                 sdl.SDL_EVENT_QUIT => break :blk,
@@ -180,8 +183,16 @@ pub fn eventLoop(app: *App) void {
             }
         }
 
+        ig.sdl.newFrame();
+        ig.igShowDemoWindow(null);
+
         app.world.progress(0);
+
+        ig.sdl.draw(gctx, zgpu);
+        _ = gctx.present();
     }
+
+    ig.sdl.shutdown();
 
     if (app.world.getResource(Window)) |win| sdl.SDL_DestroyWindow(win.sdl_window);
     sdl.SDL_Quit();

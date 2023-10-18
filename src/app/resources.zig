@@ -88,15 +88,19 @@ pub const Resources = struct {
     }
 
     /// Insert a resource that already exists. Resource should be a stack allocated struct. It will be heap allocated
-    /// and assigned for storage.
+    /// and assigned for storage. If it is already heap allocated it must have been allocated with aya.Allocator!
     pub fn insert(self: *Self, resource: anytype) void {
         const T = @TypeOf(resource);
-        std.debug.assert(@typeInfo(T) != .Pointer);
         std.debug.assert(T != type);
 
         const res = aya.allocator.create(T) catch unreachable;
         res.* = resource;
         self.resources.put(typeId(T), ErasedPtr.initWithPtr(T, @intFromPtr(res))) catch unreachable;
+    }
+
+    pub fn insertPtr(self: *Self, resource: anytype) void {
+        const T = std.meta.Child(@TypeOf(resource));
+        self.resources.put(typeId(T), ErasedPtr.initWithPtr(T, @intFromPtr(resource))) catch unreachable;
     }
 
     pub fn get(self: Self, comptime T: type) ?*T {
@@ -106,7 +110,7 @@ pub const Resources = struct {
 
     pub fn remove(self: *Self, comptime T: type) void {
         if (self.resources.fetchRemove(typeId(T))) |kv| {
-            kv.value.deinit(kv.value, aya.allocator);
+            kv.value.deinit(kv.value);
         }
     }
 };

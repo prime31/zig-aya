@@ -2,10 +2,15 @@ const std = @import("std");
 const core = @import("mach-core");
 const aya = @import("aya");
 
-pub const Bootstrap = aya.Bootstrap;
-
 const Local = aya.Local;
 const LocalValue = struct { data: i32 };
+
+pub fn main() !void {
+    aya.App.init()
+        .addSystems(aya.First, LocalSystem1)
+        .addSystems(aya.First, LocalSystem2)
+        .run();
+}
 
 const LocalSystem1 = struct {
     pub fn run(local: Local(LocalValue)) void {
@@ -20,9 +25,3 @@ const LocalSystem2 = struct {
         local.get().data -= 1;
     }
 };
-
-pub fn run(app: *aya.App) void {
-    app.addSystems(aya.First, LocalSystem1)
-        .addSystems(aya.First, LocalSystem2)
-        .run();
-}

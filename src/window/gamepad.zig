@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const sdl = @import("sdl");
 
 pub const GamepadConnectionEvent = struct {
     gamepad: GamepadId,

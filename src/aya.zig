@@ -5,8 +5,6 @@ const aya = @This();
 pub const utils = @import("utils.zig");
 pub const trait = @import("trait.zig");
 
-pub const Bootstrap = @import("bootstrap.zig").Bootstrap;
-
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
 pub usingnamespace @import("app/mod.zig");
