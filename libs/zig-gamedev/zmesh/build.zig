@@ -31,18 +31,20 @@ pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin
         .flags = &.{ "-std=c99", "-fno-sanitize=undefined", "-DPAR_SHAPES_T=uint16_t" },
     });
 
-    zmesh_c_cpp.addCSourceFiles(&.{
-        thisDir() ++ "/libs/meshoptimizer/clusterizer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/indexgenerator.cpp",
-        thisDir() ++ "/libs/meshoptimizer/vcacheoptimizer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/vcacheanalyzer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/vfetchoptimizer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/vfetchanalyzer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/overdrawoptimizer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/overdrawanalyzer.cpp",
-        thisDir() ++ "/libs/meshoptimizer/simplifier.cpp",
-        thisDir() ++ "/libs/meshoptimizer/allocator.cpp",
-    }, &.{""});
+    zmesh_c_cpp.addCSourceFiles(.{
+        .files = &.{
+            thisDir() ++ "/libs/meshoptimizer/clusterizer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/indexgenerator.cpp",
+            thisDir() ++ "/libs/meshoptimizer/vcacheoptimizer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/vcacheanalyzer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/vfetchoptimizer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/vfetchanalyzer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/overdrawoptimizer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/overdrawanalyzer.cpp",
+            thisDir() ++ "/libs/meshoptimizer/simplifier.cpp",
+            thisDir() ++ "/libs/meshoptimizer/allocator.cpp",
+        },
+    });
     zmesh_c_cpp.addIncludePath(.{ .path = thisDir() ++ "/libs/cgltf" });
     zmesh_c_cpp.addCSourceFile(.{
         .file = .{ .path = thisDir() ++ "/libs/cgltf/cgltf.c" },

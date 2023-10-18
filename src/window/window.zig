@@ -1,5 +1,9 @@
 const std = @import("std");
+const sdl = @import("sdl");
 const aya = @import("../aya.zig");
+const zgpu = @import("zgpu");
+const wgpu = zgpu.wgpu;
+const ig = @import("imgui");
 
 const App = aya.App;
 const Input = aya.Input;
@@ -8,61 +12,96 @@ const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
 
-// const eventLoop = @import("runner.zig").eventLoop;
+const eventLoop = @import("runner.zig").eventLoop;
 
 // TODO: add way more window events
 pub const WindowResized = struct { width: f32, height: f32 };
 pub const WindowMoved = struct { x: f32, y: f32 };
 pub const WindowFocused = struct { focused: bool };
 pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
+// SDL_EVENT_WINDOW_HIDDEN
+// SDL_EVENT_WINDOW_EXPOSED
+// SDL_EVENT_WINDOW_MINIMIZED
+// SDL_EVENT_WINDOW_MAXIMIZED
+// SDL_EVENT_WINDOW_RESTORED
+// SDL_EVENT_WINDOW_MOUSE_ENTER
+// SDL_EVENT_WINDOW_MOUSE_LEAVE
+// SDL_EVENT_WINDOW_FOCUS_GAINED
+// SDL_EVENT_WINDOW_FOCUS_LOST
+// SDL_EVENT_WINDOW_CLOSE_REQUESTED
+// SDL_EVENT_WINDOW_TAKE_FOCUS
+// SDL_EVENT_WINDOW_HIT_TEST
+// SDL_EVENT_WINDOW_DISPLAY_CHANGED
 
 pub const WindowPlugin = struct {
     window_config: ?WindowConfig = .{},
 
     pub fn build(self: WindowPlugin, app: *App) void {
         if (self.window_config) |config| {
-            _ = config;
+            if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
+                sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
+                @panic("could not init SDL");
+            }
+
+            var flags: c_uint = 0;
+            if (config.resizable) flags |= @intFromEnum(WindowFlags.resizable);
+            if (config.high_dpi) flags |= @intFromEnum(WindowFlags.high_pixel_density);
+            if (config.fullscreen) flags |= @intFromEnum(WindowFlags.fullscreen);
+
+            const window = sdl.SDL_CreateWindow(config.title, config.width, config.height, flags) orelse {
+                sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
+                @panic("no window created");
+            };
+
             _ = app
-            // .setRunner(eventLoop)
+                .setRunner(eventLoop)
             // window
                 .addEvent(WindowResized)
                 .addEvent(WindowMoved)
                 .addEvent(WindowScaleFactorChanged)
                 .addEvent(WindowFocused)
-            // .insertResource(Window{ .sdl_window = window, .id = sdl.SDL_GetWindowID(window) })
+                .insertResource(Window{ .sdl_window = window, .id = sdl.SDL_GetWindowID(window) })
             // mouse
                 .addEvent(aya.MouseMotion)
                 .addEvent(aya.MouseWheel)
                 .initResource(Input(aya.MouseButton))
             // keyboard
-                .initResource(Input(Scancode));
+                .initResource(Input(Scancode))
             // gamepad
-            // .addEvent(aya.GamepadConnectionEvent)
-            // .initResource(aya.Gamepads)
-            // .initResource(Input(aya.GamepadButton))
-            // .initResource(aya.Axis(aya.GamepadAxis));
+                .addEvent(aya.GamepadConnectionEvent)
+                .initResource(aya.Gamepads)
+                .initResource(Input(aya.GamepadButton))
+                .initResource(aya.Axis(aya.GamepadAxis));
+
+            const gctx = zgpu.GraphicsContext.create(aya.allocator, window, .{}) catch unreachable;
+            _ = app.world.resources.insertPtr(gctx);
+
+            ig.sdl.init(
+                window,
+                gctx.device,
+                @intFromEnum(zgpu.GraphicsContext.swapchain_format),
+                @intFromEnum(wgpu.TextureFormat.undef),
+            );
         }
     }
 };
 
 pub const Window = struct {
-    sdl_window: *anyopaque = undefined,
+    sdl_window: *sdl.SDL_Window = undefined,
     focused: bool = true,
     id: u32 = 0,
 
     pub fn sizeInPixels(self: Window) struct { w: c_int, h: c_int } {
-        _ = self;
         var w: c_int = 0;
         var h: c_int = 0;
-        // _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &w, &h);
+        _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &w, &h);
         return .{ .w = w, .h = h };
     }
 
     pub fn size(self: Window) struct { w: c_int, h: c_int } {
-        _ = self;
         var w: c_int = 0;
         var h: c_int = 0;
-        // _ = sdl.SDL_GetWindowSize(self.sdl_window, &w, &h);
+        _ = sdl.SDL_GetWindowSize(self.sdl_window, &w, &h);
         return .{ .w = w, .h = h };
     }
 };

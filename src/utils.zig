@@ -38,7 +38,7 @@ pub fn hashStringFnv(comptime ReturnType: type, comptime str: []const u8) Return
 }
 
 /// stores all resources as erased pointers but retains the ability to deinit them safely via a closure.
-/// if T.init(Allocator) or T.deinit() exists it will be called
+/// if T.deinit() exists it will be called
 pub const ErasedPtr = struct {
     ptr: usize,
     deinit: *const fn (*ErasedPtr) void,
