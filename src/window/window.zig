@@ -39,9 +39,7 @@ pub const WindowPlugin = struct {
                 .initResource(Input(aya.Key))
             // gamepad
                 .addEvent(aya.GamepadConnectionEvent)
-                .initResource(aya.Gamepads)
-                .initResource(Input(aya.GamepadButton))
-                .initResource(aya.Axis(aya.GamepadAxis));
+                .initResource(aya.Gamepads);
         }
     }
 };
@@ -55,6 +53,7 @@ pub const Window = struct {
         _ = self;
         var w: c_int = 0;
         var h: c_int = 0;
+
         // _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &w, &h);
         return .{ .w = w, .h = h };
     }

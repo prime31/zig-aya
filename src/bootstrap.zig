@@ -143,17 +143,11 @@ fn handleEvents(app: *aya.App) bool {
 
     const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
     const keys: *Input(core.Key) = app.world.getResourceMut(Input(core.Key)).?;
-    const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
-    _ = gamepads;
-    const gamepad_buttons: *Input(GamepadButton) = app.world.getResourceMut(Input(GamepadButton)).?;
-    const gamepad_axes: *Axis(GamepadAxis) = app.world.getResourceMut(Axis(GamepadAxis)).?;
-    _ = gamepad_axes;
 
     const event_writers = WindowAndInputEventWriters.init(app);
 
     mouse_buttons.clear();
     keys.clear();
-    gamepad_buttons.clear();
 
     var iter = core.pollEvents();
     while (iter.next()) |evt| {
@@ -204,6 +198,10 @@ fn handleEvents(app: *aya.App) bool {
             .close => return true,
         }
     }
+
+    // we need to pollEvents before gamepad data is populated
+    const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
+    gamepads.update();
 
     return false;
 }

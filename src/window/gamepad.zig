@@ -2,6 +2,8 @@ const std = @import("std");
 const aya = @import("../aya.zig");
 const glfw = @import("mach-glfw");
 
+const Input = aya.Input;
+
 pub const GamepadConnectionEvent = struct {
     gamepad: GamepadId,
     status: GamepadConnectionStatus,
@@ -9,43 +11,36 @@ pub const GamepadConnectionEvent = struct {
 
 const GamepadConnectionStatus = enum { connected, disconnected };
 
-pub const GamepadId = @import("mach-glfw").Joystick.Id;
+pub const GamepadId = glfw.Joystick.Id;
 
-pub const GamepadButton = struct {
-    gamepad: GamepadId,
-    type: GamepadButtonType,
-};
-
-pub const GamepadButtonType = enum(u8) {
+pub const GamepadButton = enum {
     /// The bottom action button of the action pad (i.e. PS: Cross, Xbox: A).
     south,
     /// The right action button of the action pad (i.e. PS: Circle, Xbox: B).
     east,
-    /// The upper action button of the action pad (i.e. PS: Triangle, Xbox: Y).
-    north,
     /// The left action button of the action pad (i.e. PS: Square, Xbox: X).
     west,
+    /// The upper action button of the action pad (i.e. PS: Triangle, Xbox: Y).
+    north,
 
-    left_shoulder,
-    right_shoulder,
+    left_bumper,
+    right_bumper,
     back,
-    guide,
     start,
+    guide,
 
     left_stick,
     right_stick,
 
-    d_pad_up,
-    d_pad_down,
-    d_pad_left,
-    d_pad_right,
+    dpad_up,
+    dpad_right,
+    dpad_down,
+    dpad_left,
 
-    touch_pad,
-    /// Additional button (e.g. Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button)
-    misc1,
+    pub const max = GamepadButton.dpad_left;
 };
 
-pub const GamepadAxisType = enum(u8) {
+pub const GamepadAxis = enum(u8) {
     left_x,
     left_y,
     right_x,
@@ -54,158 +49,125 @@ pub const GamepadAxisType = enum(u8) {
     right_trigger,
 };
 
-pub const GamepadAxis = struct {
-    gamepad: GamepadId,
-    type: GamepadAxisType,
-};
+pub const Gamepad = struct {
+    const ButtonBitSet = std.StaticBitSet(@as(usize, @intFromEnum(GamepadButton.max)) + 1);
 
-pub const GamepadType = enum(u8) {
-    unknown,
-    standard,
-    xbox_360,
-    xbox_one,
-    ps3,
-    ps4,
-    ps5,
-    nintendo_switch_pro,
-    nintendo_switch_joycon_left,
-    nintendo_switch_joycon_right,
-    nintendo_switch_joycon_pair,
-    _,
+    id: GamepadId,
+    buttons: Input(GamepadButton) = .{},
+    axes: [6]f32 = [_]f32{0} ** 6,
+
+    pub fn update(self: *Gamepad) void {
+        std.debug.print("clear pressed and released\n", .{});
+        self.buttons.clear();
+
+        const joystick = glfw.Joystick{ .jid = self.id };
+        const state = joystick.getGamepadState() orelse {
+            std.log.warn("getGamepadState returned null for live gamepad with id: {}\n", .{self.id});
+            return;
+        };
+
+        inline for (std.meta.fields(GamepadButton)) |field| {
+            switch (state.getButton(@enumFromInt(field.value))) {
+                .press => {
+                    // .press stays true as long as the button is down so ignore it if we already have it pressed
+                    if (!self.buttons.pressed_set.isSet(field.value))
+                        self.buttons.press(@enumFromInt(field.value));
+                },
+                .release => self.buttons.release(@enumFromInt(field.value)),
+                else => {},
+            }
+        }
+
+        self.axes = state.axes;
+    }
+
+    pub fn getAxis(self: *const Gamepad, axis: GamepadAxis) f32 {
+        return self.axes[@as(u32, @intCast(@intFromEnum(axis)))];
+    }
+
+    pub fn getName(self: *const Gamepad) ?[]const u8 {
+        const joystick = glfw.Joystick{ .jid = self.id };
+        return joystick.getName();
+    }
+
+    pub fn getGUID(self: *const Gamepad) ?[:0]const u8 {
+        const joystick = glfw.Joystick{ .jid = self.id };
+        return joystick.getGUID();
+    }
 };
 
 /// Resource. A collection of connected gamepads
 pub const Gamepads = struct {
-    pads: std.AutoHashMap(GamepadId, void),
+    pads: std.AutoHashMap(GamepadId, Gamepad),
+    gamepads: [4]?Gamepad = [_]?Gamepad{null} ** 4,
 
     pub fn init() Gamepads {
-        return .{ .pads = std.AutoHashMap(GamepadId, void).init(aya.allocator) };
+        return .{ .pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.allocator) };
     }
 
     pub fn deinit(self: *Gamepads) void {
         self.pads.deinit();
     }
 
-    pub fn contains(self: Gamepads, id: GamepadId) bool {
-        return self.pads.contains(id);
+    pub fn update(self: *Gamepads) void {
+        // var iter = self.pads.valueIterator();
+        // while (iter.next()) |gamepad| gamepad.update();
+
+        for (&self.gamepads) |*maybe_gamepad| {
+            if (maybe_gamepad.*) |*gamepad| gamepad.update();
+        }
     }
 
     /// Registers the `gamepad`, marking it as connected.
     pub fn register(self: *Gamepads, id: GamepadId) void {
-        const pad = glfw.Joystick{ .jid = id };
-        if (pad.present()) {
-            self.pads.put(id, {}) catch unreachable;
-        }
+        self.pads.put(id, Gamepad{ .id = id }) catch unreachable;
+        self.gamepads[@intCast(@intFromEnum(id))] = Gamepad{ .id = id };
     }
 
     /// Deregisters the `gamepad`, marking it as disconnected.
     pub fn deregister(self: *Gamepads, id: GamepadId) void {
         _ = self.pads.remove(id);
+        self.gamepads[@intCast(@intFromEnum(id))] = null;
     }
 
-    pub fn nextGamepad(self: *const Gamepads) ?GamepadId {
+    pub fn getGamepad(self: *const Gamepads, id: GamepadId) ?*const Gamepad {
+        if (self.pads.contains(id)) return self.pads.getPtr(id);
+        // if (self.gamepads[@intCast(@intFromEnum(id))]) |*gamepad| return gamepad;
+        return null;
+    }
+
+    /// iterates all connected gamepads. Always fully use the iterator!
+    pub fn nextGamepad(self: *const Gamepads) ?*const Gamepad {
         const I = struct {
-            var iter: ?std.AutoHashMap(GamepadId, void).Iterator = null;
+            var iter: ?Iterator = null;
         };
 
-        if (I.iter == null) I.iter = self.pads.iterator();
+        if (I.iter == null) I.iter = .{ .gamepads = self };
 
         if (I.iter) |*iter| {
-            if (iter.next()) |next| return next.key_ptr.*;
+            if (iter.next()) |next| return next;
             I.iter = null;
         }
 
         return null;
     }
 
-    fn MimicReturnType(comptime T: type) type {
-        const ti = @typeInfo(T);
-        if (ti == .Fn) {
-            return ti.Fn.return_type.?;
+    const Iterator = struct {
+        gamepads: *const Gamepads,
+        index: usize = 0,
+
+        pub fn next(it: *Iterator) ?*const Gamepad {
+            if (it.index == 4) return null;
+
+            while (it.index < 4) : (it.index += 1) {
+                const maybe_gamepad = it.gamepads.gamepads[it.index];
+                if (maybe_gamepad) |*gamepad| {
+                    it.index += 1;
+                    return gamepad;
+                }
+            }
+
+            return null;
         }
-        @compileError("T is not a Fn: " ++ T);
-    }
-
-    pub fn getGamepadState(_: *const Gamepads, id: GamepadId) MimicReturnType(@TypeOf(glfw.Joystick.getGamepadState)) {
-        const pad = glfw.Joystick{ .jid = id };
-        return pad.getGamepadState();
-    }
-
-    pub fn getAxis(_: *const Gamepads, id: GamepadId) ?[]const f32 {
-        const pad = glfw.Joystick{ .jid = id };
-        return pad.getAxes();
-    }
-
-    pub fn getButtons(_: *const Gamepads, id: GamepadId) ?[]const u8 {
-        const pad = glfw.Joystick{ .jid = id };
-        return pad.getButtons();
-    }
-
-    // method on SDL_GamePad. should we make these on a struct that wraps GamepadId?
-    pub fn getName(self: *const Gamepads, id: GamepadId) ?[]const u8 {
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     if (sdl.SDL_GetGamepadName(gamepad)) |name| {
-        //         return std.mem.span(name);
-        //     }
-        // }
-        return null;
-    }
-
-    pub fn getType(self: *const Gamepads, id: GamepadId) GamepadType {
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     return @enumFromInt(sdl.SDL_GetGamepadType(gamepad));
-        // }
-        return .unknown;
-    }
-
-    /// get the type of an opened gamepad, ignoring any mapping override
-    pub fn getRealType(self: *const Gamepads, id: GamepadId) GamepadType {
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     return @enumFromInt(sdl.SDL_GetRealGamepadType(gamepad));
-        // }
-        return .unknown;
-    }
-
-    pub fn hasRumble(self: *const Gamepads, id: GamepadId) bool {
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     return sdl.SDL_GamepadHasRumble(gamepad) == sdl.SDL_TRUE;
-        // }
-        return false;
-    }
-
-    pub fn hasRumbleTriggers(self: *const Gamepads, id: GamepadId) bool {
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     return sdl.SDL_GamepadHasRumbleTriggers(gamepad) == sdl.SDL_TRUE;
-        // }
-        return false;
-    }
-
-    /// Each rumble request overrides the last. To stop rumble send an event with duration_ms = 0.
-    /// low_freq_rumble: the intensity of the low frequency (left) rumble motor
-    /// high_freq_rumble: the intensity of the high frequency (right) rumble motor
-    pub fn rumble(self: *const Gamepads, id: GamepadId, low_freq_rumble: f32, high_freq_rumble: f32, duration_ms: u32) void {
-        _ = duration_ms;
-        _ = high_freq_rumble;
-        _ = low_freq_rumble;
-        _ = id;
-        _ = self;
-        // if (self.pads.get(id)) |gamepad| {
-        //     _ = sdl.SDL_RumbleGamepad(
-        //         gamepad,
-        //         @intFromFloat(low_freq_rumble * std.math.maxInt(u16)),
-        //         @intFromFloat(high_freq_rumble * std.math.maxInt(u16)),
-        //         duration_ms,
-        //     );
-        // }
-    }
+    };
 };

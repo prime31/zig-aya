@@ -10,8 +10,6 @@ const EventReader = aya.EventReader;
 const Input = aya.Input;
 const Axis = aya.Axis;
 const Gamepads = aya.Gamepads;
-const GamepadButton = aya.GamepadButton;
-const GamepadAxis = aya.GamepadAxis;
 const GamepadConnectionEvent = aya.GamepadConnectionEvent;
 
 pub fn run(app: *App) void {
@@ -28,21 +26,17 @@ const InputSystem = struct {
 
         for (status_events.read()) |evt| {
             std.debug.print(
-                "gamepad: {}, status: {}, name: {?s}, type: {}\n",
-                .{ evt.gamepad, evt.status, gamepads.getName(evt.gamepad), gamepads.getType(evt.gamepad) },
+                "gamepad: {}, status: {}, name: {?s}\n",
+                .{ evt.gamepad, evt.status, gamepads.getGamepad(evt.gamepad).?.getName() },
             );
         }
 
-        while (gamepads.nextGamepad()) |pad| {
-            std.debug.print("pad id: {}, state, {?}\n", .{ pad, gamepads.getGamepadState(pad) });
-            std.debug.print("axis {any}\n", .{gamepads.getAxis(pad)});
+        while (gamepads.nextGamepad()) |gamepad| {
+            // std.debug.print("pad id: {}, name, {?s}\n", .{ gamepad.id, gamepad.getName() });
+            // std.debug.print("axis {d:.2}\n", .{gamepad.getAxis(.left_x)});
 
-            // const axis = GamepadAxis{ .gamepad = pad, .type = .left_x };
-            // if (gamepad_axes.get(axis)) |_| {
-            // do something with the axis value which will be clamped from -1 to 1
-            // }
-
-            // while (buttons.getNextJustPressed()) |btn| std.debug.print("{} just pressed\n", .{btn});
+            while (gamepad.buttons.getNextJustPressed()) |btn| std.debug.print("{} just pressed\n", .{btn});
+            while (gamepad.buttons.getNextJustReleased()) |btn| std.debug.print("{} just released\n", .{btn});
         }
     }
 };

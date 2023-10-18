@@ -14,58 +14,16 @@ pub const backend = struct {
     var last_width: u32 = 0;
     var last_height: u32 = 0;
 
-    fn machKeyToImgui(key: core.Key) u32 {
-        return switch (key) {
-            .tab => c.ImGuiKey_Tab,
-            .backspace => c.ImGuiKey_Backspace,
-            .delete => c.ImGuiKey_Delete,
-            .page_up => c.ImGuiKey_PageUp,
-            .page_down => c.ImGuiKey_PageDown,
-            .home => c.ImGuiKey_Home,
-            .insert => c.ImGuiKey_Insert,
-            .space => c.ImGuiKey_Space,
-
-            .left => c.ImGuiKey_LeftArrow,
-            .right => c.ImGuiKey_RightArrow,
-            .up => c.ImGuiKey_UpArrow,
-            .down => c.ImGuiKey_DownArrow,
-
-            .a => c.ImGuiKey_A,
-            .b => c.ImGuiKey_B,
-            .c => c.ImGuiKey_C,
-            .d => c.ImGuiKey_D,
-            .e => c.ImGuiKey_E,
-            .f => c.ImGuiKey_F,
-            .g => c.ImGuiKey_G,
-            .h => c.ImGuiKey_H,
-            .i => c.ImGuiKey_I,
-            .j => c.ImGuiKey_J,
-            .k => c.ImGuiKey_K,
-            .l => c.ImGuiKey_L,
-            .m => c.ImGuiKey_M,
-            .n => c.ImGuiKey_N,
-            .o => c.ImGuiKey_O,
-            .p => c.ImGuiKey_P,
-            .q => c.ImGuiKey_Q,
-            .r => c.ImGuiKey_R,
-            .s => c.ImGuiKey_S,
-            .t => c.ImGuiKey_T,
-            .u => c.ImGuiKey_U,
-            .v => c.ImGuiKey_V,
-            .w => c.ImGuiKey_W,
-            .x => c.ImGuiKey_X,
-            .y => c.ImGuiKey_Y,
-            .z => c.ImGuiKey_Z,
-
-            else => c.ImGuiKey_None,
-        };
-    }
-
     pub fn init() void {
         if (!enable_imgui) return;
 
         _ = zgui.zguiCreateContext(null);
         _ = zgui.io.addFontFromFile("examples/assets/Roboto-Medium.ttf", std.math.floor(12.0 * 2.0));
+
+        zgui.io.setConfigFlags(.{
+            .nav_enable_gamepad = true,
+            .nav_enable_keyboard = true,
+        });
 
         if (!ImGui_ImplWGPU_Init(core.device, 1, @intFromEnum(core.descriptor.format), &.{})) unreachable;
         if (!ImGui_ImplWGPU_CreateDeviceObjects()) unreachable;
@@ -160,15 +118,15 @@ pub const backend = struct {
             },
             .key_press => {
                 const key = event.key_press.key;
-                const keycode = machKeyToImgui(key);
+                const keycode = machKeyToImGui(key);
                 zgui.io.addKeyEvent(@enumFromInt(keycode), true);
-                zgui.io.setKeyEventNativeData(@enumFromInt(keycode), 0, 1);
+                zgui.io.setKeyEventNativeData(@enumFromInt(keycode), 0, 1); // TODO: scancodes
             },
             .key_release => {
                 const key = event.key_release.key;
-                const keycode = machKeyToImgui(key);
+                const keycode = machKeyToImGui(key);
                 zgui.io.addKeyEvent(@enumFromInt(keycode), false);
-                zgui.io.setKeyEventNativeData(@enumFromInt(keycode), 0, 0);
+                zgui.io.setKeyEventNativeData(@enumFromInt(keycode), 0, 0); // TODO: scancodes
             },
             .char_input => {
                 zgui.io.addCharacterEvent(event.char_input.codepoint);
@@ -177,6 +135,53 @@ pub const backend = struct {
         }
     }
 };
+
+fn machKeyToImGui(key: core.Key) u32 {
+    return switch (key) {
+        .tab => c.ImGuiKey_Tab,
+        .backspace => c.ImGuiKey_Backspace,
+        .delete => c.ImGuiKey_Delete,
+        .page_up => c.ImGuiKey_PageUp,
+        .page_down => c.ImGuiKey_PageDown,
+        .home => c.ImGuiKey_Home,
+        .insert => c.ImGuiKey_Insert,
+        .space => c.ImGuiKey_Space,
+
+        .left => c.ImGuiKey_LeftArrow,
+        .right => c.ImGuiKey_RightArrow,
+        .up => c.ImGuiKey_UpArrow,
+        .down => c.ImGuiKey_DownArrow,
+
+        .a => c.ImGuiKey_A,
+        .b => c.ImGuiKey_B,
+        .c => c.ImGuiKey_C,
+        .d => c.ImGuiKey_D,
+        .e => c.ImGuiKey_E,
+        .f => c.ImGuiKey_F,
+        .g => c.ImGuiKey_G,
+        .h => c.ImGuiKey_H,
+        .i => c.ImGuiKey_I,
+        .j => c.ImGuiKey_J,
+        .k => c.ImGuiKey_K,
+        .l => c.ImGuiKey_L,
+        .m => c.ImGuiKey_M,
+        .n => c.ImGuiKey_N,
+        .o => c.ImGuiKey_O,
+        .p => c.ImGuiKey_P,
+        .q => c.ImGuiKey_Q,
+        .r => c.ImGuiKey_R,
+        .s => c.ImGuiKey_S,
+        .t => c.ImGuiKey_T,
+        .u => c.ImGuiKey_U,
+        .v => c.ImGuiKey_V,
+        .w => c.ImGuiKey_W,
+        .x => c.ImGuiKey_X,
+        .y => c.ImGuiKey_Y,
+        .z => c.ImGuiKey_Z,
+
+        else => c.ImGuiKey_None,
+    };
+}
 
 // Rendering
 const Config = extern struct {
