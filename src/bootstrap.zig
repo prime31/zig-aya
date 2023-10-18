@@ -149,6 +149,10 @@ fn handleEvents(app: *aya.App) bool {
     mouse_buttons.clear();
     keys.clear();
 
+    const LastMousePos = struct {
+        var pos: core.Position = .{ .x = 0, .y = 0 };
+    };
+
     var iter = core.pollEvents();
     while (iter.next()) |evt| {
         zgui.backend.passEvent(evt);
@@ -160,6 +164,8 @@ fn handleEvents(app: *aya.App) bool {
             .mouse_motion => |e| event_writers.mouse_motion.send(.{
                 .x = @floatCast(e.pos.x),
                 .y = @floatCast(e.pos.y),
+                .xrel = @floatCast(e.pos.x - LastMousePos.pos.x),
+                .yrel = @floatCast(e.pos.y - LastMousePos.pos.y),
             }),
             .mouse_press => |e| mouse_buttons.press(e.button),
             .mouse_release => |e| mouse_buttons.release(e.button),
@@ -198,6 +204,8 @@ fn handleEvents(app: *aya.App) bool {
             .close => return true,
         }
     }
+
+    LastMousePos.pos = core.mousePosition();
 
     // we need to pollEvents before gamepad data is populated
     const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;

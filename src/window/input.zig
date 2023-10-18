@@ -1,5 +1,4 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
 const core = @import("mach-core");
 
 /// A pressable input of type `T`. When adding this resource for a new input type, you should:
@@ -119,8 +118,6 @@ pub fn Input(comptime T: type) type {
             if (I.iter == null) I.iter = self.just_pressed_set.iterator(.{});
 
             if (I.iter) |*iter| {
-                // if (self.just_pressed_set.mask != 0)
-                //     std.debug.print("---- just_pressed mask: {}, has any: {?}\n", .{ self.just_pressed_set.mask, self.just_pressed_set.findFirstSet() });
                 if (iter.next()) |next| return @enumFromInt(next);
                 I.iter = null;
             }

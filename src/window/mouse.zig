@@ -2,6 +2,8 @@ pub const MouseMotion = struct {
     /// current position
     x: f32,
     y: f32,
+    xrel: f32,
+    yrel: f32,
 };
 
 pub const MouseWheel = struct {
