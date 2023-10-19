@@ -24,10 +24,6 @@ const MouseMotion = aya.MouseMotion;
 const MouseButton = aya.MouseButton;
 
 const GamePads = aya.Gamepads;
-const GamepadButton = aya.GamepadButton;
-const GamepadButtonType = aya.GamepadButtonType;
-const GamepadAxis = aya.GamepadAxis;
-const GamepadAxisType = aya.GamepadAxisType;
 const GamepadConnectionEvent = aya.GamepadConnectionEvent;
 
 const WindowAndInputEventWriters = struct {
@@ -63,8 +59,6 @@ pub fn eventLoop(app: *App) void {
     const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
     const keys: *Input(Scancode) = app.world.getResourceMut(Input(Scancode)).?;
     const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
-    const gamepad_buttons: *Input(GamepadButton) = app.world.getResourceMut(Input(GamepadButton)).?;
-    const gamepad_axes: *Axis(GamepadAxis) = app.world.getResourceMut(Axis(GamepadAxis)).?;
 
     const exit_event_reader = EventReader(aya.AppExitEvent){
         .events = app.world.getResourceMut(Events(aya.AppExitEvent)) orelse @panic("no EventReader found for " ++ @typeName(aya.AppExitEvent)),
@@ -77,7 +71,7 @@ pub fn eventLoop(app: *App) void {
 
         mouse_buttons.clear();
         keys.clear();
-        gamepad_buttons.clear();
+        gamepads.update();
 
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -144,36 +138,24 @@ pub fn eventLoop(app: *App) void {
                 // gamepads
                 sdl.SDL_EVENT_GAMEPAD_ADDED => {
                     gamepads.register(event.gdevice.which);
-                    event_writers.gamepad_connected.send(.{ .gamepad = event.gdevice.which, .status = .connected });
-
-                    inline for (std.meta.fields(GamepadAxisType)) |axis_type| {
-                        gamepad_axes.set(.{ .gamepad = event.gdevice.which, .type = @enumFromInt(axis_type.value) }, 0);
-                    }
+                    event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .connected });
                 },
                 sdl.SDL_EVENT_GAMEPAD_REMOVED => {
                     gamepads.deregister(event.gdevice.which);
-                    event_writers.gamepad_connected.send(.{ .gamepad = event.gdevice.which, .status = .disconnected });
-
-                    inline for (std.meta.fields(GamepadButtonType)) |button_type| {
-                        gamepad_buttons.reset(.{ .gamepad = event.gdevice.which, .type = @enumFromInt(button_type.value) });
-                    }
-
-                    inline for (std.meta.fields(GamepadAxisType)) |axis_type| {
-                        gamepad_axes.remove(.{ .gamepad = event.gdevice.which, .type = @enumFromInt(axis_type.value) });
-                    }
+                    event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .disconnected });
                 },
-                sdl.SDL_EVENT_GAMEPAD_AXIS_MOTION => gamepad_axes.set(.{
-                    .gamepad = event.gaxis.which,
-                    .type = @enumFromInt(event.gaxis.axis),
-                }, @as(f32, @floatFromInt(event.gaxis.value)) / @as(f32, std.math.maxInt(i16))),
-                sdl.SDL_EVENT_GAMEPAD_BUTTON_DOWN => gamepad_buttons.press(.{
-                    .gamepad = event.gbutton.which,
-                    .type = @enumFromInt(event.gbutton.button),
-                }),
-                sdl.SDL_EVENT_GAMEPAD_BUTTON_UP => gamepad_buttons.release(.{
-                    .gamepad = event.gbutton.which,
-                    .type = @enumFromInt(event.gbutton.button),
-                }),
+                sdl.SDL_EVENT_GAMEPAD_AXIS_MOTION => {
+                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    gamepad.axes.put(@enumFromInt(event.gaxis.axis), @as(f32, @floatFromInt(event.gaxis.value)) / @as(f32, std.math.maxInt(i16)));
+                },
+                sdl.SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
+                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    gamepad.buttons.press(@enumFromInt(event.gbutton.button));
+                },
+                sdl.SDL_EVENT_GAMEPAD_BUTTON_UP => {
+                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    gamepad.buttons.release(@enumFromInt(event.gbutton.button));
+                },
                 sdl.SDL_EVENT_GAMEPAD_REMAPPED => std.debug.print("GAMEPAD REMAPPED\n", .{}),
                 sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => std.debug.print("GAMEPAD TOUCHPAD_DOWN\n", .{}),
                 sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_UP => std.debug.print("GAMEPAD TOUCHPAD_UP\n", .{}),

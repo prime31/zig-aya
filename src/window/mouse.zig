@@ -21,4 +21,6 @@ pub const MouseButton = enum(u8) {
     left = 1,
     middle = 2,
     right = 3,
+
+    pub const max = MouseButton.right;
 };

@@ -247,4 +247,6 @@ pub const Scancode = enum(u32) {
     call = 289,
     endcall = 290,
     _,
+
+    pub const max = Scancode.endcall;
 };
