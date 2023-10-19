@@ -439,6 +439,35 @@ pub const GraphicsContext = struct {
         });
     }
 
+    pub const BufferInitDescriptor = struct {
+        label: ?[*:0]const u8 = null,
+        usage: wgpu.BufferUsage,
+        contents: []const u8,
+    };
+
+    fn bufferAlignment(size: u64) u64 {
+        const COPY_BUFFER_ALIGNMENT: u64 = 4;
+        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
+        return @max(((size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
+    }
+
+    pub fn createBufferWithData(gctx: *GraphicsContext, descriptor: BufferInitDescriptor) BufferHandle {
+        const buffer_size = bufferAlignment(descriptor.contents.len * @sizeOf(u8));
+
+        const buffer = gctx.buffer_pool.addResource(gctx.*, .{
+            .gpuobj = gctx.device.createBuffer(.{
+                .label = descriptor.label,
+                .usage = descriptor.usage,
+                .size = buffer_size,
+            }),
+            .size = buffer_size,
+            .usage = descriptor.usage,
+        });
+
+        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, u8, descriptor.contents);
+        return buffer;
+    }
+
     pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.TextureDescriptor) TextureHandle {
         return gctx.texture_pool.addResource(gctx.*, .{
             .gpuobj = gctx.device.createTexture(descriptor),

@@ -1737,7 +1737,15 @@ pub const Device = *opaque {
     ) BindGroupLayout;
 
     pub inline fn createBuffer(device: Device, descriptor: BufferDescriptor) Buffer {
-        return wgpuDeviceCreateBuffer(device, &descriptor);
+        const unpadded_size = descriptor.size;
+        const COPY_BUFFER_ALIGNMENT: u64 = 4;
+        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
+        const padded_size = @max(((unpadded_size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
+
+        var desc = std.mem.zeroInit(BufferDescriptor, descriptor);
+        desc.size = padded_size;
+
+        return wgpuDeviceCreateBuffer(device, &desc);
     }
     extern fn wgpuDeviceCreateBuffer(device: Device, descriptor: *const BufferDescriptor) Buffer;
 
@@ -2111,6 +2119,12 @@ pub const Queue = *opaque {
     }
     extern fn wgpuQueueSubmit(queue: Queue, command_count: u32, commands: [*]const CommandBuffer) void;
 
+    fn bufferAlignment(size: u64) u64 {
+        const COPY_BUFFER_ALIGNMENT: u64 = 4;
+        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
+        return @max(((size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
+    }
+
     pub inline fn writeBuffer(
         queue: Queue,
         buffer: Buffer,
@@ -2123,7 +2137,7 @@ pub const Queue = *opaque {
             buffer,
             buffer_offset,
             @as(*const anyopaque, @ptrCast(data.ptr)),
-            @as(u64, @intCast(data.len)) * @sizeOf(T),
+            bufferAlignment(@as(u64, @intCast(data.len)) * @sizeOf(T)),
         );
     }
     extern fn wgpuQueueWriteBuffer(
