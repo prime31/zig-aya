@@ -112,11 +112,13 @@ pub const GraphicsContext = struct {
         var properties: wgpu.AdapterProperties = undefined;
         properties.next_in_chain = null;
         adapter.getProperties(&properties);
-        std.log.info("[zgpu] High-performance device has been selected:", .{});
-        std.log.info("[zgpu]   Name: {s}", .{properties.name});
-        std.log.info("[zgpu]   Driver: {s}", .{properties.driver_description});
-        std.log.info("[zgpu]   Adapter type: {s}", .{@tagName(properties.adapter_type)});
-        std.log.info("[zgpu]   Backend type: {s}", .{@tagName(properties.backend_type)});
+
+        std.log.info("Found [{s}] backend on [{s}] adapter: [{s}], [{s}]\n", .{
+            @tagName(properties.backend_type),
+            @tagName(properties.adapter_type),
+            properties.name,
+            properties.driver_description,
+        });
 
         const device = device: {
             const Response = struct {
