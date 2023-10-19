@@ -69,9 +69,7 @@ pub const WindowPlugin = struct {
                 .initResource(Input(Scancode))
             // gamepad
                 .addEvent(aya.GamepadConnectionEvent)
-                .initResource(aya.Gamepads)
-                .initResource(Input(aya.GamepadButton))
-                .initResource(aya.Axis(aya.GamepadAxis));
+                .initResource(aya.Gamepads);
 
             const gctx = zgpu.GraphicsContext.create(aya.allocator, window, .{}) catch unreachable;
             _ = app.world.resources.insertPtr(gctx);
