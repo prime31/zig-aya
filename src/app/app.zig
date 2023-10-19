@@ -114,7 +114,9 @@ pub const App = struct {
 
         // main loop
         if (self.runFn) |runFn| runFn(self) else {
+            std.debug.print("--- ecs.progress\n", .{});
             self.world.ecs.progress(0);
+            std.debug.print("--- ecs.progress\n", .{});
             self.world.ecs.progress(0);
         }
 
