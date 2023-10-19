@@ -1500,21 +1500,35 @@ const SurfaceDescriptor = union(SurfaceDescriptorTag) {
 fn createSurfaceForWindow(instance: wgpu.Instance, window: *sdl.SDL_Window) wgpu.Surface {
     const os_tag = @import("builtin").target.os.tag;
     const descriptor = if (os_tag == .windows) blk: {
-        // sdl.SDL_GetWindowWMInfo(window, &wmInfo); not in sdl3...
+        var info: sdl.SDL_SysWMinfo = undefined;
+        if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
+            sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
+            @panic("SDL_GetWindowWMInfo failed");
+        }
+        std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
 
         break :blk SurfaceDescriptor{
             .windows_hwnd = .{
                 .label = "basic surface",
-                .hinstance = std.os.windows.kernel32.GetModuleHandleW(null).?,
-                .hwnd = unreachable,
+                .hinstance = std.os.windows.kernel32.GetModuleHandleW(null) or info.info.hinstance,
+                .hwnd = info.info.window,
             },
         };
-    } else if (os_tag == .linux) SurfaceDescriptor{
-        .xlib = .{
-            .label = "basic surface",
-            .display = unreachable, // zglfw.native.getX11Display()
-            .window = unreachable, // zglfw.native.getX11Window(window)
-        },
+    } else if (os_tag == .linux) blk: {
+        var info: sdl.SDL_SysWMinfo = undefined;
+        if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
+            sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
+            @panic("SDL_GetWindowWMInfo failed");
+        }
+        std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
+
+        break :blk SurfaceDescriptor{
+            .xlib = .{
+                .label = "basic surface",
+                .display = info.info.display, // zglfw.native.getX11Display()
+                .window = info.info.window, // zglfw.native.getX11Window(window)
+            },
+        };
     } else if (os_tag == .macos) blk: {
         const metal_view = sdl.SDL_Metal_CreateView(window);
         const metal_layer = sdl.SDL_Metal_GetLayer(metal_view);
