@@ -1,5 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const zgpu = @import("zgpu");
+const wgpu = zgpu.wgpu;
 
 pub const IndexFormat = enum { u16, u32 };
 
@@ -34,6 +36,7 @@ pub const PrimitiveTopology = enum {
     triangle_strip,
 };
 
+// TODO: use wgpu.VertexFormat
 pub const VertexFormat = enum {
     float32,
     float32x2,
@@ -230,23 +233,26 @@ pub const Mesh = struct {
         return attributes_interleaved_buffer;
     }
 
-    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, _: Mesh.Param) Mesh.PreparedAsset {
+    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, params: Mesh.Param) Mesh.PreparedAsset {
         var vertex_buffer_data = mesh.getVertexBufferData();
-        // var vertex_buffer = sg.makeBuffer(.{
-        //     .type = .VERTEXBUFFER,
-        //     .label = "Mesh Vertex Buffer",
-        //     .data = sg.asRange(vertex_buffer_data),
-        // });
-        aya.mem.free(vertex_buffer_data);
+        defer aya.mem.free(vertex_buffer_data);
+
+        const vertex_buffer = params.gctx.createBufferWithData(.{
+            .label = "Mesh Vertex Buffer",
+            .usage = .{ .copy_dst = true, .vertex = true },
+            .contents = vertex_buffer_data,
+        });
 
         const buffer_info: GpuBufferInfo = if (mesh.indices) |indices| blk: {
+            const ibuffer: zgpu.BufferHandle = params.gctx.createBufferWithData(.{
+                .label = "Mesh Index Buffer",
+                .usage = .{ .copy_dst = true, .index = true },
+                .contents = indices.getBytes(),
+            });
+
             break :blk .{
                 .indexed = .{
-                    // .buffer = sg.makeBuffer(.{
-                    //     .type = .INDEXBUFFER,
-                    //     .label = "Mesh Index Buffer",
-                    //     .data = sg.asRange(indices.getBytes()),
-                    // }),
+                    .buffer = ibuffer,
                     .count = @intCast(indices.getLength()),
                     .index_format = std.meta.activeTag(indices),
                 },
@@ -254,7 +260,7 @@ pub const Mesh = struct {
         } else .{ .non_indexed = {} };
 
         return .{
-            // .vertex_buffer = vertex_buffer,
+            .vertex_buffer = vertex_buffer,
             .vertex_count = @intCast(mesh.countVertices()),
             .buffer_info = buffer_info,
             .primitive_topology = mesh.topology,
@@ -268,19 +274,21 @@ pub const Mesh = struct {
 
     /// only Resources allowed
     pub const Param = struct {
-        assets: *aya.Assets(Mesh),
+        meshes: *aya.Assets(Mesh),
+        gctx: *zgpu.GraphicsContext,
     };
 };
 
 pub const GpuMesh = struct {
-    // vertex_buffer: sg.Buffer,
+    vertex_buffer: zgpu.BufferHandle,
     vertex_count: u32,
     buffer_info: GpuBufferInfo,
     primitive_topology: PrimitiveTopology,
     layout: MeshVertexBufferLayout,
 
     pub fn deinit(self: GpuMesh) void {
-        // sg.destroyBuffer(self.vertex_buffer);
+        std.debug.print("GpuMesh.deinit we need a GraphicsContext\n", .{});
+        // gctx.destroyResource(self.vertex_buffer);
         self.buffer_info.deinit();
         self.layout.deinit();
     }
@@ -363,15 +371,16 @@ pub const MeshVertexBufferLayout = struct {
 
 pub const GpuBufferInfo = union(enum) {
     indexed: struct {
-        // buffer: sg.Buffer,
+        buffer: zgpu.BufferHandle,
         count: u32,
         index_format: IndexFormat,
     },
     non_indexed: void,
 
     pub fn deinit(self: GpuBufferInfo) void {
+        std.debug.print("GpuBufferInfo.deinit we need a GraphicsContext\n", .{});
         switch (self) {
-            // .indexed => |indexed| sg.destroyBuffer(indexed.buffer),
+            // .indexed => |indexed| gctx.destroyResource(indexed.buffer);
             else => {},
         }
     }

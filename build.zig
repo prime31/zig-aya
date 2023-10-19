@@ -131,6 +131,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("imgui", imgui_module);
     exe.addModule("zmath", zmath_module);
     exe.addModule("zgpu", wgpu_module);
+    exe.addModule("zmesh", zmesh_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {
