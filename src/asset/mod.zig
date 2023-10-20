@@ -13,6 +13,7 @@ pub const AssetId = @import("asset_handle_provider.zig").AssetId;
 pub usingnamespace @import("assets.zig");
 pub usingnamespace @import("asset_server.zig");
 pub usingnamespace @import("handles.zig");
+pub usingnamespace @import("path.zig");
 
 pub const AssetPlugin = struct {
     pub fn build(_: AssetPlugin, app: *App) void {

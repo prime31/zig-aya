@@ -143,22 +143,33 @@ pub fn Input(comptime T: type) type {
 }
 
 test "Input(T)" {
-    var state = Input(u8).init();
-    try std.testing.expect(!state.justPressed(4));
-    try std.testing.expect(!state.pressed(4));
-    state.press(4);
-    try std.testing.expect(state.justPressed(4));
-    try std.testing.expect(state.pressed(4));
-    state.release(4);
-    try std.testing.expect(!state.pressed(4));
-    try std.testing.expect(state.justReleased(4));
+    const TestEnum = enum(u8) {
+        first,
+        second,
+        third,
+        fourth,
+        fifth,
+        sixth,
 
-    state.press(5);
-    state.press(6);
+        pub const max = @This().sixth;
+    };
+
+    var state = Input(TestEnum){};
+    try std.testing.expect(!state.justPressed(.first));
+    try std.testing.expect(!state.pressed(.first));
+    state.press(.first);
+    try std.testing.expect(state.justPressed(.first));
+    try std.testing.expect(state.pressed(.first));
+    state.release(.first);
+    try std.testing.expect(!state.pressed(.first));
+    try std.testing.expect(state.justReleased(.first));
+
+    state.press(.second);
+    state.press(.third);
     while (state.getNextPressed()) |p| {
-        try std.testing.expect(p == 5 or p == 6);
+        try std.testing.expect(p == .second or p == .third);
     }
 
-    try std.testing.expect(!state.anyPressed(&.{ 1, 2, 3 }));
-    try std.testing.expect(state.anyPressed(&.{ 6, 7, 8 }));
+    try std.testing.expect(state.anyPressed(&.{ .first, .second, .third }));
+    try std.testing.expect(!state.anyPressed(&.{ .fourth, .fifth }));
 }

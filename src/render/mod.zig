@@ -1,9 +1,13 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const zm = @import("zmath");
 const self = @This();
 
 pub usingnamespace @import("shapes/mod.zig");
 pub usingnamespace @import("mesh.zig");
+pub usingnamespace @import("shader.zig");
+pub usingnamespace @import("image.zig");
+pub usingnamespace @import("pipeline.zig");
 
 pub const RenderPlugin = struct {
     pub fn build(_: RenderPlugin, app: *aya.App) void {
@@ -28,4 +32,16 @@ pub const ClearColorConfig = union {
     custom: ClearColor,
     /// No clear color is used: the camera will simply draw on top of anything already in the viewport
     none: void,
+};
+
+pub const HalfSpace = struct {
+    normal_d: zm.Vec,
+};
+
+pub const Frustum = struct {
+    half_spaces: [6]HalfSpace,
+};
+
+pub const CascadesFrusta = struct {
+    frusta: std.AutoHashMap(u64, std.ArrayList(Frustum)),
 };

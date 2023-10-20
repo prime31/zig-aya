@@ -68,6 +68,12 @@ pub const VertexFormat = enum {
     // }
 };
 
+pub const VertexAttributeDescriptor = struct {
+    shader_location: u32,
+    id: MeshVertexAttributeId,
+    name: []const u8,
+};
+
 pub const MeshVertexAttributeId = u8;
 
 pub const MeshVertexAttribute = struct {
@@ -77,6 +83,14 @@ pub const MeshVertexAttribute = struct {
     /// indices. When in doubt, use a random / very large u8 to avoid conflicts.
     id: MeshVertexAttributeId,
     format: VertexFormat,
+
+    pub fn atShaderLocation(self: *MeshVertexAttribute, shader_location: u32) VertexAttributeDescriptor {
+        return .{
+            .shader_location = shader_location,
+            .id = self.id,
+            .name = self.name,
+        };
+    }
 };
 
 pub const VertexAttributeValues = union(VertexFormat) {
@@ -164,7 +178,7 @@ pub const Mesh = struct {
         self.indices = indices;
     }
 
-    pub fn getMeshVertexBufferLayout(self: *const Mesh) MeshVertexBufferLayout {
+    pub fn getMeshVertexBufferLayout(self: *const Mesh) InnerMeshVertexBufferLayout {
         var attributes = aya.mem.alloc(VertexAttribute, self.attributes.count());
         var attribute_ids = aya.mem.alloc(MeshVertexAttributeId, self.attributes.count());
         var accumulated_offset: usize = 0;
@@ -284,7 +298,7 @@ pub const GpuMesh = struct {
     vertex_count: u32,
     buffer_info: GpuBufferInfo,
     primitive_topology: PrimitiveTopology,
-    layout: MeshVertexBufferLayout,
+    layout: InnerMeshVertexBufferLayout,
 
     pub fn deinit(self: GpuMesh) void {
         std.debug.print("GpuMesh.deinit we need a GraphicsContext\n", .{});
@@ -359,13 +373,52 @@ pub const VertexBufferLayout = struct {
     }
 };
 
-pub const MeshVertexBufferLayout = struct {
+pub fn Hashed(comptime V: type) type {
+    return struct {
+        // const hashed_type = H; // TODO: optionally take in hasher instead of hard coding it
+        hash: u64,
+        value: V,
+    };
+}
+
+pub const MeshVertexBufferLayout = Hashed(InnerMeshVertexBufferLayout);
+
+pub const InnerMeshVertexBufferLayout = struct {
     attribute_ids: []MeshVertexAttributeId,
     layout: VertexBufferLayout,
 
-    pub fn deinit(self: MeshVertexBufferLayout) void {
+    pub fn deinit(self: InnerMeshVertexBufferLayout) void {
         aya.mem.free(self.attribute_ids);
         self.layout.deinit();
+    }
+
+    pub fn contains(self: *InnerMeshVertexBufferLayout, attribute_id: MeshVertexAttributeId) bool {
+        return std.mem.indexOfScalar(MeshVertexAttributeId, self.attribute_ids, attribute_id) != null;
+    }
+
+    pub fn getLayout(self: *InnerMeshVertexBufferLayout, attribute_descriptors: []VertexAttributeDescriptor) !VertexBufferLayout {
+        const attributes = std.ArrayList(VertexAttribute).initCapacity(aya.allocator, attribute_descriptors.len) catch unreachable;
+        errdefer attributes.deinit();
+
+        for (attribute_descriptors) |attribute_descriptor| {
+            if (std.mem.indexOfScalar(MeshVertexAttributeId, self.attribute_ids, attribute_descriptor)) |index| {
+                const layout_attribute = self.layout.attributes[index];
+                attributes.append(VertexAttribute{
+                    .format = layout_attribute.format,
+                    .offset = layout_attribute.offset,
+                    .shader_location = layout_attribute.shader_location,
+                }) catch unreachable;
+            } else {
+                std.log.warn("Missing vertex attribute id: {}, name: {s}", .{ attribute_descriptor.id, attribute_descriptor.name });
+                return error.MissingVertexAttributeError;
+            }
+        }
+
+        return VertexBufferLayout{
+            .array_stride = 0,
+            .step_mode = .per_vertex,
+            .attributes = attributes.toOwnedSlice(),
+        };
     }
 };
 

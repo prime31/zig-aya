@@ -12,7 +12,9 @@ pub usingnamespace @import("asset/mod.zig");
 pub usingnamespace @import("window/mod.zig");
 pub usingnamespace @import("ecs/mod.zig");
 pub usingnamespace @import("gizmos/mod.zig");
+pub usingnamespace @import("transform/mod.zig");
 pub usingnamespace @import("render/mod.zig");
+pub usingnamespace @import("pbr/mod.zig");
 
 pub const mem = struct {
     pub fn create(comptime T: type) *T {
