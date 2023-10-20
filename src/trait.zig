@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("aya.zig");
 
 pub fn implementsTrait(comptime Trait: type, comptime TypeOrInstance: anytype) bool {
     const T = if (@TypeOf(TypeOrInstance) == type) TypeOrInstance else @TypeOf(TypeOrInstance);
@@ -104,6 +105,30 @@ pub const AssetTypeTrait = struct {
     }
 };
 
+pub const MaterialTrait = struct {};
+
+pub fn MaterialMixin(comptime M: type) type {
+    return struct {
+        pub usingnamespace if (!@hasDecl(M, "vertexShader"))
+            struct {
+                pub fn vertexShader(_: M) aya.ShaderRef {
+                    return .default;
+                }
+            }
+        else
+            struct {};
+
+        // pub usingnamespace if (!@hasDecl(M, "fragmentShader"))
+        //     struct {
+        //         pub fn fragmentShader(_: M) aya.ShaderRef {
+        //             return .default;
+        //         }
+        //     }
+        // else
+        //     struct {};
+    };
+}
+
 test "trait.has" {
     const TestAsset = struct {
         pub const ExtractedAsset = u1;
@@ -111,7 +136,7 @@ test "trait.has" {
 
         pub const Param = struct {};
 
-        pub fn prepareAsset(_: *const ExtractedAsset, _: PreparedAsset) void {}
+        pub fn prepareAsset(_: *const ExtractedAsset, _: Param) PreparedAsset {}
     };
 
     const TestSystem = struct {
@@ -122,6 +147,22 @@ test "trait.has" {
 
         pub fn run(_: @This()) void {}
     };
+
+    const TestMaterial = struct {
+        pub fn vertexShader(_: @This()) aya.ShaderRef {
+            return .{ .path = .{ .path = .{ .str = "asset/path" } } };
+        }
+
+        pub fn fragmentShader(_: @This()) aya.ShaderRef {
+            return .default;
+        }
+
+        pub usingnamespace MaterialMixin(@This());
+    };
+
+    const material = TestMaterial{};
+    std.debug.print("-------- vert: {}\n", .{material.vertexShader()});
+    std.debug.print("-------- frag: {}\n", .{material.fragmentShader()});
 
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset));
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset{}));

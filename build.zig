@@ -80,6 +80,15 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
     linkLibs(b, tests, target, optimize, options);
 
     const run_tests = b.addRunArtifact(tests);
+
+    if (install_options == .only_current) {
+        const add_install_step = b.addInstallArtifact(tests, .{});
+        run_tests.step.dependOn(&add_install_step.step);
+    } else {
+        b.installArtifact(tests);
+        run_tests.step.dependOn(b.getInstallStep());
+    }
+
     const run_step = b.step("test", "Run tests");
     run_step.dependOn(&run_tests.step);
 }
