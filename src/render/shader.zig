@@ -37,4 +37,33 @@ pub const Shader = struct {
     // we must store strong handles to our dependencies to stop them
     // from being immediately dropped if we are the only user.
     file_dependencies: std.ArrayList(Handle(Shader)),
+
+    pub fn fromWgsl(source: []const u8, path: []const u8) Shader {
+        // let (import_path, imports) = Shader::preprocess(&source, &path);
+        return Shader{
+            .path = path,
+            .imports = undefined,
+            .import_path = .{ .asset_path = "" },
+            .source = source,
+            // .additional_imports: Default::default(),
+            .shader_defs = undefined,
+            .file_dependencies = undefined,
+        };
+    }
 };
+
+// AssetLoader
+pub fn loadShader(path: []const u8, _: void) Shader {
+    const source = aya.fs.read(path) catch unreachable;
+    const extension = std.fs.path.extension(path);
+
+    const shader = blk: {
+        if (std.mem.eql(u8, extension, ".wgls"))
+            break :blk Shader.fromWgsl(source, path);
+        if (std.mem.eql(u8, extension, ".comp"))
+            break :blk Shader.fromWgsl(source, path);
+        unreachable;
+    };
+
+    return shader;
+}

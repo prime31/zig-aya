@@ -12,6 +12,8 @@ pub usingnamespace @import("pipeline.zig");
 pub const RenderPlugin = struct {
     pub fn build(_: RenderPlugin, app: *aya.App) void {
         _ = app.initAsset(self.Mesh)
+            .initAsset(aya.Shader)
+            .initAssetLoader(aya.Shader, aya.loadShader)
             .insertResource(ClearColor{});
     }
 };

@@ -300,7 +300,7 @@ pub const App = struct {
     }
 
     pub fn initAssetLoader(self: *Self, comptime T: type, loadFn: *const fn ([]const u8, AssetLoader(T).settings_type) T) *Self {
-        const asset_server = self.world.resource(AssetServer) orelse @panic("AssetServer not found in Resources");
+        const asset_server = self.world.getResourceMut(AssetServer) orelse @panic("AssetServer not found in Resources");
         asset_server.registerLoader(T, loadFn);
         return self;
     }

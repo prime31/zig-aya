@@ -11,7 +11,7 @@ const ErasedPtr = aya.utils.ErasedPtr;
 
 pub fn AssetLoader(comptime T: type) type {
     return struct {
-        const settings_type: type = if (@hasDecl(T, "settings_type")) T.settings_type else void;
+        pub const settings_type: type = if (@hasDecl(T, "settings_type")) T.settings_type else void;
 
         load: *const fn ([]const u8, settings: settings_type) T,
     };

@@ -4,6 +4,7 @@ const aya = @This();
 
 pub const utils = @import("utils.zig");
 pub const trait = @import("trait.zig");
+pub const fs = @import("fs.zig");
 
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
