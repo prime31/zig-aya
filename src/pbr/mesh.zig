@@ -3,12 +3,26 @@ const aya = @import("../aya.zig");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
+const Assets = aya.Assets;
+const Shader = aya.Shader;
+const Handle = aya.Handle;
+
 const GpuImage = aya.GpuImage;
 const Mesh = aya.Mesh;
 const MeshLayouts = aya.MeshLayouts;
 const MeshVertexBufferLayout = aya.InnerMeshVertexBufferLayout;
 const RenderPipelineDescriptor = aya.RenderPipelineDescriptor;
 const VertexAttributeDescriptor = aya.VertexAttributeDescriptor;
+
+pub var MESH_SHADER_HANDLE: Handle(Shader) = undefined;
+
+pub const MeshRenderPlugin = struct {
+    pub fn build(_: MeshRenderPlugin, app: *aya.App) void {
+        // load internal shaders
+        const assets = app.world.getResourceMut(Assets(Shader)).?;
+        MESH_SHADER_HANDLE = assets.add(Shader.fromWgsl(@embedFile("mesh.wgsl"), "mesh.wgsl"));
+    }
+};
 
 pub const MeshPipeline = struct {
     const Key = MeshPipelineKey;
