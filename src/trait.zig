@@ -46,6 +46,19 @@ pub fn hasDeclOfType(comptime T: type, comptime name: []const u8, comptime DeclT
     }
 }
 
+/// Returns the error set that the function F returns.
+fn ErrorSet(comptime F: type) type {
+    return @typeInfo(@typeInfo(F).Fn.return_type.?).ErrorUnion.error_set;
+}
+
+pub fn fnHasErrorSetReturnType(comptime F: type) bool {
+    const function = @typeInfo(F).Fn;
+    if (function.return_type == null) return false;
+
+    const ret_type = @typeInfo(function.return_type.?);
+    return ret_type == .ErrorUnion;
+}
+
 /// validates T.name has arguments args. Use null for anytype args
 pub fn hasFnWithArgs(comptime T: type, comptime name: []const u8, comptime args: anytype, comptime ReturnT: type) void {
     if (comptime !@hasDecl(T, name)) {
@@ -96,38 +109,27 @@ pub const SystemTrait = struct {
     }
 };
 
+/// TODO: technically, T.Param could actually be a system struct that can be used to create a filter to pass to prepareAsset...
 pub const AssetTypeTrait = struct {
     pub fn validate(comptime T: type) void {
-        hasDeclOfType(T, "ExtractedAsset", type);
-        hasDeclOfType(T, "PreparedAsset", type);
-        hasDeclOfType(T, "Param", type);
-        hasFnWithArgs(T, "prepareAsset", .{ *const T.ExtractedAsset, T.Param }, T.PreparedAsset);
+        comptime {
+            hasDeclOfType(T, "ExtractedAsset", type);
+            hasDeclOfType(T, "PreparedAsset", type);
+            hasDeclOfType(T, "Param", type);
+
+            if (@hasDecl(T, "prepareAsset")) {
+                const PrepareAssetFn = @TypeOf(@field(T, "prepareAsset"));
+                if (!fnHasErrorSetReturnType(PrepareAssetFn))
+                    @compileError(@typeName(T) ++ " does not satisfy AssetTypeTrait. prepareAsset function should return an error set");
+
+                if (PrepareAssetFn != fn (*const T.ExtractedAsset, T.Param) ErrorSet(PrepareAssetFn)!T.PreparedAsset)
+                    @compileError(@typeName(T) ++ " does not satisfy AssetTypeTrait. prepareAsset function should have signature: `fn prepareAsset(*const T.ExtractedAsset, T.Param) !T.preparedAsset`");
+            } else {
+                @compileError(@typeName(T) ++ " does not satisfy AssetTypeTrait. Missing function prepareAsset: `fn prepareAsset(*const T.ExtractedAsset, T.Param) !T.preparedAsset`");
+            }
+        }
     }
 };
-
-pub const MaterialTrait = struct {};
-
-pub fn MaterialMixin(comptime M: type) type {
-    return struct {
-        pub usingnamespace if (!@hasDecl(M, "vertexShader"))
-            struct {
-                pub fn vertexShader(_: M) aya.ShaderRef {
-                    return .default;
-                }
-            }
-        else
-            struct {};
-
-        // pub usingnamespace if (!@hasDecl(M, "fragmentShader"))
-        //     struct {
-        //         pub fn fragmentShader(_: M) aya.ShaderRef {
-        //             return .default;
-        //         }
-        //     }
-        // else
-        //     struct {};
-    };
-}
 
 test "trait.has" {
     const TestAsset = struct {
@@ -136,7 +138,7 @@ test "trait.has" {
 
         pub const Param = struct {};
 
-        pub fn prepareAsset(_: *const ExtractedAsset, _: Param) PreparedAsset {}
+        pub fn prepareAsset(_: *const ExtractedAsset, _: Param) !PreparedAsset {}
     };
 
     const TestSystem = struct {
@@ -147,22 +149,6 @@ test "trait.has" {
 
         pub fn run(_: @This()) void {}
     };
-
-    const TestMaterial = struct {
-        pub fn vertexShader(_: @This()) aya.ShaderRef {
-            return .{ .path = .{ .path = .{ .str = "asset/path" } } };
-        }
-
-        pub fn fragmentShader(_: @This()) aya.ShaderRef {
-            return .default;
-        }
-
-        pub usingnamespace MaterialMixin(@This());
-    };
-
-    const material = TestMaterial{};
-    std.debug.print("-------- vert: {}\n", .{material.vertexShader()});
-    std.debug.print("-------- frag: {}\n", .{material.fragmentShader()});
 
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset));
     try std.testing.expect(implementsTrait(AssetTypeTrait, TestAsset{}));

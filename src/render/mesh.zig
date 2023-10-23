@@ -247,7 +247,7 @@ pub const Mesh = struct {
         return attributes_interleaved_buffer;
     }
 
-    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, params: Mesh.Param) Mesh.PreparedAsset {
+    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, params: Mesh.Param) !Mesh.PreparedAsset {
         var vertex_buffer_data = mesh.getVertexBufferData();
         defer aya.mem.free(vertex_buffer_data);
 
