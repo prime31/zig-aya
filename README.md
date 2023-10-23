@@ -73,6 +73,7 @@ _ = commands.spawnWithBundle("Name", VecBundle{
 
 
 ## TODO
+- `T.prepareAsset` should be allowed to return an error. if it does, stick asset in PrepareNextFrame
 - make RenderDevice once we get an understanding of how rendering comes together
 - maybe do some wrapping of Phase: (this turns out to make things pretty annoying i think)
     - phases could be required to be wrapped in Phase(T) for validation: const Update = Phase(Update);
