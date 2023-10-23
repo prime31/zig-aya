@@ -29,6 +29,7 @@ pub fn RenderAssetPlugin(comptime T: type) type {
         pub fn build(_: Self, app: *App) void {
             _ = app
                 .initResource(ExtractedAssets(T))
+                .initResource(PrepareNextFrameAssets(T))
                 .initResource(RenderAssets(T))
                 .addSystems(aya.PostUpdate, ExtractAssetSystem(T))
                 .addSystems(aya.PostUpdate, PrepareRenderAssetSystem(T));
@@ -36,20 +37,25 @@ pub fn RenderAssetPlugin(comptime T: type) type {
     };
 }
 
+fn RenderAssetData(comptime T: type) type {
+    return struct {
+        id: AssetIndex,
+        asset: T.ExtractedAsset,
+    };
+}
+
 /// Resource
 pub fn ExtractedAssets(comptime T: type) type {
     return struct {
-        pub const asset_type = T;
         const Self = @This();
+        const Data = RenderAssetData(T.ExtractedAsset);
 
-        const RenderAssetData = struct { id: AssetIndex, asset: T.ExtractedAsset };
-
-        extracted: std.ArrayList(RenderAssetData),
+        extracted: std.ArrayList(Data),
         removed: std.ArrayList(AssetIndex),
 
         pub fn init() Self {
             return .{
-                .extracted = std.ArrayList(RenderAssetData).init(aya.allocator),
+                .extracted = std.ArrayList(Data).init(aya.allocator),
                 .removed = std.ArrayList(AssetIndex).init(aya.allocator),
             };
         }
@@ -65,6 +71,33 @@ pub fn ExtractedAssets(comptime T: type) type {
         pub fn clear(self: *Self) void {
             self.extracted.clearRetainingCapacity();
             self.removed.clearRetainingCapacity();
+        }
+    };
+}
+
+/// Resource
+pub fn PrepareNextFrameAssets(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        const Data = RenderAssetData(T.ExtractedAsset);
+
+        assets: std.ArrayList(Data),
+
+        pub fn init() Self {
+            return .{
+                .assets = std.ArrayList(Data).init(aya.allocator),
+            };
+        }
+
+        pub fn deinit(self: Self) void {
+            for (self.assets.items) |*data| {
+                data.asset.deinit();
+            }
+            self.assets.deinit();
+        }
+
+        pub fn clear(self: *Self) void {
+            self.assets.clearRetainingCapacity();
         }
     };
 }
@@ -109,18 +142,35 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
     return struct {
         pub const name = "aya.systems.assets.RenderAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
 
-        pub fn run(world: *aya.World, extracted_assets_res: ResMut(ExtractedAssets(T)), render_assets_res: ResMut(RenderAssets(T))) void {
+        pub fn run(
+            world: *aya.World,
+            extracted_assets_res: ResMut(ExtractedAssets(T)),
+            prepare_next_frame_res: ResMut(PrepareNextFrameAssets(T)),
+            render_assets_res: ResMut(RenderAssets(T)),
+        ) void {
             const extracted_assets = extracted_assets_res.getAssertExists();
+            const prepare_next_frame = prepare_next_frame_res.getAssertExists();
             const render_assets = render_assets_res.getAssertExists();
 
-            // process all ExtractedAssets
-            for (extracted_assets.extracted.items) |obj| {
+            // process all PrepareNextFrameAssets
+            const next_frame = prepare_next_frame.assets.toOwnedSlice() catch unreachable;
+            defer aya.mem.free(next_frame);
+
+            for (next_frame) |obj| {
                 const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param));
+                // if (failed) prepare_next_frame.assets.append(obj) catch unreachable;
                 render_assets.insert(obj.id, render_asset);
             }
 
             for (extracted_assets.removed.items) |rem| {
                 render_assets.remove(rem);
+            }
+
+            // process all ExtractedAssets
+            for (extracted_assets.extracted.items) |obj| {
+                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param));
+                // if (failed) prepare_next_frame.assets.append(obj) catch unreachable;
+                render_assets.insert(obj.id, render_asset);
             }
 
             extracted_assets.clear();
