@@ -21,17 +21,19 @@ pub const MeshRenderPlugin = struct {
         // load internal shaders
         const assets = app.world.getResourceMut(Assets(Shader)).?;
         MESH_SHADER_HANDLE = assets.add(Shader.fromWgsl(@embedFile("mesh.wgsl"), "mesh.wgsl"));
+
+        _ = app.initResource(MeshPipeline);
     }
 };
 
 pub const MeshPipeline = struct {
     const Key = MeshPipelineKey;
 
-    view_layout: zgpu.BindGroupLayoutHandle,
-    view_layout_multisampled: zgpu.BindGroupLayoutHandle,
+    view_layouts: zgpu.BindGroupLayoutHandle = .{},
+    view_layout_multisampled: zgpu.BindGroupLayoutHandle = .{},
     // This dummy white texture is to be used in place of optional StandardMaterial textures
-    dummy_white_gpu_image: GpuImage,
-    clustered_forward_buffer_binding_type: wgpu.BufferBindingType,
+    dummy_white_gpu_image: ?GpuImage = null,
+    clustered_forward_buffer_binding_type: wgpu.BufferBindingType = .storage,
     mesh_layouts: MeshLayouts,
     /// `MeshUniform`s are stored in arrays in buffers. If storage buffers are available, they
     /// are used and this will be `None`, otherwise uniform buffers will be used with batches
@@ -44,7 +46,13 @@ pub const MeshPipeline = struct {
     /// @group(2) @binding(0) var<storage> mesh: array<Mesh>;
     /// ##endif // PER_OBJECT_BUFFER_BATCH_SIZE
     /// ```
-    per_object_buffer_batch_size: ?u32,
+    // per_object_buffer_batch_size: ?u32 = null,
+
+    pub fn init() MeshPipeline {
+        return .{
+            .mesh_layouts = MeshLayouts{},
+        };
+    }
 
     pub fn specialize(self: MeshPipeline, key: Key, layout: *MeshVertexBufferLayout) !RenderPipelineDescriptor {
         // TODO: setup shader defines

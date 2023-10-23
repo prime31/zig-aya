@@ -136,6 +136,34 @@ pub fn RenderAssets(comptime T: type) type {
     };
 }
 
+/// extracts all created or modified assets and puts them in ExtractedAssets
+pub fn ExtractAssetSystem(comptime T: type) type {
+    return struct {
+        pub const name = "aya.systems.assets.ExtractAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
+
+        pub fn run(
+            extracted_assets_res: ResMut(ExtractedAssets(T)),
+            event_reader: aya.EventReader(aya.AssetEvent(T)),
+            assets_res: Res(aya.Assets(T)),
+        ) void {
+            const extracted_assets = extracted_assets_res.getAssertExists();
+            const asset: *const aya.Assets(T) = assets_res.getAssertExists();
+
+            // TODO: use a HashSet to ensure we dont queue up multiple evnets if an asset is added and removed in one frame for example
+            for (event_reader.read()) |evt| {
+                switch (evt) {
+                    .added, .modified => |mod| {
+                        if (asset.get(mod.index)) |ass| {
+                            extracted_assets.extracted.append(.{ .id = mod.index, .asset = ass }) catch unreachable;
+                        }
+                    },
+                    .removed => |rem| extracted_assets.removed.append(rem.index) catch unreachable,
+                }
+            }
+        }
+    };
+}
+
 /// prepares all assets of the corresponding `RenderAsset` type which where extracted this frame for the GPU. Calls
 /// `prepareAsset(AssetIndex, Asset)` on the asset type.
 pub fn PrepareRenderAssetSystem(comptime T: type) type {
@@ -178,34 +206,6 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
             }
 
             extracted_assets.clear();
-        }
-    };
-}
-
-/// extracts all created or modified assets and puts them in ExtractedAssets
-pub fn ExtractAssetSystem(comptime T: type) type {
-    return struct {
-        pub const name = "aya.systems.assets.ExtractAssetSystem_" ++ aya.utils.typeNameLastComponent(T);
-
-        pub fn run(
-            extracted_assets_res: ResMut(ExtractedAssets(T)),
-            event_reader: aya.EventReader(aya.AssetEvent(T)),
-            assets_res: Res(aya.Assets(T)),
-        ) void {
-            const extracted_assets = extracted_assets_res.getAssertExists();
-            const asset: *const aya.Assets(T) = assets_res.getAssertExists();
-
-            // TODO: use a HashSet to ensure we dont queue up multiple evnets if an asset is added and removed in one frame for example
-            for (event_reader.read()) |evt| {
-                switch (evt) {
-                    .added, .modified => |mod| {
-                        if (asset.get(mod.index)) |ass| {
-                            extracted_assets.extracted.append(.{ .id = mod.index, .asset = ass }) catch unreachable;
-                        }
-                    },
-                    .removed => |rem| extracted_assets.removed.append(rem.index) catch unreachable,
-                }
-            }
         }
     };
 }

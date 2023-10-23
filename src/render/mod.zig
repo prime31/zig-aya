@@ -8,13 +8,19 @@ pub usingnamespace @import("mesh.zig");
 pub usingnamespace @import("shader.zig");
 pub usingnamespace @import("image.zig");
 pub usingnamespace @import("pipeline.zig");
+pub usingnamespace @import("bind_group.zig");
+
+pub usingnamespace @import("texture/mod.zig");
+
+const ImagePlugin = aya.ImagePlugin;
 
 pub const RenderPlugin = struct {
     pub fn build(_: RenderPlugin, app: *aya.App) void {
         _ = app.initAsset(self.Mesh)
             .initAsset(aya.Shader)
             .initAssetLoader(aya.Shader, aya.loadShader)
-            .insertResource(ClearColor{});
+            .insertResource(ClearColor{})
+            .addPlugins(ImagePlugin);
     }
 };
 

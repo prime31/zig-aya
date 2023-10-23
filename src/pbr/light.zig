@@ -1,6 +1,8 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
+const Color = aya.Color;
+
 pub const PointLight = struct {};
 
 pub const SpotLight = struct {};
@@ -19,4 +21,11 @@ pub const CascadeShadowConfig = struct {
     overlap_proportion: f32,
     /// The (positive) distance to the near boundary of the first cascade.
     minimum_distance: f32,
+};
+
+/// Resource.
+pub const AmbientLight = struct {
+    color: Color = Color.white,
+    /// A direct scale factor multiplied with `color` before being passed to the shader.
+    brightness: f32 = 0.05,
 };

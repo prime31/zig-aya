@@ -1,5 +1,4 @@
 const std = @import("std");
-const math = @import("math.zig");
 
 pub const Rect = struct {
     x: i32 = 0,
@@ -27,9 +26,9 @@ pub const Rect = struct {
         return self.x + self.width;
     }
 
-    pub fn containsPoint(self: Rect, point: math.Point) bool {
-        return self.x <= point.x and point.x < self.right() and self.y <= point.y and point.y < self.bottom();
-    }
+    // pub fn containsPoint(self: Rect, point: math.Point) bool {
+    //     return self.x <= point.x and point.x < self.right() and self.y <= point.y and point.y < self.bottom();
+    // }
 
     pub fn asRectF(self: Rect) RectF {
         return .{

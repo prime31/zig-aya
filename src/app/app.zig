@@ -242,7 +242,7 @@ pub const App = struct {
         return self;
     }
 
-    /// Allowed types: type (with `fn build(Self, *App)`) and default values for all fields), struct instance
+    /// Allowed types: type (with `fn build(Self, *App)` and default values for all fields), struct instance
     /// (with `fn build(Self, *App)`), DefaultPlugins or an instance of DefaultPlugins
     pub fn addPlugins(self: *Self, comptime plugins: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(plugins)) == .Struct or @typeInfo(@TypeOf(plugins)) == .Type);
@@ -272,7 +272,7 @@ pub const App = struct {
     }
 
     /// Inserts an instantiated plugin struct. Plugins must implement `build(Self, *App)`
-    fn insertPlugin(self: *Self, value: anytype) *Self {
+    pub fn insertPlugin(self: *Self, value: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(value)) == .Struct);
 
         const type_hash = aya.utils.hashTypeName(@TypeOf(value));

@@ -3,7 +3,17 @@ const aya = @import("../../aya.zig");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
+const GpuImage = aya.GpuImage;
+
 pub const Image = struct {
+    pub const PreparedAsset = GpuImage;
+    pub const ExtractedAsset = Image;
+
+    pub const Param = struct {
+        images: *aya.Assets(Image),
+        gctx: *zgpu.GraphicsContext,
+    };
+
     data: []const u8,
     texture_descriptor: wgpu.TextureDescriptor,
     sampler_descriptor: ?wgpu.SamplerDescriptor,
@@ -34,5 +44,11 @@ pub const Image = struct {
 
     pub fn deinit(self: Image) void {
         aya.mem.free(self.data);
+    }
+
+    pub fn prepareAsset(self: *const Image.ExtractedAsset, params: Image.Param) !Image.PreparedAsset {
+        _ = params;
+        _ = self;
+        return error.Fooooook;
     }
 };
