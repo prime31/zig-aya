@@ -1,5 +1,4 @@
 const std = @import("std");
-const core = @import("mach-core");
 const aya = @This();
 
 pub const utils = @import("utils.zig");
@@ -13,6 +12,7 @@ pub usingnamespace @import("asset/mod.zig");
 pub usingnamespace @import("window/mod.zig");
 pub usingnamespace @import("ecs/mod.zig");
 pub usingnamespace @import("gizmos/mod.zig");
+pub usingnamespace @import("math/mod.zig");
 pub usingnamespace @import("transform/mod.zig");
 pub usingnamespace @import("render/mod.zig");
 pub usingnamespace @import("pbr/mod.zig");

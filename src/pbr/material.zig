@@ -9,46 +9,72 @@ const Shader = aya.Shader;
 const RenderPipelineDescriptor = aya.RenderPipelineDescriptor;
 const MeshVertexBufferLayout = aya.InnerMeshVertexBufferLayout;
 const MeshPipelineKey = aya.MeshPipelineKey;
+const AlphaMode = aya.AlphaMode;
+const AssetId = aya.AssetId;
+const ResMut = aya.ResMut;
+const Res = aya.Res;
+const Local = aya.Local;
+const OwnedBindingResource = aya.OwnedBindingResource;
+const RenderAssets = aya.RenderAssets;
+const Image = aya.Image;
+const PreparedBindGroup = aya.PreparedBindGroup;
 
+///  Materials must implement [`AsBindGroup`] to define how data will be transferred to the GPU and bound in shaders
 pub fn Material(comptime M: type) type {
     return struct {
         const Self = @This();
 
-        pub const material_type = M;
+        pub const MaterialType = M;
+        pub const Data = M.Data;
 
-        pub fn vertexShader(_: Self) aya.ShaderRef {
+        pub fn vertexShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "vertexShader")) return M.vertexShader();
             return .default;
         }
 
-        pub fn fragmentShader(_: Self) aya.ShaderRef {
+        pub fn fragmentShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "fragmentShader")) return M.fragmentShader();
             return .default;
         }
 
-        pub fn depthBias(_: Self) f32 {
+        pub fn alphaMode(_: *const M) AlphaMode {
+            if (@hasDecl(M, "alphaMode")) return M.alphaMode();
+            return AlphaMode.opaque_;
+        }
+
+        pub fn depthBias(_: *const M) f32 {
             if (@hasDecl(M, "depthBias")) return M.fragmedepthBiasntShader();
             return 0;
         }
 
-        pub fn prepassVertexShader(_: Self) aya.ShaderRef {
+        pub fn prepassVertexShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "prepassVertexShader")) return M.prepassVertexShader();
             return .default;
         }
 
-        pub fn prepassFragmentShader(_: Self) aya.ShaderRef {
+        pub fn prepassFragmentShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "prepassFragmentShader")) return M.prepassFragmentShader();
             return .default;
         }
 
-        pub fn deferredVertexShader(_: Self) aya.ShaderRef {
+        pub fn deferredVertexShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "deferredVertexShader")) return M.deferredVertexShader();
             return .default;
         }
 
-        pub fn deferredFragmentShader(_: Self) aya.ShaderRef {
+        pub fn deferredFragmentShader(_: *const Self) aya.ShaderRef {
             if (@hasDecl(M, "deferredFragmentShader")) return M.deferredFragmentShader();
             return .default;
+        }
+
+        pub fn asBindGroup(
+            material: *const M,
+            layout: zgpu.BindGroupLayoutHandle,
+            gctx: *const zgpu.GraphicsContext,
+            images: *const RenderAssets(Image),
+        ) !PreparedBindGroup(Data) {
+            if (@hasDecl(M, "asBindGroup")) return material.asBindGroup(layout, gctx, images);
+            return error.Fook;
         }
 
         pub fn specialize(
@@ -80,32 +106,285 @@ pub fn MaterialPipeline(comptime M: type) type {
         fragment_shader: ?Handle(Shader),
 
         pub fn specialize(self: Self, key: Key, layout: *MeshVertexBufferLayout) !RenderPipelineDescriptor {
-            var descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout);
+            var descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout) catch unreachable;
 
             if (self.vertex_shader) |vert_shader| descriptor.vertex.shader = vert_shader;
             if (self.fragment_shader) |frag_shader| descriptor.fragment.shader = frag_shader;
+
+            descriptor.layout.insert(1, self.material_layout);
+            M.specialize(self, &descriptor, layout, key);
+
+            if (true) @panic("we fucking made it");
 
             return descriptor;
         }
     };
 }
 
-// fn specialize(
-//     &self,
-//     key: Self::Key,
-//     layout: &MeshVertexBufferLayout,
-// ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
-//     let mut descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout)?;
-//     if let Some(vertex_shader) = &self.vertex_shader {
-//         descriptor.vertex.shader = vertex_shader.clone();
-//     }
+fn ExtractedMaterialEntry(comptime M: type) type {
+    return struct { id: AssetId(M), material: M };
+}
 
-//     if let Some(fragment_shader) = &self.fragment_shader {
-//         descriptor.fragment.as_mut().unwrap().shader = fragment_shader.clone();
-//     }
+pub fn ExtractedMaterials(comptime M: type) type {
+    return struct {
+        const Self = @This();
 
-//     descriptor.layout.insert(1, self.material_layout.clone());
+        extracted: std.ArrayList(ExtractedMaterialEntry(M)),
+        removed: std.ArrayList(AssetId(M)),
 
-//     M::specialize(self, &mut descriptor, layout, key)?;
-//     Ok(descriptor)
+        pub fn init() Self {
+            return .{
+                .extracted = std.ArrayList(ExtractedMaterialEntry(M)).init(aya.allocator),
+                .removed = std.ArrayList(AssetId(M)).init(aya.allocator),
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.extracted.deinit();
+            self.removed.deinit();
+        }
+
+        pub fn clear(self: *Self) void {
+            self.extracted.clearRetainingCapacity();
+            self.removed.clearRetainingCapacity();
+        }
+    };
+}
+
+/// Adds the necessary ECS resources and render logic to enable rendering entities using the given [`Material`]
+/// asset type.
+pub fn MaterialPlugin(comptime M: type) type {
+    return struct {
+        const Self = @This();
+
+        prepass_enabled: bool = true,
+
+        pub fn build(_: Self, app: *aya.App) void {
+            _ = app
+                .initAsset(M)
+                .initResource(ExtractedMaterials(M))
+                .initResource(RenderMaterials(M))
+                .initResource(MaterialPipeline(M))
+                .addSystems(aya.PostUpdate, .{ ExtractMaterialsSystem(M), PrepareMaterialsSystem(M) });
+        }
+    };
+}
+
+/// Resource
+pub fn PrepareNextFrameMaterials(comptime M: type) type {
+    return struct {
+        const Self = @This();
+
+        assets: std.ArrayList(ExtractedMaterialEntry(M)),
+
+        pub fn init() Self {
+            return .{
+                .assets = std.ArrayList(ExtractedMaterialEntry(M)).init(aya.allocator),
+            };
+        }
+
+        pub fn deinit(self: Self) void {
+            self.assets.deinit();
+        }
+
+        pub fn clear(self: *Self) void {
+            self.assets.clearRetainingCapacity();
+        }
+    };
+}
+
+/// Common [`Material`] properties, calculated for a specific material instance.
+pub const MaterialProperties = struct {
+    /// Is this material should be rendered by the deferred renderer when AlphaMode::Opaque or AlphaMode::Mask
+    // render_method: OpaqueRendererMethod,
+    /// The [`AlphaMode`] of this material.
+    alpha_mode: AlphaMode,
+    /// Add a bias to the view depth of the mesh which can be used to force a specific render order
+    /// for meshes with equal depth, to avoid z-fighting.
+    /// The bias is in depth-texture units so large values may be needed to overcome small depth differences.
+    depth_bias: f32,
+};
+
+pub fn PreparedMaterial(comptime M: type) type {
+    return struct {
+        const Self = @This();
+
+        bindings: std.ArrayList(aya.Bindings),
+        bind_group: zgpu.BindGroupHandle,
+        key: M.Data,
+        properties: MaterialProperties,
+
+        pub fn init() Self {
+            return .{
+                .bindings = std.ArrayList(aya.Bindings).init(aya.allocator),
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.bindings.deinit();
+        }
+    };
+}
+
+/// Resource
+pub fn RenderMaterials(comptime M: type) type {
+    return struct {
+        const Self = @This();
+
+        materials: std.AutoHashMap(AssetId(M), PreparedMaterial(M)),
+
+        pub fn init() Self {
+            return .{
+                .materials = std.AutoHashMap(AssetId(M), PreparedMaterial(M)).init(aya.allocator),
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            var iter = self.materials.valueIterator();
+            while (iter.next()) |prepared_material| prepared_material.deinit();
+
+            self.materials.deinit();
+        }
+
+        pub fn insert(self: *Self, id: AssetId(M), asset: PreparedMaterial(M)) void {
+            self.materials.put(id, asset) catch unreachable;
+        }
+
+        pub fn get(self: *Self, id: AssetId(M)) ?PreparedMaterial(M) {
+            return self.materials.get(id);
+        }
+
+        pub fn remove(self: *Self, id: AssetId(M)) void {
+            _ = self.materials.remove(id);
+        }
+    };
+}
+
+pub fn ExtractMaterialsSystem(comptime M: type) type {
+    return struct {
+        pub const name = "aya.systems.assets.ExtractMaterialsSystem_" ++ aya.utils.typeNameLastComponent(M);
+
+        pub fn run(
+            extracted_materials_res: ResMut(ExtractedMaterials(M)),
+            event_reader: aya.EventReader(aya.AssetEvent(M)),
+            assets_res: Res(aya.Assets(M)),
+        ) void {
+            const extracted_materials = extracted_materials_res.getAssertExists();
+            const asset: *const aya.Assets(M) = assets_res.getAssertExists();
+
+            // TODO: use a HashSet to ensure we dont queue up multiple evnets if an asset is added and removed in one frame for example
+            for (event_reader.read()) |evt| {
+                switch (evt) {
+                    .added, .modified => |mod| {
+                        if (asset.get(mod.index)) |ass| {
+                            extracted_materials.extracted.append(.{ .id = mod, .material = ass }) catch unreachable;
+                        }
+                    },
+                    .removed => |rem| extracted_materials.removed.append(rem) catch unreachable,
+                }
+            }
+        }
+    };
+}
+
+pub fn PrepareMaterialsSystem(comptime M: type) type {
+    return struct {
+        pub const name = "aya.systems.assets.PrepareMaterialsSystem_" ++ aya.utils.typeNameLastComponent(M);
+
+        pub fn run(
+            world: *aya.World,
+            extracted_materials_res: ResMut(ExtractedMaterials(M)),
+            prepare_next_frame_local: Local(PrepareNextFrameMaterials(M)),
+            render_materials_res: ResMut(RenderMaterials(M)),
+            images_res: Res(RenderAssets(Image)),
+            gctx_res: Res(zgpu.GraphicsContext),
+            pipeline_res: Res(MaterialPipeline(M)),
+        ) void {
+            _ = world;
+            const extracted_materials = extracted_materials_res.getAssertExists();
+            const prepare_next_frame = prepare_next_frame_local.get();
+            const render_materials = render_materials_res.getAssertExists();
+            const images = images_res.getAssertExists();
+            const gctx = gctx_res.getAssertExists();
+            const pipeline = pipeline_res.getAssertExists();
+
+            // process all PrepareNextFrameAssets
+            const next_frame = prepare_next_frame.assets.toOwnedSlice() catch unreachable;
+            defer aya.mem.free(next_frame);
+
+            for (next_frame) |obj| {
+                const prepared_material = prepareMaterial(M, &obj.material, gctx, images, pipeline) catch {
+                    prepare_next_frame.assets.append(obj) catch unreachable;
+                    continue;
+                };
+                render_materials.insert(obj.id, prepared_material);
+            }
+
+            for (extracted_materials.removed.items) |rem| {
+                render_materials.remove(rem);
+            }
+
+            // process all ExtractedAssets
+            for (extracted_materials.extracted.items) |obj| {
+                const prepared_material = prepareMaterial(M, &obj.material, gctx, images, pipeline) catch {
+                    prepare_next_frame.assets.append(obj) catch unreachable;
+                    continue;
+                };
+                render_materials.insert(obj.id, prepared_material);
+            }
+
+            extracted_materials.clear();
+        }
+    };
+}
+
+fn prepareMaterial(
+    comptime M: type,
+    material: *const M,
+    gctx: *const zgpu.GraphicsContext,
+    images: *const RenderAssets(Image),
+    pipeline: *const MaterialPipeline(M),
+) !PreparedMaterial(M) {
+    const prepared: PreparedBindGroup(M.Data) = try Material(M).asBindGroup(material, pipeline.material_layout, gctx, images);
+
+    return PreparedMaterial(M){
+        .bindings = prepared.bindings,
+        .bind_group = prepared.bind_group,
+        .key = prepared.data,
+        .properties = MaterialProperties{
+            .alpha_mode = Material(M).alphaMode(material),
+            .depth_bias = Material(M).depthBias(material),
+        },
+    };
+}
+
+// fn prepare_material<M: Material>(
+//     material: &M,
+//     render_device: &RenderDevice,
+//     images: &RenderAssets<Image>,
+//     fallback_image: &FallbackImage,
+//     pipeline: &MaterialPipeline<M>,
+//     default_opaque_render_method: OpaqueRendererMethod,
+// ) -> Result<PreparedMaterial<M>, AsBindGroupError> {
+//     let prepared = material.as_bind_group(
+//         &pipeline.material_layout,
+//         render_device,
+//         images,
+//         fallback_image,
+//     )?;
+//     let method = match material.opaque_render_method() {
+//         OpaqueRendererMethod::Forward => OpaqueRendererMethod::Forward,
+//         OpaqueRendererMethod::Deferred => OpaqueRendererMethod::Deferred,
+//         OpaqueRendererMethod::Auto => default_opaque_render_method,
+//     };
+//     Ok(PreparedMaterial {
+//         bindings: prepared.bindings,
+//         bind_group: prepared.bind_group,
+//         key: prepared.data,
+//         properties: MaterialProperties {
+//             alpha_mode: material.alpha_mode(),
+//             depth_bias: material.depth_bias(),
+//             render_method: method,
+//         },
+//     })
 // }
