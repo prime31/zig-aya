@@ -157,8 +157,10 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
             defer aya.mem.free(next_frame);
 
             for (next_frame) |obj| {
-                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param));
-                // if (failed) prepare_next_frame.assets.append(obj) catch unreachable;
+                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param)) catch {
+                    prepare_next_frame.assets.append(obj) catch unreachable;
+                    continue;
+                };
                 render_assets.insert(obj.id, render_asset);
             }
 
@@ -168,8 +170,10 @@ pub fn PrepareRenderAssetSystem(comptime T: type) type {
 
             // process all ExtractedAssets
             for (extracted_assets.extracted.items) |obj| {
-                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param));
-                // if (failed) prepare_next_frame.assets.append(obj) catch unreachable;
+                const render_asset = T.prepareAsset(&obj.asset, world.extractResources(T.Param)) catch {
+                    prepare_next_frame.assets.append(obj) catch unreachable;
+                    continue;
+                };
                 render_assets.insert(obj.id, render_asset);
             }
 
