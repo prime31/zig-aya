@@ -7,6 +7,7 @@ const Assets = aya.Assets;
 const Shader = aya.Shader;
 const Handle = aya.Handle;
 
+const World = aya.World;
 const GpuImage = aya.GpuImage;
 const Mesh = aya.Mesh;
 const MeshLayouts = aya.MeshLayouts;
@@ -31,26 +32,54 @@ pub const MeshPipeline = struct {
 
     view_layouts: zgpu.BindGroupLayoutHandle = .{},
     view_layout_multisampled: zgpu.BindGroupLayoutHandle = .{},
-    // This dummy white texture is to be used in place of optional StandardMaterial textures
-    dummy_white_gpu_image: ?GpuImage = null,
+    /// This dummy white texture is to be used in place of optional StandardMaterial textures
+    dummy_white_gpu_image: GpuImage,
     clustered_forward_buffer_binding_type: wgpu.BufferBindingType = .storage,
     mesh_layouts: MeshLayouts,
-    /// `MeshUniform`s are stored in arrays in buffers. If storage buffers are available, they
-    /// are used and this will be `None`, otherwise uniform buffers will be used with batches
-    /// of this many `MeshUniform`s, stored at dynamic offsets within the uniform buffer.
-    /// Use code like this in custom shaders:
-    /// ```wgsl
-    /// ##ifdef PER_OBJECT_BUFFER_BATCH_SIZE
-    /// @group(2) @binding(0) var<uniform> mesh: array<Mesh, #{PER_OBJECT_BUFFER_BATCH_SIZE}u>;
-    /// ##else
-    /// @group(2) @binding(0) var<storage> mesh: array<Mesh>;
-    /// ##endif // PER_OBJECT_BUFFER_BATCH_SIZE
-    /// ```
-    // per_object_buffer_batch_size: ?u32 = null,
 
-    pub fn init() MeshPipeline {
+    pub fn init(world: *World) MeshPipeline {
+        var gctx = world.getResourceMut(zgpu.GraphicsContext).?;
+
+        // A 1x1x1 'all 1.0' texture to use as a dummy texture to use in place of optional StandardMaterial textures
+        const dummy_white_gpu_image = blk: {
+            const image = aya.Image.init();
+            defer image.deinit();
+
+            const texture = gctx.createTexture(image.texture_descriptor);
+            const sampler = if (image.sampler_descriptor) |sampler_descriptor| gctx.createSampler(sampler_descriptor) else sblk: {
+                const default_sampler = world.getResource(aya.DefaultImageSampler).?;
+                break :sblk default_sampler.sampler;
+            };
+
+            const format_size = 4; //image.texture_descriptor.format // TODO: make method to get size from format
+            gctx.queue.writeTexture(
+                .{ .texture = gctx.lookupResource(texture).? },
+                .{
+                    .bytes_per_row = image.texture_descriptor.size.width * format_size,
+                    .rows_per_image = image.texture_descriptor.size.height,
+                },
+                .{
+                    .width = image.texture_descriptor.size.width,
+                    .height = image.texture_descriptor.size.height,
+                },
+                u8,
+                image.data,
+            );
+
+            const texture_view = gctx.createTextureView(texture, .{});
+            break :blk GpuImage{
+                .texture = gctx.lookupResource(texture).?,
+                .texture_view = texture_view,
+                .texture_format = image.texture_descriptor.format,
+                .sampler = sampler,
+                .size = @Vector(2, f32){ @floatFromInt(image.texture_descriptor.size.width), @floatFromInt(image.texture_descriptor.size.width) },
+                .mip_level_count = image.texture_descriptor.mip_level_count,
+            };
+        };
+
         return .{
-            .mesh_layouts = MeshLayouts{},
+            .dummy_white_gpu_image = dummy_white_gpu_image,
+            .mesh_layouts = MeshLayouts.init(gctx),
         };
     }
 

@@ -5,6 +5,7 @@ const typeId = aya.utils.typeId;
 
 const Allocator = std.mem.Allocator;
 const ErasedPtr = aya.utils.ErasedPtr;
+const World = aya.World;
 
 pub fn Res(comptime T: type) type {
     return struct {
@@ -66,9 +67,9 @@ pub const Resources = struct {
         return self.resources.contains(typeId(T));
     }
 
-    /// Resource types can have an optional init() or init(Allocator) method that will be called if present. If not, they
+    /// Resource types can have an optional init(), init(Allocator) or init(*World) method that will be called if present. If not, they
     /// will be zeroInit'ed
-    pub fn initResource(self: *Self, comptime T: type) *T {
+    pub fn initResource(self: *Self, comptime T: type, world: *World) *T {
         const res = aya.mem.create(T);
 
         if (@typeInfo(T) == .Struct) {
@@ -76,6 +77,7 @@ pub const Resources = struct {
                 const params = @typeInfo(@TypeOf(T.init)).Fn.params;
                 if (params.len == 0) break :blk T.init();
                 if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(aya.allocator);
+                if (params.len == 1 and params[0].type.? == *World) break :blk T.init(world);
                 break :blk std.mem.zeroes(T);
                 // @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither.");
             } else std.mem.zeroes(T);

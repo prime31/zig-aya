@@ -4,6 +4,7 @@ const app = @import("mod.zig");
 
 const Allocator = std.mem.Allocator;
 const Resources = app.Resources;
+const World = aya.World;
 
 pub fn Local(comptime T: type) type {
     return struct {
@@ -43,13 +44,13 @@ pub const LocalResources = struct {
         resources.insert(local);
     }
 
-    pub fn getLocalMut(self: *LocalResources, comptime T: type, system: u64) *T {
+    pub fn getLocalMut(self: *LocalResources, comptime T: type, system: u64, world: *World) *T {
         var resources = self.locals.getPtr(system) orelse blk: {
             self.locals.put(system, Resources.init()) catch unreachable;
             break :blk self.locals.getPtr(system).?;
         };
 
-        if (!resources.contains(T)) return resources.initResource(T);
+        if (!resources.contains(T)) return resources.initResource(T, world);
         return resources.get(T).?;
     }
 };

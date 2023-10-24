@@ -27,55 +27,74 @@ pub fn Material(comptime M: type) type {
         pub const MaterialType = M;
         pub const Data = M.Data;
 
-        pub fn vertexShader(_: *const Self) aya.ShaderRef {
+        pub fn vertexShader() aya.ShaderRef {
             if (@hasDecl(M, "vertexShader")) return M.vertexShader();
             return .default;
         }
 
-        pub fn fragmentShader(_: *const Self) aya.ShaderRef {
+        pub fn fragmentShader() aya.ShaderRef {
             if (@hasDecl(M, "fragmentShader")) return M.fragmentShader();
             return .default;
         }
 
-        pub fn alphaMode(_: *const M) AlphaMode {
-            if (@hasDecl(M, "alphaMode")) return M.alphaMode();
+        pub fn alphaMode(material: *const M) AlphaMode {
+            if (@hasDecl(M, "alphaMode")) return material.alphaMode();
             return AlphaMode.opaque_;
         }
 
-        pub fn depthBias(_: *const M) f32 {
-            if (@hasDecl(M, "depthBias")) return M.fragmedepthBiasntShader();
+        pub fn depthBias(material: *const M) f32 {
+            if (@hasDecl(M, "depthBias")) return material.depthBias();
             return 0;
         }
 
-        pub fn prepassVertexShader(_: *const Self) aya.ShaderRef {
+        pub fn prepassVertexShader() aya.ShaderRef {
             if (@hasDecl(M, "prepassVertexShader")) return M.prepassVertexShader();
             return .default;
         }
 
-        pub fn prepassFragmentShader(_: *const Self) aya.ShaderRef {
+        pub fn prepassFragmentShader() aya.ShaderRef {
             if (@hasDecl(M, "prepassFragmentShader")) return M.prepassFragmentShader();
-            return .default;
-        }
-
-        pub fn deferredVertexShader(_: *const Self) aya.ShaderRef {
-            if (@hasDecl(M, "deferredVertexShader")) return M.deferredVertexShader();
-            return .default;
-        }
-
-        pub fn deferredFragmentShader(_: *const Self) aya.ShaderRef {
-            if (@hasDecl(M, "deferredFragmentShader")) return M.deferredFragmentShader();
             return .default;
         }
 
         pub fn asBindGroup(
             material: *const M,
             layout: zgpu.BindGroupLayoutHandle,
-            gctx: *const zgpu.GraphicsContext,
+            gctx: *zgpu.GraphicsContext,
             images: *const RenderAssets(Image),
         ) !PreparedBindGroup(Data) {
             if (@hasDecl(M, "asBindGroup")) return material.asBindGroup(layout, gctx, images);
-            return error.Fook;
+
+            const bind_group = gctx.createBindGroup(layout, &.{
+                .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = 256 },
+                // .{ .binding = 1, .texture_view_handle = texture_view },
+                // .{ .binding = 2, .sampler_handle = sampler },
+            });
+
+            // let UnpreparedBindGroup { bindings, data } =
+            //     Self::unprepared_bind_group(self, layout, render_device, images, fallback_image)?;
+
+            // let entries = bindings
+            //     .iter()
+            //     .map(|(index, binding)| BindGroupEntry {
+            //         binding: *index,
+            //         resource: binding.get_binding(),
+            //     })
+            //     .collect::<Vec<_>>();
+
+            // let bind_group = render_device.create_bind_group(Self::label(), layout, &entries);
+
+            var prepared_bind_group = PreparedBindGroup(Data).init();
+            prepared_bind_group.bind_group = bind_group;
+            return prepared_bind_group;
         }
+
+        // let bindings = vec![#(#binding_impls,)*];
+
+        // Ok(#render_path::render_resource::UnpreparedBindGroup {
+        //     bindings,
+        //     data: #get_prepared_data,
+        // })
 
         pub fn specialize(
             _: MaterialPipeline(M),
@@ -104,6 +123,21 @@ pub fn MaterialPipeline(comptime M: type) type {
         material_layout: zgpu.BindGroupLayoutHandle,
         vertex_shader: ?Handle(Shader),
         fragment_shader: ?Handle(Shader),
+
+        pub fn init(world: *aya.World) Self {
+            const asset_server: *aya.AssetServer = world.getResourceMut(aya.AssetServer).?;
+            const shaders = world.getResourceMut(aya.Assets(Shader)).?;
+            const gctx = world.getResourceMut(zgpu.GraphicsContext).?;
+
+            return .{
+                .mesh_pipeline = world.getResourceMut(aya.MeshPipeline).?.*,
+                .material_layout = gctx.createBindGroupLayout(&.{
+                    zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0), // TODO: wtf, move to Material
+                }),
+                .vertex_shader = Material(M).vertexShader().getHandle(shaders, asset_server),
+                .fragment_shader = Material(M).fragmentShader().getHandle(shaders, asset_server),
+            };
+        }
 
         pub fn specialize(self: Self, key: Key, layout: *MeshVertexBufferLayout) !RenderPipelineDescriptor {
             var descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout) catch unreachable;
@@ -297,7 +331,7 @@ pub fn PrepareMaterialsSystem(comptime M: type) type {
             prepare_next_frame_local: Local(PrepareNextFrameMaterials(M)),
             render_materials_res: ResMut(RenderMaterials(M)),
             images_res: Res(RenderAssets(Image)),
-            gctx_res: Res(zgpu.GraphicsContext),
+            gctx_res: ResMut(zgpu.GraphicsContext),
             pipeline_res: Res(MaterialPipeline(M)),
         ) void {
             _ = world;
@@ -341,11 +375,12 @@ pub fn PrepareMaterialsSystem(comptime M: type) type {
 fn prepareMaterial(
     comptime M: type,
     material: *const M,
-    gctx: *const zgpu.GraphicsContext,
+    gctx: *zgpu.GraphicsContext,
     images: *const RenderAssets(Image),
     pipeline: *const MaterialPipeline(M),
 ) !PreparedMaterial(M) {
     const prepared: PreparedBindGroup(M.Data) = try Material(M).asBindGroup(material, pipeline.material_layout, gctx, images);
+    std.debug.print("------ prepareMaterial working so far\n", .{});
 
     return PreparedMaterial(M){
         .bindings = prepared.bindings,
@@ -357,34 +392,3 @@ fn prepareMaterial(
         },
     };
 }
-
-// fn prepare_material<M: Material>(
-//     material: &M,
-//     render_device: &RenderDevice,
-//     images: &RenderAssets<Image>,
-//     fallback_image: &FallbackImage,
-//     pipeline: &MaterialPipeline<M>,
-//     default_opaque_render_method: OpaqueRendererMethod,
-// ) -> Result<PreparedMaterial<M>, AsBindGroupError> {
-//     let prepared = material.as_bind_group(
-//         &pipeline.material_layout,
-//         render_device,
-//         images,
-//         fallback_image,
-//     )?;
-//     let method = match material.opaque_render_method() {
-//         OpaqueRendererMethod::Forward => OpaqueRendererMethod::Forward,
-//         OpaqueRendererMethod::Deferred => OpaqueRendererMethod::Deferred,
-//         OpaqueRendererMethod::Auto => default_opaque_render_method,
-//     };
-//     Ok(PreparedMaterial {
-//         bindings: prepared.bindings,
-//         bind_group: prepared.bind_group,
-//         key: prepared.data,
-//         properties: MaterialProperties {
-//             alpha_mode: material.alpha_mode(),
-//             depth_bias: material.depth_bias(),
-//             render_method: method,
-//         },
-//     })
-// }

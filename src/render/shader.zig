@@ -7,10 +7,18 @@ const AssetPath = aya.AssetPath;
 pub const ShaderRef = union(enum) {
     /// Use the "default" shader for the current context.
     default: void,
-    /// A handle to a shader stored in the [`Assets<Shader>`](bevy_asset::Assets) resource
+    /// A handle to a shader stored in the `Assets(Shader)`
     handle: Handle(Shader),
     /// An asset path leading to a shader
     path: AssetPath,
+
+    pub fn getHandle(self: ShaderRef, shaders: *aya.Assets(Shader), asset_server: *aya.AssetServer) ?Handle(Shader) {
+        return switch (self) {
+            .default => null,
+            .handle => |h| h,
+            .path => |path| asset_server.load(Shader, shaders, path.path.str, {}),
+        };
+    }
 };
 
 pub const ShaderImport = union(enum) {

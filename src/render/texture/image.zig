@@ -5,6 +5,11 @@ const wgpu = zgpu.wgpu;
 
 const GpuImage = aya.GpuImage;
 
+/// Resource.
+pub const DefaultImageSampler = struct {
+    sampler: zgpu.SamplerHandle,
+};
+
 pub const Image = struct {
     pub const PreparedAsset = GpuImage;
     pub const ExtractedAsset = Image;
@@ -16,14 +21,15 @@ pub const Image = struct {
 
     data: []const u8,
     texture_descriptor: wgpu.TextureDescriptor,
-    sampler_descriptor: ?wgpu.SamplerDescriptor,
+    sampler_descriptor: ?wgpu.SamplerDescriptor = null,
     texture_view_descriptor: ?wgpu.TextureViewDescriptor = null,
 
     pub fn init() Image {
         const format = wgpu.TextureFormat.rgba8_unorm;
         // TODO: TextureFormat pixelSize method
-        const data = aya.mem.alloc(u8, 4);
-        data = &[_]u8{ 255, 255, 255, 255 };
+        var data = aya.mem.alloc(u8, 4);
+        data[0..4].* = .{ 255, 255, 255, 255 };
+
         return .{
             .data = data,
             .texture_descriptor = .{
