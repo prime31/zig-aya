@@ -73,6 +73,7 @@ _ = commands.spawnWithBundle("Name", VecBundle{
 
 
 ## TODO
-- make RenderDevice once we get an understanding of how rendering comes together
+- Renderer: Pipeline.rs (in bevy_render) has some caching ideas
+- Renderer: make RenderDevice once we get an understanding of how rendering comes together
 - add more Window events
 
