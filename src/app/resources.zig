@@ -78,8 +78,7 @@ pub const Resources = struct {
                 if (params.len == 0) break :blk T.init();
                 if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(aya.allocator);
                 if (params.len == 1 and params[0].type.? == *World) break :blk T.init(world);
-                break :blk std.mem.zeroes(T);
-                // @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has neither.");
+                @compileError("Resources with init method must be init(), init(Allocator) or init(*World). " ++ @typeName(T) ++ " has none of them.");
             } else std.mem.zeroes(T);
         } else {
             res.* = std.mem.zeroes(T);
