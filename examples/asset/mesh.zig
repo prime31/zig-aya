@@ -83,8 +83,10 @@ const CreateQuadMeshSystem = struct {
 };
 
 const LoadAssetSystem = struct {
-    pub fn run(asset_server_res: ResMut(AssetServer)) void {
+    pub fn run(materials_res: ResMut(Assets(aya.StandardMaterial)), asset_server_res: ResMut(AssetServer)) void {
         const asset_server: *AssetServer = asset_server_res.getAssertExists();
+        const materials = materials_res.getAssertExists();
+        _ = materials;
         _ = asset_server;
     }
 };

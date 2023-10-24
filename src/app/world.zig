@@ -39,7 +39,7 @@ pub const World = struct {
     }
 
     pub fn initResource(self: *Self, comptime T: type) void {
-        _ = self.resources.initResource(T);
+        _ = self.resources.initResource(T, self);
     }
 
     pub fn containsResource(self: *Self, comptime T: type) bool {

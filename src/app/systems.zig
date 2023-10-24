@@ -181,7 +181,7 @@ fn wrapSystemFn(comptime cb: anytype) fn ([*c]c.ecs_iter_t) callconv(.C) void {
 
                 if (@hasDecl(Child, "local_type")) {
                     var application: *App = @ptrCast(@alignCast(it.*.binding_ctx.?));
-                    @field(args, f.name) = Child{ .local = application.world.locals.getLocalMut(Child.local_type, it.*.system) };
+                    @field(args, f.name) = Child{ .local = application.world.locals.getLocalMut(Child.local_type, it.*.system, &application.world) };
                     continue;
                 }
             }
