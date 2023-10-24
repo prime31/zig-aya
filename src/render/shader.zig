@@ -12,11 +12,11 @@ pub const ShaderRef = union(enum) {
     /// An asset path leading to a shader
     path: AssetPath,
 
-    pub fn getHandle(self: ShaderRef, shaders: *aya.Assets(Shader), asset_server: *aya.AssetServer) ?Handle(Shader) {
+    pub fn getHandle(self: ShaderRef, asset_server: *aya.AssetServer) ?Handle(Shader) {
         return switch (self) {
             .default => null,
             .handle => |h| h,
-            .path => |path| asset_server.load(Shader, shaders, path.path.str, {}),
+            .path => |path| asset_server.load(Shader, path.path.str, {}),
         };
     }
 };

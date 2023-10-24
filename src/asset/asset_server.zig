@@ -8,6 +8,7 @@ const Assets = aya.Assets;
 const Handle = @import("mod.zig").Handle;
 const AssetHandleProvider = @import("asset_handle_provider.zig").AssetHandleProvider;
 const ErasedPtr = aya.utils.ErasedPtr;
+const World = aya.World;
 
 pub fn AssetLoader(comptime T: type) type {
     return struct {
@@ -19,13 +20,15 @@ pub fn AssetLoader(comptime T: type) type {
 
 /// Resource. Manages the loading of assets by type for each registered asset type + loader.
 pub const AssetServer = struct {
+    world: *World,
     loaders: std.AutoHashMap(usize, ErasedPtr),
     handle_providers: std.AutoHashMap(usize, *AssetHandleProvider),
 
-    pub fn init(allocator: Allocator) AssetServer {
+    pub fn init(world: *World) AssetServer {
         return .{
-            .loaders = std.AutoHashMap(usize, ErasedPtr).init(allocator),
-            .handle_providers = std.AutoHashMap(usize, *AssetHandleProvider).init(allocator),
+            .world = world,
+            .loaders = std.AutoHashMap(usize, ErasedPtr).init(aya.allocator),
+            .handle_providers = std.AutoHashMap(usize, *AssetHandleProvider).init(aya.allocator),
         };
     }
 
@@ -38,8 +41,10 @@ pub const AssetServer = struct {
     }
 
     // TODO: make this do the asset loading async and dont require Assets(T) param. pull that from World somehow...maybe push loads to a system
-    pub fn load(self: *AssetServer, comptime T: type, assets: *Assets(T), path: []const u8, settings: AssetLoader(T).settings_type) Handle(T) {
+    pub fn load(self: *AssetServer, comptime T: type, path: []const u8, settings: AssetLoader(T).settings_type) Handle(T) {
         const ptr = self.loaders.get(typeId(T)) orelse @panic("No registered AssetLoader for type " ++ @typeName(T));
+
+        const assets = self.world.getResourceMut(Assets(T)).?;
 
         const handle = Handle(T).init(assets.handle_provider.create());
         const loader = ptr.asPtr(AssetLoader(T));

@@ -126,7 +126,6 @@ pub fn MaterialPipeline(comptime M: type) type {
 
         pub fn init(world: *aya.World) Self {
             const asset_server: *aya.AssetServer = world.getResourceMut(aya.AssetServer).?;
-            const shaders = world.getResourceMut(aya.Assets(Shader)).?;
             const gctx = world.getResourceMut(zgpu.GraphicsContext).?;
 
             return .{
@@ -134,8 +133,8 @@ pub fn MaterialPipeline(comptime M: type) type {
                 .material_layout = gctx.createBindGroupLayout(&.{
                     zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0), // TODO: wtf, move to Material
                 }),
-                .vertex_shader = Material(M).vertexShader().getHandle(shaders, asset_server),
-                .fragment_shader = Material(M).fragmentShader().getHandle(shaders, asset_server),
+                .vertex_shader = Material(M).vertexShader().getHandle(asset_server),
+                .fragment_shader = Material(M).fragmentShader().getHandle(asset_server),
             };
         }
 
