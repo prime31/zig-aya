@@ -67,3 +67,29 @@ pub const ErasedPtr = struct {
         return @as(*T, @ptrFromInt(self.ptr));
     }
 };
+
+pub const ErasedPlugin = struct {
+    ptr: usize,
+    finish: *const fn (ErasedPlugin, app: *aya.App) void,
+
+    pub fn init(instance: anytype) ErasedPlugin {
+        const T = @TypeOf(instance);
+        std.debug.assert(@typeInfo(T) == .Struct);
+
+        const res = aya.mem.create(T);
+        res.* = instance;
+
+        return .{
+            .ptr = @intFromPtr(res),
+            .finish = struct {
+                fn finish(self: ErasedPlugin, app: *aya.App) void {
+                    const plugin = @as(*T, @ptrFromInt(self.ptr));
+                    plugin.finish(app);
+
+                    if (@hasDecl(T, "deinit")) plugin.deinit();
+                    aya.mem.destroy(plugin);
+                }
+            }.finish,
+        };
+    }
+};

@@ -12,6 +12,7 @@ const implementsTrait = aya.trait.implementsTrait;
 pub const AppExitEvent = struct {};
 
 const Allocator = std.mem.Allocator;
+const ErasedPlugin = aya.utils.ErasedPlugin;
 
 const World = app.World;
 const Resources = app.Resources;
@@ -53,6 +54,7 @@ pub const App = struct {
 
     world: World,
     plugins: std.AutoHashMap(u32, void),
+    plugins_with_finish: std.ArrayList(ErasedPlugin),
     phase_insert_indices: std.AutoHashMap(u64, i32),
     set_insert_indices: std.AutoHashMap(u64, i32),
     last_added_systems: std.ArrayList(u64),
@@ -68,6 +70,7 @@ pub const App = struct {
         self.* = .{
             .world = world,
             .plugins = std.AutoHashMap(u32, void).init(allocator),
+            .plugins_with_finish = std.ArrayList(ErasedPlugin).init(allocator),
             .phase_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
             .set_insert_indices = std.AutoHashMap(u64, i32).init(allocator),
             .last_added_systems = std.ArrayList(u64).init(allocator),
@@ -95,6 +98,7 @@ pub const App = struct {
 
     pub fn deinit(self: *Self) void {
         self.plugins.deinit();
+        self.plugins_with_finish.deinit();
         self.phase_insert_indices.deinit();
         self.set_insert_indices.deinit();
         self.last_added_systems.deinit();
@@ -107,7 +111,12 @@ pub const App = struct {
     }
 
     pub fn run(self: *Self) void {
+        // run any finish method on Plugins with them
+        for (self.plugins_with_finish.items) |erased_plugin|
+            erased_plugin.finish(erased_plugin, self);
+
         self.plugins.clearAndFree();
+        self.plugins_with_finish.clearAndFree();
 
         runStartupPipeline(self.world.ecs);
         setCorePipeline(self.world.ecs);
@@ -271,7 +280,8 @@ pub const App = struct {
         return self;
     }
 
-    /// Inserts an instantiated plugin struct. Plugins must implement `build(Self, *App)`
+    /// Inserts an instantiated plugin struct. Plugins must implement `build(Self, *App)` and can optionally implement
+    /// `finish(Self, *App)` which will be called after all plugin `build` methods are called.
     pub fn insertPlugin(self: *Self, value: anytype) *Self {
         std.debug.assert(@typeInfo(@TypeOf(value)) == .Struct);
 
@@ -280,6 +290,10 @@ pub const App = struct {
         self.plugins.put(type_hash, {}) catch unreachable;
 
         value.build(self);
+
+        if (@hasDecl(@TypeOf(value), "finish"))
+            self.plugins_with_finish.append(ErasedPlugin.init(value)) catch unreachable;
+
         return self;
     }
 
