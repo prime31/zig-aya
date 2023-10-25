@@ -24,16 +24,27 @@ pub const RenderPipelineDescriptor = struct {
     /// The multi-sampling properties of the pipeline.
     multisample: wgpu.MultisampleState,
     /// The compiled fragment stage, its entry point, and the color targets.
-    fragment: ?wgpu.FragmentState,
+    fragment: ?FragmentState,
 };
 
 pub const VertexState = struct {
+    /// The compiled shader module for this stage
+    shader: Handle(Shader),
+    shader_defs: std.ArrayList(ShaderDefVal),
+    /// The name of the entry point in the compiled shader
+    entry_point: []const u8,
+    /// The format of any vertex buffers used with this pipeline
+    buffers: std.ArrayList(wgpu.VertexBufferLayout),
+};
+
+/// Describes the fragment process in a render pipeline.
+pub const FragmentState = struct {
     /// The compiled shader module for this stage.
     shader: Handle(Shader),
     shader_defs: std.ArrayList(ShaderDefVal),
     /// The name of the entry point in the compiled shader. There must be a
     /// function with this name in the shader.
     entry_point: []const u8,
-    /// The format of any vertex buffers used with this pipeline.
-    buffers: std.ArrayList(wgpu.VertexBufferLayout),
+    /// The color state of the render targets.
+    targets: ?std.ArrayList(wgpu.ColorTargetState),
 };
