@@ -14,6 +14,7 @@ const WindowResized = aya.WindowResized;
 const WindowMoved = aya.WindowMoved;
 const WindowFocused = aya.WindowFocused;
 const WindowScaleFactorChanged = aya.WindowScaleFactorChanged;
+const WindowMouseFocused = aya.WindowMouseFocused;
 
 const Input = aya.Input;
 const Axis = aya.Axis;
@@ -30,6 +31,8 @@ const WindowAndInputEventWriters = struct {
     window_resized: EventWriter(WindowResized),
     window_moved: EventWriter(WindowMoved),
     window_scale_factor: EventWriter(WindowScaleFactorChanged),
+    window_focus_changed: EventWriter(WindowFocused),
+    window_mouse_focused: EventWriter(WindowMouseFocused),
 
     mouse_wheel: EventWriter(MouseWheel),
     mouse_motion: EventWriter(MouseMotion),
@@ -98,10 +101,10 @@ pub fn eventLoop(app: *App) void {
                 sdl.SDL_EVENT_WINDOW_MINIMIZED => std.debug.print("SDL_EVENT_WINDOW_MINIMIZED\n", .{}),
                 sdl.SDL_EVENT_WINDOW_MAXIMIZED => std.debug.print("SDL_EVENT_WINDOW_MAXIMIZED\n", .{}),
                 sdl.SDL_EVENT_WINDOW_RESTORED => std.debug.print("SDL_EVENT_WINDOW_RESTORED\n", .{}),
-                sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => std.debug.print("SDL_EVENT_WINDOW_MOUSE_ENTER\n", .{}),
-                sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => std.debug.print("SDL_EVENT_WINDOW_MOUSE_LEAVE\n", .{}),
-                sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => std.debug.print("SDL_EVENT_WINDOW_FOCUS_GAINED\n", .{}),
-                sdl.SDL_EVENT_WINDOW_FOCUS_LOST => std.debug.print("SDL_EVENT_WINDOW_FOCUS_LOST\n", .{}),
+                sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => event_writers.window_mouse_focused.send(.{ .focused = true }),
+                sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => event_writers.window_mouse_focused.send(.{ .focused = false }),
+                sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => event_writers.window_focus_changed.send(.{ .focused = true }),
+                sdl.SDL_EVENT_WINDOW_FOCUS_LOST => event_writers.window_focus_changed.send(.{ .focused = false }),
                 sdl.SDL_EVENT_WINDOW_TAKE_FOCUS => std.debug.print("SDL_EVENT_WINDOW_TAKE_FOCUS\n", .{}),
                 sdl.SDL_EVENT_WINDOW_HIT_TEST => std.debug.print("SDL_EVENT_WINDOW_HIT_TEST\n", .{}),
                 sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),

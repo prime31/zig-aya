@@ -19,15 +19,12 @@ pub const WindowResized = struct { width: f32, height: f32 };
 pub const WindowMoved = struct { x: f32, y: f32 };
 pub const WindowFocused = struct { focused: bool };
 pub const WindowScaleFactorChanged = struct { scale_factor: f32 };
+pub const WindowMouseFocused = struct { focused: bool };
 // SDL_EVENT_WINDOW_HIDDEN
 // SDL_EVENT_WINDOW_EXPOSED
 // SDL_EVENT_WINDOW_MINIMIZED
 // SDL_EVENT_WINDOW_MAXIMIZED
 // SDL_EVENT_WINDOW_RESTORED
-// SDL_EVENT_WINDOW_MOUSE_ENTER
-// SDL_EVENT_WINDOW_MOUSE_LEAVE
-// SDL_EVENT_WINDOW_FOCUS_GAINED
-// SDL_EVENT_WINDOW_FOCUS_LOST
 // SDL_EVENT_WINDOW_CLOSE_REQUESTED
 // SDL_EVENT_WINDOW_TAKE_FOCUS
 // SDL_EVENT_WINDOW_HIT_TEST
@@ -60,6 +57,7 @@ pub const WindowPlugin = struct {
                 .addEvent(WindowMoved)
                 .addEvent(WindowScaleFactorChanged)
                 .addEvent(WindowFocused)
+                .addEvent(WindowMouseFocused)
                 .insertResource(Window{ .sdl_window = window, .id = sdl.SDL_GetWindowID(window) })
             // mouse
                 .addEvent(aya.MouseMotion)
