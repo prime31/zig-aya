@@ -154,14 +154,13 @@ pub const FontBook = struct {
     fn renderUpdate(ctx: ?*anyopaque, _: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
         // TODO: only update the rect that changed
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
-        if (true) @panic("we dont have aya.time.frames...");
         if (!self.tex_dirty or self.last_update == aya.time.frames()) {
             self.tex_dirty = true;
             return 0;
         }
 
         const tex_area = @as(usize, @intCast(self.width * self.height));
-        var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
+        var pixels = aya.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
             std.debug.print("failed to allocate texture data: {}\n", .{err});
             return 0;
         };

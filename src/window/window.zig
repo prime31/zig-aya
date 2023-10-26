@@ -23,7 +23,6 @@ pub const WindowMouseFocused = struct { focused: bool };
 // SDL_EVENT_WINDOW_MINIMIZED
 // SDL_EVENT_WINDOW_MAXIMIZED
 // SDL_EVENT_WINDOW_RESTORED
-// SDL_EVENT_WINDOW_CLOSE_REQUESTED
 // SDL_EVENT_WINDOW_TAKE_FOCUS
 // SDL_EVENT_WINDOW_HIT_TEST
 // SDL_EVENT_WINDOW_DISPLAY_CHANGED
@@ -32,55 +31,62 @@ pub const WindowPlugin = struct {
     window_config: ?WindowConfig = .{},
 
     pub fn build(self: WindowPlugin, app: *App) void {
-        if (self.window_config) |config| {
-            if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
-                sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
-                @panic("could not init SDL");
-            }
+        const config = self.window_config orelse WindowConfig{};
 
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_FLAGS, sdl.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_CORE);
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 3);
-
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
-            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_STENCIL_SIZE, 8);
-
-            var flags: c_uint = @intFromEnum(WindowFlags.opengl);
-            if (config.resizable) flags |= @intFromEnum(WindowFlags.resizable);
-            if (config.high_dpi) flags |= @intFromEnum(WindowFlags.high_pixel_density);
-            if (config.fullscreen) flags |= @intFromEnum(WindowFlags.fullscreen);
-
-            const window = sdl.SDL_CreateWindow(config.title, config.width, config.height, flags) orelse {
-                sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
-                @panic("no window created");
-            };
-
-            _ = app
-                .setRunner(eventLoop)
-            // window
-                .addEvent(WindowResized)
-                .addEvent(WindowMoved)
-                .addEvent(WindowScaleFactorChanged)
-                .addEvent(WindowFocused)
-                .addEvent(WindowMouseFocused)
-                .insertResource(Window{ .sdl_window = window, .gl_ctx = sdl.SDL_GL_CreateContext(window), .id = sdl.SDL_GetWindowID(window) })
-            // mouse
-                .addEvent(aya.MouseMotion)
-                .addEvent(aya.MouseWheel)
-                .initResource(Input(aya.MouseButton))
-            // keyboard
-                .initResource(Input(Scancode))
-            // gamepad
-                .addEvent(aya.GamepadConnectionEvent)
-                .initResource(aya.Gamepads);
-
-            const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
-            @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.allocator);
-
-            ig.sdl.init(window);
+        if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
+            sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
+            @panic("could not init SDL");
         }
+
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_FLAGS, sdl.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_CORE);
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 3);
+
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
+        _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_STENCIL_SIZE, 8);
+
+        var flags: c_uint = @intFromEnum(WindowFlags.opengl);
+        if (config.resizable) flags |= @intFromEnum(WindowFlags.resizable);
+        if (config.high_dpi) flags |= @intFromEnum(WindowFlags.high_pixel_density);
+        if (config.fullscreen) flags |= @intFromEnum(WindowFlags.fullscreen);
+
+        const window = sdl.SDL_CreateWindow(config.title, config.width, config.height, flags) orelse {
+            sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
+            @panic("no window created");
+        };
+
+        aya.window = Window{ .sdl_window = window, .gl_ctx = sdl.SDL_GL_CreateContext(window), .id = sdl.SDL_GetWindowID(window) };
+
+        _ = app
+            .setRunner(eventLoop)
+        // window
+            .addEvent(WindowResized)
+            .addEvent(WindowMoved)
+            .addEvent(WindowScaleFactorChanged)
+            .addEvent(WindowFocused)
+            .addEvent(WindowMouseFocused)
+        // mouse
+            .addEvent(aya.MouseMotion)
+            .addEvent(aya.MouseWheel)
+            .initResource(Input(aya.MouseButton))
+        // keyboard
+            .initResource(Input(Scancode))
+        // gamepad
+            .addEvent(aya.GamepadConnectionEvent)
+            .initResource(aya.Gamepads);
+
+        const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
+        @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.allocator);
+
+        switch (config.vsync) {
+            .adaptive => _ = sdl.SDL_GL_SetSwapInterval(-1),
+            .immediate => _ = sdl.SDL_GL_SetSwapInterval(0),
+            .synchronized => _ = sdl.SDL_GL_SetSwapInterval(1),
+        }
+
+        ig.sdl.init(window);
     }
 };
 
@@ -103,6 +109,10 @@ pub const Window = struct {
         _ = sdl.SDL_GetWindowSize(self.sdl_window, &w, &h);
         return .{ .w = w, .h = h };
     }
+
+    pub fn scale(self: Window) f32 {
+        return sdl.SDL_GetWindowDisplayScale(self.sdl_window);
+    }
 };
 
 pub const WindowConfig = struct {
@@ -112,6 +122,7 @@ pub const WindowConfig = struct {
     resizable: bool = true, // whether the window should be allowed to be resized
     fullscreen: bool = false, // whether the window should be created in fullscreen mode
     high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
+    vsync: enum { immediate, synchronized, adaptive } = .synchronized, // whether vsync should be disabled
 };
 
 pub const WindowFlags = enum(c_int) {

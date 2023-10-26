@@ -3,7 +3,6 @@ const aya = @import("aya");
 
 const App = aya.App;
 const ResMut = aya.ResMut;
-const ClearColor = aya.ClearColor;
 
 pub fn main() !void {
     std.debug.print("\n", .{});
@@ -15,16 +14,15 @@ pub fn main() !void {
 }
 
 const ClearColorSystem = struct {
-    pub fn run(clear_color_res: ResMut(ClearColor), gfx_res: ResMut(aya.GraphicsContext)) void {
-        var clear_color = clear_color_res.getAssertExists();
+    pub fn run(gfx_res: ResMut(aya.GraphicsContext)) void {
         var gfx = gfx_res.getAssertExists();
 
-        clear_color.r += 0.005;
-        clear_color.r = if (clear_color.r > 1) 0 else clear_color.r;
+        aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 400, .y = 20 }, null);
+        aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, aya.Color.dark_purple);
 
-        gfx.beginFrame();
         gfx.beginPass(.{});
+        gfx.draw.text("fo fuck yourself", 24, 20, null);
+        gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
         gfx.endPass();
-        gfx.commitFrame();
     }
 };

@@ -55,7 +55,7 @@ const WindowAndInputEventWriters = struct {
 };
 
 pub fn eventLoop(app: *App) void {
-    const window = app.world.getResourceMut(Window).?;
+    const gfx = app.world.getResourceMut(aya.GraphicsContext).?;
 
     const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
     const keys: *Input(Scancode) = app.world.getResourceMut(Input(Scancode)).?;
@@ -82,16 +82,19 @@ pub fn eventLoop(app: *App) void {
                 sdl.SDL_EVENT_QUIT => break :blk,
                 // window
                 sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => break :blk,
-                sdl.SDL_EVENT_WINDOW_RESIZED => event_writers.window_resized.send(.{
-                    .width = @floatFromInt(event.window.data1),
-                    .height = @floatFromInt(event.window.data2),
-                }),
+                sdl.SDL_EVENT_WINDOW_RESIZED => {
+                    event_writers.window_resized.send(.{
+                        .width = @floatFromInt(event.window.data1),
+                        .height = @floatFromInt(event.window.data2),
+                    });
+                    gfx.setWindowPixelSize(.{ .w = event.window.data1, .h = event.window.data2 });
+                },
                 sdl.SDL_EVENT_WINDOW_MOVED => event_writers.window_moved.send(.{
                     .x = @floatFromInt(event.window.data1),
                     .y = @floatFromInt(event.window.data2),
                 }),
                 sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => event_writers.window_scale_factor.send(.{
-                    .scale_factor = sdl.SDL_GetWindowDisplayScale(window.sdl_window),
+                    .scale_factor = sdl.SDL_GetWindowDisplayScale(aya.window.sdl_window),
                 }),
 
                 sdl.SDL_EVENT_WINDOW_HIDDEN => std.debug.print("SDL_EVENT_WINDOW_HIDDEN\n", .{}),
@@ -101,8 +104,14 @@ pub fn eventLoop(app: *App) void {
                 sdl.SDL_EVENT_WINDOW_RESTORED => std.debug.print("SDL_EVENT_WINDOW_RESTORED\n", .{}),
                 sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => event_writers.window_mouse_focused.send(.{ .focused = true }),
                 sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => event_writers.window_mouse_focused.send(.{ .focused = false }),
-                sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => event_writers.window_focus_changed.send(.{ .focused = true }),
-                sdl.SDL_EVENT_WINDOW_FOCUS_LOST => event_writers.window_focus_changed.send(.{ .focused = false }),
+                sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => {
+                    event_writers.window_focus_changed.send(.{ .focused = true });
+                    aya.window.focused = true;
+                },
+                sdl.SDL_EVENT_WINDOW_FOCUS_LOST => {
+                    event_writers.window_focus_changed.send(.{ .focused = false });
+                    aya.window.focused = false;
+                },
                 sdl.SDL_EVENT_WINDOW_TAKE_FOCUS => std.debug.print("SDL_EVENT_WINDOW_TAKE_FOCUS\n", .{}),
                 sdl.SDL_EVENT_WINDOW_HIT_TEST => std.debug.print("SDL_EVENT_WINDOW_HIT_TEST\n", .{}),
                 sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),
@@ -169,14 +178,17 @@ pub fn eventLoop(app: *App) void {
         ig.sdl.newFrame();
         ig.igShowDemoWindow(null);
 
+        aya.time.tick();
+        gfx.beginFrame();
         app.world.progress(0);
+        gfx.commitFrame();
 
-        ig.sdl.render(window.sdl_window, window.gl_ctx);
-        _ = sdl.SDL_GL_SwapWindow(window.sdl_window);
+        ig.sdl.render(aya.window.sdl_window, aya.window.gl_ctx);
+        _ = sdl.SDL_GL_SwapWindow(aya.window.sdl_window);
     }
 
     ig.sdl.shutdown();
 
-    if (app.world.getResource(Window)) |win| sdl.SDL_DestroyWindow(win.sdl_window);
+    sdl.SDL_DestroyWindow(aya.window.sdl_window);
     sdl.SDL_Quit();
 }

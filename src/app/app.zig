@@ -62,6 +62,7 @@ pub const App = struct {
 
     pub fn init() *Self {
         const world = World.init(allocator);
+        aya.init();
 
         tmp_allocator_instance = ScratchAllocator.init(allocator);
         tmp_allocator = tmp_allocator_instance.allocator();
@@ -106,8 +107,9 @@ pub const App = struct {
         self.world.deinit();
         allocator.destroy(self);
 
-        // TODO: this dont belong here
+        // TODO: these dont belong here
         @import("renderkit").shutdown();
+        aya.deinit();
 
         if (gpa.deinit() == .leak)
             std.debug.print("GPA has leaks. Check previous logs.\n", .{});
