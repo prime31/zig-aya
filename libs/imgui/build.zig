@@ -5,7 +5,6 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig
 
     const lib = buildStaticLibrary(b, target, optimize);
     lib.addIncludePath(.{ .path = sdl_include_path });
-    lib.addIncludePath(.{ .path = thisDir() ++ "/../wgpu/headers" });
     exe.linkLibrary(lib);
 }
 
@@ -25,16 +24,19 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
 
     const cflags = &.{ "-fno-sanitize=undefined", "-Wno-return-type-c-linkage" };
     lib.addCSourceFiles(
-        .{ .files = &.{
-            thisDir() ++ "/lib/imgui.cpp",
-            thisDir() ++ "/lib/imgui_widgets.cpp",
-            thisDir() ++ "/lib/imgui_tables.cpp",
-            thisDir() ++ "/lib/imgui_draw.cpp",
-            thisDir() ++ "/lib/imgui_demo.cpp",
-            thisDir() ++ "/lib/backends/imgui_impl_wgpu.cpp",
-            thisDir() ++ "/lib/backends/imgui_impl_sdl3.cpp",
-            thisDir() ++ "/lib/cimgui.cpp",
-        }, .flags = cflags },
+        .{
+            .files = &.{
+                thisDir() ++ "/lib/imgui.cpp",
+                thisDir() ++ "/lib/imgui_widgets.cpp",
+                thisDir() ++ "/lib/imgui_tables.cpp",
+                thisDir() ++ "/lib/imgui_draw.cpp",
+                thisDir() ++ "/lib/imgui_demo.cpp",
+                thisDir() ++ "/lib/backends/imgui_impl_sdl3.cpp",
+                thisDir() ++ "/lib/backends/imgui_impl_opengl3.cpp",
+                thisDir() ++ "/lib/cimgui.cpp",
+            },
+            .flags = cflags,
+        },
     );
 
     return lib;

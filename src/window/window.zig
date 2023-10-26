@@ -1,8 +1,6 @@
 const std = @import("std");
 const sdl = @import("sdl");
 const aya = @import("../aya.zig");
-const zgpu = @import("zgpu");
-const wgpu = zgpu.wgpu;
 const ig = @import("imgui");
 
 const App = aya.App;
@@ -40,7 +38,16 @@ pub const WindowPlugin = struct {
                 @panic("could not init SDL");
             }
 
-            var flags: c_uint = 0;
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_FLAGS, sdl.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_CORE);
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 3);
+
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
+            _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_STENCIL_SIZE, 8);
+
+            var flags: c_uint = @intFromEnum(WindowFlags.opengl);
             if (config.resizable) flags |= @intFromEnum(WindowFlags.resizable);
             if (config.high_dpi) flags |= @intFromEnum(WindowFlags.high_pixel_density);
             if (config.fullscreen) flags |= @intFromEnum(WindowFlags.fullscreen);
@@ -58,7 +65,7 @@ pub const WindowPlugin = struct {
                 .addEvent(WindowScaleFactorChanged)
                 .addEvent(WindowFocused)
                 .addEvent(WindowMouseFocused)
-                .insertResource(Window{ .sdl_window = window, .id = sdl.SDL_GetWindowID(window) })
+                .insertResource(Window{ .sdl_window = window, .gl_ctx = sdl.SDL_GL_CreateContext(window), .id = sdl.SDL_GetWindowID(window) })
             // mouse
                 .addEvent(aya.MouseMotion)
                 .addEvent(aya.MouseWheel)
@@ -69,21 +76,17 @@ pub const WindowPlugin = struct {
                 .addEvent(aya.GamepadConnectionEvent)
                 .initResource(aya.Gamepads);
 
-            const gctx = zgpu.GraphicsContext.create(aya.allocator, window, .{}) catch unreachable;
-            _ = app.world.resources.insertPtr(gctx);
+            const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
+            @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.allocator);
 
-            ig.sdl.init(
-                window,
-                gctx.device,
-                @intFromEnum(zgpu.GraphicsContext.swapchain_format),
-                @intFromEnum(wgpu.TextureFormat.undef),
-            );
+            ig.sdl.init(window);
         }
     }
 };
 
 pub const Window = struct {
-    sdl_window: *sdl.SDL_Window = undefined,
+    sdl_window: *sdl.SDL_Window,
+    gl_ctx: sdl.SDL_GLContext,
     focused: bool = true,
     id: u32 = 0,
 

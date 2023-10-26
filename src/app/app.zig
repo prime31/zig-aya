@@ -106,6 +106,9 @@ pub const App = struct {
         self.world.deinit();
         allocator.destroy(self);
 
+        // TODO: this dont belong here
+        @import("renderkit").shutdown();
+
         if (gpa.deinit() == .leak)
             std.debug.print("GPA has leaks. Check previous logs.\n", .{});
     }

@@ -3134,7 +3134,7 @@ pub extern fn igCreateContext(shared_font_atlas: [*c]ImFontAtlas) [*c]ImGuiConte
 pub extern fn igDestroyContext(ctx: [*c]ImGuiContext) void;
 pub extern fn igGetCurrentContext() [*c]ImGuiContext;
 pub extern fn igSetCurrentContext(ctx: [*c]ImGuiContext) void;
-pub extern fn igGetIO() [*c]ImGuiIO;
+pub extern fn igGetIO() *ImGuiIO;
 pub extern fn igGetStyle() [*c]ImGuiStyle;
 pub extern fn igNewFrame() void;
 pub extern fn igEndFrame() void;

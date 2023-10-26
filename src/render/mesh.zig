@@ -1,461 +1,191 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const zgpu = @import("zgpu");
-const wgpu = zgpu.wgpu;
-
-pub const IndexFormat = enum { u16, u32 };
-
-pub const Indices = union(IndexFormat) {
-    u16: []u16,
-    u32: []u32,
-
-    pub fn deinit(self: Indices) void {
-        return switch (self) {
-            inline else => |val| aya.mem.free(val),
-        };
-    }
-
-    pub fn getBytes(self: Indices) []u8 {
-        return switch (self) {
-            inline else => |val| std.mem.sliceAsBytes(val),
-        };
-    }
-
-    pub fn getLength(self: Indices) usize {
-        return switch (self) {
-            inline else => |val| val.len,
-        };
-    }
-};
-
-pub const PrimitiveTopology = enum {
-    points,
-    lines,
-    line_strip,
-    triangles,
-    triangle_strip,
-};
-
-// TODO: use wgpu.VertexFormat
-pub const VertexFormat = enum {
-    float32,
-    float32x2,
-    float32x3,
-    float32x4,
-    float16x2,
-    float16x4,
-
-    pub fn getSize(self: VertexFormat) usize {
-        return switch (self) {
-            .float32 => 4,
-            .float32x2 => 4 * 2,
-            .float32x3 => 4 * 3,
-            .float32x4 => 4 * 4,
-            .float16x2 => 2 * 2,
-            .float16x4 => 2 * 4,
-        };
-    }
-
-    // pub fn toSokol(self: VertexFormat) sg.VertexFormat {
-    //     return switch (self) {
-    //         .float32 => .FLOAT,
-    //         .float32x2 => .FLOAT2,
-    //         .float32x3 => .FLOAT3,
-    //         .float32x4 => .FLOAT4,
-    //         .float16x2 => .HALF2,
-    //         .float16x4 => .HALF4,
-    //     };
-    // }
-};
-
-pub const VertexAttributeDescriptor = struct {
-    shader_location: u32,
-    id: MeshVertexAttributeId,
-    name: []const u8,
-};
-
-pub const MeshVertexAttributeId = u8;
-
-pub const MeshVertexAttribute = struct {
-    name: []const u8,
-    /// The _unique_ id of the vertex attribute. This will also determine sort ordering
-    /// when generating vertex buffers. Built-in / standard attributes will use "close to zero"
-    /// indices. When in doubt, use a random / very large u8 to avoid conflicts.
-    id: MeshVertexAttributeId,
-    format: VertexFormat,
-
-    pub fn atShaderLocation(self: *MeshVertexAttribute, shader_location: u32) VertexAttributeDescriptor {
-        return .{
-            .shader_location = shader_location,
-            .id = self.id,
-            .name = self.name,
-        };
-    }
-};
-
-pub const VertexAttributeValues = union(VertexFormat) {
-    float32: []f32,
-    float32x2: [][2]f32,
-    float32x3: [][3]f32,
-    float32x4: [][4]f32,
-    float16x2: [][2]f16,
-    float16x4: [][4]f16,
-
-    pub fn deinit(self: VertexAttributeValues) void {
-        return switch (self) {
-            inline else => |val| aya.mem.free(val),
-        };
-    }
-
-    pub fn getBytes(self: VertexAttributeValues) []u8 {
-        return switch (self) {
-            inline else => |val| std.mem.sliceAsBytes(val),
-        };
-    }
-
-    pub fn getLength(self: VertexAttributeValues) usize {
-        return switch (self) {
-            inline else => |val| val.len,
-        };
-    }
-};
-
-pub const MeshAttributeData = struct {
-    attribute: MeshVertexAttribute,
-    values: VertexAttributeValues,
-
-    pub fn deinit(self: MeshAttributeData) void {
-        self.values.deinit();
-    }
-};
+const renderkit = @import("renderkit");
 
 pub const Mesh = struct {
-    topology: PrimitiveTopology,
-    indices: ?Indices = null,
-    attributes: std.AutoHashMap(MeshVertexAttributeId, MeshAttributeData),
+    bindings: renderkit.BufferBindings,
+    element_count: c_int,
 
-    pub const ATTRIBUTE_POSITION: MeshVertexAttribute = .{ .name = "Vertex_Position", .id = 0, .format = .float32x3 };
-    pub const ATTRIBUTE_NORMAL: MeshVertexAttribute = .{ .name = "Vertex_Normal", .id = 1, .format = .float32x3 };
-    pub const ATTRIBUTE_UV_0: MeshVertexAttribute = .{ .name = "Vertex_UV", .id = 2, .format = .float32x2 };
-    pub const ATTRIBUTE_UV_1: MeshVertexAttribute = .{ .name = "Vertex_UV_1", .id = 3, .format = .float32x2 };
-    pub const ATTRIBUTE_TANGENT: MeshVertexAttribute = .{ .name = "Vertex_Tangent", .id = 4, .format = .float32x4 };
-    pub const ATTRIBUTE_COLOR: MeshVertexAttribute = .{ .name = "Vertex_Color", .id = 5, .format = .float32x4 };
-
-    pub fn init(topology: PrimitiveTopology) Mesh {
-        return .{
-            .topology = topology,
-            .attributes = std.AutoHashMap(MeshVertexAttributeId, MeshAttributeData).init(aya.allocator),
-        };
-    }
-
-    pub fn deinit(self: *Mesh) void {
-        var iter = self.attributes.valueIterator();
-        while (iter.next()) |data| data.deinit();
-
-        if (self.indices) |ind| ind.deinit();
-        self.attributes.deinit();
-    }
-
-    pub fn insertAttribute(self: *Mesh, attribute: MeshVertexAttribute, values: anytype) void {
-        const val = switch (attribute.format) {
-            inline else => |tag| blk: {
-                if (@TypeOf(values) == std.meta.FieldType(VertexAttributeValues, tag)) {
-                    break :blk @unionInit(VertexAttributeValues, @tagName(tag), values);
-                }
-                @panic("values type does not match attribute.format! attribute.format is " ++ @tagName(tag) ++ " != " ++ @typeName(@TypeOf(values)));
-            },
-        };
-
-        const data: MeshAttributeData = .{
-            .attribute = attribute,
-            .values = val,
-        };
-
-        self.attributes.put(attribute.id, data) catch unreachable;
-    }
-
-    pub fn setIndices(self: *Mesh, indices: Indices) void {
-        self.indices = indices;
-    }
-
-    pub fn getMeshVertexBufferLayout(self: *const Mesh) InnerMeshVertexBufferLayout {
-        var attributes = aya.mem.alloc(VertexAttribute, self.attributes.count());
-        var attribute_ids = aya.mem.alloc(MeshVertexAttributeId, self.attributes.count());
-        var accumulated_offset: usize = 0;
-        var i: usize = 0;
-
-        var iter = self.attributes.valueIterator();
-        while (iter.next()) |data| {
-            attribute_ids[i] = data.attribute.id;
-            attributes[i] = .{
-                .offset = accumulated_offset,
-                .format = data.attribute.format,
-                .shader_location = @intCast(i),
-            };
-            accumulated_offset += data.attribute.format.getSize();
-            i += 1;
-        }
-
-        return .{
-            .layout = .{
-                .array_stride = @intCast(accumulated_offset),
-                .step_mode = .per_vertex,
-                .attributes = attributes,
-            },
-            .attribute_ids = attribute_ids,
-        };
-    }
-
-    /// Counts all vertices of the mesh. If the attributes have different vertex counts, the smallest is returned.
-    pub fn countVertices(self: Mesh) usize {
-        var vertex_count: ?usize = null;
-        var iter = self.attributes.iterator();
-        while (iter.next()) |entry| {
-            const attribute_len = entry.value_ptr.values.getLength();
-            if (vertex_count) |prev_vertex_count| {
-                if (prev_vertex_count != attribute_len) {
-                    std.log.warn("[{s}] ({}) has a different vertex count ({}) than other attributes ({}) in this mesh. all attributes will be truncated to match the smallest.", .{ entry.value_ptr.attribute.name, entry.key_ptr.*, attribute_len, prev_vertex_count });
-                    vertex_count = @min(prev_vertex_count, attribute_len);
-                }
-            } else {
-                vertex_count = attribute_len;
-            }
-        }
-
-        return vertex_count orelse 0;
-    }
-
-    pub fn getVertexBufferData(self: *const Mesh) []u8 {
-        var vertex_size: u64 = 0;
-        var iter = self.attributes.valueIterator();
-        while (iter.next()) |attribute_data| {
-            vertex_size += attribute_data.attribute.format.getSize();
-        }
-
-        var vertex_count = self.countVertices();
-        var attributes_interleaved_buffer = aya.mem.alloc(u8, vertex_count * vertex_size);
-        var fixed_buffer_stream = std.io.fixedBufferStream(attributes_interleaved_buffer);
-        var interleaved_buffer_writer = fixed_buffer_stream.writer();
-
-        // bundle into interleaved buffers
-        iter = self.attributes.valueIterator();
-        while (iter.next()) |attribute_data| {
-            const attributes_bytes = attribute_data.values.getBytes();
-            interleaved_buffer_writer.writeAll(attributes_bytes) catch unreachable;
-        }
-
-        return attributes_interleaved_buffer;
-    }
-
-    pub fn prepareAsset(mesh: *const Mesh.ExtractedAsset, params: Mesh.Param) !Mesh.PreparedAsset {
-        var vertex_buffer_data = mesh.getVertexBufferData();
-        defer aya.mem.free(vertex_buffer_data);
-
-        const vertex_buffer = params.gctx.createBufferWithData(.{
-            .label = "Mesh Vertex Buffer",
-            .usage = .{ .copy_dst = true, .vertex = true },
-            .contents = vertex_buffer_data,
+    pub fn init(comptime IndexT: type, indices: []IndexT, comptime VertT: type, verts: []VertT) Mesh {
+        var ibuffer = renderkit.createBuffer(IndexT, .{
+            .type = .index,
+            .content = indices,
+        });
+        var vbuffer = renderkit.createBuffer(VertT, .{
+            .content = verts,
         });
 
-        const buffer_info: GpuBufferInfo = if (mesh.indices) |indices| blk: {
-            const ibuffer: zgpu.BufferHandle = params.gctx.createBufferWithData(.{
-                .label = "Mesh Index Buffer",
-                .usage = .{ .copy_dst = true, .index = true },
-                .contents = indices.getBytes(),
-            });
-
-            break :blk .{
-                .indexed = .{
-                    .buffer = ibuffer,
-                    .count = @intCast(indices.getLength()),
-                    .index_format = std.meta.activeTag(indices),
-                },
-            };
-        } else .{ .non_indexed = {} };
+        var buffer = [_]renderkit.Buffer{vbuffer};
 
         return .{
-            .vertex_buffer = vertex_buffer,
-            .vertex_count = @intCast(mesh.countVertices()),
-            .buffer_info = buffer_info,
-            .primitive_topology = mesh.topology,
-            .layout = mesh.getMeshVertexBufferLayout(),
+            .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
+            .element_count = @as(c_int, @intCast(indices.len)),
         };
     }
 
-    // Asset trait types
-    pub const ExtractedAsset = Mesh;
-    pub const PreparedAsset = GpuMesh;
-
-    /// only Resources allowed
-    pub const Param = struct {
-        meshes: *aya.Assets(Mesh),
-        gctx: *zgpu.GraphicsContext,
-    };
-};
-
-pub const GpuMesh = struct {
-    vertex_buffer: zgpu.BufferHandle,
-    vertex_count: u32,
-    buffer_info: GpuBufferInfo,
-    primitive_topology: PrimitiveTopology,
-    layout: InnerMeshVertexBufferLayout,
-
-    pub fn deinit(self: GpuMesh) void {
-        std.debug.print("GpuMesh.deinit we need a GraphicsContext\n", .{});
-        // gctx.destroyResource(self.vertex_buffer);
-        self.buffer_info.deinit();
-        self.layout.deinit();
+    pub fn deinit(self: Mesh) void {
+        renderkit.destroyBuffer(self.bindings.index_buffer);
+        renderkit.destroyBuffer(self.bindings.vert_buffers[0]);
     }
 
-    // pub fn getBindings(self: GpuMesh) sg.Bindings {
-    //     var bindings = sg.Bindings{};
+    pub fn bindImage(self: *Mesh, image: renderkit.Image, slot: c_uint) void {
+        self.bindings.bindImage(image, slot);
+    }
 
-    //     for (self.layout.layout.attributes, 0..) |attribute, i| {
-    //         bindings.vertex_buffers[i] = self.vertex_buffer;
-    //         bindings.vertex_buffer_offsets[i] = @intCast(attribute.offset * self.vertex_count);
-    //     }
-
-    //     switch (self.buffer_info) {
-    //         .indexed => |indexed| bindings.index_buffer = indexed.buffer,
-    //         else => {},
-    //     }
-    //     return bindings;
-    // }
-
-    // pub fn getPipelineDesc(self: GpuMesh) sg.PipelineDesc {
-    //     var pip_desc = sg.PipelineDesc{
-    //         .depth = .{
-    //             .compare = .LESS_EQUAL,
-    //             .write_enabled = true,
-    //         },
-    //     };
-
-    //     switch (self.buffer_info) {
-    //         .indexed => |indexed| {
-    //             switch (indexed.index_format) {
-    //                 .u16 => pip_desc.index_type = .UINT16,
-    //                 .u32 => pip_desc.index_type = .UINT32,
-    //             }
-    //         },
-    //         else => {},
-    //     }
-
-    //     for (self.layout.layout.attributes, 0..) |attribute, i| {
-    //         pip_desc.layout.attrs[i].format = attribute.format.toSokol();
-    //         pip_desc.layout.attrs[i].buffer_index = @intCast(i);
-    //     }
-
-    //     return pip_desc;
-    // }
-};
-
-pub const VertexStepMode = enum {
-    per_vertex,
-    per_instance,
-};
-
-pub const VertexAttribute = struct {
-    offset: u64,
-    format: VertexFormat,
-    shader_location: u32,
-};
-
-pub const VertexBufferLayout = struct {
-    /// The stride, in bytes, between elements of this buffer.
-    array_stride: i32,
-    /// How often this vertex buffer is "stepped" forward.
-    step_mode: VertexStepMode,
-    /// The list of attributes which comprise a single vertex.
-    attributes: []VertexAttribute,
-
-    pub fn deinit(self: VertexBufferLayout) void {
-        aya.mem.free(self.attributes);
+    pub fn draw(self: Mesh) void {
+        renderkit.applyBindings(self.bindings);
+        renderkit.draw(0, self.element_count, 1);
     }
 };
 
-pub fn Hashed(comptime V: type) type {
+/// Contains a dynamic vert buffer and a slice of verts
+pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
+    std.debug.assert(IndexT == u16 or IndexT == u32 or IndexT == void);
+
     return struct {
-        // const hashed_type = H; // TODO: optionally take in hasher instead of hard coding it
-        hash: u64,
-        value: V,
+        const Self = @This();
+
+        bindings: renderkit.BufferBindings,
+        verts: []VertT,
+        element_count: c_int,
+        allocator: std.mem.Allocator,
+
+        pub fn init(allocator: ?std.mem.Allocator, vertex_count: usize, indices: []IndexT) !Self {
+            const alloc = allocator orelse aya.allocator;
+
+            var ibuffer = if (IndexT == void) @as(renderkit.Buffer, 0) else renderkit.createBuffer(IndexT, .{
+                .type = .index,
+                .content = indices,
+            });
+            var vertex_buffer = renderkit.createBuffer(VertT, .{
+                .usage = .stream,
+                .size = @as(c_long, @intCast(vertex_count * @sizeOf(VertT))),
+            });
+
+            var buffer = [_]renderkit.Buffer{vertex_buffer};
+
+            return Self{
+                .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
+                .verts = try alloc.alloc(VertT, vertex_count),
+                .element_count = @as(c_int, @intCast(indices.len)),
+                .allocator = alloc,
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            if (IndexT != void)
+                renderkit.destroyBuffer(self.bindings.index_buffer);
+            renderkit.destroyBuffer(self.bindings.vert_buffers[0]);
+            self.allocator.free(self.verts);
+        }
+
+        pub fn updateAllVerts(self: *Self) void {
+            renderkit.updateBuffer(VertT, self.bindings.vert_buffers[0], self.verts);
+            // updateBuffer gives us a fresh buffer so make sure we reset our append offset
+            self.bindings.vertex_buffer_offsets[0] = 0;
+        }
+
+        /// uploads to the GPU the slice from start_index with num_verts
+        pub fn updateVertSlice(self: *Self, num_verts: usize) void {
+            std.debug.assert(num_verts <= self.verts.len);
+            const vert_slice = self.verts[0..num_verts];
+            renderkit.updateBuffer(VertT, self.bindings.vert_buffers[0], vert_slice);
+        }
+
+        /// uploads to the GPU the slice from start with num_verts. Records the offset in the BufferBindings allowing you
+        /// to interleave appendVertSlice and draw calls. When calling draw after appendVertSlice
+        /// the base_element is reset to the start of the newly updated data so you would pass in 0 for base_element.
+        pub fn appendVertSlice(self: *Self, start_index: usize, num_verts: usize) void {
+            std.debug.assert(start_index + num_verts <= self.verts.len);
+            const vert_slice = self.verts[start_index .. start_index + num_verts];
+            self.bindings.vertex_buffer_offsets[0] = renderkit.appendBuffer(VertT, self.bindings.vert_buffers[0], vert_slice);
+        }
+
+        pub fn bindImage(self: *Self, image: renderkit.Image, slot: c_uint) void {
+            self.bindings.bindImage(image, slot);
+        }
+
+        pub fn draw(self: Self, base_element: c_int, element_count: c_int) void {
+            renderkit.applyBindings(self.bindings);
+            renderkit.draw(base_element, element_count, 1);
+        }
+
+        pub fn drawAllVerts(self: Self) void {
+            self.draw(0, @as(c_int, @intCast(self.element_count)));
+        }
     };
 }
 
-pub const MeshVertexBufferLayout = Hashed(InnerMeshVertexBufferLayout);
+/// Contains a dynamic instance buffer and a slice of verts CPU side
+// TODO: this should return `!gfx.Shader` but release mode builds fail to identify the error set....
+pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime InstanceT: type) type {
+    std.debug.assert(IndexT == u16 or IndexT == u32);
 
-pub const InnerMeshVertexBufferLayout = struct {
-    attribute_ids: []MeshVertexAttributeId,
-    layout: VertexBufferLayout,
+    return struct {
+        const Self = @This();
 
-    pub fn deinit(self: InnerMeshVertexBufferLayout) void {
-        aya.mem.free(self.attribute_ids);
-        self.layout.deinit();
-    }
+        bindings: renderkit.BufferBindings,
+        instance_data: []InstanceT,
+        element_count: c_int,
+        allocator: std.mem.Allocator,
 
-    pub fn contains(self: *InnerMeshVertexBufferLayout, attribute_id: MeshVertexAttributeId) bool {
-        return std.mem.indexOfScalar(MeshVertexAttributeId, self.attribute_ids, attribute_id) != null;
-    }
+        pub fn init(allocator: ?std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) Self {
+            const alloc = allocator orelse aya.allocator;
 
-    pub fn getLayout(self: *InnerMeshVertexBufferLayout, attribute_descriptors: []VertexAttributeDescriptor) !VertexBufferLayout {
-        const attributes = std.ArrayList(VertexAttribute).initCapacity(aya.allocator, attribute_descriptors.len) catch unreachable;
-        errdefer attributes.deinit();
+            var ibuffer = renderkit.createBuffer(IndexT, .{
+                .type = .index,
+                .content = indices,
+            });
+            var vertex_buffer = renderkit.createBuffer(VertT, .{
+                .content = verts,
+            });
+            var instance_buffer = renderkit.createBuffer(InstanceT, .{
+                .usage = .stream,
+                .size = @as(c_long, @intCast(instance_count * @sizeOf(InstanceT))),
+                .step_func = .per_instance,
+            });
 
-        for (attribute_descriptors) |attribute_descriptor| {
-            if (std.mem.indexOfScalar(MeshVertexAttributeId, self.attribute_ids, attribute_descriptor)) |index| {
-                const layout_attribute = self.layout.attributes[index];
-                attributes.append(VertexAttribute{
-                    .format = layout_attribute.format,
-                    .offset = layout_attribute.offset,
-                    .shader_location = layout_attribute.shader_location,
-                }) catch unreachable;
-            } else {
-                std.log.warn("Missing vertex attribute id: {}, name: {s}", .{ attribute_descriptor.id, attribute_descriptor.name });
-                return error.MissingVertexAttributeError;
-            }
+            var buffer = [_]renderkit.Buffer{ vertex_buffer, instance_buffer };
+
+            return Self{
+                .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
+                .instance_data = alloc.alloc(InstanceT, instance_count) catch unreachable,
+                .element_count = @as(c_int, @intCast(indices.len)),
+                .allocator = alloc,
+            };
         }
 
-        return VertexBufferLayout{
-            .array_stride = 0,
-            .step_mode = .per_vertex,
-            .attributes = attributes.toOwnedSlice(),
-        };
-    }
-};
-
-pub const GpuBufferInfo = union(enum) {
-    indexed: struct {
-        buffer: zgpu.BufferHandle,
-        count: u32,
-        index_format: IndexFormat,
-    },
-    non_indexed: void,
-
-    pub fn deinit(self: GpuBufferInfo) void {
-        std.debug.print("GpuBufferInfo.deinit we need a GraphicsContext\n", .{});
-        switch (self) {
-            // .indexed => |indexed| gctx.destroyResource(indexed.buffer);
-            else => {},
+        pub fn deinit(self: *Self) void {
+            renderkit.destroyBuffer(self.bindings.index_buffer);
+            renderkit.destroyBuffer(self.bindings.vert_buffers[0]);
+            renderkit.destroyBuffer(self.bindings.vert_buffers[1]);
+            self.allocator.free(self.instance_data);
         }
-    }
-};
 
-test "mesh.insertAttribute" {
-    std.debug.print("--\n", .{});
+        pub fn updateInstanceData(self: *Self) void {
+            renderkit.updateBuffer(InstanceT, self.bindings.vert_buffers[1], self.instance_data);
+            // updateBuffer gives us a fresh buffer so make sure we reset our append offset
+            self.bindings.vertex_buffer_offsets[1] = 0;
+        }
 
-    var mesh = Mesh.init(.triangles);
-    const values = try std.testing.allocator.alloc([3]f32, 1);
-    defer std.testing.allocator.free(values);
+        /// uploads to the GPU the slice up to num_elements
+        pub fn updateInstanceDataSlice(self: *Self, num_elements: usize) void {
+            std.debug.assert(num_elements <= self.instance_data.len);
+            const slice = self.instance_data[0..num_elements];
+            renderkit.updateBuffer(InstanceT, self.bindings.vert_buffers[1], slice);
+        }
 
-    const indices = Indices{ .u16 = try std.testing.allocator.alloc(u16, 1) };
-    defer std.testing.allocator.free(indices.u16);
+        pub fn bindImage(self: *Self, image: renderkit.Image, slot: c_uint) void {
+            self.bindings.bindImage(image, slot);
+        }
 
-    values[0] = [_]f32{ 1.0, 0.0, 0.0 };
-    mesh.insertAttribute(Mesh.ATTRIBUTE_POSITION, values);
-    mesh.insertAttribute(.{ .name = "Fuck_Off", .id = 99, .format = .float32x3 }, values);
-    mesh.setIndices(indices);
+        pub fn draw(self: Self, base_element: c_int, element_count: c_int, instance_count: c_int) void {
+            renderkit.applyBindings(self.bindings);
+            renderkit.draw(base_element, element_count, instance_count);
+        }
 
-    var iter = mesh.attributes.iterator();
-    while (iter.next()) |attr| {
-        std.debug.print("key: {}, val: {}\n", .{ attr.key_ptr.*, attr.value_ptr.values });
-    }
+        pub fn drawAll(self: Self) void {
+            self.draw(0, self.element_count, @as(c_int, @intCast(self.instance_data.len)));
+        }
+    };
 }
