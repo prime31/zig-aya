@@ -23,13 +23,11 @@ pub const DefaultPlugins = struct {
     const AssetPlugin = @import("../asset/mod.zig").AssetPlugin;
     const RenderPlugin = @import("../render/mod.zig").RenderPlugin;
     const GizmosPlugin = @import("../gizmos/mod.zig").GizmosPlugin;
-    const PbrPlugin = @import("../pbr/mod.zig").PbrPlugin;
 
     window: ?WindowPlugin = .{},
     asset: ?AssetPlugin = .{},
     render: ?RenderPlugin = .{},
     gizmos: ?GizmosPlugin = .{},
-    pbr_plugin: ?PbrPlugin = .{},
 
     pub fn init() DefaultPlugins {
         return .{};

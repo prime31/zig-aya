@@ -5,23 +5,20 @@ const imgui_enabled = @import("imgui.zig").enabled;
 // all references to SDL_Window, SDL_Event and SDL_Renderer were changed to anyopaque
 
 // ImGui lifecycle helpers, wrapping ImGui and SDL3 Impl
-pub fn init(
-    window: *const anyopaque, // SDL_Window
-    wgpu_device: *const anyopaque, // wgpu.Device
-    wgpu_swap_chain_format: u32, // wgpu.TextureFormat
-    depth_format: u32, // wgpu.TextureFormat
-) void {
+pub fn init(window: *const anyopaque) void {
     if (!imgui_enabled) return;
 
     _ = imgui.igCreateContext(null);
-    _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO()[0].Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
+    var io = imgui.igGetIO();
+    _ = imgui.ImFontAtlas_AddFontFromFileTTF(io.Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
-    var io = imgui.igGetIO().*;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
 
-    if (!ImGui_ImplSDL3_InitForOther(window)) unreachable;
-    if (!ImGui_ImplWGPU_Init(wgpu_device, 1, wgpu_swap_chain_format, depth_format)) unreachable;
+    if (!ImGui_ImplOpenGL3_Init(null)) unreachable;
+    if (!ImGui_ImplSDL3_InitForOpenGL(window, sdl.SDL_GL_GetCurrentContext())) unreachable;
 }
 
 /// returns true if the event is handled by imgui and should be ignored
@@ -41,60 +38,42 @@ pub fn handleEvent(event: *sdl.SDL_Event) bool {
 pub fn newFrame() void {
     if (!imgui_enabled) return;
 
-    ImGui_ImplWGPU_NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
-
     imgui.igNewFrame();
 }
 
-pub fn draw(gctx: anytype, zgpu: anytype) void {
-    if (!imgui_enabled) return;
-
-    const swapchain_texv = gctx.swapchain.getCurrentTextureView();
-    defer swapchain_texv.release();
-
-    const commands = commands: {
-        const encoder = gctx.device.createCommandEncoder(null);
-        defer encoder.release();
-
-        // GUI pass
-        {
-            const pass = zgpu.beginRenderPassSimple(encoder, .load, swapchain_texv, null, null, null);
-            defer zgpu.endReleasePass(pass);
-            render(pass);
-        }
-
-        break :commands encoder.finish(null);
-    };
-    defer commands.release();
-
-    gctx.submit(&.{commands});
-}
-
-pub fn render(wgpu_render_pass: *const anyopaque) void {
+pub fn render(window: *sdl.SDL_Window, gl_ctx: sdl.SDL_GLContext) void {
     if (!imgui_enabled) return;
 
     imgui.igRender();
-    ImGui_ImplWGPU_RenderDrawData(imgui.igGetDrawData(), wgpu_render_pass);
+    ImGui_ImplOpenGL3_RenderDrawData(imgui.igGetDrawData());
+
+    var io = imgui.igGetIO();
+    if ((io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable) != 0) {
+        imgui.igUpdatePlatformWindows();
+        imgui.igRenderPlatformWindowsDefault(null, null);
+    }
+
+    _ = sdl.SDL_GL_MakeCurrent(window, gl_ctx);
 }
 
 pub fn shutdown() void {
     if (!imgui_enabled) return;
 
-    ImGui_ImplWGPU_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     imgui.igDestroyContext(null);
 }
 
 // imgui_impl_sdl3
-extern fn ImGui_ImplSDL3_InitForSDLRenderer(window: ?*anyopaque, renderer: ?*anyopaque) bool;
-extern fn ImGui_ImplSDL3_InitForOther(window: ?*const anyopaque) bool;
+extern fn ImGui_ImplSDL3_InitForOpenGL(window: ?*const anyopaque, sdl_gl_context: ?*anyopaque) bool;
 extern fn ImGui_ImplSDL3_Shutdown() void;
 extern fn ImGui_ImplSDL3_NewFrame() void;
 extern fn ImGui_ImplSDL3_ProcessEvent(event: ?*anyopaque) bool;
 
-// imgui_impl_wgpu
-extern fn ImGui_ImplWGPU_Init(device: *const anyopaque, num_frames_in_flight: u32, rt_format: u32, depth_format: u32) bool;
-extern fn ImGui_ImplWGPU_NewFrame() void;
-extern fn ImGui_ImplWGPU_RenderDrawData(draw_data: *const anyopaque, pass_encoder: *const anyopaque) void;
-extern fn ImGui_ImplWGPU_Shutdown() void;
+// imgui_impl_gl3
+pub extern fn ImGui_ImplOpenGL3_Init(glsl_version: [*c]const u8) bool;
+pub extern fn ImGui_ImplOpenGL3_NewFrame() void;
+pub extern fn ImGui_ImplOpenGL3_RenderDrawData(draw_data: ?*anyopaque) void;
+pub extern fn ImGui_ImplOpenGL3_Shutdown() void;

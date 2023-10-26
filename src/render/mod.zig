@@ -1,32 +1,19 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const zm = @import("zmath");
 const self = @This();
 
-pub usingnamespace @import("shapes/mod.zig");
-pub usingnamespace @import("mesh.zig");
-pub usingnamespace @import("shader.zig");
+pub usingnamespace @import("spatial_bundle.zig");
 pub usingnamespace @import("image.zig");
-pub usingnamespace @import("pipeline.zig");
-pub usingnamespace @import("pipeline_cache.zig");
-pub usingnamespace @import("pipeline_specializer.zig");
-pub usingnamespace @import("bind_group.zig");
-
-pub usingnamespace @import("texture/mod.zig");
-
-const ImagePlugin = aya.ImagePlugin;
+pub usingnamespace @import("gfx.zig");
+pub usingnamespace @import("batcher.zig");
+pub usingnamespace @import("fontbook.zig");
+pub usingnamespace @import("mesh.zig");
 
 pub const RenderPlugin = struct {
     pub fn build(_: RenderPlugin, app: *aya.App) void {
-        _ = app.initAsset(self.Mesh)
-            .initAsset(aya.Shader)
-            .initAssetLoader(aya.Shader, aya.loadShader)
+        _ = app
             .insertResource(ClearColor{})
-            .addPlugins(ImagePlugin);
-    }
-
-    pub fn finish(_: RenderPlugin, app: *aya.App) void {
-        _ = app.initResource(self.PipelineCache);
+            .initResource(self.GraphicsContext);
     }
 };
 
@@ -46,16 +33,4 @@ pub const ClearColorConfig = union {
     custom: ClearColor,
     /// No clear color is used: the camera will simply draw on top of anything already in the viewport
     none: void,
-};
-
-pub const HalfSpace = struct {
-    normal_d: zm.Vec,
-};
-
-pub const Frustum = struct {
-    half_spaces: [6]HalfSpace,
-};
-
-pub const CascadesFrusta = struct {
-    frusta: std.AutoHashMap(u64, std.ArrayList(Frustum)),
 };

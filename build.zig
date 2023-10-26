@@ -6,8 +6,10 @@ const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
-const wgpu_build = @import("libs/wgpu/build.zig");
-const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
+const fontstash_build = @import("libs/fontstash/build.zig");
+const renderkit_build = @import("libs/renderkit/build.zig");
+
+const ShaderCompileStep = renderkit_build.ShaderCompileStep;
 
 const Options = struct {
     build_options: *std.build.Step.Options,
@@ -37,6 +39,23 @@ pub fn build(b: *std.Build) void {
     addTests(b, target, optimize, options);
 
     flecs_build.addFlecsUpdateStep(b, target);
+
+    // shader compiler, run with `zig build compile-shaders`
+    const shader_compile_step = ShaderCompileStep.init(b, .{
+        .shader = "examples/assets/shaders/shader_src.glsl",
+        .shader_output_path = "examples/assets/shaders",
+        .package_output_path = "examples/assets/shaders",
+        .additional_imports = &[_][]const u8{
+            "const aya = @import(\"aya\");",
+            "const gfx = aya.gfx;",
+            "const math = aya.math;",
+            "const renderkit = aya.renderkit;",
+        },
+    });
+
+    const compile_shaders_step = b.step("compile-shaders", "compiles all shaders");
+    b.default_step.dependOn(compile_shaders_step);
+    compile_shaders_step.dependOn(&shader_compile_step.step);
 }
 
 fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
@@ -102,17 +121,15 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     sdl_build.linkArtifact(b, exe);
     const sdl_module = sdl_build.getModule(b);
 
-    zig_gamedev_build.linkArtifact(b, exe, target, optimize);
-    const zmath_module = zig_gamedev_build.getMathModule(b);
-    const zmesh_module = zig_gamedev_build.getMeshModule();
-    const zpool_module = zig_gamedev_build.getPoolModule(b);
-
-    wgpu_build.linkArtifact(b, exe);
-    const wgpu_module = wgpu_build.getModule(b, zpool_module, sdl_module);
-
     if (options.enable_imgui)
         imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
     const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
+
+    fontstash_build.linkArtifact(exe);
+    const fontstash_module = fontstash_build.getModule(b);
+
+    renderkit_build.linkArtifact(exe, target);
+    const renderkit_module = renderkit_build.getModule(b);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
@@ -121,10 +138,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "imgui", .module = imgui_module },
-            .{ .name = "zgpu", .module = wgpu_module },
-            .{ .name = "zmath", .module = zmath_module },
-            .{ .name = "zmesh", .module = zmesh_module },
-            .{ .name = "zpool", .module = zpool_module },
+            .{ .name = "fontstash", .module = fontstash_module },
+            .{ .name = "renderkit", .module = renderkit_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
@@ -138,9 +153,6 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("stb", stb_module);
     exe.addModule("sdl", sdl_module);
     exe.addModule("imgui", imgui_module);
-    exe.addModule("zmath", zmath_module);
-    exe.addModule("zgpu", wgpu_module);
-    exe.addModule("zmesh", zmesh_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {

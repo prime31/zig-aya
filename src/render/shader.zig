@@ -1,77 +1,152 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+const rk = @import("renderkit");
+const fs = aya.fs;
 
-const Handle = aya.Handle;
-const AssetPath = aya.AssetPath;
+const Mat32 = aya.Mat32;
 
-pub const ShaderRef = union(enum) {
-    /// Use the "default" shader for the current context.
-    default: void,
-    /// A handle to a shader stored in the `Assets(Shader)`
-    handle: Handle(Shader),
-    /// An asset path leading to a shader
-    path: AssetPath,
-
-    pub fn getHandle(self: ShaderRef, asset_server: *aya.AssetServer) ?Handle(Shader) {
-        return switch (self) {
-            .default => null,
-            .handle => |h| h,
-            .path => |path| asset_server.load(Shader, path.path.str, {}),
-        };
-    }
-};
-
-pub const ShaderImport = union(enum) {
-    asset_path: []const u8,
-    custom: []const u8,
-};
-
-pub const ShaderDefVal = union(enum) {
-    bool: struct { str: []const u8, val: bool },
-    int: struct { str: []const u8, val: i32 },
-    uint: struct { str: []const u8, val: u32 },
-};
-
-/// Asset.
-pub const Shader = struct {
-    path: []const u8,
-    source: []const u8,
-    import_path: ShaderImport,
-    imports: std.ArrayList(ShaderImport),
-    // extra imports not specified in the source string
-    // additional_imports: Vec<naga_oil::compose::ImportDefinition>,
-    // any shader defs that will be included when this module is used
-    shader_defs: std.ArrayList(ShaderDefVal),
-    // we must store strong handles to our dependencies to stop them
-    // from being immediately dropped if we are the only user.
-    file_dependencies: std.ArrayList(Handle(Shader)),
-
-    pub fn fromWgsl(source: []const u8, path: []const u8) Shader {
-        // let (import_path, imports) = Shader::preprocess(&source, &path);
-        return Shader{
-            .path = path,
-            .imports = undefined,
-            .import_path = .{ .asset_path = "" },
-            .source = source,
-            // .additional_imports: Default::default(),
-            .shader_defs = undefined,
-            .file_dependencies = undefined,
-        };
-    }
-};
-
-// AssetLoader
-pub fn loadShader(path: []const u8, _: void) Shader {
-    const source = aya.fs.read(path) catch unreachable;
-    const extension = std.fs.path.extension(path);
-
-    const shader = blk: {
-        if (std.mem.eql(u8, extension, ".wgls"))
-            break :blk Shader.fromWgsl(source, path);
-        if (std.mem.eql(u8, extension, ".comp"))
-            break :blk Shader.fromWgsl(source, path);
-        unreachable;
+/// default params for the sprite shader. Translates the Mat32 into 2 arrays of f32 for the shader uniform slot.
+pub const VertexParams = extern struct {
+    pub const metadata = .{
+        .uniforms = .{ .VertexParams = .{ .type = .float4, .array_count = 2 } },
+        .images = .{"main_tex"},
     };
 
-    return shader;
+    transform_matrix: [8]f32 = [_]f32{0} ** 8,
+
+    pub fn init(mat: *Mat32) VertexParams {
+        var params = VertexParams{};
+        std.mem.copy(f32, &params.transform_matrix, &mat.data);
+        return params;
+    }
+};
+
+fn defaultVertexShader() [:0]const u8 {
+    return @embedFile("assets/sprite_vs.glsl");
+}
+
+fn defaultFragmentShader() [:0]const u8 {
+    return @embedFile("assets/sprite_fs.glsl");
+}
+
+pub const Shader = struct {
+    shader: rk.ShaderProgram,
+    onPostBind: ?*const fn (*Shader) void,
+    onSetTransformMatrix: ?*const fn (*Mat32) void,
+
+    const Empty = struct {};
+
+    pub const ShaderOptions = struct {
+        /// if vert and frag are file paths an Allocator is required. If they are the shader code then no Allocator should be provided
+        allocator: ?std.mem.Allocator = null,
+
+        /// optional vertex shader file path (without extension) or shader code. If null, the default sprite shader vertex shader is used
+        vert: ?[:0]const u8 = null,
+
+        /// required frag shader file path (without extension) or shader code.
+        frag: [:0]const u8,
+
+        /// optional function that will be called immediately after bind is called allowing you to auto-update uniforms
+        onPostBind: ?*const fn (*Shader) void = null,
+
+        /// optional function that lets you override the behavior when the transform matrix is set. This is used when there is a
+        /// custom vertex shader and isnt necessary if the standard sprite vertex shader is used. Note that the shader is already
+        /// bound when this is called if `gfx.setShader` is used so send your uniform immediately!
+        onSetTransformMatrix: ?*const fn (*Mat32) void = null,
+    };
+
+    pub fn initDefaultSpriteShader() !Shader {
+        return initWithVertFrag(VertexParams, Empty, .{ .vert = defaultVertexShader(), .frag = defaultFragmentShader() });
+    }
+
+    /// initializes the shader with the default vert uniform and no frag uniform
+    pub fn init(options: ShaderOptions) !Shader {
+        return initWithVertFrag(VertexParams, Empty, options);
+    }
+
+    pub fn initWithFrag(comptime FragUniformT: type, options: ShaderOptions) !Shader {
+        return initWithVertFrag(VertexParams, FragUniformT, options);
+    }
+
+    // TODO: this shouldnt have `catch unreachable`s but in release mode builds fail to identify the error set....
+    pub fn initWithVertFrag(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
+        const vert = blk: {
+            // if we were not provided a vert shader we substitute in the sprite shader
+            if (options.vert) |vert| {
+                // if we were provided an allocator that means this is a file
+                if (options.allocator) |allocator| {
+                    const vert_path = std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" }) catch unreachable;
+                    defer allocator.free(vert_path);
+                    break :blk fs.readZ(vert_path) catch unreachable;
+                }
+                break :blk vert;
+            } else {
+                break :blk defaultVertexShader();
+            }
+        };
+        const frag = blk: {
+            if (options.allocator) |allocator| {
+                const frag_path = std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" }) catch unreachable;
+                defer allocator.free(frag_path);
+                break :blk fs.readZ(frag_path) catch unreachable;
+            }
+            break :blk options.frag;
+        };
+
+        return Shader{
+            .shader = rk.createShaderProgram(VertUniformT, FragUniformT, .{ .vs = vert, .fs = frag }),
+            .onPostBind = options.onPostBind,
+            .onSetTransformMatrix = options.onSetTransformMatrix,
+        };
+    }
+
+    pub fn deinit(self: Shader) void {
+        rk.destroyShaderProgram(self.shader);
+    }
+
+    pub fn bind(self: *Shader) void {
+        rk.useShaderProgram(self.shader);
+        if (self.onPostBind) |onPostBind| onPostBind(self);
+    }
+
+    pub fn setTransformMatrix(self: Shader, matrix: *Mat32) void {
+        if (self.onSetTransformMatrix) |setMatrix| {
+            setMatrix(matrix);
+        } else {
+            var params = VertexParams.init(matrix);
+            self.setVertUniform(VertexParams, &params);
+        }
+    }
+
+    pub fn setVertUniform(self: Shader, comptime VertUniformT: type, value: *VertUniformT) void {
+        rk.setShaderProgramUniformBlock(VertUniformT, self.shader, .vs, value);
+    }
+
+    pub fn setFragUniform(self: Shader, comptime FragUniformT: type, value: *FragUniformT) void {
+        rk.setShaderProgramUniformBlock(FragUniformT, self.shader, .fs, value);
+    }
+};
+
+/// convenience object that binds a fragment uniform with a Shader. You can optionally wire up the onPostBind method
+/// to the Shader.onPostBind so that the FragUniformT object is automatically updated when the Shader is bound.
+pub fn ShaderState(comptime FragUniformT: type) type {
+    return struct {
+        shader: Shader,
+        frag_uniform: FragUniformT = .{},
+
+        pub fn init(options: Shader.ShaderOptions) @This() {
+            return .{
+                .shader = Shader.initWithFrag(FragUniformT, options) catch unreachable,
+            };
+        }
+
+        pub fn deinit(self: @This()) void {
+            self.shader.deinit();
+        }
+
+        pub fn onPostBind(shader: *Shader) void {
+            const self = @fieldParentPtr(@This(), "shader", shader);
+            shader.setFragUniform(FragUniformT, &self.frag_uniform);
+        }
+    };
 }
