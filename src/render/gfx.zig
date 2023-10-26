@@ -3,25 +3,28 @@ const sdl = @import("sdl");
 const renderkit = @import("renderkit");
 const aya = @import("../aya.zig");
 
-// import all the drawing methods
-pub const draw = @import("draw.zig").draw;
-
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
 pub const ResolutionScaler = @import("resolution_policy.zig").ResolutionScaler;
 pub const PostProcessStack = @import("post_process_stack.zig").PostProcessStack;
 pub const PostProcessor = @import("post_process_stack.zig").PostProcessor;
 
 // high level wrapper objects that use the low-level backend api
-pub const Texture = @import("texture.zig").Texture;
 pub const OffscreenPass = @import("offscreen_pass.zig").OffscreenPass;
 pub const Shader = @import("shader.zig").Shader;
 pub const ShaderState = @import("shader.zig").ShaderState;
 
 const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
+const Draw = @import("draw.zig").Draw;
+
+const Batcher = aya.Batcher;
+const FontBook = aya.FontBook;
+const Texture = aya.Texture;
 
 const Vec2 = aya.Vec2;
 const Mat32 = aya.Mat32;
 const Color = aya.Color;
+const Quad = aya.Quad;
+const Size = aya.Size;
 
 pub const Vertex = extern struct {
     pos: Vec2 = .{ .x = 0, .y = 0 },
@@ -34,7 +37,6 @@ pub const Config = struct {
     design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
     resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
-    batcher_max_sprites: u16 = 1000, // defines the size of the vertex/index buffers based on the number of sprites/quads
     texture_filter: renderkit.TextureFilter = .nearest,
 };
 
@@ -82,14 +84,13 @@ pub const GraphicsContext = struct {
     default_pass: DefaultOffscreenPass,
     blitted_to_screen: bool = false,
     debug_render_enabled: bool = false,
-    window_pixel_size: struct { w: c_int, h: c_int }, // TODO: this should be fetched each frame somewhere
+    window_pixel_size: Size,
+    draw: Draw,
 
-    pub fn init(world: *aya.World) GraphicsContext {
+    pub fn init() GraphicsContext {
         const config = Config{};
-        draw.init(config) catch unreachable;
 
-        const window = world.getResource(aya.Window).?;
-        const window_pixel_size = window.sizeInPixels();
+        const window_pixel_size = aya.window.sizeInPixels();
 
         // if we were passed 0's for design size default to the window/backbuffer size
         var design_w = config.design_width;
@@ -104,29 +105,35 @@ pub const GraphicsContext = struct {
             .debug_render_enabled = !config.disable_debug_render,
             .default_pass = DefaultOffscreenPass.init(design_w, design_h, config.texture_filter, config.resolution_policy),
             .window_pixel_size = .{ .w = window_pixel_size.w, .h = window_pixel_size.h },
+            .draw = Draw.init(),
         };
     }
 
     pub fn deinit(self: *GraphicsContext) void {
         self.shader.deinit();
         self.default_pass.deinit();
-        draw.deinit();
+        self.draw.deinit();
+    }
+
+    pub fn setWindowPixelSize(self: *GraphicsContext, size: Size) void {
+        self.window_pixel_size = size;
+        self.default_pass.onWindowResizedCallback(size);
     }
 
     pub fn setShader(self: *GraphicsContext, shader: ?*Shader) void {
         const new_shader = shader orelse &self.shader;
 
-        draw.batcher.flush();
+        self.draw.batcher.flush();
         new_shader.bind();
         new_shader.setTransformMatrix(&self.transform_mat);
     }
 
-    pub fn beginFrame(_: *GraphicsContext) void {
-        draw.batcher.begin();
+    pub fn beginFrame(self: *GraphicsContext) void {
+        self.draw.batcher.begin();
     }
 
-    pub fn setRenderState(_: *GraphicsContext, rk_state: renderkit.RenderState) void {
-        draw.batcher.flush();
+    pub fn setRenderState(self: *GraphicsContext, rk_state: renderkit.RenderState) void {
+        self.draw.batcher.flush();
         renderkit.setRenderState(rk_state);
     }
 
@@ -171,12 +178,13 @@ pub const GraphicsContext = struct {
     pub fn endPass(self: *GraphicsContext) void {
         // setting the shader will flush the batch
         self.setShader(null);
-        // aya.debug.render(self.debug_render_enabled); // TODO: debug render
+        if (aya.debug.render(&self.draw, self.debug_render_enabled))
+            self.flush();
         renderkit.endPass();
     }
 
-    pub fn flush() void {
-        draw.batcher.flush();
+    pub fn flush(self: *GraphicsContext) void {
+        self.draw.batcher.flush();
     }
 
     pub fn postProcess(self: *GraphicsContext, stack: *PostProcessStack) void {
@@ -189,12 +197,9 @@ pub const GraphicsContext = struct {
         if (self.blitted_to_screen) return;
         self.blitted_to_screen = true;
 
-        // TODO: Hack until we get window resized events
-        self.default_pass.onWindowResizedCallback(self.window_pixel_size.w, self.window_pixel_size.h);
-
         self.beginPass(.{ .color = letterbox_color });
         const scaler = self.default_pass.scaler;
-        draw.texScale(self.default_pass.pass.color_texture, @as(f32, @floatFromInt(scaler.x)), @as(f32, @floatFromInt(scaler.y)), scaler.scale);
+        self.draw.texScale(self.default_pass.pass.color_texture, @as(f32, @floatFromInt(scaler.x)), @as(f32, @floatFromInt(scaler.y)), scaler.scale);
         self.endPass();
     }
 
@@ -202,7 +207,7 @@ pub const GraphicsContext = struct {
     pub fn commitFrame(self: *GraphicsContext) void {
         if (!self.blitted_to_screen) self.blitToScreen(Color.black);
 
-        draw.batcher.end();
+        self.draw.batcher.end();
         self.blitted_to_screen = false;
         renderkit.commitFrame();
     }

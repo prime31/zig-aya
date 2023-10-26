@@ -3,17 +3,20 @@ const aya = @import("../aya.zig");
 const rk = @import("renderkit");
 const gfx = @import("gfx.zig");
 
+const Size = aya.Size;
+const Texture = aya.Texture;
+
 pub const OffscreenPass = struct {
     pass: rk.Pass,
-    color_texture: gfx.Texture,
-    depth_stencil_texture: ?gfx.Texture = null,
+    color_texture: Texture,
+    depth_stencil_texture: ?Texture = null,
 
     pub fn init(width: i32, height: i32) OffscreenPass {
         return initWithOptions(width, height, .nearest, .clamp);
     }
 
     pub fn initWithOptions(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) OffscreenPass {
-        const color_tex = gfx.Texture.initOffscreen(width, height, filter, wrap);
+        const color_tex = Texture.initOffscreen(width, height, filter, wrap);
 
         const pass = rk.createPass(.{
             .color_img = color_tex.img,
@@ -22,8 +25,8 @@ pub const OffscreenPass = struct {
     }
 
     pub fn initWithStencil(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) OffscreenPass {
-        const color_tex = gfx.Texture.initOffscreen(width, height, filter, wrap);
-        const depth_stencil_img = gfx.Texture.initStencil(width, height, filter, wrap);
+        const color_tex = Texture.initOffscreen(width, height, filter, wrap);
+        const depth_stencil_img = Texture.initStencil(width, height, filter, wrap);
 
         const pass = rk.createPass(.{
             .color_img = color_tex.img,
@@ -66,9 +69,6 @@ pub const DefaultOffscreenPass = struct {
             .design_h = h,
         };
 
-        // TODO: remove the hack from gfx.blitToScreen that calls onWindowResizedCallback when this works
-        //aya.window.subscribe(.resize, onWindowResizedCallback, pass, false);
-
         return pass;
     }
 
@@ -79,10 +79,7 @@ pub const DefaultOffscreenPass = struct {
         }
     }
 
-    pub fn onWindowResizedCallback(self: *DefaultOffscreenPass, w: c_int, h: c_int) void {
-        // const size = aya.window.drawableSize();
-        const size: struct { w: c_int, h: c_int } = .{ .w = w, .h = h };
-        std.debug.print("----- fix size here too\n", .{});
+    pub fn onWindowResizedCallback(self: *DefaultOffscreenPass, size: Size) void {
         if (size.w != 0 and size.h != 0 and self.policy == .default and (size.w != self.design_w or size.h != self.design_h)) {
             self.pass.resize(size.w, size.h);
             self.design_w = size.w;

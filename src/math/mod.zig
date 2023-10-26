@@ -1,4 +1,3 @@
-pub usingnamespace @import("axis.zig");
 pub usingnamespace @import("color.zig");
 pub usingnamespace @import("edge.zig");
 pub usingnamespace @import("mat4.zig");

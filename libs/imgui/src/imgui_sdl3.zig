@@ -9,9 +9,8 @@ pub fn init(window: *const anyopaque) void {
     if (!imgui_enabled) return;
 
     _ = imgui.igCreateContext(null);
-    var io = imgui.igGetIO();
-    _ = imgui.ImFontAtlas_AddFontFromFileTTF(io.Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
+    var io = imgui.igGetIO();
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;

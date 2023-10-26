@@ -25,23 +25,19 @@ pub const ResolutionPolicy = enum {
         std.debug.assert((self != .default and design_w > 0 and design_h > 0) or self == .default);
 
         // common config
-        std.debug.print("---- TODO: we need window size here\n", .{});
-        // var w = aya.window.width();
-        // var h = aya.window.height();
-        var w: i32 = 800;
-        var h: i32 = 600;
+        const win_size = aya.window.sizeInPixels();
 
         // our render target size will be full screen for .default
-        var rt_w = if (self == .default) w else design_w;
-        var rt_h = if (self == .default) h else design_h;
+        var rt_w = if (self == .default) win_size.w else design_w;
+        var rt_h = if (self == .default) win_size.h else design_h;
 
         // scale of the screen size / render target size, used by both pixel perfect and non-pp
-        var res_x = @as(f32, @floatFromInt(w)) / @as(f32, @floatFromInt(rt_w));
-        var res_y = @as(f32, @floatFromInt(h)) / @as(f32, @floatFromInt(rt_h));
+        var res_x = @as(f32, @floatFromInt(win_size.w)) / @as(f32, @floatFromInt(rt_w));
+        var res_y = @as(f32, @floatFromInt(win_size.h)) / @as(f32, @floatFromInt(rt_h));
 
         var scale: i32 = 1;
         var scale_f: f32 = 1.0;
-        var aspect_ratio = @as(f32, @floatFromInt(w)) / @as(f32, @floatFromInt(h));
+        var aspect_ratio = @as(f32, @floatFromInt(win_size.w)) / @as(f32, @floatFromInt(win_size.h));
         var rt_aspect_ratio = @as(f32, @floatFromInt(rt_w)) / @as(f32, @floatFromInt(rt_h));
 
         if (self != .default) {
@@ -53,11 +49,9 @@ pub const ResolutionPolicy = enum {
 
         switch (self) {
             .default => {
-                std.debug.print("---- TODO: we need window scale here\n", .{});
-                // const win_scale = aya.window.scale();
-                const win_scale = 1;
-                const width = @as(i32, @intFromFloat(@as(f32, @floatFromInt(w)) / win_scale));
-                const height = @as(i32, @intFromFloat(@as(f32, @floatFromInt(h)) / win_scale));
+                const win_scale = aya.window.scale();
+                const width = @as(i32, @intFromFloat(@as(f32, @floatFromInt(win_size.w)) / win_scale));
+                const height = @as(i32, @intFromFloat(@as(f32, @floatFromInt(win_size.h)) / win_scale));
                 return ResolutionScaler{
                     .x = 0,
                     .y = 0,
@@ -71,8 +65,8 @@ pub const ResolutionPolicy = enum {
                 // go for the lowest scale value so everything fits properly (Show_All)
                 const res_scale = if (self == .no_border) @max(res_x, res_y) else @min(res_x, res_y);
 
-                const x = (@as(f32, @floatFromInt(w)) - (@as(f32, @floatFromInt(rt_w)) * res_scale)) / 2.0;
-                const y = (@as(f32, @floatFromInt(h)) - (@as(f32, @floatFromInt(rt_h)) * res_scale)) / 2.0;
+                const x = (@as(f32, @floatFromInt(win_size.w)) - (@as(f32, @floatFromInt(rt_w)) * res_scale)) / 2.0;
+                const y = (@as(f32, @floatFromInt(win_size.h)) - (@as(f32, @floatFromInt(rt_h)) * res_scale)) / 2.0;
 
                 return ResolutionScaler{
                     .x = @as(i32, @intFromFloat(x)),
@@ -90,8 +84,8 @@ pub const ResolutionPolicy = enum {
                     scale = @as(i32, @intFromFloat(@ceil(scale_f)));
                 }
 
-                const x = @divTrunc(w - (rt_w * scale), 2);
-                const y = @divTrunc(h - (rt_h * scale), 2);
+                const x = @divTrunc(win_size.w - (rt_w * scale), 2);
+                const y = @divTrunc(win_size.h - (rt_h * scale), 2);
                 return ResolutionScaler{
                     .x = x,
                     .y = y,
@@ -104,15 +98,15 @@ pub const ResolutionPolicy = enum {
                 // TODO: move this into some sort of safe area config
                 const bleed_x: i32 = 0;
                 const bleed_y: i32 = 0;
-                const safe_sx = @as(f32, @floatFromInt(w)) / @as(f32, @floatFromInt(rt_w - bleed_x));
-                const safe_sy = @as(f32, @floatFromInt(h)) / @as(f32, @floatFromInt(rt_h - bleed_y));
+                const safe_sx = @as(f32, @floatFromInt(win_size.w)) / @as(f32, @floatFromInt(rt_w - bleed_x));
+                const safe_sy = @as(f32, @floatFromInt(win_size.h)) / @as(f32, @floatFromInt(rt_h - bleed_y));
 
                 const res_scale = @max(res_x, res_y);
                 const safe_scale = @min(safe_sx, safe_sy);
                 const final_scale = @min(res_scale, safe_scale);
 
-                const x = (@as(f32, @floatFromInt(w)) - (@as(f32, @floatFromInt(rt_w)) * final_scale)) / 2.0;
-                const y = (@as(f32, @floatFromInt(h)) - (@as(f32, @floatFromInt(rt_h)) * final_scale)) / 2.0;
+                const x = (@as(f32, @floatFromInt(win_size.w)) - (@as(f32, @floatFromInt(rt_w)) * final_scale)) / 2.0;
+                const y = (@as(f32, @floatFromInt(win_size.h)) - (@as(f32, @floatFromInt(rt_h)) * final_scale)) / 2.0;
 
                 return ResolutionScaler{
                     .x = @as(i32, @intFromFloat(x)),
@@ -131,8 +125,3 @@ pub const ResolutionPolicy = enum {
         };
     }
 };
-
-test "test resolution policy" {
-    // const def_policy = ResolutionPolicy.default;
-    // const def_scaler = def_policy.getScaler(600, 480);
-}
