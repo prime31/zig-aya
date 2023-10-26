@@ -5,6 +5,7 @@ const wgpu = zgpu.wgpu;
 
 const Handle = aya.Handle;
 const MeshPipeline = aya.MeshPipeline;
+const SpecializedMeshPipelines = aya.SpecializedMeshPipelines;
 const Shader = aya.Shader;
 const RenderPipelineDescriptor = aya.RenderPipelineDescriptor;
 const MeshVertexBufferLayout = aya.InnerMeshVertexBufferLayout;
@@ -198,6 +199,7 @@ pub fn MaterialPlugin(comptime M: type) type {
                 .initResource(ExtractedMaterials(M))
                 .initResource(RenderMaterials(M))
                 .initResource(MaterialPipeline(M))
+                .initResource(SpecializedMeshPipelines(MaterialPipeline(M)))
                 .addSystems(aya.PostUpdate, .{ ExtractMaterialsSystem(M), PrepareMaterialsSystem(M) });
         }
     };

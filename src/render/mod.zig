@@ -9,6 +9,7 @@ pub usingnamespace @import("shader.zig");
 pub usingnamespace @import("image.zig");
 pub usingnamespace @import("pipeline.zig");
 pub usingnamespace @import("pipeline_cache.zig");
+pub usingnamespace @import("pipeline_specializer.zig");
 pub usingnamespace @import("bind_group.zig");
 
 pub usingnamespace @import("texture/mod.zig");
