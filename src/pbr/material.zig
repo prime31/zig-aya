@@ -379,7 +379,7 @@ fn prepareMaterial(
     pipeline: *const MaterialPipeline(M),
 ) !PreparedMaterial(M) {
     const prepared: PreparedBindGroup(M.Data) = try Material(M).asBindGroup(material, pipeline.material_layout, gctx, images);
-    std.debug.print("------ prepareMaterial working so far\n", .{});
+    std.debug.print("------ prepareMaterial working so far. data: {}\n", .{prepared.data});
 
     return PreparedMaterial(M){
         .bindings = prepared.bindings,
