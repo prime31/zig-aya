@@ -3,6 +3,9 @@ const aya = @import("aya");
 
 const App = aya.App;
 const ResMut = aya.ResMut;
+const Res = aya.Res;
+const Input = aya.Input;
+const Scancode = aya.Scancode;
 
 pub fn main() !void {
     std.debug.print("\n", .{});
@@ -14,11 +17,14 @@ pub fn main() !void {
 }
 
 const ClearColorSystem = struct {
-    pub fn run(gfx_res: ResMut(aya.GraphicsContext)) void {
+    pub fn run(gfx_res: ResMut(aya.GraphicsContext), keys_res: Res(Input(Scancode))) void {
         var gfx = gfx_res.getAssertExists();
+        var keys = keys_res.getAssertExists();
 
-        aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 400, .y = 20 }, null);
-        aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, aya.Color.dark_purple);
+        if (!keys.pressed(.k)) {
+            aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 400, .y = 20 }, null);
+            aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, aya.Color.dark_purple);
+        }
 
         gfx.beginPass(.{});
         gfx.draw.text("fo fuck yourself", 24, 20, null);

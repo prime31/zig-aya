@@ -21,6 +21,6 @@ pub const Axis = enum(u8) {
 };
 
 pub const Size = struct {
-    w: c_int,
-    h: c_int,
+    w: c_int = 0,
+    h: c_int = 0,
 };
