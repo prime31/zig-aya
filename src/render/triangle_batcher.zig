@@ -1,10 +1,12 @@
 const std = @import("std");
 const renderkit = @import("renderkit");
 const aya = @import("../aya.zig");
-const math = aya.math;
 
 const Vertex = aya.gfx.Vertex;
 const DynamicMesh = aya.gfx.DynamicMesh;
+const Mat32 = aya.Mat32;
+const Vec2 = aya.Vec2;
+const Color = aya.Color;
 
 pub const TriangleBatcher = struct {
     mesh: DynamicMesh(void, Vertex),
@@ -94,7 +96,7 @@ pub const TriangleBatcher = struct {
         }
     }
 
-    pub fn drawTriangle(self: *TriangleBatcher, pt1: math.Vec2, pt2: math.Vec2, pt3: math.Vec2, color: math.Color) void {
+    pub fn drawTriangle(self: *TriangleBatcher, pt1: Vec2, pt2: Vec2, pt3: Vec2, color: Color) void {
         self.ensureCapacity() catch |err| {
             std.debug.print("TriangleBatcher.draw failed to append a draw call with error: {}\n", .{err});
             return;
@@ -108,7 +110,7 @@ pub const TriangleBatcher = struct {
         self.mesh.verts[self.vert_index + 2].pos = pt3;
         self.mesh.verts[self.vert_index + 2].col = color.value;
 
-        const mat = math.Mat32.identity;
+        const mat = Mat32.identity;
         mat.transformVertexSlice(self.mesh.verts[self.vert_index .. self.vert_index + 3]);
 
         self.draw_calls.items[self.draw_calls.items.len - 1] += 3;

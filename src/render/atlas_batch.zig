@@ -1,7 +1,13 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
+
 const Vertex = aya.gfx.Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;
+const RectI = aya.RectI;
+const Vec2 = aya.Vec2;
+const Mat32 = aya.Mat32;
+const Color = aya.Color;
+const Quad = aya.Quad;
 
 // TODO: who should own and deinit the Texture?
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers
@@ -63,23 +69,23 @@ pub const AtlasBatch = struct {
     }
 
     /// the workhorse. Sets the actual verts in the mesh and keeps track of if the mesh is dirty.
-    pub fn set(self: *AtlasBatch, index: usize, quad: aya.math.Quad, mat: ?aya.math.Mat32, color: aya.math.Color) void {
+    pub fn set(self: *AtlasBatch, index: usize, quad: Quad, mat: ?Mat32, color: Color) void {
         var vert_index = index * 4;
 
-        const matrix = mat orelse aya.math.Mat32.identity;
+        const matrix = mat orelse Mat32.identity;
 
         // copy the quad positions, uvs and color into vertex array transforming them with the matrix as we do it
         matrix.transformQuad(self.mesh.verts[vert_index .. vert_index + 4], quad, color);
         self.buffer_dirty = true;
     }
 
-    pub fn setViewport(self: *AtlasBatch, index: usize, viewport: aya.math.RectI, mat: ?aya.math.Mat32, color: aya.math.Color) void {
-        var quad = aya.math.Quad.init(@as(f32, @floatFromInt(viewport.x)), @as(f32, @floatFromInt(viewport.y)), @as(f32, @floatFromInt(viewport.w)), @as(f32, @floatFromInt(viewport.h)), self.texture.width, self.texture.height);
+    pub fn setViewport(self: *AtlasBatch, index: usize, viewport: RectI, mat: ?Mat32, color: Color) void {
+        var quad = Quad.init(@as(f32, @floatFromInt(viewport.x)), @as(f32, @floatFromInt(viewport.y)), @as(f32, @floatFromInt(viewport.w)), @as(f32, @floatFromInt(viewport.h)), self.texture.width, self.texture.height);
         self.set(index, quad, mat, color);
     }
 
     /// adds a new quad to the batch returning the index so that it can be updated with set* later
-    pub fn add(self: *AtlasBatch, quad: aya.math.Quad, mat: ?aya.math.Mat32, color: aya.math.Color) usize {
+    pub fn add(self: *AtlasBatch, quad: Quad, mat: ?Mat32, color: Color) usize {
         self.ensureCapacity() catch |err| {
             std.debug.print("failed to ensureCapacity with error: {}\n", .{err});
             return 0;
@@ -91,8 +97,8 @@ pub const AtlasBatch = struct {
     }
 
     /// adds a new quad to the batch returning the index so that it can be updated with set* later
-    pub fn addViewport(self: *AtlasBatch, viewport: aya.math.RectI, mat: ?aya.math.Mat32, color: aya.math.Color) usize {
-        var quad = aya.math.Quad.init(@as(f32, @floatFromInt(viewport.x)), @as(f32, @floatFromInt(viewport.y)), @as(f32, @floatFromInt(viewport.w)), @as(f32, @floatFromInt(viewport.h)), self.texture.width, self.texture.height);
+    pub fn addViewport(self: *AtlasBatch, viewport: RectI, mat: ?Mat32, color: Color) usize {
+        var quad = Quad.init(@as(f32, @floatFromInt(viewport.x)), @as(f32, @floatFromInt(viewport.y)), @as(f32, @floatFromInt(viewport.w)), @as(f32, @floatFromInt(viewport.h)), self.texture.width, self.texture.height);
         return self.add(quad, mat, color);
     }
 

@@ -29,7 +29,7 @@ pub const Batcher = struct {
         quad_count: i32,
     };
 
-    fn createDynamicMesh(max_sprites: u16) !DynamicMesh(u16, Vertex) {
+    fn createDynamicMesh(max_sprites: u16) DynamicMesh(u16, Vertex) {
         var indices = aya.tmp_allocator.alloc(u16, max_sprites * 6) catch unreachable;
         var i: usize = 0;
         while (i < max_sprites) : (i += 1) {
@@ -41,14 +41,14 @@ pub const Batcher = struct {
             indices[i * 3 * 2 + 5] = @as(u16, @intCast(i)) * 4 + 3;
         }
 
-        return try DynamicMesh(u16, Vertex).init(aya.allocator, max_sprites * 4, indices);
+        return DynamicMesh(u16, Vertex).init(max_sprites * 4, indices);
     }
 
     pub fn init(max_sprites: u16) Batcher {
         if (max_sprites * 6 > std.math.maxInt(u16)) @panic("max_sprites exceeds u16 index buffer size");
 
         return .{
-            .mesh = createDynamicMesh(max_sprites) catch unreachable,
+            .mesh = createDynamicMesh(max_sprites),
             .draw_calls = std.ArrayList(DrawCall).initCapacity(aya.allocator, 10) catch unreachable,
         };
     }

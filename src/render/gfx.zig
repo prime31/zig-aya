@@ -88,7 +88,7 @@ pub const GraphicsContext = struct {
     draw: Draw,
 
     pub fn init() GraphicsContext {
-        const config = Config{};
+        const config = Config{}; // TODO: expose this maybe in RenderPlugin?
 
         const window_pixel_size = aya.window.sizeInPixels();
 

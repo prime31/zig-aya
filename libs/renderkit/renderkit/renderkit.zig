@@ -628,7 +628,7 @@ pub fn draw(base_element: c_int, element_count: c_int, instance_count: c_int) vo
         if (instance_count <= 1) {
             gl.drawArrays(gl.TRIANGLES, base_element, element_count);
         } else {
-            gl.drawArraysInstanced(gl.TRIANGLE_FAN, base_element, element_count, instance_count);
+            gl.drawArraysInstanced(gl.TRIANGLES, base_element, element_count, instance_count);
         }
     } else {
         const ibuffer = buffer_cache.get(cur_bindings.index_buffer);
