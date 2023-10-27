@@ -48,11 +48,8 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         bindings: renderkit.BufferBindings,
         verts: []VertT,
         element_count: c_int,
-        allocator: std.mem.Allocator,
 
-        pub fn init(allocator: ?std.mem.Allocator, vertex_count: usize, indices: []IndexT) !Self {
-            const alloc = allocator orelse aya.allocator;
-
+        pub fn init(vertex_count: usize, indices: []IndexT) Self {
             var ibuffer = if (IndexT == void) @as(renderkit.Buffer, 0) else renderkit.createBuffer(IndexT, .{
                 .type = .index,
                 .content = indices,
@@ -66,9 +63,8 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
 
             return Self{
                 .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
-                .verts = try alloc.alloc(VertT, vertex_count),
+                .verts = aya.mem.alloc(VertT, vertex_count),
                 .element_count = @as(c_int, @intCast(indices.len)),
-                .allocator = alloc,
             };
         }
 
@@ -76,7 +72,7 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
             if (IndexT != void)
                 renderkit.destroyBuffer(self.bindings.index_buffer);
             renderkit.destroyBuffer(self.bindings.vert_buffers[0]);
-            self.allocator.free(self.verts);
+            aya.mem.free(self.verts);
         }
 
         pub fn updateAllVerts(self: *Self) void {
@@ -145,10 +141,10 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
                 .step_func = .per_instance,
             });
 
-            var buffer = [_]renderkit.Buffer{ vertex_buffer, instance_buffer };
+            var buffers = [_]renderkit.Buffer{ vertex_buffer, instance_buffer };
 
             return Self{
-                .bindings = renderkit.BufferBindings.init(ibuffer, buffer[0..]),
+                .bindings = renderkit.BufferBindings.init(ibuffer, buffers[0..]),
                 .instance_data = alloc.alloc(InstanceT, instance_count) catch unreachable,
                 .element_count = @as(c_int, @intCast(indices.len)),
                 .allocator = alloc,

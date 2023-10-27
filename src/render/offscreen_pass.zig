@@ -61,19 +61,16 @@ pub const DefaultOffscreenPass = struct {
         // fetch the Resolution_Scaler first since it will decide the render texture size
         var scaler = policy.getScaler(w, h);
 
-        const pass = DefaultOffscreenPass{
+        return .{
             .pass = if (policy != .none) OffscreenPass.initWithOptions(w, h, filter, .clamp) else undefined,
             .policy = policy,
             .scaler = scaler,
             .design_w = w,
             .design_h = h,
         };
-
-        return pass;
     }
 
     pub fn deinit(self: DefaultOffscreenPass) void {
-        // TODO: unsubscribe from window resize event
         if (self.policy != .none) {
             self.pass.deinit();
         }

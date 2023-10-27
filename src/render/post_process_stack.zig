@@ -5,22 +5,19 @@ const OffscreenPass = aya.gfx.OffscreenPass;
 /// manaages a list of PostProcessors that are used to process a render texture before blitting it to the screen.
 pub const PostProcessStack = struct {
     processors: std.ArrayList(*PostProcessor),
-    allocator: std.mem.Allocator,
     pass: OffscreenPass,
 
-    pub fn init(allocator: ?std.mem.Allocator, design_w: i32, _: i32) PostProcessStack {
+    pub fn init(design_w: i32, _: i32) PostProcessStack {
         _ = design_w;
-        const alloc = allocator orelse aya.allocator;
         return .{
-            .processors = std.ArrayList(*PostProcessor).init(alloc),
-            .allocator = alloc,
+            .processors = std.ArrayList(*PostProcessor).init(aya.allocator),
             .pass = OffscreenPass.init(aya.window.width(), aya.window.height()),
         };
     }
 
     pub fn deinit(self: PostProcessStack) void {
         for (self.processors.items) |p| {
-            p.deinit(p, self.allocator);
+            p.deinit(p);
         }
         self.processors.deinit();
         self.pass.deinit();
@@ -32,14 +29,14 @@ pub const PostProcessStack = struct {
         std.debug.assert(@hasDecl(T, "process"));
         std.debug.assert(@hasField(T, "postprocessor"));
 
-        var processor = self.allocator.create(T) catch unreachable;
+        var processor = aya.mem.create(T);
         processor.initialize(data);
 
         // get a closure so that we can safely deinit this later
         processor.postprocessor.deinit = struct {
-            fn deinit(proc: *PostProcessor, allocator: std.mem.Allocator) void {
+            fn deinit(proc: *PostProcessor) void {
                 proc.getParent(T).deinit();
-                allocator.destroy(@fieldParentPtr(T, "postprocessor", proc));
+                aya.mem.destroy(@fieldParentPtr(T, "postprocessor", proc));
             }
         }.deinit;
 
@@ -68,7 +65,7 @@ pub const PostProcessStack = struct {
     }
 };
 
-/// implementors must have initialize, deinit and process methods defined and a postprocessor: *PostProcessor field.
+/// implementors must have initialize, deinit and process methods defined and a `postprocessor: *PostProcessor` field.
 /// The initialize method is where default values should be set since this will be a heap allocated object.
 pub const PostProcessor = struct {
     process: *const fn (*PostProcessor, OffscreenPass, aya.gfx.Texture) void,

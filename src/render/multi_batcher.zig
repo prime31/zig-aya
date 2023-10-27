@@ -1,14 +1,14 @@
 const std = @import("std");
 const rk = @import("renderkit");
 const aya = @import("aya");
-const math = aya.math;
 
 const IndexBuffer = rk.IndexBuffer;
 const VertexBuffer = rk.VertexBuffer;
+const Vec2 = aya.Vec2;
 
 pub const MultiVertex = extern struct {
-    pos: math.Vec2,
-    uv: math.Vec2 = .{ .x = 0, .y = 0 },
+    pos: Vec2,
+    uv: Vec2 = .{ .x = 0, .y = 0 },
     col: u32 = 0xFFFFFFFF,
     tid: f32 = 0,
 };
@@ -86,7 +86,7 @@ pub const MultiBatcher = struct {
         return @as(f32, @floatFromInt(self.last_texture - 1));
     }
 
-    pub fn drawTex(self: *MultiBatcher, pos: math.Vec2, col: u32, texture: aya.gfx.Texture) void {
+    pub fn drawTex(self: *MultiBatcher, pos: Vec2, col: u32, texture: aya.gfx.Texture) void {
         if (self.vert_index >= self.mesh.verts.len) {
             self.flush();
         }

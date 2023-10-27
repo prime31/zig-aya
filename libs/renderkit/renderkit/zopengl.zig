@@ -1,8 +1,6 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
-const options = @import("zopengl_options");
-
 pub const gl = @import("bindings.zig");
 pub usingnamespace gl;
 
