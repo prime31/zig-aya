@@ -108,7 +108,7 @@ pub const ShaderCompileStep = struct {
                 .makeFn = make,
             }),
             .builder = builder,
-            .shdc_cmd = &[_][]const u8{ "." ++ path.sep_str ++ thisDir() ++ "/bin" ++ path.sep_str ++ shdc_binary, "-d", "-l", "glsl330", "-f", "bare", "-i" },
+            .shdc_cmd = &[_][]const u8{ thisDir() ++ "/bin" ++ path.sep_str ++ shdc_binary, "-d", "-l", "glsl330", "-f", "bare", "-i" },
             .shader = options.shader,
             .package = package,
             .package_filename = package_filename,
@@ -216,7 +216,7 @@ pub const ShaderCompileStep = struct {
             // only make a ShaderState for shaders with a frag uniform and the default vert shader
             if (program.has_default_vert_shader and fs_reflection.uniform_block != null) {
                 const uni_block = fs_reflection.uniform_block.?;
-                try writer.print("pub const {s}Shader = gfx.ShaderState({s});\n", .{ name, uni_block.name });
+                try writer.print("pub const {s}Shader = ShaderState({s});\n", .{ name, uni_block.name });
 
                 // write out creation helper functions
                 try fn_writer.print("pub fn create{s}Shader() {s}Shader {{\n", .{ name, name });
@@ -248,10 +248,10 @@ pub const ShaderCompileStep = struct {
                     break :blk "struct {}";
                 };
 
-                try fn_writer.print("pub fn create{s}Shader() !gfx.Shader {{\n", .{name});
+                try fn_writer.print("pub fn create{s}Shader() !Shader {{\n", .{name});
                 try fn_writer.print("    const vert = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.vs });
                 try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.fs });
-                try fn_writer.print("    return try gfx.Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
+                try fn_writer.print("    return try Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
                 try fn_writer.writeAll("}\n\n");
             }
         }

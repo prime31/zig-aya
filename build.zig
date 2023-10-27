@@ -42,14 +42,16 @@ pub fn build(b: *std.Build) void {
 
     // shader compiler, run with `zig build compile-shaders`
     const shader_compile_step = ShaderCompileStep.init(b, .{
-        .shader = "examples/assets/shaders/shader_src.glsl",
+        .shader = "examples/assets/shader_src.glsl",
         .shader_output_path = "examples/assets/shaders",
         .package_output_path = "examples/assets/shaders",
         .additional_imports = &[_][]const u8{
-            "const aya = @import(\"aya\");",
-            "const gfx = aya.gfx;",
-            "const math = aya.math;",
-            "const renderkit = aya.renderkit;",
+            "const aya = @import(\"aya\");\n",
+            "const ShaderState = aya.ShaderState;",
+            "const Shader = aya.Shader;",
+            "const Mat4 = aya.Mat4;",
+            "const Vec2 = aya.Vec2;",
+            "const Vec3 = aya.Vec3;",
         },
     });
 

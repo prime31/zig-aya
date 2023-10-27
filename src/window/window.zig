@@ -9,6 +9,7 @@ const Scancode = aya.Scancode;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
+const Size = aya.Size;
 
 const eventLoop = @import("runner.zig").eventLoop;
 
@@ -28,10 +29,10 @@ pub const WindowMouseFocused = struct { focused: bool };
 // SDL_EVENT_WINDOW_DISPLAY_CHANGED
 
 pub const WindowPlugin = struct {
-    window_config: ?WindowConfig = .{},
+    window_config: WindowConfig = .{},
 
     pub fn build(self: WindowPlugin, app: *App) void {
-        const config = self.window_config orelse WindowConfig{};
+        const config = self.window_config;
 
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
@@ -90,6 +91,12 @@ pub const WindowPlugin = struct {
     }
 };
 
+pub const WindowMode = enum(u32) {
+    windowed = 0,
+    full_screen = 1,
+    desktop = 4097,
+};
+
 pub const Window = struct {
     sdl_window: *sdl.SDL_Window,
     gl_ctx: sdl.SDL_GLContext,
@@ -103,15 +110,40 @@ pub const Window = struct {
         return .{ .w = w, .h = h };
     }
 
-    pub fn size(self: Window) struct { w: c_int, h: c_int } {
-        var w: c_int = 0;
-        var h: c_int = 0;
-        _ = sdl.SDL_GetWindowSize(self.sdl_window, &w, &h);
-        return .{ .w = w, .h = h };
-    }
-
     pub fn scale(self: Window) f32 {
         return sdl.SDL_GetWindowDisplayScale(self.sdl_window);
+    }
+
+    pub fn size(self: Window) Size {
+        var sz = Size{};
+        _ = sdl.SDL_GetWindowSize(self.sdl_window, &sz.x, &sz.h);
+        return sz;
+    }
+
+    pub fn setSize(self: Window, w: i32, h: i32) void {
+        sdl.SDL_SetWindowSize(self.sdl_window, w, h);
+    }
+
+    pub fn position(self: Window) Size {
+        var sz = Size{};
+        sdl.SDL_GetWindowPosition(self.sdl_window, &sz.x, &sz.h);
+        return sz;
+    }
+
+    pub fn setPosition(self: Window, x: i32, y: i32) void {
+        sdl.SDL_SetWindowPosition(self.sdl_window, x, y);
+    }
+
+    pub fn setMode(self: Window, mode: WindowMode) void {
+        sdl.SDL_SetWindowFullscreen(self.sdl_window, mode);
+    }
+
+    pub fn resizable(self: Window) bool {
+        return (sdl.SDL_GetWindowFlags(self.sdl_window) & @as(u32, @intCast(@intFromEnum(sdl.SDL_WINDOW_RESIZABLE)))) != 0;
+    }
+
+    pub fn setResizable(self: Window, is_resizable: bool) void {
+        sdl.SDL_SetWindowResizable(self.sdl_window, is_resizable);
     }
 };
 
