@@ -5,6 +5,8 @@ const assert = std.debug.assert;
 const wgsl = @import("common_wgsl.zig");
 pub const wgpu = @import("wgpu.zig");
 
+const dawn_skip_validation = false;
+
 pub const GraphicsContextOptions = struct {
     present_mode: wgpu.PresentMode = .fifo,
 };
@@ -16,7 +18,7 @@ pub const GraphicsContext = struct {
     window: *sdl.SDL_Window,
     stats: FrameStats = .{},
 
-    native_instance: wgpu.Instance,
+    native_instance: DawnNativeInstance,
     instance: wgpu.Instance,
     device: wgpu.Device,
     queue: wgpu.Queue,
@@ -72,7 +74,14 @@ pub const GraphicsContext = struct {
             },
         };
 
-        const instance = wgpuCreateInstance(&.{});
+        dawnProcSetProcs(dnGetProcs());
+
+        const native_instance = dniCreate();
+        errdefer dniDestroy(native_instance);
+
+        dniDiscoverDefaultAdapters(native_instance);
+
+        const instance = dniGetWgpuInstance(native_instance).?;
 
         const adapter = adapter: {
             const Response = struct {
@@ -112,13 +121,11 @@ pub const GraphicsContext = struct {
         var properties: wgpu.AdapterProperties = undefined;
         properties.next_in_chain = null;
         adapter.getProperties(&properties);
-
-        std.log.info("Found [{s}] backend on [{s}] adapter: [{s}], [{s}]\n", .{
-            @tagName(properties.backend_type),
-            @tagName(properties.adapter_type),
-            properties.name,
-            properties.driver_description,
-        });
+        std.log.info("[zgpu] High-performance device has been selected:", .{});
+        std.log.info("[zgpu]   Name: {s}", .{properties.name});
+        std.log.info("[zgpu]   Driver: {s}", .{properties.driver_description});
+        std.log.info("[zgpu]   Adapter type: {s}", .{@tagName(properties.adapter_type)});
+        std.log.info("[zgpu]   Backend type: {s}", .{@tagName(properties.backend_type)});
 
         const device = device: {
             const Response = struct {
@@ -140,9 +147,21 @@ pub const GraphicsContext = struct {
                 }
             }).callback;
 
+            const toggles = [_][*:0]const u8{"skip_validation"};
+            const dawn_toggles = wgpu.DawnTogglesDeviceDescriptor{
+                .chain = .{ .next = null, .struct_type = .dawn_toggles_descriptor },
+                .enabled_toggles_count = toggles.len,
+                .enabled_toggles = &toggles,
+            };
+
             var response = Response{};
             adapter.requestDevice(
-                .{},
+                wgpu.DeviceDescriptor{
+                    .next_in_chain = if (dawn_skip_validation)
+                        @ptrCast(&dawn_toggles)
+                    else
+                        null,
+                },
                 callback,
                 @ptrCast(&response),
             );
@@ -180,6 +199,7 @@ pub const GraphicsContext = struct {
             .allocator = allocator,
             .window = window,
             .native_instance = instance,
+            .native_instance = native_instance,
             .instance = instance,
             .device = device,
             .queue = device.getQueue(),
@@ -234,8 +254,8 @@ pub const GraphicsContext = struct {
         gctx.swapchain.release();
         gctx.queue.release();
         gctx.device.release();
-        gctx.device.destroy();
-        // gctx.allocator.destroy(gctx); // Resources will destroy us
+        dniDestroy(gctx.native_instance);
+        // allocator.destroy(gctx);
     }
 
     //
@@ -384,7 +404,7 @@ pub const GraphicsContext = struct {
         command_buffers.append(stage_commands) catch unreachable;
         command_buffers.appendSlice(commands) catch unreachable;
 
-        gctx.queue.onSubmittedWorkDone(gpuWorkDone, &gctx.stats.gpu_frame_number);
+        gctx.queue.onSubmittedWorkDone(0, gpuWorkDone, @ptrCast(&gctx.stats.gpu_frame_number));
         gctx.queue.submit(command_buffers.slice());
 
         gctx.stats.tick();
@@ -437,35 +457,6 @@ pub const GraphicsContext = struct {
             .size = descriptor.size,
             .usage = descriptor.usage,
         });
-    }
-
-    pub const BufferInitDescriptor = struct {
-        label: ?[*:0]const u8 = null,
-        usage: wgpu.BufferUsage,
-        contents: []const u8,
-    };
-
-    fn bufferAlignment(size: u64) u64 {
-        const COPY_BUFFER_ALIGNMENT: u64 = 4;
-        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
-        return @max(((size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
-    }
-
-    pub fn createBufferWithData(gctx: *GraphicsContext, descriptor: BufferInitDescriptor) BufferHandle {
-        const buffer_size = bufferAlignment(descriptor.contents.len * @sizeOf(u8));
-
-        const buffer = gctx.buffer_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createBuffer(.{
-                .label = descriptor.label,
-                .usage = descriptor.usage,
-                .size = buffer_size,
-            }),
-            .size = buffer_size,
-            .usage = descriptor.usage,
-        });
-
-        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, u8, descriptor.contents);
-        return buffer;
     }
 
     pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.TextureDescriptor) TextureHandle {
@@ -1033,15 +1024,17 @@ pub const GraphicsContext = struct {
     }
 };
 
-// defined in wgpu.h
-extern fn wgpuCreateInstance(descriptor: [*c]const WGPUInstanceDescriptor) wgpu.Instance;
-const WGPUInstanceDescriptor = extern struct {
-    nextInChain: [*c]const WGPUChainedStruct = @import("std").mem.zeroes([*c]const WGPUChainedStruct),
-};
-const WGPUChainedStruct = extern struct {
-    next: [*c]const WGPUChainedStruct = null,
-    sType: c_uint = 0,
-};
+// Defined in dawn.cpp
+const DawnNativeInstance = ?*opaque {};
+const DawnProcsTable = ?*opaque {};
+extern fn dniCreate() DawnNativeInstance;
+extern fn dniDestroy(dni: DawnNativeInstance) void;
+extern fn dniGetWgpuInstance(dni: DawnNativeInstance) ?wgpu.Instance;
+extern fn dniDiscoverDefaultAdapters(dni: DawnNativeInstance) void;
+extern fn dnGetProcs() DawnProcsTable;
+
+// Defined in Dawn codebase
+extern fn dawnProcSetProcs(procs: DawnProcsTable) void;
 
 /// Helper to create a buffer BindGroupLayoutEntry.
 pub fn bufferEntry(
@@ -1606,6 +1599,51 @@ fn createSurfaceForWindow(instance: wgpu.Instance, window: *sdl.SDL_Window) wgpu
             });
         },
     };
+}
+
+const objc = struct {
+    const SEL = ?*opaque {};
+    const Class = ?*opaque {};
+
+    extern fn sel_getUid(str: [*:0]const u8) SEL;
+    extern fn objc_getClass(name: [*:0]const u8) Class;
+    extern fn objc_msgSend() void;
+};
+
+fn msgSend(obj: anytype, sel_name: [:0]const u8, args: anytype, comptime ReturnType: type) ReturnType {
+    const args_meta = @typeInfo(@TypeOf(args)).Struct.fields;
+
+    const FnType = switch (args_meta.len) {
+        0 => *const fn (@TypeOf(obj), objc.SEL) callconv(.C) ReturnType,
+        1 => *const fn (@TypeOf(obj), objc.SEL, args_meta[0].type) callconv(.C) ReturnType,
+        2 => *const fn (
+            @TypeOf(obj),
+            objc.SEL,
+            args_meta[0].type,
+            args_meta[1].type,
+        ) callconv(.C) ReturnType,
+        3 => *const fn (
+            @TypeOf(obj),
+            objc.SEL,
+            args_meta[0].type,
+            args_meta[1].type,
+            args_meta[2].type,
+        ) callconv(.C) ReturnType,
+        4 => *const fn (
+            @TypeOf(obj),
+            objc.SEL,
+            args_meta[0].type,
+            args_meta[1].type,
+            args_meta[2].type,
+            args_meta[3].type,
+        ) callconv(.C) ReturnType,
+        else => @compileError("[zgpu] Unsupported number of args"),
+    };
+
+    const func = @as(FnType, @ptrCast(&objc.objc_msgSend));
+    const sel = objc.sel_getUid(sel_name.ptr);
+
+    return @call(.never_inline, func, .{ obj, sel } ++ args);
 }
 
 fn logUnhandledError(

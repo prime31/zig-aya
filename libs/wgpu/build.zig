@@ -1,40 +1,68 @@
 const std = @import("std");
 const Builder = std.build.Builder;
 
-// fix dynamic lib: `install_name_tool -id "@rpath/libwgpu_native.dylib" libwgpu_native.dylib`
-
-const link_type: enum { static, dynamic } = .static;
-
 pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
-    if (link_type == .dynamic)
-        exe.linkSystemLibrary("wgpu_native");
-    exe.addIncludePath(.{ .path = thisDir() ++ "/headers/webgpu" });
+    const target = (std.zig.system.NativeTargetInfo.detect(exe.target) catch unreachable).target;
 
-    if (@import("builtin").os.tag == .macos) {
-        b.installFile(thisDir() ++ "/libs/macos/libwgpu_native.dylib", "bin/libwgpu_native.dylib");
+    // const b = exe.step.owner;
 
-        if (link_type == .static) {
-            exe.addObjectFile(.{ .path = thisDir() ++ "/libs/macos/libwgpu_native.a" });
-            exe.linkFramework("MetalKit");
+    switch (target.os.tag) {
+        .windows => {
+            const dawn_dep = b.dependency("dawn_x86_64_windows_gnu", .{});
+            exe.addLibraryPath(.{ .path = dawn_dep.builder.build_root.path.? });
+            exe.addLibraryPath(.{ .path = thisDir() ++ "/../system-sdk/windows/lib/x86_64-windows-gnu" });
+
+            exe.linkSystemLibraryName("ole32");
+            exe.linkSystemLibraryName("dxguid");
+        },
+        .linux => {
+            if (target.cpu.arch.isX86()) {
+                const dawn_dep = b.dependency("dawn_x86_64_linux_gnu", .{});
+                exe.addLibraryPath(.{ .path = dawn_dep.builder.build_root.path.? });
+            } else {
+                const dawn_dep = b.dependency("dawn_aarch64_linux_gnu", .{});
+                exe.addLibraryPath(.{ .path = dawn_dep.builder.build_root.path.? });
+            }
+        },
+        .macos => {
+            exe.addFrameworkPath(.{ .path = thisDir() ++ "/../system-sdk/macos12/System/Library/Frameworks" });
+            exe.addSystemIncludePath(.{ .path = thisDir() ++ "/../system-sdk/macos12/usr/include" });
+            exe.addLibraryPath(.{ .path = thisDir() ++ "/../system-sdk/macos12/usr/lib" });
+
+            if (target.cpu.arch.isX86()) {
+                const dawn_dep = b.dependency("dawn_x86_64_macos", .{});
+                exe.addLibraryPath(.{ .path = dawn_dep.builder.build_root.path.? });
+            } else {
+                const dawn_dep = b.dependency("dawn_aarch64_macos", .{});
+                exe.addLibraryPath(.{ .path = dawn_dep.builder.build_root.path.? });
+            }
+
+            exe.linkSystemLibraryName("objc");
             exe.linkFramework("Metal");
-            exe.linkFramework("Cocoa");
+            exe.linkFramework("CoreGraphics");
+            exe.linkFramework("Foundation");
+            exe.linkFramework("IOKit");
+            exe.linkFramework("IOSurface");
             exe.linkFramework("QuartzCore");
-        }
-
-        if (link_type == .dynamic) {
-            exe.addRPath(.{ .path = "@executable_path" });
-            exe.addLibraryPath(.{ .path = thisDir() ++ "/libs/macos" });
-        }
-    } else if (@import("builtin").os.tag == .windows) {
-        // TODO: we dont need all of these...
-        exe.addLibraryPath(.{ .path = thisDir() ++ "/libs/windows" });
-        exe.addLibraryPath(.{ .cwd_relative = "zig-out/bin" });
-
-        if (link_type == .dynamic) {
-            b.installFile(thisDir() ++ "/libs/windows/wgpu_native.dll", "bin/wgpu_native.dll");
-            b.installFile(thisDir() ++ "/libs/windows/wgpu_native.dll.lib", "bin/wgpu_native.dll.lib");
-        }
+        },
+        else => unreachable,
     }
+
+    exe.linkSystemLibraryName("dawn");
+    exe.linkLibC();
+    exe.linkLibCpp();
+
+    exe.addIncludePath(.{ .path = thisDir() ++ "/libs/dawn/include" });
+    exe.addIncludePath(.{ .path = thisDir() ++ "/src" });
+
+    exe.addCSourceFile(.{
+        .file = .{ .path = thisDir() ++ "/src/dawn.cpp" },
+        .flags = &.{ "-std=c++17", "-fno-sanitize=undefined" },
+    });
+    exe.addCSourceFile(.{
+        .file = .{ .path = thisDir() ++ "/src/dawn_proc.c" },
+        .flags = &.{"-fno-sanitize=undefined"},
+    });
 }
 
 pub fn getModule(b: *std.Build, zpool: *std.build.Module, sdl: *std.build.Module) *std.build.Module {

@@ -1016,7 +1016,7 @@ pub const Color = extern struct {
 };
 
 pub const RenderPassColorAttachment = extern struct {
-    // next_in_chain: ?*const ChainedStruct = null,
+    next_in_chain: ?*const ChainedStruct = null,
     view: ?TextureView,
     resolve_target: ?TextureView = null,
     load_op: LoadOp,
@@ -1737,15 +1737,7 @@ pub const Device = *opaque {
     ) BindGroupLayout;
 
     pub inline fn createBuffer(device: Device, descriptor: BufferDescriptor) Buffer {
-        const unpadded_size = descriptor.size;
-        const COPY_BUFFER_ALIGNMENT: u64 = 4;
-        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
-        const padded_size = @max(((unpadded_size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
-
-        var desc = std.mem.zeroInit(BufferDescriptor, descriptor);
-        desc.size = padded_size;
-
-        return wgpuDeviceCreateBuffer(device, &desc);
+        return wgpuDeviceCreateBuffer(device, &descriptor);
     }
     extern fn wgpuDeviceCreateBuffer(device: Device, descriptor: *const BufferDescriptor) Buffer;
 
@@ -1946,16 +1938,10 @@ pub const Device = *opaque {
         userdata: ?*anyopaque,
     ) void;
 
-    pub inline fn tick(self: Device) void {
-        _ = wgpuDevicePoll(self, false, null);
+    pub inline fn tick(device: Device) void {
+        wgpuDeviceTick(device);
     }
-
-    const WGPUSubmissionIndex = u64;
-    pub const WGPUWrappedSubmissionIndex = extern struct {
-        queue: ?Queue = @import("std").mem.zeroes(?Queue),
-        submissionIndex: WGPUSubmissionIndex = @import("std").mem.zeroes(WGPUSubmissionIndex),
-    };
-    extern fn wgpuDevicePoll(device: Device, wait: bool, wrappedSubmissionIndex: [*c]const WGPUWrappedSubmissionIndex) bool;
+    extern fn wgpuDeviceTick(device: Device) void;
 
     pub inline fn reference(device: Device) void {
         wgpuDeviceReference(device);
@@ -2098,13 +2084,15 @@ pub const Queue = *opaque {
 
     pub inline fn onSubmittedWorkDone(
         queue: Queue,
+        signal_value: u64,
         callback: QueueWorkDoneCallback,
         userdata: ?*anyopaque,
     ) void {
-        wgpuQueueOnSubmittedWorkDone(queue, callback, userdata);
+        wgpuQueueOnSubmittedWorkDone(queue, signal_value, callback, userdata);
     }
     extern fn wgpuQueueOnSubmittedWorkDone(
         queue: Queue,
+        signal_value: u64,
         callback: QueueWorkDoneCallback,
         userdata: ?*anyopaque,
     ) void;
@@ -2119,12 +2107,6 @@ pub const Queue = *opaque {
     }
     extern fn wgpuQueueSubmit(queue: Queue, command_count: u32, commands: [*]const CommandBuffer) void;
 
-    fn bufferAlignment(size: u64) u64 {
-        const COPY_BUFFER_ALIGNMENT: u64 = 4;
-        const align_mask = COPY_BUFFER_ALIGNMENT - 1;
-        return @max(((size + align_mask) & ~align_mask), COPY_BUFFER_ALIGNMENT);
-    }
-
     pub inline fn writeBuffer(
         queue: Queue,
         buffer: Buffer,
@@ -2137,7 +2119,7 @@ pub const Queue = *opaque {
             buffer,
             buffer_offset,
             @as(*const anyopaque, @ptrCast(data.ptr)),
-            bufferAlignment(@as(u64, @intCast(data.len)) * @sizeOf(T)),
+            @as(u64, @intCast(data.len)) * @sizeOf(T),
         );
     }
     extern fn wgpuQueueWriteBuffer(
