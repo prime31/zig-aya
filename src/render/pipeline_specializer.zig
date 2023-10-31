@@ -57,7 +57,7 @@ pub fn SpecializedMeshPipelines(comptime S: type) type {
 
         pub fn init() Self {
             return .{
-                .mesh_mesh_layout_cache = std.AutoHashMap(InnerMeshVertexBufferLayout, std.AutoHashMap(S.Key, CachedRenderPipelineId)).init(aya.allocator),
+                .mesh_layout_cache = std.AutoHashMap(InnerMeshVertexBufferLayout, std.AutoHashMap(S.Key, CachedRenderPipelineId)).init(aya.allocator),
                 .vertex_layout_cache = std.AutoHashMap(VertexBufferLayout, std.AutoHashMap(S.Key, CachedRenderPipelineId)).init(aya.allocator),
             };
         }
