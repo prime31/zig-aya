@@ -5,6 +5,7 @@ const assert = std.debug.assert;
 const wgsl = @import("common_wgsl.zig");
 pub const wgpu = @import("wgpu.zig");
 
+// if true the following options are set: "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend"
 const dawn_skip_validation = false;
 
 pub const GraphicsContextOptions = struct {
@@ -147,7 +148,7 @@ pub const GraphicsContext = struct {
                 }
             }).callback;
 
-            const toggles = [_][*:0]const u8{"skip_validation"};
+            const toggles = [_][*:0]const u8{ "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend" };
             const dawn_toggles = wgpu.DawnTogglesDeviceDescriptor{
                 .chain = .{ .next = null, .struct_type = .dawn_toggles_descriptor },
                 .enabled_toggles_count = toggles.len,
@@ -198,7 +199,6 @@ pub const GraphicsContext = struct {
         gctx.* = .{
             .allocator = allocator,
             .window = window,
-            .native_instance = instance,
             .native_instance = native_instance,
             .instance = instance,
             .device = device,
@@ -457,6 +457,29 @@ pub const GraphicsContext = struct {
             .size = descriptor.size,
             .usage = descriptor.usage,
         });
+    }
+
+    pub const BufferInitDescriptor = struct {
+        label: ?[*:0]const u8 = null,
+        usage: wgpu.BufferUsage,
+        contents: []const u8,
+    };
+
+    pub fn createBufferWithData(gctx: *GraphicsContext, descriptor: BufferInitDescriptor) BufferHandle {
+        const buffer_size = descriptor.contents.len * @sizeOf(u8);
+
+        const buffer = gctx.buffer_pool.addResource(gctx.*, .{
+            .gpuobj = gctx.device.createBuffer(.{
+                .label = descriptor.label,
+                .usage = descriptor.usage,
+                .size = buffer_size,
+            }),
+            .size = buffer_size,
+            .usage = descriptor.usage,
+        });
+
+        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, u8, descriptor.contents);
+        return buffer;
     }
 
     pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.TextureDescriptor) TextureHandle {
@@ -1599,51 +1622,6 @@ fn createSurfaceForWindow(instance: wgpu.Instance, window: *sdl.SDL_Window) wgpu
             });
         },
     };
-}
-
-const objc = struct {
-    const SEL = ?*opaque {};
-    const Class = ?*opaque {};
-
-    extern fn sel_getUid(str: [*:0]const u8) SEL;
-    extern fn objc_getClass(name: [*:0]const u8) Class;
-    extern fn objc_msgSend() void;
-};
-
-fn msgSend(obj: anytype, sel_name: [:0]const u8, args: anytype, comptime ReturnType: type) ReturnType {
-    const args_meta = @typeInfo(@TypeOf(args)).Struct.fields;
-
-    const FnType = switch (args_meta.len) {
-        0 => *const fn (@TypeOf(obj), objc.SEL) callconv(.C) ReturnType,
-        1 => *const fn (@TypeOf(obj), objc.SEL, args_meta[0].type) callconv(.C) ReturnType,
-        2 => *const fn (
-            @TypeOf(obj),
-            objc.SEL,
-            args_meta[0].type,
-            args_meta[1].type,
-        ) callconv(.C) ReturnType,
-        3 => *const fn (
-            @TypeOf(obj),
-            objc.SEL,
-            args_meta[0].type,
-            args_meta[1].type,
-            args_meta[2].type,
-        ) callconv(.C) ReturnType,
-        4 => *const fn (
-            @TypeOf(obj),
-            objc.SEL,
-            args_meta[0].type,
-            args_meta[1].type,
-            args_meta[2].type,
-            args_meta[3].type,
-        ) callconv(.C) ReturnType,
-        else => @compileError("[zgpu] Unsupported number of args"),
-    };
-
-    const func = @as(FnType, @ptrCast(&objc.objc_msgSend));
-    const sel = objc.sel_getUid(sel_name.ptr);
-
-    return @call(.never_inline, func, .{ obj, sel } ++ args);
 }
 
 fn logUnhandledError(
