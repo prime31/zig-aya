@@ -51,20 +51,21 @@ pub const MeshPipeline = struct {
                 break :sblk default_sampler.sampler;
             };
 
-            const format_size = 4; //image.texture_descriptor.format // TODO: make method to get size from format
-            gctx.queue.writeTexture(
-                .{ .texture = gctx.lookupResource(texture).? },
-                .{
-                    .bytes_per_row = image.texture_descriptor.size.width * format_size,
-                    .rows_per_image = image.texture_descriptor.size.height,
-                },
-                .{
-                    .width = image.texture_descriptor.size.width,
-                    .height = image.texture_descriptor.size.height,
-                },
-                u8,
-                image.data,
-            );
+            const format_size = 4;
+            _ = format_size; //image.texture_descriptor.format // TODO: make method to get size from format
+            // gctx.queue.writeTexture(
+            //     &.{ .texture = gctx.lookupResource(texture).? },
+            //     &.{
+            //         .bytes_per_row = image.texture_descriptor.size.width * format_size,
+            //         .rows_per_image = image.texture_descriptor.size.height,
+            //     },
+            //     &.{
+            //         .width = image.texture_descriptor.size.width,
+            //         .height = image.texture_descriptor.size.height,
+            //     },
+            //     u8,
+            //     image.data,
+            // );
 
             const texture_view = gctx.createTextureView(texture, .{});
             break :blk GpuImage{

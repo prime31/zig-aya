@@ -50,8 +50,10 @@ pub fn newFrame() void {
 pub fn draw(gctx: anytype, zgpu: anytype) void {
     if (!imgui_enabled) return;
 
-    const swapchain_texv = gctx.swapchain.getCurrentTextureView();
-    defer swapchain_texv.release();
+    // const swapchain_texv = gctx.swapchain.getCurrentTextureView();
+    // defer swapchain_texv.release();
+    const surface_tex = gctx.surface.getCurrentTexture();
+    const texture_view = surface_tex.texture.?.createView(null);
 
     const commands = commands: {
         const encoder = gctx.device.createCommandEncoder(null);
@@ -59,7 +61,7 @@ pub fn draw(gctx: anytype, zgpu: anytype) void {
 
         // GUI pass
         {
-            const pass = zgpu.beginRenderPassSimple(encoder, .load, swapchain_texv, null, null, null);
+            const pass = zgpu.beginRenderPassSimple(encoder, .load, texture_view, null, null, null);
             defer zgpu.endReleasePass(pass);
             render(pass);
         }

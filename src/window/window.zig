@@ -76,7 +76,7 @@ pub const WindowPlugin = struct {
                 window,
                 gctx.device,
                 @intFromEnum(zgpu.GraphicsContext.swapchain_format),
-                @intFromEnum(wgpu.TextureFormat.undef),
+                @intFromEnum(wgpu.TextureFormat.undefined),
             );
         }
     }

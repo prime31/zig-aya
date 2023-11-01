@@ -38,7 +38,7 @@ pub const Image = struct {
                     .texture_binding = true,
                     .copy_dst = true,
                 },
-                .dimension = wgpu.TextureDimension.tdim_2d,
+                .dimension = wgpu.TextureDimension.dim_2d,
                 .size = wgpu.Extent3D{
                     .width = 1,
                     .height = 1,
