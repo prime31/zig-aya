@@ -169,7 +169,7 @@ pub fn eventLoop(app: *App) void {
         }
 
         ig.sdl.newFrame();
-        ig.igShowDemoWindow(null);
+        // ig.igShowDemoWindow(null);
 
         app.world.progress(0);
 

@@ -34,7 +34,7 @@ pub const MeshPipeline = struct {
     view_layout_multisampled: zgpu.BindGroupLayoutHandle = .{},
     /// This dummy white texture is to be used in place of optional StandardMaterial textures
     dummy_white_gpu_image: GpuImage,
-    clustered_forward_buffer_binding_type: wgpu.BufferBindingType = .storage,
+    clustered_forward_buffer_binding_type: wgpu.Buffer.BindingType = .storage,
     mesh_layouts: MeshLayouts,
 
     pub fn init(world: *World) MeshPipeline {
@@ -53,16 +53,15 @@ pub const MeshPipeline = struct {
 
             const format_size = 4; //image.texture_descriptor.format // TODO: make method to get size from format
             gctx.queue.writeTexture(
-                .{ .texture = gctx.lookupResource(texture).? },
-                .{
+                &.{ .texture = gctx.lookupResource(texture).? },
+                &.{
                     .bytes_per_row = image.texture_descriptor.size.width * format_size,
                     .rows_per_image = image.texture_descriptor.size.height,
                 },
-                .{
+                &.{
                     .width = image.texture_descriptor.size.width,
                     .height = image.texture_descriptor.size.height,
                 },
-                u8,
                 image.data,
             );
 

@@ -3,7 +3,8 @@ const sdl = @import("sdl");
 const math = std.math;
 const assert = std.debug.assert;
 const wgsl = @import("common_wgsl.zig");
-pub const wgpu = @import("wgpu.zig");
+// pub const wgpu = @import("wgpu.zig");
+pub const wgpu = @import("mach_gpu");
 
 // if true the following options are set: "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend"
 const dawn_skip_validation = false;
@@ -13,19 +14,18 @@ pub const GraphicsContextOptions = struct {
 };
 
 pub const GraphicsContext = struct {
-    pub const swapchain_format = wgpu.TextureFormat.bgra8_unorm;
+    pub const swapchain_format = wgpu.Texture.Format.bgra8_unorm;
 
     allocator: std.mem.Allocator,
     window: *sdl.SDL_Window,
     stats: FrameStats = .{},
 
-    native_instance: DawnNativeInstance,
-    instance: wgpu.Instance,
-    device: wgpu.Device,
-    queue: wgpu.Queue,
-    surface: wgpu.Surface,
-    swapchain: wgpu.SwapChain,
-    swapchain_descriptor: wgpu.SwapChainDescriptor,
+    instance: *wgpu.Instance,
+    device: *wgpu.Device,
+    queue: *wgpu.Queue,
+    surface: *wgpu.Surface,
+    swapchain: *wgpu.SwapChain,
+    swapchain_descriptor: wgpu.SwapChain.Descriptor,
 
     buffer_pool: BufferPool,
     texture_pool: TexturePool,
@@ -37,7 +37,7 @@ pub const GraphicsContext = struct {
     bind_group_layout_pool: BindGroupLayoutPool,
     pipeline_layout_pool: PipelineLayoutPool,
 
-    mipgens: std.AutoHashMap(wgpu.TextureFormat, MipgenResources),
+    mipgens: std.AutoHashMap(wgpu.Texture.Format, MipgenResources),
 
     uniforms: struct {
         offset: u32 = 0,
@@ -62,6 +62,8 @@ pub const GraphicsContext = struct {
             }
         }).impl;
 
+        try wgpu.Impl.init(allocator, .{});
+
         checkGraphicsApiSupport() catch |err| switch (err) {
             error.VulkanNotSupported => {
                 std.log.err("\n" ++
@@ -75,40 +77,32 @@ pub const GraphicsContext = struct {
             },
         };
 
-        dawnProcSetProcs(dnGetProcs());
-
-        const native_instance = dniCreate();
-        errdefer dniDestroy(native_instance);
-
-        dniDiscoverDefaultAdapters(native_instance);
-
-        const instance = dniGetWgpuInstance(native_instance).?;
+        const instance = wgpu.createInstance(null).?;
 
         const adapter = adapter: {
             const Response = struct {
                 status: wgpu.RequestAdapterStatus = .unknown,
-                adapter: wgpu.Adapter = undefined,
+                adapter: *wgpu.Adapter = undefined,
             };
 
-            const callback = (struct {
-                fn callback(
+            const callback = struct {
+                inline fn callback(
+                    response: *Response,
                     status: wgpu.RequestAdapterStatus,
-                    adapter: wgpu.Adapter,
+                    adapter: ?*wgpu.Adapter,
                     message: ?[*:0]const u8,
-                    userdata: ?*anyopaque,
-                ) callconv(.C) void {
+                ) void {
                     _ = message;
-                    const response = @as(*Response, @ptrCast(@alignCast(userdata)));
                     response.status = status;
-                    response.adapter = adapter;
+                    response.adapter = adapter.?;
                 }
-            }).callback;
+            }.callback;
 
             var response = Response{};
             instance.requestAdapter(
-                .{ .power_preference = .high_performance },
+                &.{ .power_preference = .high_performance },
+                &response,
                 callback,
-                @ptrCast(&response),
             );
 
             if (response.status != .success) {
@@ -119,52 +113,74 @@ pub const GraphicsContext = struct {
         };
         errdefer adapter.release();
 
-        var properties: wgpu.AdapterProperties = undefined;
-        properties.next_in_chain = null;
-        adapter.getProperties(&properties);
-        std.log.info("[zgpu] High-performance device has been selected:", .{});
-        std.log.info("[zgpu]   Name: {s}", .{properties.name});
-        std.log.info("[zgpu]   Driver: {s}", .{properties.driver_description});
-        std.log.info("[zgpu]   Adapter type: {s}", .{@tagName(properties.adapter_type)});
-        std.log.info("[zgpu]   Backend type: {s}", .{@tagName(properties.backend_type)});
+        std.debug.print("1 ---------------- {?}\n", .{adapter});
+
+        // var properties: wgpu.Adapter.Properties = undefined;
+        // // properties.next_in_chain = null;
+        // adapter.getProperties(&properties);
+        // std.debug.print("2 ---------------- {}\n", .{properties});
+        // std.log.info("[zgpu] High-performance device has been selected:", .{});
+        // std.log.info("[zgpu]   Name: {s}", .{properties.name});
+        // std.log.info("[zgpu]   Driver: {s}", .{properties.driver_description});
+        // std.log.info("[zgpu]   Adapter type: {s}", .{@tagName(properties.adapter_type)});
+        // std.log.info("[zgpu]   Backend type: {s}", .{@tagName(properties.backend_type)});
 
         const device = device: {
             const Response = struct {
                 status: wgpu.RequestDeviceStatus = .unknown,
-                device: wgpu.Device = undefined,
+                device: *wgpu.Device = undefined,
             };
 
             const callback = (struct {
-                fn callback(
+                inline fn callback(
+                    resp: *Response,
                     status: wgpu.RequestDeviceStatus,
-                    device: wgpu.Device,
+                    device: *wgpu.Device,
                     message: ?[*:0]const u8,
-                    userdata: ?*anyopaque,
-                ) callconv(.C) void {
-                    _ = message;
-                    const response = @as(*Response, @ptrCast(@alignCast(userdata)));
-                    response.status = status;
-                    response.device = device;
+                ) void {
+                    resp.status = status;
+                    resp.device = device;
+                    if (status != .success)
+                        std.debug.print("error creating device: {?s}\n", .{message});
                 }
             }).callback;
 
+            const DeviceLostResponse = struct {
+                reason: wgpu.Device.LostReason,
+                message: [*:0]const u8,
+            };
+
+            const device_lost_callback = (struct {
+                fn device_lost_callback(
+                    reason: wgpu.Device.LostReason,
+                    message: [*:0]const u8,
+                    userdata: ?*anyopaque,
+                ) callconv(.C) void {
+                    const response = @as(*DeviceLostResponse, @ptrCast(@alignCast(userdata)));
+                    response.reason = reason;
+                    response.message = message;
+                }
+            }).device_lost_callback;
+
             const toggles = [_][*:0]const u8{ "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend" };
-            const dawn_toggles = wgpu.DawnTogglesDeviceDescriptor{
-                .chain = .{ .next = null, .struct_type = .dawn_toggles_descriptor },
+            const dawn_toggles = wgpu.dawn.TogglesDescriptor{
+                .chain = .{ .next = null, .s_type = .dawn_toggles_descriptor },
                 .enabled_toggles_count = toggles.len,
                 .enabled_toggles = &toggles,
             };
 
             var response = Response{};
             adapter.requestDevice(
-                wgpu.DeviceDescriptor{
+                &wgpu.Device.Descriptor{
                     .next_in_chain = if (dawn_skip_validation)
                         @ptrCast(&dawn_toggles)
                     else
-                        null,
+                        .{ .generic = null },
+                    .device_lost_callback = device_lost_callback,
+                    .device_lost_userdata = @ptrCast(&response),
                 },
+                &response,
                 callback,
-                @ptrCast(&response),
             );
 
             if (response.status != .success) {
@@ -184,7 +200,7 @@ pub const GraphicsContext = struct {
         var h: c_int = 0;
         _ = sdl.SDL_GetWindowSizeInPixels(window, &w, &h);
 
-        const swapchain_descriptor = wgpu.SwapChainDescriptor{
+        const swapchain_descriptor = wgpu.SwapChain.Descriptor{
             .label = "gctx-swapchain",
             .usage = .{ .render_attachment = true },
             .format = swapchain_format,
@@ -192,14 +208,13 @@ pub const GraphicsContext = struct {
             .height = @intCast(h),
             .present_mode = options.present_mode,
         };
-        const swapchain = device.createSwapChain(surface, swapchain_descriptor);
+        const swapchain = device.createSwapChain(surface, &swapchain_descriptor);
         errdefer swapchain.release();
 
         const gctx = try allocator.create(GraphicsContext);
         gctx.* = .{
             .allocator = allocator,
             .window = window,
-            .native_instance = native_instance,
             .instance = instance,
             .device = device,
             .queue = device.getQueue(),
@@ -215,7 +230,7 @@ pub const GraphicsContext = struct {
             .bind_group_pool = BindGroupPool.init(allocator, 32),
             .bind_group_layout_pool = BindGroupLayoutPool.init(allocator, 32),
             .pipeline_layout_pool = PipelineLayoutPool.init(allocator, 32),
-            .mipgens = std.AutoHashMap(wgpu.TextureFormat, MipgenResources).init(allocator),
+            .mipgens = std.AutoHashMap(wgpu.Texture.Format, MipgenResources).init(allocator),
         };
 
         uniformsInit(gctx);
@@ -254,7 +269,6 @@ pub const GraphicsContext = struct {
         gctx.swapchain.release();
         gctx.queue.release();
         gctx.device.release();
-        dniDestroy(gctx.native_instance);
         // allocator.destroy(gctx);
     }
 
@@ -289,7 +303,7 @@ pub const GraphicsContext = struct {
 
     const UniformsStagingBuffer = struct {
         slice: ?[]u8 = null,
-        buffer: wgpu.Buffer = undefined,
+        buffer: *wgpu.Buffer = undefined,
     };
     const uniforms_buffer_size = 4 * 1024 * 1024;
     const uniforms_staging_pipeline_len = 8;
@@ -303,8 +317,7 @@ pub const GraphicsContext = struct {
         gctx.uniformsNextStagingBuffer();
     }
 
-    fn uniformsMappedCallback(status: wgpu.BufferMapAsyncStatus, userdata: ?*anyopaque) callconv(.C) void {
-        const usb = @as(*UniformsStagingBuffer, @ptrCast(@alignCast(userdata)));
+    inline fn uniformsMappedCallback(usb: *UniformsStagingBuffer, status: wgpu.Buffer.MapAsyncStatus) void {
         assert(usb.slice == null);
         if (status == .success) {
             usb.slice = usb.buffer.getMappedRange(u8, 0, uniforms_buffer_size).?;
@@ -322,8 +335,8 @@ pub const GraphicsContext = struct {
                 .{ .write = true },
                 0,
                 uniforms_buffer_size,
+                &gctx.uniforms.stage.buffers[current],
                 uniformsMappedCallback,
-                @ptrCast(&gctx.uniforms.stage.buffers[current]),
             );
         }
 
@@ -361,7 +374,7 @@ pub const GraphicsContext = struct {
         const buffer_handle = gctx.createBuffer(.{
             .usage = .{ .copy_src = true, .map_write = true },
             .size = uniforms_buffer_size,
-            .mapped_at_creation = true,
+            .mapped_at_creation = .true,
         });
 
         // Add new (mapped) staging buffer to the buffer list.
@@ -374,7 +387,7 @@ pub const GraphicsContext = struct {
     //
     // Submit/Present
     //
-    pub fn submit(gctx: *GraphicsContext, commands: []const wgpu.CommandBuffer) void {
+    pub fn submit(gctx: *GraphicsContext, commands: []*const wgpu.CommandBuffer) void {
         const stage_commands = stage_commands: {
             const stage_encoder = gctx.device.createCommandEncoder(null);
             defer stage_encoder.release();
@@ -435,7 +448,7 @@ pub const GraphicsContext = struct {
                 gctx.swapchain_descriptor.height = @intCast(h);
                 gctx.swapchain.release();
 
-                gctx.swapchain = gctx.device.createSwapChain(gctx.surface, gctx.swapchain_descriptor);
+                gctx.swapchain = gctx.device.createSwapChain(gctx.surface, &gctx.swapchain_descriptor);
 
                 std.log.info(
                     "Window has been resized to: {d}x{d}.",
@@ -451,9 +464,9 @@ pub const GraphicsContext = struct {
     //
     // Resources
     //
-    pub fn createBuffer(gctx: *GraphicsContext, descriptor: wgpu.BufferDescriptor) BufferHandle {
+    pub fn createBuffer(gctx: *GraphicsContext, descriptor: wgpu.Buffer.Descriptor) BufferHandle {
         return gctx.buffer_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createBuffer(descriptor),
+            .gpuobj = gctx.device.createBuffer(&descriptor),
             .size = descriptor.size,
             .usage = descriptor.usage,
         });
@@ -461,7 +474,7 @@ pub const GraphicsContext = struct {
 
     pub const BufferInitDescriptor = struct {
         label: ?[*:0]const u8 = null,
-        usage: wgpu.BufferUsage,
+        usage: wgpu.Buffer.UsageFlags,
         contents: []const u8,
     };
 
@@ -469,7 +482,7 @@ pub const GraphicsContext = struct {
         const buffer_size = descriptor.contents.len * @sizeOf(u8);
 
         const buffer = gctx.buffer_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createBuffer(.{
+            .gpuobj = gctx.device.createBuffer(&.{
                 .label = descriptor.label,
                 .usage = descriptor.usage,
                 .size = buffer_size,
@@ -478,13 +491,13 @@ pub const GraphicsContext = struct {
             .usage = descriptor.usage,
         });
 
-        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, u8, descriptor.contents);
+        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, descriptor.contents);
         return buffer;
     }
 
-    pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.TextureDescriptor) TextureHandle {
+    pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.Texture.Descriptor) TextureHandle {
         return gctx.texture_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createTexture(descriptor),
+            .gpuobj = gctx.device.createTexture(&descriptor),
             .usage = descriptor.usage,
             .dimension = descriptor.dimension,
             .size = descriptor.size,
@@ -497,21 +510,21 @@ pub const GraphicsContext = struct {
     pub fn createTextureView(
         gctx: *GraphicsContext,
         texture_handle: TextureHandle,
-        descriptor: wgpu.TextureViewDescriptor,
+        descriptor: wgpu.TextureView.Descriptor,
     ) TextureViewHandle {
         const texture = gctx.lookupResource(texture_handle).?;
         const info = gctx.lookupResourceInfo(texture_handle).?;
         var dim = descriptor.dimension;
-        if (dim == .undef) {
+        if (dim == .dimension_undefined) {
             dim = switch (info.dimension) {
-                .tdim_1d => .tvdim_1d,
-                .tdim_2d => .tvdim_2d,
-                .tdim_3d => .tvdim_3d,
+                .dimension_1d => .dimension_1d,
+                .dimension_2d => .dimension_2d,
+                .dimension_3d => .dimension_3d,
             };
         }
         return gctx.texture_view_pool.addResource(gctx.*, .{
-            .gpuobj = texture.createView(descriptor),
-            .format = if (descriptor.format == .undef) info.format else descriptor.format,
+            .gpuobj = texture.createView(&descriptor),
+            .format = if (descriptor.format == .undefined) info.format else descriptor.format,
             .dimension = dim,
             .base_mip_level = descriptor.base_mip_level,
             .mip_level_count = if (descriptor.mip_level_count == 0xffff_ffff)
@@ -528,9 +541,9 @@ pub const GraphicsContext = struct {
         });
     }
 
-    pub fn createSampler(gctx: *GraphicsContext, descriptor: wgpu.SamplerDescriptor) SamplerHandle {
+    pub fn createSampler(gctx: *GraphicsContext, descriptor: wgpu.Sampler.Descriptor) SamplerHandle {
         return gctx.sampler_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createSampler(descriptor),
+            .gpuobj = gctx.device.createSampler(&descriptor),
             .address_mode_u = descriptor.address_mode_u,
             .address_mode_v = descriptor.address_mode_v,
             .address_mode_w = descriptor.address_mode_w,
@@ -674,7 +687,7 @@ pub const GraphicsContext = struct {
         assert(entries.len > 0 and entries.len <= max_num_bindings_per_group);
 
         var bind_group_info = BindGroupInfo{ .num_entries = @intCast(entries.len) };
-        var gpu_bind_group_entries: [max_num_bindings_per_group]wgpu.BindGroupEntry = undefined;
+        var gpu_bind_group_entries: [max_num_bindings_per_group]wgpu.BindGroup.Entry = undefined;
 
         for (entries, 0..) |entry, i| {
             bind_group_info.entries[i] = entry;
@@ -708,7 +721,7 @@ pub const GraphicsContext = struct {
                 };
             } else unreachable;
         }
-        bind_group_info.gpuobj = gctx.device.createBindGroup(.{
+        bind_group_info.gpuobj = gctx.device.createBindGroup(&.{
             .layout = gctx.lookupResource(layout).?,
             .entry_count = @intCast(entries.len),
             .entries = &gpu_bind_group_entries,
@@ -718,12 +731,12 @@ pub const GraphicsContext = struct {
 
     pub fn createBindGroupLayout(
         gctx: *GraphicsContext,
-        entries: []const wgpu.BindGroupLayoutEntry,
+        entries: []const wgpu.BindGroupLayout.Entry,
     ) BindGroupLayoutHandle {
         assert(entries.len > 0 and entries.len <= max_num_bindings_per_group);
 
         var bind_group_layout_info = BindGroupLayoutInfo{
-            .gpuobj = gctx.device.createBindGroupLayout(.{
+            .gpuobj = gctx.device.createBindGroupLayout(&.{
                 .entry_count = @intCast(entries.len),
                 .entries = entries.ptr,
             }),
@@ -731,7 +744,7 @@ pub const GraphicsContext = struct {
         };
         for (entries, 0..) |entry, i| {
             bind_group_layout_info.entries[i] = entry;
-            bind_group_layout_info.entries[i].next_in_chain = null;
+            // bind_group_layout_info.entries[i].next_in_chain = .{};
             bind_group_layout_info.entries[i].buffer.next_in_chain = null;
             bind_group_layout_info.entries[i].sampler.next_in_chain = null;
             bind_group_layout_info.entries[i].texture.next_in_chain = null;
@@ -771,7 +784,7 @@ pub const GraphicsContext = struct {
         return gctx.pipeline_layout_pool.addResource(gctx.*, info);
     }
 
-    pub fn lookupResource(gctx: GraphicsContext, handle: anytype) ?handleToGpuResourceType(@TypeOf(handle)) {
+    pub fn lookupResource(gctx: GraphicsContext, handle: anytype) ?*handleToGpuResourceType(@TypeOf(handle)) {
         if (gctx.isResourceValid(handle)) {
             const T = @TypeOf(handle);
             return switch (T) {
@@ -1047,31 +1060,19 @@ pub const GraphicsContext = struct {
     }
 };
 
-// Defined in dawn.cpp
-const DawnNativeInstance = ?*opaque {};
-const DawnProcsTable = ?*opaque {};
-extern fn dniCreate() DawnNativeInstance;
-extern fn dniDestroy(dni: DawnNativeInstance) void;
-extern fn dniGetWgpuInstance(dni: DawnNativeInstance) ?wgpu.Instance;
-extern fn dniDiscoverDefaultAdapters(dni: DawnNativeInstance) void;
-extern fn dnGetProcs() DawnProcsTable;
-
-// Defined in Dawn codebase
-extern fn dawnProcSetProcs(procs: DawnProcsTable) void;
-
 /// Helper to create a buffer BindGroupLayoutEntry.
 pub fn bufferEntry(
     binding: u32,
-    visibility: wgpu.ShaderStage,
-    binding_type: wgpu.BufferBindingType,
-    has_dynamic_offset: bool,
+    visibility: wgpu.ShaderStageFlags,
+    binding_type: wgpu.Buffer.BindingType,
+    has_dynamic_offset: wgpu.Bool32,
     min_binding_size: u64,
-) wgpu.BindGroupLayoutEntry {
+) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
         .visibility = visibility,
         .buffer = .{
-            .binding_type = binding_type,
+            .type = binding_type,
             .has_dynamic_offset = has_dynamic_offset,
             .min_binding_size = min_binding_size,
         },
@@ -1083,7 +1084,7 @@ pub fn samplerEntry(
     binding: u32,
     visibility: wgpu.ShaderStage,
     binding_type: wgpu.SamplerBindingType,
-) wgpu.BindGroupLayoutEntry {
+) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
         .visibility = visibility,
@@ -1098,7 +1099,7 @@ pub fn textureEntry(
     sample_type: wgpu.TextureSampleType,
     view_dimension: wgpu.TextureViewDimension,
     multisampled: bool,
-) wgpu.BindGroupLayoutEntry {
+) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
         .visibility = visibility,
@@ -1117,7 +1118,7 @@ pub fn storageTextureEntry(
     access: wgpu.StorageTextureAccess,
     format: wgpu.TextureFormat,
     view_dimension: wgpu.TextureViewDimension,
-) wgpu.BindGroupLayoutEntry {
+) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
         .visibility = visibility,
@@ -1192,13 +1193,13 @@ pub fn createRenderPipelineSimple(
 /// Helper function for creating render passes.
 /// Supports: One color attachment and optional depth attachment.
 pub fn beginRenderPassSimple(
-    encoder: wgpu.CommandEncoder,
+    encoder: *wgpu.CommandEncoder,
     load_op: wgpu.LoadOp,
-    color_texv: wgpu.TextureView,
+    color_texv: *wgpu.TextureView,
     clear_color: ?wgpu.Color,
-    depth_texv: ?wgpu.TextureView,
+    depth_texv: ?*wgpu.TextureView,
     clear_depth: ?f32,
-) wgpu.RenderPassEncoder {
+) *wgpu.RenderPassEncoder {
     if (depth_texv == null) {
         assert(clear_depth == null);
     }
@@ -1271,54 +1272,54 @@ pub fn imageInfoToTextureFormat(num_components: u32, bytes_per_component: u32, i
 }
 
 pub const BufferInfo = struct {
-    gpuobj: ?wgpu.Buffer = null,
+    gpuobj: ?*wgpu.Buffer = null,
     size: usize = 0,
-    usage: wgpu.BufferUsage = .{},
+    usage: wgpu.Buffer.UsageFlags = .{},
 };
 
 pub const TextureInfo = struct {
-    gpuobj: ?wgpu.Texture = null,
-    usage: wgpu.TextureUsage = .{},
-    dimension: wgpu.TextureDimension = .tdim_1d,
+    gpuobj: ?*wgpu.Texture = null,
+    usage: wgpu.Texture.UsageFlags = .{},
+    dimension: wgpu.Texture.Dimension = .dimension_1d,
     size: wgpu.Extent3D = .{ .width = 0 },
-    format: wgpu.TextureFormat = .undef,
+    format: wgpu.Texture.Format = .undefined,
     mip_level_count: u32 = 0,
     sample_count: u32 = 0,
 };
 
 pub const TextureViewInfo = struct {
-    gpuobj: ?wgpu.TextureView = null,
-    format: wgpu.TextureFormat = .undef,
-    dimension: wgpu.TextureViewDimension = .undef,
+    gpuobj: ?*wgpu.TextureView = null,
+    format: wgpu.Texture.Format = .undefined,
+    dimension: wgpu.TextureView.Dimension = .dimension_undefined,
     base_mip_level: u32 = 0,
     mip_level_count: u32 = 0,
     base_array_layer: u32 = 0,
     array_layer_count: u32 = 0,
-    aspect: wgpu.TextureAspect = .all,
+    aspect: wgpu.Texture.Aspect = .all,
     parent_texture_handle: TextureHandle = .{},
 };
 
 pub const SamplerInfo = struct {
-    gpuobj: ?wgpu.Sampler = null,
-    address_mode_u: wgpu.AddressMode = .repeat,
-    address_mode_v: wgpu.AddressMode = .repeat,
-    address_mode_w: wgpu.AddressMode = .repeat,
+    gpuobj: ?*wgpu.Sampler = null,
+    address_mode_u: wgpu.Sampler.AddressMode = .repeat,
+    address_mode_v: wgpu.Sampler.AddressMode = .repeat,
+    address_mode_w: wgpu.Sampler.AddressMode = .repeat,
     mag_filter: wgpu.FilterMode = .nearest,
     min_filter: wgpu.FilterMode = .nearest,
     mipmap_filter: wgpu.MipmapFilterMode = .nearest,
     lod_min_clamp: f32 = 0.0,
     lod_max_clamp: f32 = 0.0,
-    compare: wgpu.CompareFunction = .undef,
+    compare: wgpu.CompareFunction = .undefined,
     max_anisotropy: u16 = 0,
 };
 
 pub const RenderPipelineInfo = struct {
-    gpuobj: ?wgpu.RenderPipeline = null,
+    gpuobj: ?*wgpu.RenderPipeline = null,
     pipeline_layout_handle: PipelineLayoutHandle = .{},
 };
 
 pub const ComputePipelineInfo = struct {
-    gpuobj: ?wgpu.ComputePipeline = null,
+    gpuobj: ?*wgpu.ComputePipeline = null,
     pipeline_layout_handle: PipelineLayoutHandle = .{},
 };
 
@@ -1334,23 +1335,23 @@ pub const BindGroupEntryInfo = struct {
 const max_num_bindings_per_group = 10;
 
 pub const BindGroupInfo = struct {
-    gpuobj: ?wgpu.BindGroup = null,
+    gpuobj: ?*wgpu.BindGroup = null,
     num_entries: u32 = 0,
     entries: [max_num_bindings_per_group]BindGroupEntryInfo =
         [_]BindGroupEntryInfo{.{}} ** max_num_bindings_per_group,
 };
 
 pub const BindGroupLayoutInfo = struct {
-    gpuobj: ?wgpu.BindGroupLayout = null,
+    gpuobj: ?*wgpu.BindGroupLayout = null,
     num_entries: u32 = 0,
-    entries: [max_num_bindings_per_group]wgpu.BindGroupLayoutEntry =
-        [_]wgpu.BindGroupLayoutEntry{.{ .binding = 0, .visibility = .{} }} ** max_num_bindings_per_group,
+    entries: [max_num_bindings_per_group]wgpu.BindGroupLayout.Entry =
+        [_]wgpu.BindGroupLayout.Entry{.{ .binding = 0, .visibility = .{} }} ** max_num_bindings_per_group,
 };
 
 const max_num_bind_groups_per_pipeline = 4;
 
 pub const PipelineLayoutInfo = struct {
-    gpuobj: ?wgpu.PipelineLayout = null,
+    gpuobj: ?*wgpu.PipelineLayout = null,
     num_bind_group_layouts: u32 = 0,
     bind_group_layouts: [max_num_bind_groups_per_pipeline]BindGroupLayoutHandle =
         [_]BindGroupLayoutHandle{.{}} ** max_num_bind_groups_per_pipeline,
@@ -1481,7 +1482,7 @@ fn ResourcePool(comptime Info: type, comptime Resource: type) type {
             return self.pool.getColumnAssumeLive(handle, .info);
         }
 
-        fn getGpuObj(self: Self, handle: Handle) ?Resource {
+        fn getGpuObj(self: Self, handle: Handle) ?*Resource {
             if (self.pool.getColumnPtrIfLive(handle, .info)) |info| {
                 return info.gpuobj;
             }
@@ -1544,7 +1545,7 @@ const SurfaceDescriptor = union(SurfaceDescriptorTag) {
     },
 };
 
-fn createSurfaceForWindow(instance: wgpu.Instance, window: *sdl.SDL_Window) wgpu.Surface {
+fn createSurfaceForWindow(instance: *wgpu.Instance, window: *sdl.SDL_Window) *wgpu.Surface {
     const os_tag = @import("builtin").target.os.tag;
     const descriptor = if (os_tag == .windows) blk: {
         var info: sdl.SDL_SysWMinfo = undefined;
@@ -1590,34 +1591,40 @@ fn createSurfaceForWindow(instance: wgpu.Instance, window: *sdl.SDL_Window) wgpu
 
     return switch (descriptor) {
         .metal_layer => |src| blk: {
-            var desc: wgpu.SurfaceDescriptorFromMetalLayer = undefined;
+            var desc: wgpu.Surface.DescriptorFromMetalLayer = undefined;
             desc.chain.next = null;
-            desc.chain.struct_type = .surface_descriptor_from_metal_layer;
+            desc.chain.s_type = .surface_descriptor_from_metal_layer;
             desc.layer = src.layer;
-            break :blk instance.createSurface(.{
-                .next_in_chain = @ptrCast(&desc),
+            break :blk instance.createSurface(&.{
+                .next_in_chain = .{
+                    .from_metal_layer = &desc,
+                },
                 .label = if (src.label) |l| l else null,
             });
         },
         .windows_hwnd => |src| blk: {
-            var desc: wgpu.SurfaceDescriptorFromWindowsHWND = undefined;
+            var desc: wgpu.Surface.DescriptorFromWindowsHWND = undefined;
             desc.chain.next = null;
-            desc.chain.struct_type = .surface_descriptor_from_windows_hwnd;
+            desc.chain.s_type = .surface_descriptor_from_windows_hwnd;
             desc.hinstance = src.hinstance;
             desc.hwnd = src.hwnd;
-            break :blk instance.createSurface(.{
-                .next_in_chain = @ptrCast(&desc),
+            break :blk instance.createSurface(&.{
+                .next_in_chain = .{
+                    .from_windows_hwnd = &desc,
+                },
                 .label = if (src.label) |l| l else null,
             });
         },
         .xlib => |src| blk: {
-            var desc: wgpu.SurfaceDescriptorFromXlibWindow = undefined;
+            var desc: wgpu.Surface.DescriptorFromXlibWindow = undefined;
             desc.chain.next = null;
-            desc.chain.struct_type = .surface_descriptor_from_xlib_window;
+            desc.chain.s_type = .surface_descriptor_from_xlib_window;
             desc.display = src.display;
             desc.window = src.window;
-            break :blk instance.createSurface(.{
-                .next_in_chain = @ptrCast(&desc),
+            break :blk instance.createSurface(&.{
+                .next_in_chain = .{
+                    .from_xlib_window = &desc,
+                },
                 .label = if (src.label) |l| l else null,
             });
         },

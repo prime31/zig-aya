@@ -5,7 +5,7 @@ const wgpu = zgpu.wgpu;
 pub usingnamespace @import("image.zig");
 
 pub const ImagePlugin = struct {
-    default_sampler: wgpu.SamplerDescriptor = .{
+    default_sampler: wgpu.Sampler.Descriptor = .{
         .mag_filter = .linear,
         .min_filter = .linear,
         .mipmap_filter = .linear,

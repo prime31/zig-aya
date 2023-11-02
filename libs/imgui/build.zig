@@ -1,11 +1,16 @@
 const std = @import("std");
 
+const mach_gpu_dawn = @import("mach_gpu_dawn");
+
 pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode, sdl_include_path: []const u8) void {
     exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });
 
     const lib = buildStaticLibrary(b, target, optimize);
     lib.addIncludePath(.{ .path = sdl_include_path });
     lib.addIncludePath(.{ .path = thisDir() ++ "/../wgpu/headers" });
+
+    mach_gpu_dawn.link(b, lib, .{});
+
     exe.linkLibrary(lib);
 }
 

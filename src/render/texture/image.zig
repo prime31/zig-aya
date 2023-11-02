@@ -20,12 +20,12 @@ pub const Image = struct {
     };
 
     data: []const u8,
-    texture_descriptor: wgpu.TextureDescriptor,
-    sampler_descriptor: ?wgpu.SamplerDescriptor = null,
-    texture_view_descriptor: ?wgpu.TextureViewDescriptor = null,
+    texture_descriptor: wgpu.Texture.Descriptor,
+    sampler_descriptor: ?wgpu.Sampler.Descriptor = null,
+    texture_view_descriptor: ?wgpu.TextureView.Descriptor = null,
 
     pub fn init() Image {
-        const format = wgpu.TextureFormat.rgba8_unorm;
+        const format = wgpu.Texture.Format.rgba8_unorm;
         // TODO: TextureFormat pixelSize method
         var data = aya.mem.alloc(u8, 4);
         data[0..4].* = .{ 255, 255, 255, 255 };
@@ -34,11 +34,11 @@ pub const Image = struct {
             .data = data,
             .texture_descriptor = .{
                 .label = "Default Image",
-                .usage = wgpu.TextureUsage{
+                .usage = wgpu.Texture.UsageFlags{
                     .texture_binding = true,
                     .copy_dst = true,
                 },
-                .dimension = wgpu.TextureDimension.tdim_2d,
+                .dimension = wgpu.Texture.Dimension.dimension_2d,
                 .size = wgpu.Extent3D{
                     .width = 1,
                     .height = 1,

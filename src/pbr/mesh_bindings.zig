@@ -19,7 +19,7 @@ pub const MeshLayouts = struct {
     pub fn init(gctx: *zgpu.GraphicsContext) MeshLayouts {
         return .{
             .model_only = gctx.createBindGroupLayout(&.{
-                zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0),
+                zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, .true, 0),
             }),
         };
     }

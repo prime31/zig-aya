@@ -132,7 +132,7 @@ pub fn MaterialPipeline(comptime M: type) type {
             return .{
                 .mesh_pipeline = world.getResourceMut(aya.MeshPipeline).?.*,
                 .material_layout = gctx.createBindGroupLayout(&.{
-                    zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0), // TODO: wtf, move to Material
+                    zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, .true, 0), // TODO: wtf, move to Material
                 }),
                 .vertex_shader = Material(M).vertexShader().getHandle(asset_server),
                 .fragment_shader = Material(M).fragmentShader().getHandle(asset_server),
