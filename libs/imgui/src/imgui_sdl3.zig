@@ -1,3 +1,4 @@
+const std = @import("std");
 const imgui = @import("dear_imgui.zig");
 const sdl = @import("sdl");
 const imgui_enabled = @import("imgui.zig").enabled;
@@ -14,7 +15,7 @@ pub fn init(
     if (!imgui_enabled) return;
 
     _ = imgui.igCreateContext(null);
-    _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO()[0].Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
+    // _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO()[0].Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
     var io = imgui.igGetIO().*;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
@@ -62,18 +63,17 @@ pub fn draw(gctx: anytype, zgpu: anytype) void {
             const pass = zgpu.beginRenderPassSimple(encoder, .load, swapchain_texv, null, null, null);
             defer zgpu.endReleasePass(pass);
             render(pass);
+            imgui.igRender();
         }
 
         break :commands encoder.finish(null);
     };
     defer commands.release();
 
-    // gctx.submit([_]*const gctx.wgpu.CommandBuffer{commands});
-    // gctx.submit(&[_]@TypeOf(commands){commands});
-    // gctx.submit(.{commands});
+    gctx.submit(&.{commands});
 }
 
-pub fn render(wgpu_render_pass: *const anyopaque) void {
+fn render(wgpu_render_pass: *const anyopaque) void {
     if (!imgui_enabled) return;
 
     imgui.igRender();

@@ -6,7 +6,6 @@ const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
-const zgui_build = @import("libs/zgui/build.zig");
 const wgpu_build = @import("libs/wgpu/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
 
@@ -107,16 +106,13 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zmath_module = zig_gamedev_build.getMathModule(b);
     const zmesh_module = zig_gamedev_build.getMeshModule();
     const zpool_module = zig_gamedev_build.getPoolModule(b);
-    const imgui_module = zgui_build.getModule(b, sdl_module, options.enable_imgui);
 
     wgpu_build.linkArtifact(b, exe, target, optimize);
     const wgpu_module = wgpu_build.getModule(b, zpool_module, sdl_module);
 
-    if (options.enable_imgui) {
-        // imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
-        zgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
-    }
-    // const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
+    if (options.enable_imgui)
+        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
+    const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{

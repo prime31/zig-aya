@@ -133,7 +133,7 @@ test "assets" {
 
     const AssetServer = assets.AssetServer;
 
-    var asset_server = AssetServer.init(aya.allocator);
+    var asset_server = AssetServer.init(aya.World.init(std.testing.allocator));
     defer asset_server.deinit();
 
     var images = Assets(Image).init(aya.allocator);

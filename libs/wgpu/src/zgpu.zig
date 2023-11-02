@@ -3,8 +3,10 @@ const sdl = @import("sdl");
 const math = std.math;
 const assert = std.debug.assert;
 const wgsl = @import("common_wgsl.zig");
-// pub const wgpu = @import("wgpu.zig");
+
 pub const wgpu = @import("mach_gpu");
+
+usingnamespace wgpu.Export(wgpu.dawn.Interface);
 
 // if true the following options are set: "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend"
 const dawn_skip_validation = false;
@@ -45,16 +47,11 @@ pub const GraphicsContext = struct {
         stage: struct {
             num: u32 = 0,
             current: u32 = 0,
-            buffers: [uniforms_staging_pipeline_len]UniformsStagingBuffer =
-                [_]UniformsStagingBuffer{.{}} ** uniforms_staging_pipeline_len,
+            buffers: [uniforms_staging_pipeline_len]UniformsStagingBuffer = [_]UniformsStagingBuffer{.{}} ** uniforms_staging_pipeline_len,
         } = .{},
     } = .{},
 
-    pub fn create(
-        allocator: std.mem.Allocator,
-        window: *sdl.SDL_Window,
-        options: GraphicsContextOptions,
-    ) !*GraphicsContext {
+    pub fn create(allocator: std.mem.Allocator, window: *sdl.SDL_Window, options: GraphicsContextOptions) !*GraphicsContext {
         const checkGraphicsApiSupport = (struct {
             fn impl() error{VulkanNotSupported}!void {
                 // TODO: On Windows we should check if DirectX 12 is supported (Windows 10+).
@@ -113,17 +110,14 @@ pub const GraphicsContext = struct {
         };
         errdefer adapter.release();
 
-        std.debug.print("1 ---------------- {?}\n", .{adapter});
-
-        // var properties: wgpu.Adapter.Properties = undefined;
-        // // properties.next_in_chain = null;
-        // adapter.getProperties(&properties);
-        // std.debug.print("2 ---------------- {}\n", .{properties});
-        // std.log.info("[zgpu] High-performance device has been selected:", .{});
-        // std.log.info("[zgpu]   Name: {s}", .{properties.name});
-        // std.log.info("[zgpu]   Driver: {s}", .{properties.driver_description});
-        // std.log.info("[zgpu]   Adapter type: {s}", .{@tagName(properties.adapter_type)});
-        // std.log.info("[zgpu]   Backend type: {s}", .{@tagName(properties.backend_type)});
+        var properties = std.mem.zeroes(wgpu.Adapter.Properties);
+        adapter.getProperties(&properties);
+        std.log.info("GPU Device: {s}, driver: {s}, adapter: {s}, backend: {s}", .{
+            properties.name,
+            properties.driver_description,
+            @tagName(properties.adapter_type),
+            @tagName(properties.backend_type),
+        });
 
         const device = device: {
             const Response = struct {
@@ -150,7 +144,7 @@ pub const GraphicsContext = struct {
                 message: [*:0]const u8,
             };
 
-            const device_lost_callback = (struct {
+            const device_lost_callback = struct {
                 fn device_lost_callback(
                     reason: wgpu.Device.LostReason,
                     message: [*:0]const u8,
@@ -160,7 +154,7 @@ pub const GraphicsContext = struct {
                     response.reason = reason;
                     response.message = message;
                 }
-            }).device_lost_callback;
+            }.device_lost_callback;
 
             const toggles = [_][*:0]const u8{ "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend" };
             const dawn_toggles = wgpu.dawn.TogglesDescriptor{
@@ -191,7 +185,7 @@ pub const GraphicsContext = struct {
         };
         errdefer device.release();
 
-        device.setUncapturedErrorCallback(logUnhandledError, null);
+        device.setUncapturedErrorCallback({}, logUnhandledError);
 
         const surface = createSurfaceForWindow(instance, window);
         errdefer surface.release();
@@ -237,64 +231,57 @@ pub const GraphicsContext = struct {
         return gctx;
     }
 
-    pub fn deinit(gctx: *GraphicsContext) void {
+    pub fn deinit(self: *GraphicsContext) void {
         // Wait for the GPU to finish all encoded commands.
-        while (gctx.stats.cpu_frame_number != gctx.stats.gpu_frame_number) {
-            gctx.device.tick();
+        while (self.stats.cpu_frame_number != self.stats.gpu_frame_number) {
+            self.device.tick();
         }
 
         // Wait for all outstanding mapAsync() calls to complete.
         wait_loop: while (true) {
-            gctx.device.tick();
+            self.device.tick();
             var i: u32 = 0;
-            while (i < gctx.uniforms.stage.num) : (i += 1) {
-                if (gctx.uniforms.stage.buffers[i].slice == null) {
+            while (i < self.uniforms.stage.num) : (i += 1) {
+                if (self.uniforms.stage.buffers[i].slice == null) {
                     continue :wait_loop;
                 }
             }
             break;
         }
 
-        gctx.mipgens.deinit();
-        gctx.pipeline_layout_pool.deinit(gctx.allocator);
-        gctx.bind_group_pool.deinit(gctx.allocator);
-        gctx.bind_group_layout_pool.deinit(gctx.allocator);
-        gctx.buffer_pool.deinit(gctx.allocator);
-        gctx.texture_view_pool.deinit(gctx.allocator);
-        gctx.texture_pool.deinit(gctx.allocator);
-        gctx.sampler_pool.deinit(gctx.allocator);
-        gctx.render_pipeline_pool.deinit(gctx.allocator);
-        gctx.compute_pipeline_pool.deinit(gctx.allocator);
-        gctx.surface.release();
-        gctx.swapchain.release();
-        gctx.queue.release();
-        gctx.device.release();
-        // allocator.destroy(gctx);
+        self.mipgens.deinit();
+        self.pipeline_layout_pool.deinit(self.allocator);
+        self.bind_group_pool.deinit(self.allocator);
+        self.bind_group_layout_pool.deinit(self.allocator);
+        self.buffer_pool.deinit(self.allocator);
+        self.texture_view_pool.deinit(self.allocator);
+        self.texture_pool.deinit(self.allocator);
+        self.sampler_pool.deinit(self.allocator);
+        self.render_pipeline_pool.deinit(self.allocator);
+        self.compute_pipeline_pool.deinit(self.allocator);
+        self.surface.release();
+        self.swapchain.release();
+        self.queue.release();
+        self.device.release();
     }
 
-    //
     // Uniform buffer pool
     //
-    pub fn uniformsAllocate(
-        gctx: *GraphicsContext,
-        comptime T: type,
-        num_elements: u32,
-    ) struct { slice: []T, offset: u32 } {
+    pub fn uniformsAllocate(self: *GraphicsContext, comptime T: type, num_elements: u32) struct { slice: []T, offset: u32 } {
         assert(num_elements > 0);
         const size = num_elements * @sizeOf(T);
 
-        const offset = gctx.uniforms.offset;
+        const offset = self.uniforms.offset;
         const aligned_size = (size + (uniforms_alloc_alignment - 1)) & ~(uniforms_alloc_alignment - 1);
         if ((offset + aligned_size) >= uniforms_buffer_size) {
-            std.log.err("[zgpu] Uniforms buffer size is too small. " ++
-                "Consider increasing 'zgpu.BuildOptions.uniforms_buffer_size' constant.", .{});
+            std.log.err("[zgpu] Uniforms buffer size is too small. Consider increasing 'zgpu.BuildOptions.uniforms_buffer_size' constant.", .{});
             return .{ .slice = @as([*]T, undefined)[0..0], .offset = 0 };
         }
 
-        const current = gctx.uniforms.stage.current;
-        const slice = (gctx.uniforms.stage.buffers[current].slice.?.ptr + offset)[0..size];
+        const current = self.uniforms.stage.current;
+        const slice = (self.uniforms.stage.buffers[current].slice.?.ptr + offset)[0..size];
 
-        gctx.uniforms.offset += aligned_size;
+        self.uniforms.offset += aligned_size;
         return .{
             .slice = std.mem.bytesAsSlice(T, @as([]align(@alignOf(T)) u8, @alignCast(slice))),
             .offset = offset,
@@ -309,12 +296,12 @@ pub const GraphicsContext = struct {
     const uniforms_staging_pipeline_len = 8;
     const uniforms_alloc_alignment: u32 = 256;
 
-    fn uniformsInit(gctx: *GraphicsContext) void {
-        gctx.uniforms.buffer = gctx.createBuffer(.{
+    fn uniformsInit(self: *GraphicsContext) void {
+        self.uniforms.buffer = self.createBuffer(.{
             .usage = .{ .copy_dst = true, .uniform = true },
             .size = uniforms_buffer_size,
         });
-        gctx.uniformsNextStagingBuffer();
+        self.uniformsNextStagingBuffer();
     }
 
     inline fn uniformsMappedCallback(usb: *UniformsStagingBuffer, status: wgpu.Buffer.MapAsyncStatus) void {
@@ -326,85 +313,84 @@ pub const GraphicsContext = struct {
         }
     }
 
-    fn uniformsNextStagingBuffer(gctx: *GraphicsContext) void {
-        if (gctx.stats.cpu_frame_number > 0) {
+    fn uniformsNextStagingBuffer(self: *GraphicsContext) void {
+        if (self.stats.cpu_frame_number > 0) {
             // Map staging buffer which was used this frame.
-            const current = gctx.uniforms.stage.current;
-            assert(gctx.uniforms.stage.buffers[current].slice == null);
-            gctx.uniforms.stage.buffers[current].buffer.mapAsync(
+            const current = self.uniforms.stage.current;
+            assert(self.uniforms.stage.buffers[current].slice == null);
+            self.uniforms.stage.buffers[current].buffer.mapAsync(
                 .{ .write = true },
                 0,
                 uniforms_buffer_size,
-                &gctx.uniforms.stage.buffers[current],
+                &self.uniforms.stage.buffers[current],
                 uniformsMappedCallback,
             );
         }
 
-        gctx.uniforms.offset = 0;
+        self.uniforms.offset = 0;
 
         var i: u32 = 0;
-        while (i < gctx.uniforms.stage.num) : (i += 1) {
-            if (gctx.uniforms.stage.buffers[i].slice != null) {
-                gctx.uniforms.stage.current = i;
+        while (i < self.uniforms.stage.num) : (i += 1) {
+            if (self.uniforms.stage.buffers[i].slice != null) {
+                self.uniforms.stage.current = i;
                 return;
             }
         }
 
-        if (gctx.uniforms.stage.num >= uniforms_staging_pipeline_len) {
+        if (self.uniforms.stage.num >= uniforms_staging_pipeline_len) {
             // Wait until one of the buffers is mapped and ready to use.
             while (true) {
-                gctx.device.tick();
+                self.device.tick();
 
                 i = 0;
-                while (i < gctx.uniforms.stage.num) : (i += 1) {
-                    if (gctx.uniforms.stage.buffers[i].slice != null) {
-                        gctx.uniforms.stage.current = i;
+                while (i < self.uniforms.stage.num) : (i += 1) {
+                    if (self.uniforms.stage.buffers[i].slice != null) {
+                        self.uniforms.stage.current = i;
                         return;
                     }
                 }
             }
         }
 
-        assert(gctx.uniforms.stage.num < uniforms_staging_pipeline_len);
-        const current = gctx.uniforms.stage.num;
-        gctx.uniforms.stage.current = current;
-        gctx.uniforms.stage.num += 1;
+        assert(self.uniforms.stage.num < uniforms_staging_pipeline_len);
+        const current = self.uniforms.stage.num;
+        self.uniforms.stage.current = current;
+        self.uniforms.stage.num += 1;
 
         // Create new staging buffer.
-        const buffer_handle = gctx.createBuffer(.{
+        const buffer_handle = self.createBuffer(.{
             .usage = .{ .copy_src = true, .map_write = true },
             .size = uniforms_buffer_size,
             .mapped_at_creation = .true,
         });
 
         // Add new (mapped) staging buffer to the buffer list.
-        gctx.uniforms.stage.buffers[current] = .{
-            .slice = gctx.lookupResource(buffer_handle).?.getMappedRange(u8, 0, uniforms_buffer_size).?,
-            .buffer = gctx.lookupResource(buffer_handle).?,
+        self.uniforms.stage.buffers[current] = .{
+            .slice = self.lookupResource(buffer_handle).?.getMappedRange(u8, 0, uniforms_buffer_size).?,
+            .buffer = self.lookupResource(buffer_handle).?,
         };
     }
 
-    //
     // Submit/Present
     //
-    pub fn submit(gctx: *GraphicsContext, commands: []*const wgpu.CommandBuffer) void {
+    pub fn submit(self: *GraphicsContext, commands: []const *const wgpu.CommandBuffer) void {
         const stage_commands = stage_commands: {
-            const stage_encoder = gctx.device.createCommandEncoder(null);
+            const stage_encoder = self.device.createCommandEncoder(null);
             defer stage_encoder.release();
 
-            const current = gctx.uniforms.stage.current;
-            assert(gctx.uniforms.stage.buffers[current].slice != null);
+            const current = self.uniforms.stage.current;
+            assert(self.uniforms.stage.buffers[current].slice != null);
 
-            gctx.uniforms.stage.buffers[current].slice = null;
-            gctx.uniforms.stage.buffers[current].buffer.unmap();
+            self.uniforms.stage.buffers[current].slice = null;
+            self.uniforms.stage.buffers[current].buffer.unmap();
 
-            if (gctx.uniforms.offset > 0) {
+            if (self.uniforms.offset > 0) {
                 stage_encoder.copyBufferToBuffer(
-                    gctx.uniforms.stage.buffers[current].buffer,
+                    self.uniforms.stage.buffers[current].buffer,
                     0,
-                    gctx.lookupResource(gctx.uniforms.buffer).?,
+                    self.lookupResource(self.uniforms.buffer).?,
                     0,
-                    gctx.uniforms.offset,
+                    self.uniforms.offset,
                 );
             }
 
@@ -413,46 +399,42 @@ pub const GraphicsContext = struct {
         defer stage_commands.release();
 
         // TODO: We support up to 32 command buffers for now. Make it more robust.
-        var command_buffers = std.BoundedArray(wgpu.CommandBuffer, 32).init(0) catch unreachable;
+        var command_buffers = std.BoundedArray(*const wgpu.CommandBuffer, 32).init(0) catch unreachable;
         command_buffers.append(stage_commands) catch unreachable;
         command_buffers.appendSlice(commands) catch unreachable;
 
-        gctx.queue.onSubmittedWorkDone(0, gpuWorkDone, @ptrCast(&gctx.stats.gpu_frame_number));
-        gctx.queue.submit(command_buffers.slice());
+        self.queue.onSubmittedWorkDone(0, &self.stats.gpu_frame_number, gpuWorkDone);
+        self.queue.submit(command_buffers.slice());
 
-        gctx.stats.tick();
-        gctx.uniformsNextStagingBuffer();
+        self.stats.tick();
+        self.uniformsNextStagingBuffer();
     }
 
-    fn gpuWorkDone(status: wgpu.QueueWorkDoneStatus, userdata: ?*anyopaque) callconv(.C) void {
-        const gpu_frame_number: *u64 = @ptrCast(@alignCast(userdata));
+    inline fn gpuWorkDone(gpu_frame_number: *u64, status: wgpu.Queue.WorkDoneStatus) void {
         gpu_frame_number.* += 1;
         if (status != .success) {
             std.log.err("[zgpu] Failed to complete GPU work (status: {s}).", .{@tagName(status)});
         }
     }
 
-    pub fn present(gctx: *GraphicsContext) enum {
-        normal_execution,
-        swap_chain_resized,
-    } {
-        gctx.swapchain.present();
+    pub fn present(self: *GraphicsContext) enum { normal_execution, swap_chain_resized } {
+        self.swapchain.present();
 
         var w: c_int = undefined;
         var h: c_int = undefined;
-        _ = sdl.SDL_GetWindowSizeInPixels(gctx.window, &w, &h);
+        _ = sdl.SDL_GetWindowSizeInPixels(self.window, &w, &h);
 
-        if (gctx.swapchain_descriptor.width != @as(u32, @intCast(w)) or gctx.swapchain_descriptor.height != @as(u32, @intCast(h))) {
+        if (self.swapchain_descriptor.width != @as(u32, @intCast(w)) or self.swapchain_descriptor.height != @as(u32, @intCast(h))) {
             if (w != 0 and h != 0) {
-                gctx.swapchain_descriptor.width = @intCast(w);
-                gctx.swapchain_descriptor.height = @intCast(h);
-                gctx.swapchain.release();
+                self.swapchain_descriptor.width = @intCast(w);
+                self.swapchain_descriptor.height = @intCast(h);
+                self.swapchain.release();
 
-                gctx.swapchain = gctx.device.createSwapChain(gctx.surface, &gctx.swapchain_descriptor);
+                self.swapchain = self.device.createSwapChain(self.surface, &self.swapchain_descriptor);
 
                 std.log.info(
                     "Window has been resized to: {d}x{d}.",
-                    .{ gctx.swapchain_descriptor.width, gctx.swapchain_descriptor.height },
+                    .{ self.swapchain_descriptor.width, self.swapchain_descriptor.height },
                 );
                 return .swap_chain_resized;
             }
@@ -461,12 +443,11 @@ pub const GraphicsContext = struct {
         return .normal_execution;
     }
 
-    //
     // Resources
     //
-    pub fn createBuffer(gctx: *GraphicsContext, descriptor: wgpu.Buffer.Descriptor) BufferHandle {
-        return gctx.buffer_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createBuffer(&descriptor),
+    pub fn createBuffer(self: *GraphicsContext, descriptor: wgpu.Buffer.Descriptor) BufferHandle {
+        return self.buffer_pool.addResource(self.*, .{
+            .gpuobj = self.device.createBuffer(&descriptor),
             .size = descriptor.size,
             .usage = descriptor.usage,
         });
@@ -478,11 +459,11 @@ pub const GraphicsContext = struct {
         contents: []const u8,
     };
 
-    pub fn createBufferWithData(gctx: *GraphicsContext, descriptor: BufferInitDescriptor) BufferHandle {
+    pub fn createBufferWithData(self: *GraphicsContext, descriptor: BufferInitDescriptor) BufferHandle {
         const buffer_size = descriptor.contents.len * @sizeOf(u8);
 
-        const buffer = gctx.buffer_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createBuffer(&.{
+        const buffer = self.buffer_pool.addResource(self.*, .{
+            .gpuobj = self.device.createBuffer(&.{
                 .label = descriptor.label,
                 .usage = descriptor.usage,
                 .size = buffer_size,
@@ -491,13 +472,13 @@ pub const GraphicsContext = struct {
             .usage = descriptor.usage,
         });
 
-        gctx.queue.writeBuffer(gctx.buffer_pool.getGpuObj(buffer).?, 0, descriptor.contents);
+        self.queue.writeBuffer(self.buffer_pool.getGpuObj(buffer).?, 0, descriptor.contents);
         return buffer;
     }
 
-    pub fn createTexture(gctx: *GraphicsContext, descriptor: wgpu.Texture.Descriptor) TextureHandle {
-        return gctx.texture_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createTexture(&descriptor),
+    pub fn createTexture(self: *GraphicsContext, descriptor: wgpu.Texture.Descriptor) TextureHandle {
+        return self.texture_pool.addResource(self.*, .{
+            .gpuobj = self.device.createTexture(&descriptor),
             .usage = descriptor.usage,
             .dimension = descriptor.dimension,
             .size = descriptor.size,
@@ -507,13 +488,9 @@ pub const GraphicsContext = struct {
         });
     }
 
-    pub fn createTextureView(
-        gctx: *GraphicsContext,
-        texture_handle: TextureHandle,
-        descriptor: wgpu.TextureView.Descriptor,
-    ) TextureViewHandle {
-        const texture = gctx.lookupResource(texture_handle).?;
-        const info = gctx.lookupResourceInfo(texture_handle).?;
+    pub fn createTextureView(self: *GraphicsContext, texture_handle: TextureHandle, descriptor: wgpu.TextureView.Descriptor) TextureViewHandle {
+        const texture = self.lookupResource(texture_handle).?;
+        const info = self.lookupResourceInfo(texture_handle).?;
         var dim = descriptor.dimension;
         if (dim == .dimension_undefined) {
             dim = switch (info.dimension) {
@@ -522,7 +499,7 @@ pub const GraphicsContext = struct {
                 .dimension_3d => .dimension_3d,
             };
         }
-        return gctx.texture_view_pool.addResource(gctx.*, .{
+        return self.texture_view_pool.addResource(self.*, .{
             .gpuobj = texture.createView(&descriptor),
             .format = if (descriptor.format == .undefined) info.format else descriptor.format,
             .dimension = dim,
@@ -541,9 +518,9 @@ pub const GraphicsContext = struct {
         });
     }
 
-    pub fn createSampler(gctx: *GraphicsContext, descriptor: wgpu.Sampler.Descriptor) SamplerHandle {
-        return gctx.sampler_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createSampler(&descriptor),
+    pub fn createSampler(self: *GraphicsContext, descriptor: wgpu.Sampler.Descriptor) SamplerHandle {
+        return self.sampler_pool.addResource(self.*, .{
+            .gpuobj = self.device.createSampler(&descriptor),
             .address_mode_u = descriptor.address_mode_u,
             .address_mode_v = descriptor.address_mode_v,
             .address_mode_w = descriptor.address_mode_w,
@@ -557,15 +534,11 @@ pub const GraphicsContext = struct {
         });
     }
 
-    pub fn createRenderPipeline(
-        gctx: *GraphicsContext,
-        pipeline_layout: PipelineLayoutHandle,
-        descriptor: wgpu.RenderPipelineDescriptor,
-    ) RenderPipelineHandle {
+    pub fn createRenderPipeline(self: *GraphicsContext, pipeline_layout: PipelineLayoutHandle, descriptor: wgpu.RenderPipeline.Descriptor) RenderPipelineHandle {
         var desc = descriptor;
-        desc.layout = gctx.lookupResource(pipeline_layout) orelse null;
-        return gctx.render_pipeline_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createRenderPipeline(desc),
+        desc.layout = self.lookupResource(pipeline_layout) orelse null;
+        return self.render_pipeline_pool.addResource(self.*, .{
+            .gpuobj = self.device.createRenderPipeline(desc),
             .pipeline_layout_handle = pipeline_layout,
         });
     }
@@ -599,34 +572,30 @@ pub const GraphicsContext = struct {
     };
 
     pub fn createRenderPipelineAsync(
-        gctx: *GraphicsContext,
+        self: *GraphicsContext,
         allocator: std.mem.Allocator,
         pipeline_layout: PipelineLayoutHandle,
         descriptor: wgpu.RenderPipelineDescriptor,
         result: *RenderPipelineHandle,
     ) void {
         var desc = descriptor;
-        desc.layout = gctx.lookupResource(pipeline_layout) orelse null;
+        desc.layout = self.lookupResource(pipeline_layout) orelse null;
 
         const op = allocator.create(AsyncCreateOpRender) catch unreachable;
         op.* = .{
-            .gctx = gctx,
+            .gctx = self,
             .result = result,
             .pipeline_layout = pipeline_layout,
             .allocator = allocator,
         };
-        gctx.device.createRenderPipelineAsync(desc, AsyncCreateOpRender.create, @ptrCast(op));
+        self.device.createRenderPipelineAsync(desc, AsyncCreateOpRender.create, @ptrCast(op));
     }
 
-    pub fn createComputePipeline(
-        gctx: *GraphicsContext,
-        pipeline_layout: PipelineLayoutHandle,
-        descriptor: wgpu.ComputePipelineDescriptor,
-    ) ComputePipelineHandle {
+    pub fn createComputePipeline(self: *GraphicsContext, pipeline_layout: PipelineLayoutHandle, descriptor: wgpu.ComputePipeline.Descriptor) ComputePipelineHandle {
         var desc = descriptor;
-        desc.layout = gctx.lookupResource(pipeline_layout) orelse null;
-        return gctx.compute_pipeline_pool.addResource(gctx.*, .{
-            .gpuobj = gctx.device.createComputePipeline(desc),
+        desc.layout = self.lookupResource(pipeline_layout) orelse null;
+        return self.compute_pipeline_pool.addResource(self.*, .{
+            .gpuobj = self.device.createComputePipeline(desc),
             .pipeline_layout_handle = pipeline_layout,
         });
     }
@@ -660,30 +629,26 @@ pub const GraphicsContext = struct {
     };
 
     pub fn createComputePipelineAsync(
-        gctx: *GraphicsContext,
+        self: *GraphicsContext,
         allocator: std.mem.Allocator,
         pipeline_layout: PipelineLayoutHandle,
         descriptor: wgpu.ComputePipelineDescriptor,
         result: *ComputePipelineHandle,
     ) void {
         var desc = descriptor;
-        desc.layout = gctx.lookupResource(pipeline_layout) orelse null;
+        desc.layout = self.lookupResource(pipeline_layout) orelse null;
 
         const op = allocator.create(AsyncCreateOpCompute) catch unreachable;
         op.* = .{
-            .gctx = gctx,
+            .gctx = self,
             .result = result,
             .pipeline_layout = pipeline_layout,
             .allocator = allocator,
         };
-        gctx.device.createComputePipelineAsync(desc, AsyncCreateOpCompute.create, @ptrCast(op));
+        self.device.createComputePipelineAsync(desc, AsyncCreateOpCompute.create, @ptrCast(op));
     }
 
-    pub fn createBindGroup(
-        gctx: *GraphicsContext,
-        layout: BindGroupLayoutHandle,
-        entries: []const BindGroupEntryInfo,
-    ) BindGroupHandle {
+    pub fn createBindGroup(self: *GraphicsContext, layout: BindGroupLayoutHandle, entries: []const BindGroupEntryInfo) BindGroupHandle {
         assert(entries.len > 0 and entries.len <= max_num_bindings_per_group);
 
         var bind_group_info = BindGroupInfo{ .num_entries = @intCast(entries.len) };
@@ -695,7 +660,7 @@ pub const GraphicsContext = struct {
             if (entries[i].buffer_handle) |handle| {
                 gpu_bind_group_entries[i] = .{
                     .binding = entries[i].binding,
-                    .buffer = gctx.lookupResource(handle).?,
+                    .buffer = self.lookupResource(handle).?,
                     .offset = entries[i].offset,
                     .size = entries[i].size,
                     .sampler = null,
@@ -707,7 +672,7 @@ pub const GraphicsContext = struct {
                     .buffer = null,
                     .offset = 0,
                     .size = 0,
-                    .sampler = gctx.lookupResource(handle).?,
+                    .sampler = self.lookupResource(handle).?,
                     .texture_view = null,
                 };
             } else if (entries[i].texture_view_handle) |handle| {
@@ -717,26 +682,23 @@ pub const GraphicsContext = struct {
                     .offset = 0,
                     .size = 0,
                     .sampler = null,
-                    .texture_view = gctx.lookupResource(handle).?,
+                    .texture_view = self.lookupResource(handle).?,
                 };
             } else unreachable;
         }
-        bind_group_info.gpuobj = gctx.device.createBindGroup(&.{
-            .layout = gctx.lookupResource(layout).?,
+        bind_group_info.gpuobj = self.device.createBindGroup(&.{
+            .layout = self.lookupResource(layout).?,
             .entry_count = @intCast(entries.len),
             .entries = &gpu_bind_group_entries,
         });
-        return gctx.bind_group_pool.addResource(gctx.*, bind_group_info);
+        return self.bind_group_pool.addResource(self.*, bind_group_info);
     }
 
-    pub fn createBindGroupLayout(
-        gctx: *GraphicsContext,
-        entries: []const wgpu.BindGroupLayout.Entry,
-    ) BindGroupLayoutHandle {
+    pub fn createBindGroupLayout(self: *GraphicsContext, entries: []const wgpu.BindGroupLayout.Entry) BindGroupLayoutHandle {
         assert(entries.len > 0 and entries.len <= max_num_bindings_per_group);
 
         var bind_group_layout_info = BindGroupLayoutInfo{
-            .gpuobj = gctx.device.createBindGroupLayout(&.{
+            .gpuobj = self.device.createBindGroupLayout(&.{
                 .entry_count = @intCast(entries.len),
                 .entries = entries.ptr,
             }),
@@ -750,22 +712,15 @@ pub const GraphicsContext = struct {
             bind_group_layout_info.entries[i].texture.next_in_chain = null;
             bind_group_layout_info.entries[i].storage_texture.next_in_chain = null;
         }
-        return gctx.bind_group_layout_pool.addResource(gctx.*, bind_group_layout_info);
+        return self.bind_group_layout_pool.addResource(self.*, bind_group_layout_info);
     }
 
-    pub fn createBindGroupLayoutAuto(
-        gctx: *GraphicsContext,
-        pipeline: anytype,
-        group_index: u32,
-    ) BindGroupLayoutHandle {
-        const bgl = gctx.lookupResource(pipeline).?.getBindGroupLayout(group_index);
-        return gctx.bind_group_layout_pool.addResource(gctx.*, BindGroupLayoutInfo{ .gpuobj = bgl });
+    pub fn createBindGroupLayoutAuto(self: *GraphicsContext, pipeline: anytype, group_index: u32) BindGroupLayoutHandle {
+        const bgl = self.lookupResource(pipeline).?.getBindGroupLayout(group_index);
+        return self.bind_group_layout_pool.addResource(self.*, BindGroupLayoutInfo{ .gpuobj = bgl });
     }
 
-    pub fn createPipelineLayout(
-        gctx: *GraphicsContext,
-        bind_group_layouts: []const BindGroupLayoutHandle,
-    ) PipelineLayoutHandle {
+    pub fn createPipelineLayout(self: *GraphicsContext, bind_group_layouts: []const BindGroupLayoutHandle) PipelineLayoutHandle {
         assert(bind_group_layouts.len > 0);
 
         var info: PipelineLayoutInfo = .{ .num_bind_group_layouts = @as(u32, @intCast(bind_group_layouts.len)) };
@@ -773,30 +728,30 @@ pub const GraphicsContext = struct {
 
         for (bind_group_layouts, 0..) |bgl, i| {
             info.bind_group_layouts[i] = bgl;
-            gpu_bind_group_layouts[i] = gctx.lookupResource(bgl).?;
+            gpu_bind_group_layouts[i] = self.lookupResource(bgl).?;
         }
 
-        info.gpuobj = gctx.device.createPipelineLayout(.{
+        info.gpuobj = self.device.createPipelineLayout(.{
             .bind_group_layout_count = info.num_bind_group_layouts,
             .bind_group_layouts = &gpu_bind_group_layouts,
         });
 
-        return gctx.pipeline_layout_pool.addResource(gctx.*, info);
+        return self.pipeline_layout_pool.addResource(self.*, info);
     }
 
-    pub fn lookupResource(gctx: GraphicsContext, handle: anytype) ?*handleToGpuResourceType(@TypeOf(handle)) {
-        if (gctx.isResourceValid(handle)) {
+    pub fn lookupResource(self: GraphicsContext, handle: anytype) ?*handleToGpuResourceType(@TypeOf(handle)) {
+        if (self.isResourceValid(handle)) {
             const T = @TypeOf(handle);
             return switch (T) {
-                BufferHandle => gctx.buffer_pool.getGpuObj(handle).?,
-                TextureHandle => gctx.texture_pool.getGpuObj(handle).?,
-                TextureViewHandle => gctx.texture_view_pool.getGpuObj(handle).?,
-                SamplerHandle => gctx.sampler_pool.getGpuObj(handle).?,
-                RenderPipelineHandle => gctx.render_pipeline_pool.getGpuObj(handle).?,
-                ComputePipelineHandle => gctx.compute_pipeline_pool.getGpuObj(handle).?,
-                BindGroupHandle => gctx.bind_group_pool.getGpuObj(handle).?,
-                BindGroupLayoutHandle => gctx.bind_group_layout_pool.getGpuObj(handle).?,
-                PipelineLayoutHandle => gctx.pipeline_layout_pool.getGpuObj(handle).?,
+                BufferHandle => self.buffer_pool.getGpuObj(handle).?,
+                TextureHandle => self.texture_pool.getGpuObj(handle).?,
+                TextureViewHandle => self.texture_view_pool.getGpuObj(handle).?,
+                SamplerHandle => self.sampler_pool.getGpuObj(handle).?,
+                RenderPipelineHandle => self.render_pipeline_pool.getGpuObj(handle).?,
+                ComputePipelineHandle => self.compute_pipeline_pool.getGpuObj(handle).?,
+                BindGroupHandle => self.bind_group_pool.getGpuObj(handle).?,
+                BindGroupLayoutHandle => self.bind_group_layout_pool.getGpuObj(handle).?,
+                PipelineLayoutHandle => self.pipeline_layout_pool.getGpuObj(handle).?,
                 else => @compileError(
                     "[zgpu] GraphicsContext.lookupResource() not implemented for " ++ @typeName(T),
                 ),
@@ -805,19 +760,19 @@ pub const GraphicsContext = struct {
         return null;
     }
 
-    pub fn lookupResourceInfo(gctx: GraphicsContext, handle: anytype) ?handleToResourceInfoType(@TypeOf(handle)) {
-        if (gctx.isResourceValid(handle)) {
+    pub fn lookupResourceInfo(self: GraphicsContext, handle: anytype) ?handleToResourceInfoType(@TypeOf(handle)) {
+        if (self.isResourceValid(handle)) {
             const T = @TypeOf(handle);
             return switch (T) {
-                BufferHandle => gctx.buffer_pool.getInfo(handle),
-                TextureHandle => gctx.texture_pool.getInfo(handle),
-                TextureViewHandle => gctx.texture_view_pool.getInfo(handle),
-                SamplerHandle => gctx.sampler_pool.getInfo(handle),
-                RenderPipelineHandle => gctx.render_pipeline_pool.getInfo(handle),
-                ComputePipelineHandle => gctx.compute_pipeline_pool.getInfo(handle),
-                BindGroupHandle => gctx.bind_group_pool.getInfo(handle),
-                BindGroupLayoutHandle => gctx.bind_group_layout_pool.getInfo(handle),
-                PipelineLayoutHandle => gctx.pipeline_layout_pool.getInfo(handle),
+                BufferHandle => self.buffer_pool.getInfo(handle),
+                TextureHandle => self.texture_pool.getInfo(handle),
+                TextureViewHandle => self.texture_view_pool.getInfo(handle),
+                SamplerHandle => self.sampler_pool.getInfo(handle),
+                RenderPipelineHandle => self.render_pipeline_pool.getInfo(handle),
+                ComputePipelineHandle => self.compute_pipeline_pool.getInfo(handle),
+                BindGroupHandle => self.bind_group_pool.getInfo(handle),
+                BindGroupLayoutHandle => self.bind_group_layout_pool.getInfo(handle),
+                PipelineLayoutHandle => self.pipeline_layout_pool.getInfo(handle),
                 else => @compileError(
                     "[zgpu] GraphicsContext.lookupResourceInfo() not implemented for " ++ @typeName(T),
                 ),
@@ -826,60 +781,60 @@ pub const GraphicsContext = struct {
         return null;
     }
 
-    pub fn releaseResource(gctx: *GraphicsContext, handle: anytype) void {
+    pub fn releaseResource(self: *GraphicsContext, handle: anytype) void {
         const T = @TypeOf(handle);
         switch (T) {
-            BufferHandle => gctx.buffer_pool.destroyResource(handle, false),
-            TextureHandle => gctx.texture_pool.destroyResource(handle, false),
-            TextureViewHandle => gctx.texture_view_pool.destroyResource(handle, false),
-            SamplerHandle => gctx.sampler_pool.destroyResource(handle, false),
-            RenderPipelineHandle => gctx.render_pipeline_pool.destroyResource(handle, false),
-            ComputePipelineHandle => gctx.compute_pipeline_pool.destroyResource(handle, false),
-            BindGroupHandle => gctx.bind_group_pool.destroyResource(handle, false),
-            BindGroupLayoutHandle => gctx.bind_group_layout_pool.destroyResource(handle, false),
-            PipelineLayoutHandle => gctx.pipeline_layout_pool.destroyResource(handle, false),
+            BufferHandle => self.buffer_pool.destroyResource(handle, false),
+            TextureHandle => self.texture_pool.destroyResource(handle, false),
+            TextureViewHandle => self.texture_view_pool.destroyResource(handle, false),
+            SamplerHandle => self.sampler_pool.destroyResource(handle, false),
+            RenderPipelineHandle => self.render_pipeline_pool.destroyResource(handle, false),
+            ComputePipelineHandle => self.compute_pipeline_pool.destroyResource(handle, false),
+            BindGroupHandle => self.bind_group_pool.destroyResource(handle, false),
+            BindGroupLayoutHandle => self.bind_group_layout_pool.destroyResource(handle, false),
+            PipelineLayoutHandle => self.pipeline_layout_pool.destroyResource(handle, false),
             else => @compileError("[zgpu] GraphicsContext.releaseResource() not implemented for " ++ @typeName(T)),
         }
     }
 
-    pub fn destroyResource(gctx: *GraphicsContext, handle: anytype) void {
+    pub fn destroyResource(self: *GraphicsContext, handle: anytype) void {
         const T = @TypeOf(handle);
         switch (T) {
-            BufferHandle => gctx.buffer_pool.destroyResource(handle, true),
-            TextureHandle => gctx.texture_pool.destroyResource(handle, true),
+            BufferHandle => self.buffer_pool.destroyResource(handle, true),
+            TextureHandle => self.texture_pool.destroyResource(handle, true),
             else => @compileError("[zgpu] GraphicsContext.destroyResource() not implemented for " ++ @typeName(T)),
         }
     }
 
-    pub fn isResourceValid(gctx: GraphicsContext, handle: anytype) bool {
+    pub fn isResourceValid(self: GraphicsContext, handle: anytype) bool {
         const T = @TypeOf(handle);
         switch (T) {
-            BufferHandle => return gctx.buffer_pool.isHandleValid(handle),
-            TextureHandle => return gctx.texture_pool.isHandleValid(handle),
+            BufferHandle => return self.buffer_pool.isHandleValid(handle),
+            TextureHandle => return self.texture_pool.isHandleValid(handle),
             TextureViewHandle => {
-                if (gctx.texture_view_pool.isHandleValid(handle)) {
-                    const texture = gctx.texture_view_pool.getInfoPtr(handle).parent_texture_handle;
-                    return gctx.isResourceValid(texture);
+                if (self.texture_view_pool.isHandleValid(handle)) {
+                    const texture = self.texture_view_pool.getInfoPtr(handle).parent_texture_handle;
+                    return self.isResourceValid(texture);
                 }
                 return false;
             },
-            SamplerHandle => return gctx.sampler_pool.isHandleValid(handle),
-            RenderPipelineHandle => return gctx.render_pipeline_pool.isHandleValid(handle),
-            ComputePipelineHandle => return gctx.compute_pipeline_pool.isHandleValid(handle),
+            SamplerHandle => return self.sampler_pool.isHandleValid(handle),
+            RenderPipelineHandle => return self.render_pipeline_pool.isHandleValid(handle),
+            ComputePipelineHandle => return self.compute_pipeline_pool.isHandleValid(handle),
             BindGroupHandle => {
-                if (gctx.bind_group_pool.isHandleValid(handle)) {
-                    const num_entries = gctx.bind_group_pool.getInfoPtr(handle).num_entries;
-                    const entries = &gctx.bind_group_pool.getInfoPtr(handle).entries;
+                if (self.bind_group_pool.isHandleValid(handle)) {
+                    const num_entries = self.bind_group_pool.getInfoPtr(handle).num_entries;
+                    const entries = &self.bind_group_pool.getInfoPtr(handle).entries;
                     var i: u32 = 0;
                     while (i < num_entries) : (i += 1) {
                         if (entries[i].buffer_handle) |buffer| {
-                            if (!gctx.isResourceValid(buffer))
+                            if (!self.isResourceValid(buffer))
                                 return false;
                         } else if (entries[i].sampler_handle) |sampler| {
-                            if (!gctx.isResourceValid(sampler))
+                            if (!self.isResourceValid(sampler))
                                 return false;
                         } else if (entries[i].texture_view_handle) |texture_view| {
-                            if (!gctx.isResourceValid(texture_view))
+                            if (!self.isResourceValid(texture_view))
                                 return false;
                         } else unreachable;
                     }
@@ -887,13 +842,12 @@ pub const GraphicsContext = struct {
                 }
                 return false;
             },
-            BindGroupLayoutHandle => return gctx.bind_group_layout_pool.isHandleValid(handle),
-            PipelineLayoutHandle => return gctx.pipeline_layout_pool.isHandleValid(handle),
+            BindGroupLayoutHandle => return self.bind_group_layout_pool.isHandleValid(handle),
+            PipelineLayoutHandle => return self.pipeline_layout_pool.isHandleValid(handle),
             else => @compileError("[zgpu] GraphicsContext.isResourceValid() not implemented for " ++ @typeName(T)),
         }
     }
 
-    //
     // Mipmaps
     //
     const MipgenResources = struct {
@@ -906,13 +860,8 @@ pub const GraphicsContext = struct {
         const max_levels_per_dispatch = 4;
     };
 
-    pub fn generateMipmaps(
-        gctx: *GraphicsContext,
-        arena: std.mem.Allocator,
-        encoder: wgpu.CommandEncoder,
-        texture: TextureHandle,
-    ) void {
-        const texture_info = gctx.lookupResourceInfo(texture) orelse return;
+    pub fn generateMipmaps(self: *GraphicsContext, arena: std.mem.Allocator, encoder: wgpu.CommandEncoder, texture: TextureHandle) void {
+        const texture_info = self.lookupResourceInfo(texture) orelse return;
         if (texture_info.mip_level_count == 1) return;
 
         const max_size = 2048;
@@ -924,11 +873,11 @@ pub const GraphicsContext = struct {
         assert(math.isPowerOfTwo(texture_info.size.width));
 
         const format = texture_info.format;
-        const entry = gctx.mipgens.getOrPut(format) catch unreachable;
+        const entry = self.mipgens.getOrPut(format) catch unreachable;
         const mipgen = entry.value_ptr;
 
         if (!entry.found_existing) {
-            mipgen.bind_group_layout = gctx.createBindGroupLayout(&.{
+            mipgen.bind_group_layout = self.createBindGroupLayout(&.{
                 bufferEntry(0, .{ .compute = true }, .uniform, true, 0),
                 textureEntry(1, .{ .compute = true }, .unfilterable_float, .tvdim_2d, false),
                 storageTextureEntry(2, .{ .compute = true }, .write_only, format, .tvdim_2d),
@@ -937,26 +886,26 @@ pub const GraphicsContext = struct {
                 storageTextureEntry(5, .{ .compute = true }, .write_only, format, .tvdim_2d),
             });
 
-            const pipeline_layout = gctx.createPipelineLayout(&.{
+            const pipeline_layout = self.createPipelineLayout(&.{
                 mipgen.bind_group_layout,
             });
-            defer gctx.releaseResource(pipeline_layout);
+            defer self.releaseResource(pipeline_layout);
 
             const wgsl_src = wgsl.csGenerateMipmaps(arena, formatToShaderFormat(format));
-            const cs_module = createWgslShaderModule(gctx.device, wgsl_src, "zgpu_cs_generate_mipmaps");
+            const cs_module = createWgslShaderModule(self.device, wgsl_src, "zgpu_cs_generate_mipmaps");
             defer {
                 arena.free(wgsl_src);
                 cs_module.release();
             }
 
-            mipgen.pipeline = gctx.createComputePipeline(pipeline_layout, .{
+            mipgen.pipeline = self.createComputePipeline(pipeline_layout, .{
                 .compute = .{
                     .module = cs_module,
                     .entry_point = "main",
                 },
             });
 
-            mipgen.scratch_texture = gctx.createTexture(.{
+            mipgen.scratch_texture = self.createTexture(.{
                 .usage = .{ .copy_src = true, .storage_binding = true },
                 .dimension = .tdim_2d,
                 .size = .{ .width = max_size / 2, .height = max_size / 2, .depth_or_array_layers = 1 },
@@ -966,7 +915,7 @@ pub const GraphicsContext = struct {
             });
 
             for (&mipgen.scratch_texture_views, 0..) |*view, i| {
-                view.* = gctx.createTextureView(mipgen.scratch_texture, .{
+                view.* = self.createTextureView(mipgen.scratch_texture, .{
                     .base_mip_level = @intCast(i),
                     .mip_level_count = 1,
                     .base_array_layer = 0,
@@ -977,22 +926,22 @@ pub const GraphicsContext = struct {
 
         var array_layer: u32 = 0;
         while (array_layer < texture_info.size.depth_or_array_layers) : (array_layer += 1) {
-            const texture_view = gctx.createTextureView(texture, .{
+            const texture_view = self.createTextureView(texture, .{
                 .dimension = .tvdim_2d,
                 .base_array_layer = array_layer,
                 .array_layer_count = 1,
             });
-            defer gctx.releaseResource(texture_view);
+            defer self.releaseResource(texture_view);
 
-            const bind_group = gctx.createBindGroup(mipgen.bind_group_layout, &[_]BindGroupEntryInfo{
-                .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = 8 },
+            const bind_group = self.createBindGroup(mipgen.bind_group_layout, &[_]BindGroupEntryInfo{
+                .{ .binding = 0, .buffer_handle = self.uniforms.buffer, .offset = 0, .size = 8 },
                 .{ .binding = 1, .texture_view_handle = texture_view },
                 .{ .binding = 2, .texture_view_handle = mipgen.scratch_texture_views[0] },
                 .{ .binding = 3, .texture_view_handle = mipgen.scratch_texture_views[1] },
                 .{ .binding = 4, .texture_view_handle = mipgen.scratch_texture_views[2] },
                 .{ .binding = 5, .texture_view_handle = mipgen.scratch_texture_views[3] },
             });
-            defer gctx.releaseResource(bind_group);
+            defer self.releaseResource(bind_group);
 
             const MipgenUniforms = extern struct {
                 src_mip_level: i32,
@@ -1011,14 +960,14 @@ pub const GraphicsContext = struct {
                         pass.release();
                     }
 
-                    pass.setPipeline(gctx.lookupResource(mipgen.pipeline).?);
+                    pass.setPipeline(self.lookupResource(mipgen.pipeline).?);
 
-                    const mem = gctx.uniformsAllocate(MipgenUniforms, 1);
+                    const mem = self.uniformsAllocate(MipgenUniforms, 1);
                     mem.slice[0] = .{
                         .src_mip_level = @intCast(current_src_mip_level),
                         .num_mip_levels = dispatch_num_mips,
                     };
-                    pass.setBindGroup(0, gctx.lookupResource(bind_group).?, &.{mem.offset});
+                    pass.setBindGroup(0, self.lookupResource(bind_group).?, &.{mem.offset});
 
                     pass.dispatchWorkgroups(
                         @max(texture_info.size.width >> @intCast(3 + current_src_mip_level), 1),
@@ -1033,12 +982,12 @@ pub const GraphicsContext = struct {
                     const dst_origin = wgpu.Origin3D{ .x = 0, .y = 0, .z = array_layer };
                     encoder.copyTextureToTexture(
                         .{
-                            .texture = gctx.lookupResource(mipgen.scratch_texture).?,
+                            .texture = self.lookupResource(mipgen.scratch_texture).?,
                             .mip_level = mip_index,
                             .origin = src_origin,
                         },
                         .{
-                            .texture = gctx.lookupResource(texture).?,
+                            .texture = self.lookupResource(texture).?,
                             .mip_level = mip_index + current_src_mip_level + 1,
                             .origin = dst_origin,
                         },
@@ -1522,121 +1471,61 @@ const FrameStats = struct {
     }
 };
 
-const SurfaceDescriptorTag = enum {
-    metal_layer,
-    windows_hwnd,
-    xlib,
-};
-
-const SurfaceDescriptor = union(SurfaceDescriptorTag) {
-    metal_layer: struct {
-        label: ?[*:0]const u8 = null,
-        layer: *anyopaque,
-    },
-    windows_hwnd: struct {
-        label: ?[*:0]const u8 = null,
-        hinstance: *anyopaque,
-        hwnd: *anyopaque,
-    },
-    xlib: struct {
-        label: ?[*:0]const u8 = null,
-        display: *anyopaque,
-        window: u32,
-    },
-};
-
 fn createSurfaceForWindow(instance: *wgpu.Instance, window: *sdl.SDL_Window) *wgpu.Surface {
-    const os_tag = @import("builtin").target.os.tag;
-    const descriptor = if (os_tag == .windows) blk: {
-        var info: sdl.SDL_SysWMinfo = undefined;
-        if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
-            sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
-            @panic("SDL_GetWindowWMInfo failed");
-        }
-        std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
+    return switch (@import("builtin").target.os.tag) {
+        .macos => blk: {
+            const metal_view = sdl.SDL_Metal_CreateView(window);
+            const metal_layer = sdl.SDL_Metal_GetLayer(metal_view);
 
-        break :blk SurfaceDescriptor{
-            .windows_hwnd = .{
-                .label = "basic surface",
-                .hinstance = std.os.windows.kernel32.GetModuleHandleW(null) or info.info.hinstance,
-                .hwnd = info.info.window,
-            },
-        };
-    } else if (os_tag == .linux) blk: {
-        var info: sdl.SDL_SysWMinfo = undefined;
-        if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
-            sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
-            @panic("SDL_GetWindowWMInfo failed");
-        }
-        std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
-
-        break :blk SurfaceDescriptor{
-            .xlib = .{
-                .label = "basic surface",
-                .display = info.info.display, // zglfw.native.getX11Display()
-                .window = info.info.window, // zglfw.native.getX11Window(window)
-            },
-        };
-    } else if (os_tag == .macos) blk: {
-        const metal_view = sdl.SDL_Metal_CreateView(window);
-        const metal_layer = sdl.SDL_Metal_GetLayer(metal_view);
-
-        break :blk SurfaceDescriptor{
-            .metal_layer = .{
-                .label = "basic surface",
-                .layer = metal_layer.?,
-            },
-        };
-    } else unreachable;
-
-    return switch (descriptor) {
-        .metal_layer => |src| blk: {
-            var desc: wgpu.Surface.DescriptorFromMetalLayer = undefined;
-            desc.chain.next = null;
-            desc.chain.s_type = .surface_descriptor_from_metal_layer;
-            desc.layer = src.layer;
             break :blk instance.createSurface(&.{
                 .next_in_chain = .{
-                    .from_metal_layer = &desc,
+                    .from_metal_layer = &.{
+                        .layer = metal_layer.?,
+                    },
                 },
-                .label = if (src.label) |l| l else null,
             });
         },
-        .windows_hwnd => |src| blk: {
-            var desc: wgpu.Surface.DescriptorFromWindowsHWND = undefined;
-            desc.chain.next = null;
-            desc.chain.s_type = .surface_descriptor_from_windows_hwnd;
-            desc.hinstance = src.hinstance;
-            desc.hwnd = src.hwnd;
+        .windows => blk: {
+            var info: sdl.SDL_SysWMinfo = undefined;
+            if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
+                sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
+                @panic("SDL_GetWindowWMInfo failed");
+            }
+            std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
+
             break :blk instance.createSurface(&.{
                 .next_in_chain = .{
-                    .from_windows_hwnd = &desc,
+                    .from_windows_hwnd = &.{
+                        .hinstance = std.os.windows.kernel32.GetModuleHandleW(null) or info.info.hinstance,
+                        .hwnd = info.info.window,
+                    },
                 },
-                .label = if (src.label) |l| l else null,
             });
         },
-        .xlib => |src| blk: {
-            var desc: wgpu.Surface.DescriptorFromXlibWindow = undefined;
-            desc.chain.next = null;
-            desc.chain.s_type = .surface_descriptor_from_xlib_window;
-            desc.display = src.display;
-            desc.window = src.window;
+        .linux => blk: {
+            var info: sdl.SDL_SysWMinfo = undefined;
+            if (sdl.SDL_GetWindowWMInfo(window, &info, sdl.SDL_SYSWM_CURRENT_VERSION) != 0) {
+                sdl.SDL_Log("SDL_GetWindowWMInfo failed. SDL error: %s", sdl.SDL_GetError());
+                @panic("SDL_GetWindowWMInfo failed");
+            }
+            std.debug.print("SDL_GetWindowWMInfo (remove this once tested): {}\n", .{info});
+
             break :blk instance.createSurface(&.{
                 .next_in_chain = .{
-                    .from_xlib_window = &desc,
+                    .display = info.info.display, // zglfw.native.getX11Display()
+                    .window = info.info.window, // zglfw.native.getX11Window(window)
                 },
-                .label = if (src.label) |l| l else null,
             });
         },
+        else => @panic("unsupported platform"),
     };
 }
 
-fn logUnhandledError(
+inline fn logUnhandledError(
+    _: void,
     err_type: wgpu.ErrorType,
     message: ?[*:0]const u8,
-    userdata: ?*anyopaque,
-) callconv(.C) void {
-    _ = userdata;
+) void {
     switch (err_type) {
         .no_error => std.log.info("[zgpu] No error: {?s}", .{message}),
         .validation => std.log.err("[zgpu] Validation: {?s}", .{message}),
