@@ -39,6 +39,8 @@ pub fn handleEvent(event: *sdl.SDL_Event) bool {
     return false;
 }
 
+/// must be called BEFORE we poll events so that Dear ImGui records the correct window size in case of resize coming in.
+/// Otherwise Dear ImGui could attempt to clip/viewport dimensions larger than the backbuffer.
 pub fn newFrame() void {
     if (!imgui_enabled) return;
 

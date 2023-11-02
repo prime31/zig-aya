@@ -75,6 +75,7 @@ pub fn eventLoop(app: *App) void {
         mouse_buttons.clear();
         keys.clear();
         gamepads.update();
+        ig.sdl.newFrame();
 
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -168,7 +169,6 @@ pub fn eventLoop(app: *App) void {
             }
         }
 
-        ig.sdl.newFrame();
         ig.igShowDemoWindow(null);
 
         app.world.progress(0);

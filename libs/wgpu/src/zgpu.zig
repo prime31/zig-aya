@@ -52,14 +52,12 @@ pub const GraphicsContext = struct {
     } = .{},
 
     pub fn create(allocator: std.mem.Allocator, window: *sdl.SDL_Window, options: GraphicsContextOptions) !*GraphicsContext {
-        const checkGraphicsApiSupport = (struct {
+        const checkGraphicsApiSupport = struct {
             fn impl() error{VulkanNotSupported}!void {
                 // TODO: On Windows we should check if DirectX 12 is supported (Windows 10+).
                 // On Linux we require Vulkan support.
             }
-        }).impl;
-
-        try wgpu.Impl.init(allocator, .{});
+        }.impl;
 
         checkGraphicsApiSupport() catch |err| switch (err) {
             error.VulkanNotSupported => {
@@ -68,12 +66,12 @@ pub const GraphicsContext = struct {
                     \\This program requires:  Vulkan graphics driver on Linux (OpenGL is NOT supported)
                     \\Please install latest supported driver and try again.
                     \\---------------------------------------------------------------------------
-                    \\
                 , .{});
                 return err;
             },
         };
 
+        try wgpu.Impl.init(allocator, .{});
         const instance = wgpu.createInstance(null).?;
 
         const adapter = adapter: {

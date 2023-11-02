@@ -2,6 +2,8 @@ const std = @import("std");
 const aya = @import("aya");
 const zmesh = @import("zmesh");
 
+pub const GPUInterface = @import("zgpu").wgpu.dawn.Interface;
+
 const App = aya.App;
 const ResMut = aya.ResMut;
 const AssetServer = aya.AssetServer;
@@ -38,10 +40,11 @@ const CreateTriMeshSystem = struct {
         };
         mesh.insertAttribute(Mesh.ATTRIBUTE_COLOR, colors);
 
-        var indices = aya.mem.alloc(u16, 3);
+        var indices = aya.mem.alloc(u16, 4);
         indices[0] = 0;
         indices[1] = 1;
         indices[2] = 2;
+        indices[3] = 2;
         mesh.setIndices(.{ .u16 = indices });
 
         const handle = assets.add(mesh);
