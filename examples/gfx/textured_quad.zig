@@ -35,6 +35,16 @@ const StartupSystem = struct {
         const shader_module = zgpu.createWgslShaderModule(gctx.device, @embedFile("fullscreen.wgsl"), null);
         defer shader_module.release();
 
+        // bind group layout
+        const bind_group_layout_entries = [_]wgpu.BindGroupLayout.Entry{
+            wgpu.BindGroupLayout.Entry.sampler(0, .{ .fragment = true }, .filtering),
+            wgpu.BindGroupLayout.Entry.texture(1, .{ .fragment = true }, .float, .dimension_2d, false),
+        };
+        const bind_group_layout = gctx.device.createBindGroupLayout(&.{
+            .entries = &bind_group_layout_entries,
+            .entry_count = bind_group_layout_entries.len,
+        });
+
         // Create our render pipeline
         const color_target = wgpu.ColorTargetState{
             .format = zgpu.GraphicsContext.swapchain_format,
@@ -67,10 +77,6 @@ const StartupSystem = struct {
             },
             .format = zgpu.imageInfoToTextureFormat(image.channels, image.bytes_per_component, image.is_hdr),
         });
-
-        // Describe which data we will pass to our shader (GPU program)
-        const bind_group_layout = pipeline.getBindGroupLayout(0);
-        defer bind_group_layout.release();
 
         const texture_view = texture.createView(&.{});
         defer texture_view.release();

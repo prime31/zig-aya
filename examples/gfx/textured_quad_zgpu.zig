@@ -60,14 +60,12 @@ const StartupSystem = struct {
         const sampler = gctx.createSampler(.{});
 
         const bind_group_layout = gctx.createBindGroupLayout(&.{
-            // zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, .true, 0),
             zgpu.samplerEntry(0, .{ .fragment = true }, .filtering),
             zgpu.textureEntry(1, .{ .fragment = true }, .float, .dimension_2d, .false),
         });
         defer gctx.releaseResource(bind_group_layout);
 
         const bind_group = gctx.createBindGroup(bind_group_layout, &.{
-            // .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = 256 },
             .{ .binding = 0, .sampler_handle = sampler },
             .{ .binding = 1, .texture_view_handle = texture_view },
         });
