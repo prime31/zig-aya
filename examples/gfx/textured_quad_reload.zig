@@ -2,6 +2,7 @@ const std = @import("std");
 const aya = @import("aya");
 const stb = @import("stb");
 const ig = @import("imgui");
+const watcher = @import("watcher");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
@@ -22,10 +23,56 @@ pub fn main() !void {
 }
 
 var state: struct {
+    gctx: *zgpu.GraphicsContext,
     pipeline: zgpu.RenderPipelineHandle,
     texture: zgpu.TextureHandle,
     bind_group: zgpu.BindGroupHandle,
+    bind_group_layout: zgpu.BindGroupLayoutHandle,
+
+    pub fn createPipeline(self: *@This()) void {
+        const pipeline_layout = self.gctx.createPipelineLayout(&.{self.bind_group_layout});
+        defer self.gctx.releaseResource(pipeline_layout);
+
+        const shader_file = aya.fs.readZ(thisDir() ++ "/fullscreen.wgsl") catch unreachable;
+        defer aya.mem.free(shader_file);
+
+        const shader_module = zgpu.createWgslShaderModule(self.gctx.device, shader_file, null);
+        defer shader_module.release();
+
+        const color_targets = [_]wgpu.ColorTargetState{.{
+            .format = zgpu.GraphicsContext.swapchain_format,
+        }};
+
+        // Create a render pipeline.
+        const pipeline_descriptor = wgpu.RenderPipeline.Descriptor{
+            .vertex = .{
+                .module = shader_module,
+                .entry_point = "fullscreen_vertex_shader",
+            },
+            .fragment = &.{
+                .module = shader_module,
+                .entry_point = "frag_main",
+                .target_count = color_targets.len,
+                .targets = &color_targets,
+            },
+        };
+        self.gctx.createRenderPipelineAsync(pipeline_layout, pipeline_descriptor, &self.pipeline);
+    }
+
+    fn watchForShaderChanges(self: @This()) void {
+        _ = self;
+        watcher.watchPath(thisDir() ++ "/", onFileChanged);
+    }
+
+    fn onFileChanged(path: [*c]const u8) callconv(.C) void {
+        std.debug.print("path: {s}\n", .{path});
+        state.createPipeline();
+    }
 } = undefined;
+
+inline fn thisDir() []const u8 {
+    return comptime std.fs.path.dirname(@src().file) orelse ".";
+}
 
 const StartupSystem = struct {
     pub fn run(gctx_res: ResMut(zgpu.GraphicsContext)) void {
@@ -63,41 +110,17 @@ const StartupSystem = struct {
             zgpu.samplerEntry(0, .{ .fragment = true }, .filtering),
             zgpu.textureEntry(1, .{ .fragment = true }, .float, .dimension_2d, .false),
         });
-        defer gctx.releaseResource(bind_group_layout);
 
-        // (Async) Create a render pipeline.
-        {
-            const pipeline_layout = gctx.createPipelineLayout(&.{bind_group_layout});
-            defer gctx.releaseResource(pipeline_layout);
-
-            const shader_module = zgpu.createWgslShaderModule(gctx.device, @embedFile("fullscreen.wgsl"), null);
-            defer shader_module.release();
-
-            const color_targets = [_]wgpu.ColorTargetState{.{
-                .format = zgpu.GraphicsContext.swapchain_format,
-            }};
-
-            // Create a render pipeline.
-            const pipeline_descriptor = wgpu.RenderPipeline.Descriptor{
-                .vertex = .{
-                    .module = shader_module,
-                    .entry_point = "fullscreen_vertex_shader",
-                },
-                .fragment = &.{
-                    .module = shader_module,
-                    .entry_point = "frag_main",
-                    .target_count = color_targets.len,
-                    .targets = &color_targets,
-                },
-            };
-            gctx.createRenderPipelineAsync(pipeline_layout, pipeline_descriptor, &state.pipeline);
-        }
-
+        state.gctx = gctx;
         state.bind_group = gctx.createBindGroup(bind_group_layout, &.{
             .{ .binding = 0, .sampler_handle = sampler },
             .{ .binding = 1, .texture_view_handle = texture_view },
         });
+        state.bind_group_layout = bind_group_layout;
         state.texture = texture;
+
+        state.createPipeline();
+        state.watchForShaderChanges();
     }
 };
 
