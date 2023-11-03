@@ -4,6 +4,7 @@
 
 Import aya via `const aya = @import("aya");` to gain access to the public interface.
 
+WGSL LSP: `cargo install --git https://github.com/wgsl-analyzer/wgsl-analyzer wgsl_analyzer`
 
 
 ```zig

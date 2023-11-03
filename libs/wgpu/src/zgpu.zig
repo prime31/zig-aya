@@ -573,7 +573,7 @@ pub const GraphicsContext = struct {
         self: *GraphicsContext,
         allocator: std.mem.Allocator,
         pipeline_layout: PipelineLayoutHandle,
-        descriptor: wgpu.RenderPipelineDescriptor,
+        descriptor: wgpu.RenderPipeline.Descriptor,
         result: *RenderPipelineHandle,
     ) void {
         var desc = descriptor;
@@ -1181,22 +1181,23 @@ pub fn endReleasePass(pass: anytype) void {
 }
 
 pub fn createWgslShaderModule(
-    device: wgpu.Device,
+    device: *wgpu.Device,
     source: [*:0]const u8,
     label: ?[*:0]const u8,
-) wgpu.ShaderModule {
-    const wgsl_desc = wgpu.ShaderModuleWgslDescriptor{
-        .chain = .{ .next = null, .struct_type = .shader_module_wgsl_descriptor },
+) *wgpu.ShaderModule {
+    const wgsl_desc = wgpu.ShaderModule.WGSLDescriptor{
         .code = source,
     };
-    const desc = wgpu.ShaderModuleDescriptor{
-        .next_in_chain = @ptrCast(&wgsl_desc),
+    const desc = wgpu.ShaderModule.Descriptor{
+        .next_in_chain = .{
+            .wgsl_descriptor = &wgsl_desc,
+        },
         .label = if (label) |l| l else null,
     };
-    return device.createShaderModule(desc);
+    return device.createShaderModule(&desc);
 }
 
-pub fn imageInfoToTextureFormat(num_components: u32, bytes_per_component: u32, is_hdr: bool) wgpu.TextureFormat {
+pub fn imageInfoToTextureFormat(num_components: u32, bytes_per_component: u32, is_hdr: bool) wgpu.Texture.Format {
     assert(num_components == 1 or num_components == 2 or num_components == 4);
     assert(bytes_per_component == 1 or bytes_per_component == 2);
     assert(if (is_hdr and bytes_per_component != 2) false else true);

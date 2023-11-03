@@ -20,6 +20,7 @@ const struct_unnamed_9 = extern struct {
     eof: ?fn (?*anyopaque) callconv(.C) c_int,
 };
 pub const stbi_io_callbacks = struct_unnamed_9;
+pub extern fn stbi_load(filename: [*:0]const u8, x: *c_int, y: *c_int, channels_in_file: *c_int, desired_channels: c_int) ?[*]u8;
 pub extern fn stbi_load_from_memory(buffer: [*c]const stbi_uc, len: c_int, x: [*c]c_int, y: [*c]c_int, channels_in_file: [*c]c_int, desired_channels: c_int) [*c]stbi_uc;
 pub extern fn stbi_load_from_callbacks(clbk: [*c]const stbi_io_callbacks, user: ?*anyopaque, x: [*c]c_int, y: [*c]c_int, channels_in_file: [*c]c_int, desired_channels: c_int) [*c]stbi_uc;
 pub extern fn stbi_load_gif_from_memory(buffer: [*c]const stbi_uc, len: c_int, delays: [*c][*c]c_int, x: [*c]c_int, y: [*c]c_int, z: [*c]c_int, comp: [*c]c_int, req_comp: c_int) [*c]stbi_uc;
@@ -31,6 +32,7 @@ pub extern fn stbi_hdr_to_ldr_gamma(gamma: f32) void;
 pub extern fn stbi_hdr_to_ldr_scale(scale: f32) void;
 pub extern fn stbi_ldr_to_hdr_gamma(gamma: f32) void;
 pub extern fn stbi_ldr_to_hdr_scale(scale: f32) void;
+pub extern fn stbi_is_hdr(filename: [*:0]const u8) c_int;
 pub extern fn stbi_is_hdr_from_callbacks(clbk: [*c]const stbi_io_callbacks, user: ?*anyopaque) c_int;
 pub extern fn stbi_is_hdr_from_memory(buffer: [*c]const stbi_uc, len: c_int) c_int;
 pub extern fn stbi_failure_reason() [*c]const u8;

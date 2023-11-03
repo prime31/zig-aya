@@ -1,11 +1,11 @@
 const std = @import("std");
 const aya = @import("aya");
 
+pub const GPUInterface = @import("zgpu").wgpu.dawn.Interface;
+
 const App = aya.App;
 const ResMut = aya.ResMut;
 const ClearColor = aya.ClearColor;
-
-pub const GPUInterface = @import("zgpu").wgpu.dawn.Interface;
 
 pub fn main() !void {
     std.debug.print("\n", .{});

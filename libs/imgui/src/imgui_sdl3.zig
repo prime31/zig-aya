@@ -17,9 +17,10 @@ pub fn init(
     _ = imgui.igCreateContext(null);
     // _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO()[0].Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
-    var io = imgui.igGetIO().*;
+    var io = imgui.igGetIO();
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
 
     if (!ImGui_ImplSDL3_InitForOther(window)) unreachable;
     if (!ImGui_ImplWGPU_Init(wgpu_device, 1, wgpu_swap_chain_format, depth_format)) unreachable;
