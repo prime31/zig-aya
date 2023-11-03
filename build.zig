@@ -8,6 +8,7 @@ const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 const wgpu_build = @import("libs/wgpu/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
+const watcher_build = @import("libs/filewatcher/build.zig");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
@@ -107,6 +108,9 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zmesh_module = zig_gamedev_build.getMeshModule();
     const zpool_module = zig_gamedev_build.getPoolModule(b);
 
+    watcher_build.linkArtifact(exe);
+    const watcher_module = watcher_build.getModule(b);
+
     wgpu_build.linkArtifact(b, exe, target, optimize);
     const wgpu_module = wgpu_build.getModule(b, zpool_module, sdl_module);
 
@@ -125,6 +129,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "zpool", .module = zpool_module },
+            .{ .name = "watcher", .module = watcher_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
@@ -141,6 +146,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("zmath", zmath_module);
     exe.addModule("zgpu", wgpu_module);
     exe.addModule("zmesh", zmesh_module);
+    exe.addModule("watcher", watcher_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {
