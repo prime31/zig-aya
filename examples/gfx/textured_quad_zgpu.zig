@@ -72,9 +72,7 @@ const StartupSystem = struct {
 
         // (Async) Create a render pipeline.
         {
-            const pipeline_layout = gctx.createPipelineLayout(&.{
-                bind_group_layout,
-            });
+            const pipeline_layout = gctx.createPipelineLayout(&.{bind_group_layout});
             defer gctx.releaseResource(pipeline_layout);
 
             const shader_module = zgpu.createWgslShaderModule(gctx.device, @embedFile("fullscreen.wgsl"), null);

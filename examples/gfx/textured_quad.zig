@@ -46,6 +46,12 @@ const StartupSystem = struct {
         });
 
         // Create our render pipeline
+        const pipeline_layout = gctx.device.createPipelineLayout(&.{
+            .bind_group_layout_count = 1,
+            .bind_group_layouts = &[_]*wgpu.BindGroupLayout{bind_group_layout},
+        });
+        defer pipeline_layout.release();
+
         const color_target = wgpu.ColorTargetState{
             .format = zgpu.GraphicsContext.swapchain_format,
             .blend = &.{},
@@ -56,6 +62,7 @@ const StartupSystem = struct {
             .targets = &.{color_target},
         });
         const pipeline_descriptor = wgpu.RenderPipeline.Descriptor{
+            .layout = pipeline_layout,
             .fragment = &fragment_state,
             .vertex = .{
                 .module = shader_module,
