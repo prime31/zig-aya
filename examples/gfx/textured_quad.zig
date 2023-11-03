@@ -5,7 +5,7 @@ const ig = @import("imgui");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 
-pub const GPUInterface = @import("zgpu").wgpu.dawn.Interface;
+pub const GPUInterface = wgpu.dawn.Interface;
 
 const App = aya.App;
 const ResMut = aya.ResMut;
