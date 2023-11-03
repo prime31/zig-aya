@@ -676,6 +676,7 @@ pub const GraphicsContext = struct {
                 };
             } else unreachable;
         }
+
         bind_group_info.gpuobj = self.device.createBindGroup(&.{
             .layout = self.lookupResource(layout).?,
             .entry_count = @intCast(entries.len),
@@ -696,7 +697,6 @@ pub const GraphicsContext = struct {
         };
         for (entries, 0..) |entry, i| {
             bind_group_layout_info.entries[i] = entry;
-            // bind_group_layout_info.entries[i].next_in_chain = .{};
             bind_group_layout_info.entries[i].buffer.next_in_chain = null;
             bind_group_layout_info.entries[i].sampler.next_in_chain = null;
             bind_group_layout_info.entries[i].texture.next_in_chain = null;
