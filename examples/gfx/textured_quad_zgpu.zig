@@ -22,43 +22,20 @@ pub fn main() !void {
 }
 
 var state: struct {
-    pipeline: *wgpu.RenderPipeline,
-    texture: *wgpu.Texture,
-    bind_group: *wgpu.BindGroup,
+    pipeline: zgpu.RenderPipelineHandle,
+    texture: zgpu.TextureHandle,
+    bind_group: zgpu.BindGroupHandle,
 } = undefined;
 
 const StartupSystem = struct {
     pub fn run(gctx_res: ResMut(zgpu.GraphicsContext)) void {
         const gctx = gctx_res.getAssertExists();
 
-        // Load our shader that will render a fullscreen textured quad using two triangles
-        const shader_module = zgpu.createWgslShaderModule(gctx.device, @embedFile("fullscreen.wgsl"), null);
-        defer shader_module.release();
-
-        // Create our render pipeline
-        const color_target = wgpu.ColorTargetState{
-            .format = zgpu.GraphicsContext.swapchain_format,
-            .blend = &.{},
-        };
-        const fragment_state = wgpu.FragmentState.init(.{
-            .module = shader_module,
-            .entry_point = "frag_main",
-            .targets = &.{color_target},
-        });
-        const pipeline_descriptor = wgpu.RenderPipeline.Descriptor{
-            .fragment = &fragment_state,
-            .vertex = .{
-                .module = shader_module,
-                .entry_point = "fullscreen_vertex_shader",
-            },
-        };
-        const pipeline = gctx.device.createRenderPipeline(&pipeline_descriptor);
-
         // Create a texture.
         const image = stb.Image.init("examples/assets/sword_dude.png") catch unreachable;
         defer image.deinit();
 
-        const texture = gctx.device.createTexture(&.{
+        const texture = gctx.createTexture(.{
             .usage = .{ .texture_binding = true, .copy_dst = true },
             .size = .{
                 .width = image.w,
@@ -67,16 +44,10 @@ const StartupSystem = struct {
             },
             .format = zgpu.imageInfoToTextureFormat(image.channels, image.bytes_per_component, image.is_hdr),
         });
-
-        // Describe which data we will pass to our shader (GPU program)
-        const bind_group_layout = pipeline.getBindGroupLayout(0);
-        defer bind_group_layout.release();
-
-        const texture_view = texture.createView(&.{});
-        defer texture_view.release();
+        const texture_view = gctx.createTextureView(texture, .{});
 
         gctx.queue.writeTexture(
-            &.{ .texture = texture },
+            &.{ .texture = gctx.lookupResource(texture).? },
             &.{
                 .bytes_per_row = image.bytesPerRow(),
                 .rows_per_image = image.h,
@@ -85,19 +56,52 @@ const StartupSystem = struct {
             image.getImageData(),
         );
 
-        const sampler = gctx.device.createSampler(&.{});
-        defer sampler.release();
+        // Create a sampler.
+        const sampler = gctx.createSampler(.{});
 
-        // Describe which data we will pass to our shader (GPU program)
-        const bind_group = gctx.device.createBindGroup(&wgpu.BindGroup.Descriptor.init(.{
-            .layout = bind_group_layout,
-            .entries = &.{
-                wgpu.BindGroup.Entry.sampler(0, sampler),
-                wgpu.BindGroup.Entry.textureView(1, texture_view),
-            },
-        }));
+        const bind_group_layout = gctx.createBindGroupLayout(&.{
+            // zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, .true, 0),
+            zgpu.samplerEntry(0, .{ .fragment = true }, .filtering),
+            zgpu.textureEntry(1, .{ .fragment = true }, .float, .dimension_2d, .false),
+        });
+        defer gctx.releaseResource(bind_group_layout);
 
-        state.pipeline = pipeline;
+        const bind_group = gctx.createBindGroup(bind_group_layout, &.{
+            // .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = 256 },
+            .{ .binding = 0, .sampler_handle = sampler },
+            .{ .binding = 1, .texture_view_handle = texture_view },
+        });
+
+        // (Async) Create a render pipeline.
+        {
+            const pipeline_layout = gctx.createPipelineLayout(&.{
+                bind_group_layout,
+            });
+            defer gctx.releaseResource(pipeline_layout);
+
+            const shader_module = zgpu.createWgslShaderModule(gctx.device, @embedFile("fullscreen.wgsl"), null);
+            defer shader_module.release();
+
+            const color_targets = [_]wgpu.ColorTargetState{.{
+                .format = zgpu.GraphicsContext.swapchain_format,
+            }};
+
+            // Create a render pipeline.
+            const pipeline_descriptor = wgpu.RenderPipeline.Descriptor{
+                .vertex = .{
+                    .module = shader_module,
+                    .entry_point = "fullscreen_vertex_shader",
+                },
+                .fragment = &.{
+                    .module = shader_module,
+                    .entry_point = "frag_main",
+                    .target_count = color_targets.len,
+                    .targets = &color_targets,
+                },
+            };
+            gctx.createRenderPipelineAsync(pipeline_layout, pipeline_descriptor, &state.pipeline);
+        }
+
         state.bind_group = bind_group;
         state.texture = texture;
     }
@@ -115,14 +119,17 @@ const UpdateSystem = struct {
             const encoder = gctx.device.createCommandEncoder(null);
             defer encoder.release();
 
-            {
+            pass: {
+                const pipeline = gctx.lookupResource(state.pipeline) orelse break :pass;
+                const bind_group = gctx.lookupResource(state.bind_group) orelse break :pass;
+
                 const c = zgpu.wgpu.Color{ .r = @floatCast(color.r), .g = @floatCast(color.g), .b = @floatCast(color.b), .a = @floatCast(color.a) };
                 const pass = zgpu.beginRenderPassSimple(encoder, .clear, back_buffer_view, c, null, null);
                 defer zgpu.endReleasePass(pass);
 
                 // Render using our pipeline
-                pass.setPipeline(state.pipeline);
-                pass.setBindGroup(0, state.bind_group, &.{});
+                pass.setPipeline(pipeline);
+                pass.setBindGroup(0, bind_group, &.{});
                 pass.draw(3, 1, 0, 0);
             }
 

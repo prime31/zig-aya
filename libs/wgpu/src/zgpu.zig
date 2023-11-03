@@ -544,20 +544,17 @@ pub const GraphicsContext = struct {
     const AsyncCreateOpRender = struct {
         gctx: *GraphicsContext,
         result: *RenderPipelineHandle,
-        pipeline_layout: PipelineLayoutHandle,
-        allocator: std.mem.Allocator,
 
-        fn create(
+        inline fn create(
+            op: *AsyncCreateOpRender,
             status: wgpu.CreatePipelineAsyncStatus,
-            pipeline: wgpu.RenderPipeline,
+            pipeline: ?*wgpu.RenderPipeline,
             message: ?[*:0]const u8,
-            userdata: ?*anyopaque,
-        ) callconv(.C) void {
-            const op = @as(*AsyncCreateOpRender, @ptrCast(@alignCast(userdata)));
+        ) void {
             if (status == .success) {
                 op.result.* = op.gctx.render_pipeline_pool.addResource(
                     op.gctx.*,
-                    .{ .gpuobj = pipeline, .pipeline_layout_handle = op.pipeline_layout },
+                    .{ .gpuobj = pipeline.? },
                 );
             } else {
                 std.log.err(
@@ -565,13 +562,12 @@ pub const GraphicsContext = struct {
                     .{ @tagName(status), message },
                 );
             }
-            op.allocator.destroy(op);
+            op.gctx.allocator.destroy(op);
         }
     };
 
     pub fn createRenderPipelineAsync(
         self: *GraphicsContext,
-        allocator: std.mem.Allocator,
         pipeline_layout: PipelineLayoutHandle,
         descriptor: wgpu.RenderPipeline.Descriptor,
         result: *RenderPipelineHandle,
@@ -579,14 +575,12 @@ pub const GraphicsContext = struct {
         var desc = descriptor;
         desc.layout = self.lookupResource(pipeline_layout) orelse null;
 
-        const op = allocator.create(AsyncCreateOpRender) catch unreachable;
+        const op = self.allocator.create(AsyncCreateOpRender) catch unreachable;
         op.* = .{
             .gctx = self,
             .result = result,
-            .pipeline_layout = pipeline_layout,
-            .allocator = allocator,
         };
-        self.device.createRenderPipelineAsync(desc, AsyncCreateOpRender.create, @ptrCast(op));
+        self.device.createRenderPipelineAsync(&desc, op, AsyncCreateOpRender.create);
     }
 
     pub fn createComputePipeline(self: *GraphicsContext, pipeline_layout: PipelineLayoutHandle, descriptor: wgpu.ComputePipeline.Descriptor) ComputePipelineHandle {
@@ -594,7 +588,6 @@ pub const GraphicsContext = struct {
         desc.layout = self.lookupResource(pipeline_layout) orelse null;
         return self.compute_pipeline_pool.addResource(self.*, .{
             .gpuobj = self.device.createComputePipeline(desc),
-            .pipeline_layout_handle = pipeline_layout,
         });
     }
 
@@ -602,7 +595,6 @@ pub const GraphicsContext = struct {
         gctx: *GraphicsContext,
         result: *ComputePipelineHandle,
         pipeline_layout: PipelineLayoutHandle,
-        allocator: std.mem.Allocator,
 
         fn create(
             status: wgpu.CreatePipelineAsyncStatus,
@@ -622,7 +614,7 @@ pub const GraphicsContext = struct {
                     .{ @tagName(status), message },
                 );
             }
-            op.allocator.destroy(op);
+            op.gctx.allocator.destroy(op);
         }
     };
 
@@ -722,14 +714,14 @@ pub const GraphicsContext = struct {
         assert(bind_group_layouts.len > 0);
 
         var info: PipelineLayoutInfo = .{ .num_bind_group_layouts = @as(u32, @intCast(bind_group_layouts.len)) };
-        var gpu_bind_group_layouts: [max_num_bind_groups_per_pipeline]wgpu.BindGroupLayout = undefined;
+        var gpu_bind_group_layouts: [max_num_bind_groups_per_pipeline]*wgpu.BindGroupLayout = undefined;
 
         for (bind_group_layouts, 0..) |bgl, i| {
             info.bind_group_layouts[i] = bgl;
             gpu_bind_group_layouts[i] = self.lookupResource(bgl).?;
         }
 
-        info.gpuobj = self.device.createPipelineLayout(.{
+        info.gpuobj = self.device.createPipelineLayout(&.{
             .bind_group_layout_count = info.num_bind_group_layouts,
             .bind_group_layouts = &gpu_bind_group_layouts,
         });
@@ -1029,23 +1021,23 @@ pub fn bufferEntry(
 /// Helper to create a sampler BindGroupLayoutEntry.
 pub fn samplerEntry(
     binding: u32,
-    visibility: wgpu.ShaderStage,
-    binding_type: wgpu.SamplerBindingType,
+    visibility: wgpu.ShaderStageFlags,
+    binding_type: wgpu.Sampler.BindingType,
 ) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
         .visibility = visibility,
-        .sampler = .{ .binding_type = binding_type },
+        .sampler = .{ .type = binding_type },
     };
 }
 
-/// Helper to create a texture BindGroupLayoutEntry.
+/// Helper to create a texture BindGroupLayout.Entry.
 pub fn textureEntry(
     binding: u32,
-    visibility: wgpu.ShaderStage,
-    sample_type: wgpu.TextureSampleType,
-    view_dimension: wgpu.TextureViewDimension,
-    multisampled: bool,
+    visibility: wgpu.ShaderStageFlags,
+    sample_type: wgpu.Texture.SampleType,
+    view_dimension: wgpu.TextureView.Dimension,
+    multisampled: wgpu.Bool32,
 ) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
@@ -1061,10 +1053,10 @@ pub fn textureEntry(
 /// Helper to create a storage texture BindGroupLayoutEntry.
 pub fn storageTextureEntry(
     binding: u32,
-    visibility: wgpu.ShaderStage,
+    visibility: wgpu.ShaderStageFlags,
     access: wgpu.StorageTextureAccess,
-    format: wgpu.TextureFormat,
-    view_dimension: wgpu.TextureViewDimension,
+    format: wgpu.Texture.Format,
+    view_dimension: wgpu.TextureView.Dimension,
 ) wgpu.BindGroupLayout.Entry {
     return .{
         .binding = binding,
@@ -1263,12 +1255,10 @@ pub const SamplerInfo = struct {
 
 pub const RenderPipelineInfo = struct {
     gpuobj: ?*wgpu.RenderPipeline = null,
-    pipeline_layout_handle: PipelineLayoutHandle = .{},
 };
 
 pub const ComputePipelineInfo = struct {
     gpuobj: ?*wgpu.ComputePipeline = null,
-    pipeline_layout_handle: PipelineLayoutHandle = .{},
 };
 
 pub const BindGroupEntryInfo = struct {
