@@ -174,8 +174,8 @@ pub fn eventLoop(app: *App) void {
         app.world.progress(0);
 
         // TODO: fix imgui rendering...
-        // ig.sdl.draw(gctx, zgpu);
         ig.igRender();
+        // ig.sdl.draw(gctx, zgpu);
 
         _ = gctx.present();
     }

@@ -381,7 +381,7 @@ fn initScene(
     meshes_positions: *std.ArrayList([3]f32),
     meshes_normals: *std.ArrayList([3]f32),
 ) void {
-    zmesh.init(aya.tmp_allocator);
+    zmesh.init(aya.allocator);
     defer zmesh.deinit();
 
     // Trefoil knot.
@@ -487,67 +487,105 @@ fn initScene(
 
         appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
     }
-    // // Subdivided sphere.
-    // {
-    //     var mesh = zmesh.Shape.initSubdividedSphere(3);
-    //     defer mesh.deinit();
-    //     mesh.unweld();
-    //     mesh.computeNormals();
+    // Subdivided sphere.
+    {
+        var mesh = zmesh.Shape.initSubdividedSphere(3);
+        defer mesh.deinit();
+        mesh.unweld();
+        mesh.computeNormals();
 
-    //     drawables.append(.{
-    //         .mesh_index = @as(u32, @intCast(meshes.items.len)),
-    //         .position = .{ 3, 1, 6 },
-    //         .basecolor_roughness = .{ 0.0, 1.0, 0.0, 0.2 },
-    //     }) catch unreachable;
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ 3, 1, 6 },
+            .basecolor_roughness = .{ 0.0, 1.0, 0.0, 0.2 },
+        }) catch unreachable;
 
-    //     appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
-    // }
-    // // Tetrahedron.
-    // {
-    //     var mesh = zmesh.Shape.initTetrahedron();
-    //     defer mesh.deinit();
-    //     mesh.unweld();
-    //     mesh.computeNormals();
+        appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
+    // Tetrahedron.
+    {
+        var mesh = zmesh.Shape.initTetrahedron();
+        defer mesh.deinit();
+        mesh.unweld();
+        mesh.computeNormals();
 
-    //     drawables.append(.{
-    //         .mesh_index = @as(u32, @intCast(meshes.items.len)),
-    //         .position = .{ 0, 0.5, 6 },
-    //         .basecolor_roughness = .{ 1.0, 0.0, 1.0, 0.2 },
-    //     }) catch unreachable;
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ 0, 0.5, 6 },
+            .basecolor_roughness = .{ 1.0, 0.0, 1.0, 0.2 },
+        }) catch unreachable;
 
-    //     appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
-    // }
-    // // Octahedron.
-    // {
-    //     var mesh = zmesh.Shape.initOctahedron();
-    //     defer mesh.deinit();
-    //     mesh.unweld();
-    //     mesh.computeNormals();
+        appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
+    // Octahedron.
+    {
+        var mesh = zmesh.Shape.initOctahedron();
+        defer mesh.deinit();
+        mesh.unweld();
+        mesh.computeNormals();
 
-    //     drawables.append(.{
-    //         .mesh_index = @as(u32, @intCast(meshes.items.len)),
-    //         .position = .{ -3, 1, 6 },
-    //         .basecolor_roughness = .{ 0.2, 0.0, 1.0, 0.2 },
-    //     }) catch unreachable;
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ -3, 1, 6 },
+            .basecolor_roughness = .{ 0.2, 0.0, 1.0, 0.2 },
+        }) catch unreachable;
 
-    //     appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
-    // }
-    // // Rock.
-    // {
-    //     var rock = zmesh.Shape.initRock(123, 4);
-    //     defer rock.deinit();
-    //     rock.unweld();
-    //     rock.computeNormals();
+        appendMesh(mesh, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
+    // Rock.
+    {
+        var rock = zmesh.Shape.initRock(123, 4);
+        defer rock.deinit();
+        rock.unweld();
+        rock.computeNormals();
 
-    //     drawables.append(.{
-    //         .mesh_index = @as(u32, @intCast(meshes.items.len)),
-    //         .position = .{ -6, 0, 3 },
-    //         .basecolor_roughness = .{ 1.0, 1.0, 1.0, 1.0 },
-    //     }) catch unreachable;
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ -6, 0, 3 },
+            .basecolor_roughness = .{ 1.0, 1.0, 1.0, 1.0 },
+        }) catch unreachable;
 
-    //     appendMesh(rock, meshes, meshes_indices, meshes_positions, meshes_normals);
-    // }
+        appendMesh(rock, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
+    {
+        const terrain = (struct {
+            fn impl(uv: *const [2]f32, position: *[3]f32, userdata: ?*anyopaque) callconv(.C) void {
+                _ = userdata;
+                position[0] = uv[0];
+                position[1] = 0.0;
+                position[2] = uv[1];
+            }
+        }).impl;
+        var ground = zmesh.Shape.initParametric(terrain, 32, 32, null);
+        defer ground.deinit();
 
+        ground.invert(0, 0);
+        ground.scale(20.0, 1.0, 20.0);
+        ground.unweld();
+        ground.computeNormals();
+
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ -10, -1, -5 },
+            .basecolor_roughness = .{ 1.0, 1.0, 1.0, 1.0 },
+        }) catch unreachable;
+
+        appendMesh(ground, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
+    {
+        var cube = zmesh.Shape.initCube();
+        defer cube.deinit();
+        cube.unweld();
+        cube.computeNormals();
+
+        drawables.append(.{
+            .mesh_index = @as(u32, @intCast(meshes.items.len)),
+            .position = .{ -0.5, -1, -0.5 },
+            .basecolor_roughness = .{ 1.0, 1.0, 1.0, 1.0 },
+        }) catch unreachable;
+
+        appendMesh(cube, meshes, meshes_indices, meshes_positions, meshes_normals);
+    }
 }
 
 fn appendMesh(
