@@ -17,7 +17,6 @@ pub fn main() !void {
     App.init()
         .addPlugins(aya.DefaultPlugins)
         .addSystems(aya.Startup, StartupSystem)
-        .addSystems(aya.PreUpdate, ImguiSystem)
         .addSystems(aya.Update, UpdateSystem)
         .run();
 }
@@ -59,8 +58,7 @@ var state: struct {
         self.gctx.createRenderPipelineAsync(pipeline_layout, pipeline_descriptor, &self.pipeline);
     }
 
-    fn watchForShaderChanges(self: @This()) void {
-        _ = self;
+    fn watchForShaderChanges(_: @This()) void {
         watcher.watchPath(thisDir() ++ "/", onFileChanged);
     }
 
@@ -155,19 +153,5 @@ const UpdateSystem = struct {
         defer commands.release();
 
         gctx.submit(&.{commands});
-    }
-};
-
-const ImguiSystem = struct {
-    pub fn run(gctx_res: ResMut(zgpu.GraphicsContext)) void {
-        const gctx = gctx_res.getAssertExists();
-
-        ig.igSetNextWindowPos(.{ .x = 20, .y = 20 }, ig.ImGuiCond_Always, .{ .x = 0, .y = 0 });
-        if (ig.igBegin("Demo", null, ig.ImGuiWindowFlags_None)) {
-            defer ig.igEnd();
-
-            ig.igBulletText("Average: %f ms/frame\nFPS: %f\nDelta time: %f", gctx.stats.average_cpu_time, gctx.stats.fps, gctx.stats.delta_time);
-            ig.igSpacing();
-        }
     }
 };

@@ -173,7 +173,10 @@ pub fn eventLoop(app: *App) void {
 
         app.world.progress(0);
 
-        ig.sdl.draw(gctx, zgpu);
+        // TODO: fix imgui rendering...
+        // ig.sdl.draw(gctx, zgpu);
+        ig.igRender();
+
         _ = gctx.present();
     }
 

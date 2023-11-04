@@ -8,8 +8,8 @@ pub const wgpu = @import("mach_gpu");
 
 usingnamespace wgpu.Export(wgpu.dawn.Interface);
 
-// if true the following options are set: "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend"
-const dawn_skip_validation = false;
+// if true enabled/disabled toggles will be set
+const enable_dawn_toggles = true;
 
 pub const GraphicsContextOptions = struct {
     present_mode: wgpu.PresentMode = .fifo,
@@ -154,18 +154,16 @@ pub const GraphicsContext = struct {
                 }
             }.device_lost_callback;
 
-            const toggles = [_][*:0]const u8{ "skip_validation", "disable_symbol_renaming", "use_user_defined_labels_in_backend" };
-            const dawn_toggles = wgpu.dawn.TogglesDescriptor{
-                .chain = .{ .next = null, .s_type = .dawn_toggles_descriptor },
-                .enabled_toggles_count = toggles.len,
-                .enabled_toggles = &toggles,
-            };
+            const dawn_toggles = wgpu.dawn.TogglesDescriptor.init(.{
+                .enabled_toggles = &.{ "disable_symbol_renaming", "use_user_defined_labels_in_backend" },
+                .disabled_toggles = &.{"skip_validation"},
+            });
 
             var response = Response{};
             adapter.requestDevice(
                 &wgpu.Device.Descriptor{
-                    .next_in_chain = if (dawn_skip_validation)
-                        @ptrCast(&dawn_toggles)
+                    .next_in_chain = if (enable_dawn_toggles)
+                        .{ .dawn_toggles_descriptor = @ptrCast(&dawn_toggles) }
                     else
                         .{ .generic = null },
                     .device_lost_callback = device_lost_callback,
@@ -272,7 +270,7 @@ pub const GraphicsContext = struct {
         const offset = self.uniforms.offset;
         const aligned_size = (size + (uniforms_alloc_alignment - 1)) & ~(uniforms_alloc_alignment - 1);
         if ((offset + aligned_size) >= uniforms_buffer_size) {
-            std.log.err("[zgpu] Uniforms buffer size is too small. Consider increasing 'zgpu.BuildOptions.uniforms_buffer_size' constant.", .{});
+            std.log.err("[zgpu] Uniforms buffer size is too small. Consider increasing 'uniforms_buffer_size' constant.", .{});
             return .{ .slice = @as([*]T, undefined)[0..0], .offset = 0 };
         }
 
