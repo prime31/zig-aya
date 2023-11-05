@@ -1,12 +1,12 @@
 const std = @import("std");
 const aya = @import("aya.zig");
 
-const Keys = aya.Keys;
-const MouseButtons = aya.MouseButtons;
-const GamePads = aya.Gamepads;
+const Keys = aya.win.Keys;
+const MouseButtons = aya.win.MouseButtons;
+const GamePads = aya.win.Gamepads;
 
-const MouseButton = aya.MouseButton;
-const Scancode = aya.Scancode;
+const MouseButton = aya.win.MouseButton;
+const Scancode = aya.win.Scancode;
 
 pub const Input = struct {
     const Mouse = struct {

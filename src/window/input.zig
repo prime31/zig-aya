@@ -1,9 +1,9 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-pub const MouseButtons = Input(aya.MouseButton);
-pub const Keys = Input(aya.Scancode);
-pub const GamepadButtons = Input(aya.GamepadButton);
+pub const MouseButtons = Input(aya.win.MouseButton);
+pub const Keys = Input(aya.win.Scancode);
+pub const GamepadButtons = Input(aya.win.GamepadButton);
 
 /// A pressable input of type `T`. When adding this resource for a new input type, you should:
 /// * Call the `clear` method at each frame start, before processing events.

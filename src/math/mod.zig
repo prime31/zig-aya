@@ -1,8 +1,8 @@
+pub usingnamespace @import("math.zig");
 pub usingnamespace @import("color.zig");
 pub usingnamespace @import("edge.zig");
 pub usingnamespace @import("mat4.zig");
 pub usingnamespace @import("mat32.zig");
-pub usingnamespace @import("math.zig");
 pub usingnamespace @import("quad.zig");
 pub usingnamespace @import("rand.zig");
 pub usingnamespace @import("rect.zig");

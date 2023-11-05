@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const rk = @import("renderkit");
-const gfx = @import("gfx.zig");
+const gfx = @import("graphics_context.zig");
 
 const Size = aya.Size;
 const Texture = aya.Texture;
