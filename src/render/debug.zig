@@ -77,7 +77,7 @@ pub const Debug = struct {
                         }
                     },
                     .circle => |circle| draw.circle(circle.center, circle.r, circle.thickness, 12, circle.color),
-                    .text => |text| draw.text(text.text, text.pos.x, text.pos.y, null),
+                    .text => |text| draw.textOptions(text.text, null, .{ .x = text.pos.x, .y = text.pos.y, .color = text.color, .sx = 2, .sy = 2 }),
                 }
             }
             self.debug_items.items.len = 0;

@@ -13,6 +13,7 @@ pub var window: Window = undefined;
 pub const utils = @import("utils.zig");
 pub const trait = @import("trait.zig");
 pub const fs = @import("fs.zig");
+pub const rk = @import("renderkit");
 
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
@@ -20,7 +21,6 @@ pub usingnamespace @import("app/mod.zig");
 pub usingnamespace @import("asset/mod.zig");
 pub usingnamespace @import("window/mod.zig");
 pub usingnamespace @import("ecs/mod.zig");
-pub usingnamespace @import("gizmos/mod.zig");
 pub usingnamespace @import("math/mod.zig");
 pub usingnamespace @import("render/mod.zig");
 
