@@ -6,8 +6,6 @@ const App = aya.App;
 const ResMut = aya.ResMut;
 const Res = aya.Res;
 const Local = aya.Local;
-const Input = aya.Input;
-const Scancode = aya.Scancode;
 const Vec2 = aya.Vec2;
 
 pub fn main() !void {
@@ -42,20 +40,24 @@ const StartupSystem = struct {
 };
 
 const ClearColorSystem = struct {
-    pub fn run(gfx_res: ResMut(aya.GraphicsContext), keys_res: Res(Input(Scancode)), box_state: Local(struct { pos: Vec2, dir: f32 })) void {
-        var gfx = gfx_res.getAssertExists();
-        var keys = keys_res.getAssertExists();
+    pub fn run(gfx_res: ResMut(aya.GraphicsContext), box_state: Local(struct { pos: Vec2, dir: f32 })) void {
+        _ = gfx_res;
+        // var gfx = gfx_res.getAssertExists();
+        var gfx = aya.gfx;
 
         aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 770, .y = 20 }, aya.Color.light_gray);
 
         gfx.beginPass(.{ .pass = pass, .color = clear_color, .clear_stencil = true });
 
         gfx.draw.text("press 'c' to toggle stencil compare func (eql, not_eql)", 5, 20, null);
+
+        // stencil write
         {
             gfx.setRenderState(stencil_write);
             gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
         }
 
+        // stencil read
         {
             var state = box_state.get();
             if (state.pos.x < 20.0 or state.pos.x > 80.0) {
@@ -66,7 +68,7 @@ const ClearColorSystem = struct {
 
             state.pos = Vec2.add(state.pos, Vec2.init(1 * state.dir, 1 * state.dir));
 
-            stencil_read.stencil.compare_func = if (keys.pressed(.c)) .equal else .not_equal;
+            stencil_read.stencil.compare_func = if (aya.input.keys.pressed(.c)) .equal else .not_equal;
             gfx.setRenderState(stencil_read);
             gfx.draw.rect(state.pos, 200, 400, aya.Color.sky_blue);
             gfx.setRenderState(.{});

@@ -20,12 +20,8 @@ pub const Local = locals.Local;
 pub const DefaultPlugins = struct {
     const App = @import("app.zig").App;
     const WindowPlugin = @import("../window/mod.zig").WindowPlugin;
-    const AssetPlugin = @import("../asset/mod.zig").AssetPlugin;
-    const RenderPlugin = @import("../render/mod.zig").RenderPlugin;
 
     window: ?WindowPlugin = .{},
-    asset: ?AssetPlugin = .{},
-    render: ?RenderPlugin = .{},
 
     pub fn init() DefaultPlugins {
         return .{};

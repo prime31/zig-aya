@@ -55,11 +55,7 @@ const WindowAndInputEventWriters = struct {
 };
 
 pub fn eventLoop(app: *App) void {
-    const gfx = app.world.getResourceMut(aya.GraphicsContext).?;
-
-    const mouse_buttons = app.world.getResourceMut(Input(MouseButton)).?;
-    const keys: *Input(Scancode) = app.world.getResourceMut(Input(Scancode)).?;
-    const gamepads: *GamePads = app.world.getResourceMut(GamePads).?;
+    var gfx = aya.gfx;
 
     const exit_event_reader = EventReader(aya.AppExitEvent){
         .events = app.world.getResourceMut(Events(aya.AppExitEvent)) orelse @panic("no EventReader found for " ++ @typeName(aya.AppExitEvent)),
@@ -70,9 +66,7 @@ pub fn eventLoop(app: *App) void {
     blk: while (true) {
         if (exit_event_reader.read().len > 0) break :blk;
 
-        mouse_buttons.clear();
-        keys.clear();
-        gamepads.update();
+        aya.input.clear();
 
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -119,17 +113,17 @@ pub fn eventLoop(app: *App) void {
                 // keyboard
                 sdl.SDL_EVENT_KEY_DOWN, sdl.SDL_EVENT_KEY_UP => {
                     if (event.key.state == 0) {
-                        keys.release(@enumFromInt(event.key.keysym.scancode));
+                        aya.input.keys.release(@enumFromInt(event.key.keysym.scancode));
                     } else {
-                        keys.press(@enumFromInt(event.key.keysym.scancode));
+                        aya.input.keys.press(@enumFromInt(event.key.keysym.scancode));
                     }
                 },
                 // mouse
                 sdl.SDL_EVENT_MOUSE_BUTTON_DOWN, sdl.SDL_EVENT_MOUSE_BUTTON_UP => {
                     if (event.button.state == 0) {
-                        mouse_buttons.release(@enumFromInt(event.button.button));
+                        aya.input.mouse.buttons.release(@enumFromInt(event.button.button));
                     } else {
-                        mouse_buttons.press(@enumFromInt(event.button.button));
+                        aya.input.mouse.buttons.press(@enumFromInt(event.button.button));
                     }
                 },
                 sdl.SDL_EVENT_MOUSE_MOTION => {
@@ -139,31 +133,36 @@ pub fn eventLoop(app: *App) void {
                         .xrel = event.motion.xrel,
                         .yrel = event.motion.yrel,
                     });
+                    aya.input.mouse.pos = aya.Vec2.init(event.motion.x, event.motion.y);
                 },
-                sdl.SDL_EVENT_MOUSE_WHEEL => event_writers.mouse_wheel.send(.{
-                    .x = event.wheel.x,
-                    .y = event.wheel.y,
-                    .direction = @enumFromInt(event.wheel.direction),
-                }),
+                sdl.SDL_EVENT_MOUSE_WHEEL => {
+                    event_writers.mouse_wheel.send(.{
+                        .x = event.wheel.x,
+                        .y = event.wheel.y,
+                        .direction = @enumFromInt(event.wheel.direction),
+                    });
+                    aya.input.mouse.wheel_x = event.wheel.x;
+                    aya.input.mouse.wheel_y = event.wheel.y;
+                },
                 // gamepads
                 sdl.SDL_EVENT_GAMEPAD_ADDED => {
-                    gamepads.register(event.gdevice.which);
+                    aya.input.gamepads.register(event.gdevice.which);
                     event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .connected });
                 },
                 sdl.SDL_EVENT_GAMEPAD_REMOVED => {
-                    gamepads.deregister(event.gdevice.which);
+                    aya.input.gamepads.deregister(event.gdevice.which);
                     event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .disconnected });
                 },
                 sdl.SDL_EVENT_GAMEPAD_AXIS_MOTION => {
-                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
                     gamepad.axes.put(@enumFromInt(event.gaxis.axis), @as(f32, @floatFromInt(event.gaxis.value)) / @as(f32, std.math.maxInt(i16)));
                 },
                 sdl.SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
-                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
                     gamepad.buttons.press(@enumFromInt(event.gbutton.button));
                 },
                 sdl.SDL_EVENT_GAMEPAD_BUTTON_UP => {
-                    const gamepad = gamepads.get(event.gaxis.which) orelse continue;
+                    const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
                     gamepad.buttons.release(@enumFromInt(event.gbutton.button));
                 },
                 sdl.SDL_EVENT_GAMEPAD_REMAPPED => std.debug.print("GAMEPAD REMAPPED\n", .{}),
@@ -185,9 +184,4 @@ pub fn eventLoop(app: *App) void {
         ig.sdl.render(aya.window.sdl_window, aya.window.gl_ctx);
         _ = sdl.SDL_GL_SwapWindow(aya.window.sdl_window);
     }
-
-    ig.sdl.shutdown();
-
-    sdl.SDL_DestroyWindow(aya.window.sdl_window);
-    sdl.SDL_Quit();
 }

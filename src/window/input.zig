@@ -1,11 +1,15 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
+pub const MouseButtons = Input(aya.MouseButton);
+pub const Keys = Input(aya.Scancode);
+pub const GamepadButtons = Input(aya.GamepadButton);
+
 /// A pressable input of type `T`. When adding this resource for a new input type, you should:
 /// * Call the `clear` method at each frame start, before processing events.
 /// * Call the `press` method for each press event.
 /// * Call the `release` method for each release event.
-pub fn Input(comptime T: type) type {
+fn Input(comptime T: type) type {
     return struct {
         const Self = @This();
         const InputBitSet = std.StaticBitSet(@as(usize, @intFromEnum(T.max)) + 1);
