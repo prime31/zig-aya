@@ -22,6 +22,17 @@ pub fn main() !void {
 
 var clear_color = aya.Color.aya;
 var pass: aya.OffscreenPass = undefined;
+var stencil_write: aya.rk.RenderState = .{
+    .stencil = .{ .ref = 1 },
+};
+var stencil_read: aya.rk.RenderState = .{
+    .depth = .{ .enabled = false },
+    .stencil = .{
+        .write_mask = 0x00,
+        .compare_func = .equal,
+        .ref = 1,
+    },
+};
 
 const StartupSystem = struct {
     pub fn run() void {
@@ -41,14 +52,7 @@ const ClearColorSystem = struct {
 
         gfx.draw.text("press 'c' to toggle stencil compare func (eql, not_eql)", 5, 20, null);
         {
-            gfx.setRenderState(.{
-                .stencil = .{
-                    .enabled = true,
-                    .write_mask = 0xFF,
-                    .compare_func = .always,
-                    .ref = 1,
-                },
-            });
+            gfx.setRenderState(stencil_write);
             gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
         }
 
@@ -62,15 +66,8 @@ const ClearColorSystem = struct {
 
             state.pos = Vec2.add(state.pos, Vec2.init(1 * state.dir, 1 * state.dir));
 
-            const compare_func: aya.rk.CompareFunc = if (keys.pressed(.c)) .equal else .not_equal;
-            gfx.setRenderState(.{
-                .depth = .{ .enabled = false },
-                .stencil = .{
-                    .write_mask = 0x00,
-                    .compare_func = compare_func,
-                    .ref = 1,
-                },
-            });
+            stencil_read.stencil.compare_func = if (keys.pressed(.c)) .equal else .not_equal;
+            gfx.setRenderState(stencil_read);
             gfx.draw.rect(state.pos, 200, 400, aya.Color.sky_blue);
             gfx.setRenderState(.{});
         }
