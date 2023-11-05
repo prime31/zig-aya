@@ -1,32 +1,35 @@
 const std = @import("std");
 const aya = @This();
 
+// libs
+pub const rk = @import("renderkit");
+pub const ig = @import("imgui");
+pub const sdl = @import("sdl");
+
 // types
 const Window = @import("window/window.zig").Window;
 const WindowConfig = @import("window/window.zig").WindowConfig;
 const ImGuiConfig = ig.sdl.Config;
+
+const EventWriters = @import("event_writers.zig").EventWriters;
 const Events = @import("events/events.zig").Events;
 const Debug = @import("render/debug.zig").Debug;
 const Time = @import("time.zig").Time;
 const Input = @import("input.zig").Input;
-const GraphicsContext = @import("render/gfx.zig").GraphicsContext;
-const GraphicsConfig = @import("render/gfx.zig").Config;
+const GraphicsContext = @import("render/graphics_context.zig").GraphicsContext;
+const GraphicsConfig = @import("render/graphics_context.zig").Config;
 const Resources = @import("resources.zig").Resources;
 const ScratchAllocator = @import("mem/scratch_allocator.zig").ScratchAllocator;
 
 // exports for easy access
 pub const utils = @import("utils.zig");
-pub const trait = @import("trait.zig");
 pub const fs = @import("fs.zig");
-pub const rk = @import("renderkit");
-pub const ig = @import("imgui");
-pub const sdl = @import("sdl");
 pub const mem = @import("mem/mem.zig");
 pub const evt = @import("events/mod.zig");
 
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
-pub usingnamespace @import("window/mod.zig");
+pub const win = @import("window/mod.zig");
 pub usingnamespace @import("math/mod.zig");
 pub usingnamespace @import("render/mod.zig");
 
@@ -38,7 +41,7 @@ pub var input: Input = undefined;
 pub var gfx: GraphicsContext = undefined;
 pub var res: Resources = undefined;
 
-var event_writers: WindowAndInputEventWriters = undefined;
+var event_writers: EventWriters = undefined;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 pub var allocator = gpa.allocator();
@@ -70,7 +73,7 @@ fn init(comptime config: Config) void {
     input = Input.init();
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
-    event_writers = WindowAndInputEventWriters.init();
+    event_writers = EventWriters.init();
 }
 
 fn deinit() void {
@@ -89,7 +92,7 @@ pub fn run(comptime config: Config) !void {
     if (config.init) |initFn| try initFn();
 
     while (!pollEvents()) {
-        WindowAndInputEventWriters.newFrame();
+        EventWriters.newFrame();
         ig.sdl.newFrame();
         input.newFrame();
         time.tick();
@@ -259,52 +262,3 @@ fn pollEvents() bool {
 
     return false;
 }
-
-const WindowAndInputEventWriters = struct {
-    const EventReader = evt.EventReader;
-    const EventWriter = evt.EventWriter;
-
-    const WindowResized = aya.WindowResized;
-    const WindowMoved = aya.WindowMoved;
-    const WindowFocused = aya.WindowFocused;
-    const WindowScaleFactorChanged = aya.WindowScaleFactorChanged;
-    const WindowMouseFocused = aya.WindowMouseFocused;
-
-    const FileDropped = evt.FileDropped;
-
-    const MouseWheel = aya.MouseWheel;
-    const MouseMotion = aya.MouseMotion;
-    const MouseButton = aya.MouseButton;
-
-    const GamePads = aya.Gamepads;
-    const GamepadConnectionEvent = aya.GamepadConnectionEvent;
-
-    window_resized: EventWriter(WindowResized),
-    window_moved: EventWriter(WindowMoved),
-    window_scale_factor: EventWriter(WindowScaleFactorChanged),
-    window_focus_changed: EventWriter(WindowFocused),
-    window_mouse_focused: EventWriter(WindowMouseFocused),
-
-    file_dropped: EventWriter(FileDropped),
-
-    mouse_wheel: EventWriter(MouseWheel),
-    mouse_motion: EventWriter(MouseMotion),
-
-    gamepad_connected: EventWriter(GamepadConnectionEvent),
-
-    fn init() WindowAndInputEventWriters {
-        var self: WindowAndInputEventWriters = undefined;
-
-        inline for (std.meta.fields(WindowAndInputEventWriters)) |field| {
-            aya.addEvent(field.type.event_type);
-            @field(self, field.name) = aya.getEventWriter(field.type.event_type);
-        }
-        return self;
-    }
-
-    fn newFrame() void {
-        inline for (std.meta.fields(WindowAndInputEventWriters)) |field| {
-            aya.res.get(Events(field.type.event_type)).?.update();
-        }
-    }
-};

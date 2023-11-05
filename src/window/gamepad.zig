@@ -1,6 +1,7 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
 const sdl = @import("sdl");
+const aya = @import("../aya.zig");
+const win = aya.win;
 
 pub const GamepadConnectionEvent = struct {
     gamepad_id: GamepadId,
@@ -72,7 +73,7 @@ pub const Gamepad = struct {
 
     id: GamepadId,
     sdl_gamepad: *sdl.SDL_Gamepad,
-    buttons: aya.GamepadButtons = .{},
+    buttons: win.GamepadButtons = .{},
     axes: AxisMap = .{},
 
     pub fn init(id: GamepadId, sdl_gamepad: *sdl.SDL_Gamepad) Gamepad {
