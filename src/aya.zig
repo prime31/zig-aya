@@ -9,9 +9,8 @@ const Time = @import("time.zig").Time;
 const Input = @import("input.zig").Input;
 const GraphicsContext = @import("render/gfx.zig").GraphicsContext;
 const GraphicsConfig = @import("render/gfx.zig").Config;
-const Resources = @import("app/resources.zig").Resources;
+const Resources = @import("resources.zig").Resources;
 const ScratchAllocator = @import("mem/scratch_allocator.zig").ScratchAllocator;
-const Events = @import("app/event.zig").Events;
 
 // exports for easy access
 pub const utils = @import("utils.zig");
@@ -21,10 +20,10 @@ pub const rk = @import("renderkit");
 pub const ig = @import("imgui");
 pub const sdl = @import("sdl");
 pub const mem = @import("mem/mem.zig");
+pub const evt = @import("events.zig");
 
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
-pub usingnamespace @import("app/mod.zig");
 pub usingnamespace @import("window/mod.zig");
 pub usingnamespace @import("math/mod.zig");
 pub usingnamespace @import("render/mod.zig");
@@ -51,7 +50,6 @@ pub const Config = struct {
     update: ?fn () anyerror!void = null,
     render: fn () anyerror!void,
     shutdown: ?fn () anyerror!void = null,
-    onFileDropped: ?fn ([:0]const u8) void = null,
 
     gfx: GraphicsConfig = .{},
     window: WindowConfig = .{},
@@ -62,15 +60,15 @@ pub const Config = struct {
     imgui_docking: bool = true, // whether imgui docking should be enabled
 };
 
-fn init() void {
+fn init(comptime config: Config) void {
     tmp_allocator_instance = ScratchAllocator.init(allocator);
     tmp_allocator = tmp_allocator_instance.allocator();
 
-    window = Window.init(.{});
+    window = Window.init(config.window);
     debug = Debug.init();
     time = Time.init(60);
     input = Input.init();
-    gfx = GraphicsContext.init();
+    gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
     event_writers = WindowAndInputEventWriters.init();
 }
@@ -86,11 +84,11 @@ fn deinit() void {
 }
 
 pub fn run(comptime config: Config) !void {
-    init();
+    init(config);
 
     if (config.init) |initFn| try initFn();
 
-    while (!pollEvents(config.onFileDropped)) {
+    while (!pollEvents()) {
         ig.sdl.newFrame();
         input.newFrame();
         time.tick();
@@ -111,13 +109,12 @@ pub fn run(comptime config: Config) !void {
 }
 
 pub fn addEvent(comptime T: type) void {
-    if (!res.contains(Events(T))) {
-        _ = res.initResource(Events(T));
+    if (!res.contains(evt.Events(T))) {
+        _ = res.initResource(evt.Events(T));
     }
 }
 
-fn pollEvents(comptime onFileDropped: ?fn ([:0]const u8) void) bool {
-    _ = onFileDropped;
+fn pollEvents() bool {
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         if (ig.sdl.handleEvent(&event)) continue;
@@ -159,7 +156,13 @@ fn pollEvents(comptime onFileDropped: ?fn ([:0]const u8) void) bool {
             sdl.SDL_EVENT_WINDOW_TAKE_FOCUS => std.debug.print("SDL_EVENT_WINDOW_TAKE_FOCUS\n", .{}),
             sdl.SDL_EVENT_WINDOW_HIT_TEST => std.debug.print("SDL_EVENT_WINDOW_HIT_TEST\n", .{}),
             sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),
-
+            // drop file
+            sdl.SDL_EVENT_DROP_FILE => {
+                event_writers.file_dropped.send(.{
+                    .file = tmp_allocator.dupe(u8, std.mem.span(event.drop.file)) catch unreachable,
+                });
+                sdl.SDL_free(event.drop.file);
+            },
             // keyboard
             sdl.SDL_EVENT_KEY_DOWN, sdl.SDL_EVENT_KEY_UP => {
                 if (event.key.state == 0) {
@@ -228,14 +231,16 @@ fn pollEvents(comptime onFileDropped: ?fn ([:0]const u8) void) bool {
 }
 
 const WindowAndInputEventWriters = struct {
-    const EventReader = aya.EventReader;
-    const EventWriter = aya.EventWriter;
+    const EventReader = evt.EventReader;
+    const EventWriter = evt.EventWriter;
 
     const WindowResized = aya.WindowResized;
     const WindowMoved = aya.WindowMoved;
     const WindowFocused = aya.WindowFocused;
     const WindowScaleFactorChanged = aya.WindowScaleFactorChanged;
     const WindowMouseFocused = aya.WindowMouseFocused;
+
+    const FileDropped = struct { file: []const u8 };
 
     const MouseWheel = aya.MouseWheel;
     const MouseMotion = aya.MouseMotion;
@@ -249,6 +254,8 @@ const WindowAndInputEventWriters = struct {
     window_scale_factor: EventWriter(WindowScaleFactorChanged),
     window_focus_changed: EventWriter(WindowFocused),
     window_mouse_focused: EventWriter(WindowMouseFocused),
+
+    file_dropped: EventWriter(FileDropped),
 
     mouse_wheel: EventWriter(MouseWheel),
     mouse_motion: EventWriter(MouseMotion),
@@ -267,13 +274,13 @@ const WindowAndInputEventWriters = struct {
 
     fn getEventWriter(comptime T: type) EventWriter(T) {
         return EventWriter(T){
-            .events = aya.res.get(Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+            .events = aya.res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
         };
     }
 
     fn update() void {
         inline for (std.meta.fields(WindowAndInputEventWriters)) |field| {
-            aya.res.get(Events(field.type.event_type)).?.update();
+            aya.res.get(evt.Events(field.type.event_type)).?.update();
         }
     }
 };

@@ -3,13 +3,6 @@ const aya = @import("../aya.zig");
 
 const ScratchAllocator = @import("scratch_allocator.zig").ScratchAllocator;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub var allocator = gpa.allocator();
-
-// temp allocator is a ring buffer so memory doesnt need to be freed
-pub var tmp_allocator: std.mem.Allocator = undefined;
-var tmp_allocator_instance: ScratchAllocator = undefined;
-
 pub fn create(comptime T: type) *T {
     return aya.allocator.create(T) catch unreachable;
 }

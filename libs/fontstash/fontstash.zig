@@ -55,14 +55,14 @@ pub const ErrorCode = enum(c_int) {
 };
 
 pub const Quad = extern struct {
-    x0: f32,
-    y0: f32,
-    s0: f32,
-    t0: f32,
-    x1: f32,
-    y1: f32,
-    s1: f32,
-    t1: f32,
+    x0: f32 = 0,
+    y0: f32 = 0,
+    s0: f32 = 0,
+    t0: f32 = 0,
+    x1: f32 = 0,
+    y1: f32 = 0,
+    s1: f32 = 0,
+    t1: f32 = 0,
 };
 
 pub const FONSfont = opaque {};

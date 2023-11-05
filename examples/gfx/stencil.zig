@@ -6,14 +6,15 @@ const Vec2 = aya.Vec2;
 
 pub fn main() !void {
     std.debug.print("\n", .{});
-    try aya.run(.{
-        .init = init,
-        .render = render,
-    });
+    try aya.run(
+        .{
+            .render = render,
+            .gfx = .{ .depth_stencil = true },
+        },
+    );
 }
 
 var clear_color = aya.Color.aya;
-var pass: aya.OffscreenPass = undefined;
 var box_state: struct { pos: Vec2, dir: f32 } = .{ .pos = Vec2.init(30, 30), .dir = 1 };
 
 var stencil_write: aya.rk.RenderState = .{
@@ -28,17 +29,12 @@ var stencil_read: aya.rk.RenderState = .{
     },
 };
 
-fn init() !void {
-    const size = aya.window.sizeInPixels();
-    pass = aya.OffscreenPass.initWithStencil(size.w, size.h, .nearest, .clamp);
-}
-
 fn render() !void {
     var gfx = aya.gfx;
 
     aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 770, .y = 20 }, aya.Color.light_gray);
 
-    gfx.beginPass(.{ .pass = pass, .color = clear_color, .clear_stencil = true });
+    gfx.beginPass(.{ .color = clear_color, .clear_stencil = true });
     gfx.draw.text("press 'c' to toggle stencil compare func (eql, not_eql)", 5, 20, null);
 
     // stencil write
@@ -63,9 +59,5 @@ fn render() !void {
         gfx.setRenderState(.{});
     }
 
-    gfx.endPass();
-
-    gfx.beginPass(.{});
-    gfx.draw.tex(pass.color_texture, 0, 0);
     gfx.endPass();
 }
