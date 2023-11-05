@@ -36,6 +36,8 @@ pub const FontBook = struct {
         book.height = height;
         book.stash = fons.Context.init(&params) catch unreachable;
 
+        fons.fonsSetErrorCallback(book.stash, errorCallback, book);
+
         return book;
     }
 
@@ -46,12 +48,18 @@ pub const FontBook = struct {
     }
 
     // add fonts
-    pub fn addFont(self: *FontBook, file: []const u8) c_int {
-        const c_file = aya.mem.tmp_allocator.dupeZ(u8, file) catch unreachable;
-        const data = aya.fs.read(self.allocator, file) catch unreachable;
+    pub fn addFont(self: *FontBook, path: []const u8) c_int {
+        const c_file = aya.tmp_allocator.dupeZ(u8, path) catch unreachable;
+
+        const file = std.fs.cwd().openFile(path, .{}) catch unreachable;
+        defer file.close();
+
+        const file_size = file.getEndPos() catch unreachable;
+        var buffer = std.heap.c_allocator.alloc(u8, file_size) catch unreachable;
+        _ = file.read(buffer) catch unreachable;
 
         // we can let FONS free the data since we are using the c_allocator here
-        return fons.fonsAddFontMem(self.stash, c_file, @as([*c]const u8, @ptrCast(data)), @as(i32, @intCast(data.len)), 1);
+        return fons.fonsAddFontMem(self.stash, c_file, @as([*c]const u8, @ptrCast(buffer)), @as(i32, @intCast(buffer.len)), 1);
     }
 
     pub fn addFontMem(self: *FontBook, name: [:0]const u8, data: []const u8, free_data: bool) c_int {
@@ -78,6 +86,10 @@ pub const FontBook = struct {
 
     pub fn setBlur(self: FontBook, blur: f32) void {
         fons.fonsSetBlur(self.stash, blur);
+    }
+
+    pub fn setFont(self: FontBook, font: c_int) void {
+        fons.fonsSetFont(self.stash, font);
     }
 
     // state handling
@@ -125,6 +137,10 @@ pub const FontBook = struct {
 
     pub fn textIterNext(self: *FontBook, iter: *fons.TextIter, quad: *fons.Quad) bool {
         return fons.fonsTextIterNext(self.stash, iter, quad) == 1;
+    }
+
+    fn errorCallback(_: ?*anyopaque, err: c_int, value: c_int) callconv(.C) void {
+        std.debug.print("FontStash error: {}, value: {}\n", .{ err, value });
     }
 
     fn renderCreate(ctx: ?*anyopaque, width: c_int, height: c_int) callconv(.C) c_int {

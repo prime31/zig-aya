@@ -33,7 +33,7 @@
         {
             "label": "Build and Run Project (release-fast)",
             "type": "shell",
-            "command": "source ~/.zshrc && zig build run -Doptimize=ReleaseFast",
+            "command": "source ~/.zshrc && zig build ${input:zigLastTarget} -Doptimize=ReleaseFast",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -45,7 +45,19 @@
         {
             "label": "Build and Run Project (release-small)",
             "type": "shell",
-            "command": "source ~/.zshrc && zig build run -Doptimize=ReleaseSmall",
+            "command": "source ~/.zshrc && zig build ${input:zigLastTarget} -Doptimize=ReleaseSmall",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "Build and Run Project (release-small and no Dear ImGui)",
+            "type": "shell",
+            "command": "source ~/.zshrc && zig build ${input:zigLastTarget} -Doptimize=ReleaseSmall -Denable_imgui=false",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -80,5 +92,12 @@
                 "isDefault": true
             }
         }
-    ]
+    ],
+    "inputs": [
+        {
+            "id": "zigLastTarget",
+            "type": "command",
+            "command": "zig.build.getLastTargetOrPrompt"
+        }
+    ],
 }

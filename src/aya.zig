@@ -4,6 +4,8 @@ const aya = @This();
 // types
 const Window = @import("window/window.zig").Window;
 const WindowConfig = @import("window/window.zig").WindowConfig;
+const ImGuiConfig = ig.sdl.Config;
+const Events = @import("events/events.zig").Events;
 const Debug = @import("render/debug.zig").Debug;
 const Time = @import("time.zig").Time;
 const Input = @import("input.zig").Input;
@@ -20,7 +22,7 @@ pub const rk = @import("renderkit");
 pub const ig = @import("imgui");
 pub const sdl = @import("sdl");
 pub const mem = @import("mem/mem.zig");
-pub const evt = @import("events.zig");
+pub const evt = @import("events/mod.zig");
 
 // inner modules
 // TODO: be more restrictive with exports and possibly dump them into sub-structs per module
@@ -53,20 +55,18 @@ pub const Config = struct {
 
     gfx: GraphicsConfig = .{},
     window: WindowConfig = .{},
+    imgui: ImGuiConfig = .{},
 
     update_rate: f64 = 60, // desired fps
-    imgui_icon_font: bool = true,
-    imgui_viewports: bool = true, // whether imgui viewports should be enabled
-    imgui_docking: bool = true, // whether imgui docking should be enabled
 };
 
 fn init(comptime config: Config) void {
     tmp_allocator_instance = ScratchAllocator.init(allocator);
     tmp_allocator = tmp_allocator_instance.allocator();
 
-    window = Window.init(config.window);
+    window = Window.init(config.window, config.imgui);
     debug = Debug.init();
-    time = Time.init(60);
+    time = Time.init(config.update_rate);
     input = Input.init();
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
@@ -89,7 +89,7 @@ pub fn run(comptime config: Config) !void {
     if (config.init) |initFn| try initFn();
 
     while (!pollEvents()) {
-        WindowAndInputEventWriters.update();
+        WindowAndInputEventWriters.newFrame();
         ig.sdl.newFrame();
         input.newFrame();
         time.tick();
@@ -109,20 +109,20 @@ pub fn run(comptime config: Config) !void {
 }
 
 pub fn addEvent(comptime T: type) void {
-    if (!res.contains(evt.Events(T))) {
-        _ = res.initResource(evt.Events(T));
+    if (!res.contains(Events(T))) {
+        _ = res.initResource(Events(T));
     }
 }
 
 pub fn getEventReader(comptime T: type) evt.EventReader(T) {
     return evt.EventReader(T){
-        .events = res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+        .events = res.get(Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
     };
 }
 
 pub fn getEventWriter(comptime T: type) evt.EventWriter(T) {
     return evt.EventWriter(T){
-        .events = res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+        .events = res.get(Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
     };
 }
 
@@ -136,32 +136,47 @@ fn pollEvents() bool {
             // window
             sdl.SDL_EVENT_WINDOW_CLOSE_REQUESTED => return true,
             sdl.SDL_EVENT_WINDOW_RESIZED => {
+                if (event.window.windowID != aya.window.id) continue;
                 event_writers.window_resized.send(.{
                     .width = @floatFromInt(event.window.data1),
                     .height = @floatFromInt(event.window.data2),
                 });
                 gfx.setWindowPixelSize(.{ .w = event.window.data1, .h = event.window.data2 });
             },
-            sdl.SDL_EVENT_WINDOW_MOVED => event_writers.window_moved.send(.{
-                .x = @floatFromInt(event.window.data1),
-                .y = @floatFromInt(event.window.data2),
-            }),
-            sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => event_writers.window_scale_factor.send(.{
-                .scale_factor = sdl.SDL_GetWindowDisplayScale(aya.window.sdl_window),
-            }),
+            sdl.SDL_EVENT_WINDOW_MOVED => {
+                if (event.window.windowID != aya.window.id) continue;
+                event_writers.window_moved.send(.{
+                    .x = @floatFromInt(event.window.data1),
+                    .y = @floatFromInt(event.window.data2),
+                });
+            },
+            sdl.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => {
+                if (event.window.windowID != aya.window.id) continue;
+                event_writers.window_scale_factor.send(.{
+                    .scale_factor = sdl.SDL_GetWindowDisplayScale(aya.window.sdl_window),
+                });
+            },
 
             sdl.SDL_EVENT_WINDOW_HIDDEN => std.debug.print("SDL_EVENT_WINDOW_HIDDEN\n", .{}),
             sdl.SDL_EVENT_WINDOW_EXPOSED => std.debug.print("SDL_EVENT_WINDOW_EXPOSED\n", .{}),
             sdl.SDL_EVENT_WINDOW_MINIMIZED => std.debug.print("SDL_EVENT_WINDOW_MINIMIZED\n", .{}),
             sdl.SDL_EVENT_WINDOW_MAXIMIZED => std.debug.print("SDL_EVENT_WINDOW_MAXIMIZED\n", .{}),
             sdl.SDL_EVENT_WINDOW_RESTORED => std.debug.print("SDL_EVENT_WINDOW_RESTORED\n", .{}),
-            sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => event_writers.window_mouse_focused.send(.{ .focused = true }),
-            sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => event_writers.window_mouse_focused.send(.{ .focused = false }),
+            sdl.SDL_EVENT_WINDOW_MOUSE_ENTER => {
+                if (event.window.windowID != aya.window.id) continue;
+                event_writers.window_mouse_focused.send(.{ .focused = true });
+            },
+            sdl.SDL_EVENT_WINDOW_MOUSE_LEAVE => {
+                if (event.window.windowID != aya.window.id) continue;
+                event_writers.window_mouse_focused.send(.{ .focused = false });
+            },
             sdl.SDL_EVENT_WINDOW_FOCUS_GAINED => {
+                if (event.window.windowID != aya.window.id) continue;
                 event_writers.window_focus_changed.send(.{ .focused = true });
                 aya.window.focused = true;
             },
             sdl.SDL_EVENT_WINDOW_FOCUS_LOST => {
+                if (event.window.windowID != aya.window.id) continue;
                 event_writers.window_focus_changed.send(.{ .focused = false });
                 aya.window.focused = false;
             },
@@ -170,6 +185,7 @@ fn pollEvents() bool {
             sdl.SDL_EVENT_WINDOW_DISPLAY_CHANGED => std.debug.print("SDL_EVENT_WINDOW_DISPLAY_CHANGED\n", .{}),
             // drop file
             sdl.SDL_EVENT_DROP_FILE => {
+                if (event.window.windowID != aya.window.id) continue;
                 event_writers.file_dropped.send(.{
                     .file = tmp_allocator.dupe(u8, std.mem.span(event.drop.file)) catch unreachable,
                 });
@@ -192,6 +208,7 @@ fn pollEvents() bool {
                 }
             },
             sdl.SDL_EVENT_MOUSE_MOTION => {
+                if (event.motion.windowID != aya.window.id) continue;
                 event_writers.mouse_motion.send(.{
                     .x = event.motion.x,
                     .y = event.motion.y,
@@ -201,6 +218,7 @@ fn pollEvents() bool {
                 aya.input.mouse.pos = aya.Vec2.init(event.motion.x, event.motion.y);
             },
             sdl.SDL_EVENT_MOUSE_WHEEL => {
+                if (event.wheel.windowID != aya.window.id) continue;
                 event_writers.mouse_wheel.send(.{
                     .x = event.wheel.x,
                     .y = event.wheel.y,
@@ -284,9 +302,9 @@ const WindowAndInputEventWriters = struct {
         return self;
     }
 
-    fn update() void {
+    fn newFrame() void {
         inline for (std.meta.fields(WindowAndInputEventWriters)) |field| {
-            aya.res.get(evt.Events(field.type.event_type)).?.update();
+            aya.res.get(Events(field.type.event_type)).?.update();
         }
     }
 };
