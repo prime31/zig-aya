@@ -30,17 +30,15 @@ var stencil_read: aya.rk.RenderState = .{
 };
 
 fn render() !void {
-    var gfx = aya.gfx;
-
     aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 770, .y = 20 }, aya.Color.light_gray);
 
-    gfx.beginPass(.{ .color = clear_color, .clear_stencil = true });
-    gfx.draw.text("press 'c' to toggle stencil compare func (eql, not_eql)", 5, 20, null);
+    aya.gfx.beginPass(.{ .color = clear_color, .clear_stencil = true });
+    aya.gfx.draw.text("press 'c' to toggle stencil compare func (eql, not_eql)", 5, 20, null);
 
     // stencil write
     {
-        gfx.setRenderState(stencil_write);
-        gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
+        aya.gfx.setRenderState(stencil_write);
+        aya.gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
     }
 
     // stencil read
@@ -54,10 +52,10 @@ fn render() !void {
         box_state.pos = Vec2.add(box_state.pos, Vec2.init(1 * box_state.dir, 1 * box_state.dir));
 
         stencil_read.stencil.compare_func = if (aya.input.keys.pressed(.c)) .equal else .not_equal;
-        gfx.setRenderState(stencil_read);
-        gfx.draw.rect(box_state.pos, 200, 400, aya.Color.sky_blue);
-        gfx.setRenderState(.{});
+        aya.gfx.setRenderState(stencil_read);
+        aya.gfx.draw.rect(box_state.pos, 200, 400, aya.Color.sky_blue);
+        aya.gfx.setRenderState(.{});
     }
 
-    gfx.endPass();
+    aya.gfx.endPass();
 }

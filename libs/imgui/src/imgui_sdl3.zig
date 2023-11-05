@@ -1,11 +1,19 @@
-const imgui = @import("dear_imgui.zig");
+const std = @import("std");
 const sdl = @import("sdl");
+const imgui = @import("dear_imgui.zig");
+const icons = @import("imgui.zig").icons;
 const imgui_enabled = @import("imgui.zig").enabled;
+
+pub const Config = struct {
+    icon_font: bool = true,
+    viewports: bool = true, // whether imgui viewports should be enabled
+    docking: bool = true, // whether imgui docking should be enabled
+};
 
 // all references to SDL_Window, SDL_Event and SDL_Renderer were changed to anyopaque
 
 // ImGui lifecycle helpers, wrapping ImGui and SDL3 Impl
-pub fn init(window: *const anyopaque) void {
+pub fn init(window: *const anyopaque, config: Config) void {
     if (!imgui_enabled) return;
 
     _ = imgui.igCreateContext(null);
@@ -13,8 +21,24 @@ pub fn init(window: *const anyopaque) void {
     var io = imgui.igGetIO();
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
-    io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+    if (config.docking) io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+    if (config.viewports) io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+
+    _ = imgui.ImFontAtlas_AddFontDefault(io.Fonts, null);
+
+    // optionally FontAwesome
+    if (config.icon_font) {
+        var icons_config = imgui.ImFontConfig_ImFontConfig();
+        icons_config[0].MergeMode = true;
+        icons_config[0].PixelSnapH = true;
+        icons_config[0].FontDataOwnedByAtlas = false;
+        icons_config[0].GlyphOffset = .{ .x = 0, .y = 2 };
+
+        const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ icons.icon_range_min, icons.icon_range_max, 0 };
+        var data = @embedFile("assets/" ++ icons.font_icon_filename_fas);
+        _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, @constCast(data.ptr), data.len, 14, icons_config, &font_awesome_range);
+        _ = imgui.ImFontAtlas_Build(io.Fonts);
+    }
 
     if (!ImGui_ImplOpenGL3_Init(null)) unreachable;
     if (!ImGui_ImplSDL3_InitForOpenGL(window, sdl.SDL_GL_GetCurrentContext())) unreachable;

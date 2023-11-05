@@ -20,10 +20,14 @@ pub const WindowMouseFocused = struct { focused: bool };
 // SDL_EVENT_WINDOW_HIT_TEST
 // SDL_EVENT_WINDOW_DISPLAY_CHANGED
 
-pub const WindowMode = enum(u32) {
-    windowed = 0,
-    full_screen = 1,
-    desktop = 4097,
+pub const WindowConfig = struct {
+    title: [:0]const u8 = "zig bevyish", // the window title as UTF-8 encoded string
+    width: i32 = 1024, // the preferred width of the window / canvas
+    height: i32 = 768, // the preferred height of the window / canvas
+    resizable: bool = true, // whether the window should be allowed to be resized
+    fullscreen: bool = false, // whether the window should be created in fullscreen mode
+    high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
+    vsync: enum { immediate, synchronized, adaptive } = .synchronized, // whether vsync should be disabled
 };
 
 pub const Window = struct {
@@ -32,7 +36,7 @@ pub const Window = struct {
     focused: bool = true,
     id: u32 = 0,
 
-    pub fn init(config: WindowConfig) Window {
+    pub fn init(config: WindowConfig, imgui_config: ig.sdl.Config) Window {
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
             @panic("could not init SDL");
@@ -68,7 +72,7 @@ pub const Window = struct {
             .synchronized => _ = sdl.SDL_GL_SetSwapInterval(1),
         }
 
-        ig.sdl.init(window.sdl_window);
+        ig.sdl.init(window.sdl_window, imgui_config);
 
         return window;
     }
@@ -121,16 +125,6 @@ pub const Window = struct {
     pub fn setResizable(self: Window, is_resizable: bool) void {
         sdl.SDL_SetWindowResizable(self.sdl_window, is_resizable);
     }
-};
-
-pub const WindowConfig = struct {
-    title: [:0]const u8 = "zig bevyish", // the window title as UTF-8 encoded string
-    width: i32 = 1024, // the preferred width of the window / canvas
-    height: i32 = 768, // the preferred height of the window / canvas
-    resizable: bool = true, // whether the window should be allowed to be resized
-    fullscreen: bool = false, // whether the window should be created in fullscreen mode
-    high_dpi: bool = false, // whether the backbuffer is full-resolution on HighDPI displays
-    vsync: enum { immediate, synchronized, adaptive } = .synchronized, // whether vsync should be disabled
 };
 
 pub const WindowFlags = enum(c_int) {

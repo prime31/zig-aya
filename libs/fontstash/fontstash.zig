@@ -90,7 +90,7 @@ pub const FONS_INVALID = -1;
 
 pub extern fn fonsCreateInternal(params: [*c]Params) ?*Context;
 pub extern fn fonsDeleteInternal(s: ?*Context) void;
-pub extern fn fonsSetErrorCallback(s: ?*Context, callback: ?fn (?*anyopaque, c_int, c_int) callconv(.C) void, uptr: ?*anyopaque) void;
+pub extern fn fonsSetErrorCallback(s: ?*Context, callback: ?*const fn (?*anyopaque, c_int, c_int) callconv(.C) void, uptr: ?*anyopaque) void;
 pub extern fn fonsGetAtlasSize(s: ?*Context, width: [*c]c_int, height: [*c]c_int) void;
 pub extern fn fonsExpandAtlas(s: ?*Context, width: c_int, height: c_int) c_int;
 pub extern fn fonsResetAtlas(stash: ?*Context, width: c_int, height: c_int) c_int;
