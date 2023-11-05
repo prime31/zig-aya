@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch Last Target",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/zig-out/bin/${input:zigLastTarget}",
+            "args": [],
+        },
+        {
             "type": "lldb-mi",
             "request": "launch",
             "name": "LLDB",
@@ -17,14 +24,6 @@
             "request": "launch",
             "name": "Launch Program",
             "target": "./test",
-            "cwd": "${workspaceRoot}",
-            "valuesFormatting": "parseText"
-        },
-        {
-            "name": "Debug",
-            "type": "gdb",
-            "request": "launch",
-            "target": "${workspaceFolder}/zig-cache/bin/run",
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText"
         },
@@ -43,5 +42,12 @@
                 "moduleLoad": false
             }
         }
-    ]
+    ],
+    "inputs": [
+        {
+            "id": "zigLastTarget",
+            "type": "command",
+            "command": "zig.build.getLastTargetOrPrompt"
+        }
+    ],
 }

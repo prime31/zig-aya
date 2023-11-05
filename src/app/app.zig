@@ -62,10 +62,11 @@ pub const App = struct {
 
     pub fn init() *Self {
         const world = World.init(allocator);
-        aya.init();
 
         tmp_allocator_instance = ScratchAllocator.init(allocator);
         tmp_allocator = tmp_allocator_instance.allocator();
+
+        aya.init();
 
         var self: *App = aya.mem.create(App);
         self.* = .{

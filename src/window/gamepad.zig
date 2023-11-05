@@ -72,7 +72,7 @@ pub const Gamepad = struct {
 
     id: GamepadId,
     sdl_gamepad: *sdl.SDL_Gamepad,
-    buttons: aya.Input(GamepadButton) = .{},
+    buttons: aya.GamepadButtons = .{},
     axes: AxisMap = .{},
 
     pub fn init(id: GamepadId, sdl_gamepad: *sdl.SDL_Gamepad) Gamepad {

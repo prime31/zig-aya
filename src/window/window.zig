@@ -4,7 +4,6 @@ const aya = @import("../aya.zig");
 const ig = @import("imgui");
 
 const App = aya.App;
-const Input = aya.Input;
 const Scancode = aya.Scancode;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
@@ -32,8 +31,37 @@ pub const WindowPlugin = struct {
     window_config: WindowConfig = .{},
 
     pub fn build(self: WindowPlugin, app: *App) void {
-        const config = self.window_config;
+        _ = self;
 
+        _ = app
+            .setRunner(eventLoop)
+        // window
+            .addEvent(WindowResized)
+            .addEvent(WindowMoved)
+            .addEvent(WindowScaleFactorChanged)
+            .addEvent(WindowFocused)
+            .addEvent(WindowMouseFocused)
+        // mouse
+            .addEvent(aya.MouseMotion)
+            .addEvent(aya.MouseWheel)
+        // gamepad
+            .addEvent(aya.GamepadConnectionEvent);
+    }
+};
+
+pub const WindowMode = enum(u32) {
+    windowed = 0,
+    full_screen = 1,
+    desktop = 4097,
+};
+
+pub const Window = struct {
+    sdl_window: *sdl.SDL_Window,
+    gl_ctx: sdl.SDL_GLContext,
+    focused: bool = true,
+    id: u32 = 0,
+
+    pub fn init(config: WindowConfig) Window {
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
             @panic("could not init SDL");
@@ -53,30 +81,12 @@ pub const WindowPlugin = struct {
         if (config.high_dpi) flags |= @intFromEnum(WindowFlags.high_pixel_density);
         if (config.fullscreen) flags |= @intFromEnum(WindowFlags.fullscreen);
 
-        const window = sdl.SDL_CreateWindow(config.title, config.width, config.height, flags) orelse {
+        const sdl_window = sdl.SDL_CreateWindow(config.title, config.width, config.height, flags) orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             @panic("no window created");
         };
 
-        aya.window = Window{ .sdl_window = window, .gl_ctx = sdl.SDL_GL_CreateContext(window), .id = sdl.SDL_GetWindowID(window) };
-
-        _ = app
-            .setRunner(eventLoop)
-        // window
-            .addEvent(WindowResized)
-            .addEvent(WindowMoved)
-            .addEvent(WindowScaleFactorChanged)
-            .addEvent(WindowFocused)
-            .addEvent(WindowMouseFocused)
-        // mouse
-            .addEvent(aya.MouseMotion)
-            .addEvent(aya.MouseWheel)
-            .initResource(Input(aya.MouseButton))
-        // keyboard
-            .initResource(Input(Scancode))
-        // gamepad
-            .addEvent(aya.GamepadConnectionEvent)
-            .initResource(aya.Gamepads);
+        var window = Window{ .sdl_window = sdl_window, .gl_ctx = sdl.SDL_GL_CreateContext(sdl_window), .id = sdl.SDL_GetWindowID(sdl_window) };
 
         const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
         @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.allocator);
@@ -87,21 +97,17 @@ pub const WindowPlugin = struct {
             .synchronized => _ = sdl.SDL_GL_SetSwapInterval(1),
         }
 
-        ig.sdl.init(window);
+        ig.sdl.init(window.sdl_window);
+
+        return window;
     }
-};
 
-pub const WindowMode = enum(u32) {
-    windowed = 0,
-    full_screen = 1,
-    desktop = 4097,
-};
+    pub fn deinit(self: Window) void {
+        ig.sdl.shutdown();
 
-pub const Window = struct {
-    sdl_window: *sdl.SDL_Window,
-    gl_ctx: sdl.SDL_GLContext,
-    focused: bool = true,
-    id: u32 = 0,
+        sdl.SDL_DestroyWindow(self.sdl_window);
+        sdl.SDL_Quit();
+    }
 
     pub fn sizeInPixels(self: Window) struct { w: c_int, h: c_int } {
         var w: c_int = 0;

@@ -9,12 +9,6 @@ pub usingnamespace @import("batcher.zig");
 pub usingnamespace @import("fontbook.zig");
 pub usingnamespace @import("mesh.zig");
 
-pub const RenderPlugin = struct {
-    pub fn build(_: RenderPlugin, app: *aya.App) void {
-        _ = app.initResource(self.GraphicsContext);
-    }
-};
-
 pub const Axis = enum(u8) {
     x,
     y,
