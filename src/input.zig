@@ -5,6 +5,9 @@ const Keys = aya.Keys;
 const MouseButtons = aya.MouseButtons;
 const GamePads = aya.Gamepads;
 
+const MouseButton = aya.MouseButton;
+const Scancode = aya.Scancode;
+
 pub const Input = struct {
     const Mouse = struct {
         buttons: MouseButtons = .{},
@@ -31,5 +34,29 @@ pub const Input = struct {
         self.mouse.buttons.clear();
         self.keys.clear();
         self.gamepads.update();
+    }
+
+    pub fn mouseJustPressed(self: *const Input, btn: MouseButton) bool {
+        return self.mouse.buttons.justPressed(btn);
+    }
+
+    pub fn mousePressed(self: *const Input, btn: MouseButton) bool {
+        return self.mouse.buttons.pressed(btn);
+    }
+
+    pub fn mouseJustReleased(self: *const Input, btn: MouseButton) bool {
+        return self.mouse.buttons.justReleased(btn);
+    }
+
+    pub fn keyJustPressed(self: *const Input, btn: Scancode) bool {
+        return self.keys.justPressed(btn);
+    }
+
+    pub fn keyPressed(self: *const Input, btn: Scancode) bool {
+        return self.keys.pressed(btn);
+    }
+
+    pub fn keyJustReleased(self: *const Input, btn: Scancode) bool {
+        return self.keys.justReleased(btn);
     }
 };

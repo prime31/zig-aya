@@ -47,7 +47,7 @@ pub var tmp_allocator: std.mem.Allocator = undefined;
 var tmp_allocator_instance: ScratchAllocator = undefined;
 
 pub const Config = struct {
-    init: fn () anyerror!void,
+    init: ?fn () anyerror!void = null,
     update: ?fn () anyerror!void = null,
     render: fn () anyerror!void,
     shutdown: ?fn () anyerror!void = null,
@@ -88,7 +88,8 @@ fn deinit() void {
 pub fn run(comptime config: Config) !void {
     init();
 
-    try config.init();
+    if (config.init) |initFn| try initFn();
+
     while (!pollEvents(config.onFileDropped)) {
         ig.sdl.newFrame();
         input.newFrame();
