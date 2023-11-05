@@ -3,11 +3,12 @@ const aya = @import("../aya.zig");
 const rk = @import("renderkit");
 const fons = @import("fontstash");
 
-const Texture = aya.Texture;
-
+// TODO: https://github.com/Beyley/ztyping/blob/master/game/fontstash_impl.zig
 pub const FontBook = struct {
+    pub const Quad = fons.Quad;
+
     stash: *fons.Context,
-    texture: ?Texture,
+    texture: ?aya.Texture,
     tex_filter: rk.TextureFilter,
     width: i32 = 0,
     height: i32 = 0,
@@ -126,10 +127,6 @@ pub const FontBook = struct {
         return fons.fonsTextIterNext(self.stash, iter, quad) == 1;
     }
 
-    pub fn getQuad(_: FontBook) fons.Quad {
-        return std.mem.zeroes(fons.Quad);
-    }
-
     fn renderCreate(ctx: ?*anyopaque, width: c_int, height: c_int) callconv(.C) c_int {
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
 
@@ -139,7 +136,7 @@ pub const FontBook = struct {
         }
 
         if (self.texture == null)
-            self.texture = Texture.initDynamic(width, height, self.tex_filter, .clamp);
+            self.texture = aya.Texture.initDynamic(width, height, self.tex_filter, .clamp);
 
         self.width = width;
         self.height = height;

@@ -1,5 +1,5 @@
 const std = @import("std");
-const aya = @import("../aya.zig");
+const aya = @import("aya.zig");
 
 const typeId = aya.utils.typeId;
 

@@ -3,10 +3,6 @@ const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 const ig = @import("imgui");
 
-const Scancode = aya.Scancode;
-const Events = aya.Events;
-const EventReader = aya.EventReader;
-const EventWriter = aya.EventWriter;
 const Size = aya.Size;
 
 // TODO: add more window events
@@ -84,11 +80,10 @@ pub const Window = struct {
         sdl.SDL_Quit();
     }
 
-    pub fn sizeInPixels(self: Window) struct { w: c_int, h: c_int } {
-        var w: c_int = 0;
-        var h: c_int = 0;
-        _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &w, &h);
-        return .{ .w = w, .h = h };
+    pub fn sizeInPixels(self: Window) Size {
+        var sz = Size{};
+        _ = sdl.SDL_GetWindowSizeInPixels(self.sdl_window, &sz.w, &sz.h);
+        return sz;
     }
 
     pub fn scale(self: Window) f32 {
@@ -97,7 +92,7 @@ pub const Window = struct {
 
     pub fn size(self: Window) Size {
         var sz = Size{};
-        _ = sdl.SDL_GetWindowSize(self.sdl_window, &sz.x, &sz.h);
+        _ = sdl.SDL_GetWindowSize(self.sdl_window, &sz.w, &sz.h);
         return sz;
     }
 
@@ -115,8 +110,8 @@ pub const Window = struct {
         sdl.SDL_SetWindowPosition(self.sdl_window, x, y);
     }
 
-    pub fn setMode(self: Window, mode: WindowMode) void {
-        sdl.SDL_SetWindowFullscreen(self.sdl_window, mode);
+    pub fn setFullscreen(self: Window, fullscreen: bool) void {
+        _ = sdl.SDL_SetWindowFullscreen(self.sdl_window, if (fullscreen) 1 else 0);
     }
 
     pub fn resizable(self: Window) bool {

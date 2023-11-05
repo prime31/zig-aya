@@ -38,6 +38,7 @@ pub const Config = struct {
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
     resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
     texture_filter: renderkit.TextureFilter = .nearest,
+    depth_stencil: bool = false,
 };
 
 pub const PassConfig = struct {
@@ -86,9 +87,7 @@ pub const GraphicsContext = struct {
     debug_render_enabled: bool = false,
     draw: Draw,
 
-    pub fn init() GraphicsContext {
-        const config = Config{}; // TODO: expose this maybe in RenderPlugin?
-
+    pub fn init(config: Config) GraphicsContext {
         const window_pixel_size = aya.window.sizeInPixels();
 
         // if we were passed 0's for design size default to the window/backbuffer size
@@ -102,7 +101,7 @@ pub const GraphicsContext = struct {
         return .{
             .shader = Shader.initDefaultSpriteShader() catch unreachable,
             .debug_render_enabled = !config.disable_debug_render,
-            .default_pass = DefaultOffscreenPass.init(design_w, design_h, config.texture_filter, config.resolution_policy),
+            .default_pass = DefaultOffscreenPass.init(design_w, design_h, config.texture_filter, config.resolution_policy, config.depth_stencil),
             .draw = Draw.init(),
         };
     }

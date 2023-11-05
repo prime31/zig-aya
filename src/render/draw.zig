@@ -77,7 +77,7 @@ pub const Draw = struct {
         // TODO: dont hardcode scale
         var matrix = Mat32.initTransform(.{ .x = x, .y = y, .sx = 2, .sy = 2 });
 
-        var fons_quad = book.getQuad();
+        var fons_quad = FontBook.Quad{};
         var iter = book.getTextIterator(str);
         while (book.textIterNext(&iter, &fons_quad)) {
             self.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };
@@ -99,7 +99,7 @@ pub const Draw = struct {
         var matrix = Mat32.initTransform(.{ .x = options.x, .y = options.y, .angle = options.rot, .sx = options.sx, .sy = options.sy });
         book.setAlign(options.alignment);
 
-        var fons_quad = book.getQuad();
+        var fons_quad = FontBook.Quad{};
         var iter = book.getTextIterator(str);
         while (book.textIterNext(&iter, &fons_quad)) {
             self.quad.positions[0] = .{ .x = fons_quad.x0, .y = fons_quad.y0 };

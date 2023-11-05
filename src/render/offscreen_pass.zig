@@ -57,12 +57,12 @@ pub const DefaultOffscreenPass = struct {
     design_w: i32,
     design_h: i32,
 
-    pub fn init(w: i32, h: i32, filter: rk.TextureFilter, policy: gfx.ResolutionPolicy) DefaultOffscreenPass {
+    pub fn init(w: i32, h: i32, filter: rk.TextureFilter, policy: gfx.ResolutionPolicy, depth_stencil: bool) DefaultOffscreenPass {
         // fetch the Resolution_Scaler first since it will decide the render texture size
         var scaler = policy.getScaler(w, h);
 
         return .{
-            .pass = if (policy != .none) OffscreenPass.initWithOptions(w, h, filter, .clamp) else undefined,
+            .pass = if (policy != .none) if (depth_stencil) OffscreenPass.initWithStencil(w, h, filter, .clamp) else OffscreenPass.initWithOptions(w, h, filter, .clamp) else undefined,
             .policy = policy,
             .scaler = scaler,
             .design_w = w,
