@@ -176,7 +176,6 @@ pub fn eventLoop(app: *App) void {
         }
 
         ig.sdl.newFrame();
-        ig.igShowDemoWindow(null);
 
         aya.time.tick();
         gfx.beginFrame();

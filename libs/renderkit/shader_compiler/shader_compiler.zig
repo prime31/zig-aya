@@ -380,7 +380,7 @@ pub const ShaderCompileStep = struct {
             max_output_bytes: usize = 50 * 1024,
             expand_arg0: std.ChildProcess.Arg0Expand = .no_expand,
         },
-    ) !std.ChildProcess.ExecResult {
+    ) !std.ChildProcess.RunResult {
         var child = std.ChildProcess.init(args.argv, args.allocator);
 
         child.stdin_behavior = .Ignore;
@@ -398,7 +398,7 @@ pub const ShaderCompileStep = struct {
         const stderr = try stderr_in.readAllAlloc(args.allocator, args.max_output_bytes);
         errdefer args.allocator.free(stderr);
 
-        return std.ChildProcess.ExecResult{
+        return std.ChildProcess.RunResult{
             .term = try child.wait(),
             .stdout = undefined,
             .stderr = stderr,

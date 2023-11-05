@@ -42,7 +42,7 @@ const ClearColorSystem = struct {
         }
 
         gfx.beginPass(.{ .color = clear_color });
-        gfx.draw.text("fo fuck yourself", 24, 20, null);
+        gfx.draw.text("go fuck yourself", 24, 20, null);
         gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
         gfx.draw.tex(tex, 5, 400);
         gfx.endPass();
