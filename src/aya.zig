@@ -89,10 +89,10 @@ pub fn run(comptime config: Config) !void {
     if (config.init) |initFn| try initFn();
 
     while (!pollEvents()) {
+        WindowAndInputEventWriters.update();
         ig.sdl.newFrame();
         input.newFrame();
         time.tick();
-        WindowAndInputEventWriters.update();
 
         if (config.update) |update| try update();
 
@@ -112,6 +112,18 @@ pub fn addEvent(comptime T: type) void {
     if (!res.contains(evt.Events(T))) {
         _ = res.initResource(evt.Events(T));
     }
+}
+
+pub fn getEventReader(comptime T: type) evt.EventReader(T) {
+    return evt.EventReader(T){
+        .events = res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+    };
+}
+
+pub fn getEventWriter(comptime T: type) evt.EventWriter(T) {
+    return evt.EventWriter(T){
+        .events = res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
+    };
 }
 
 fn pollEvents() bool {
@@ -240,7 +252,7 @@ const WindowAndInputEventWriters = struct {
     const WindowScaleFactorChanged = aya.WindowScaleFactorChanged;
     const WindowMouseFocused = aya.WindowMouseFocused;
 
-    const FileDropped = struct { file: []const u8 };
+    const FileDropped = evt.FileDropped;
 
     const MouseWheel = aya.MouseWheel;
     const MouseMotion = aya.MouseMotion;
@@ -267,15 +279,9 @@ const WindowAndInputEventWriters = struct {
 
         inline for (std.meta.fields(WindowAndInputEventWriters)) |field| {
             aya.addEvent(field.type.event_type);
-            @field(self, field.name) = getEventWriter(field.type.event_type);
+            @field(self, field.name) = aya.getEventWriter(field.type.event_type);
         }
         return self;
-    }
-
-    fn getEventWriter(comptime T: type) EventWriter(T) {
-        return EventWriter(T){
-            .events = aya.res.get(evt.Events(T)) orelse @panic("no EventWriter found for " ++ @typeName(T)),
-        };
     }
 
     fn update() void {

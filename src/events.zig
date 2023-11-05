@@ -75,3 +75,6 @@ pub fn EventReader(comptime T: type) type {
         }
     };
 }
+
+/// event
+pub const FileDropped = struct { file: []const u8 };
