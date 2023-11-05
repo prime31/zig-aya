@@ -2,7 +2,6 @@ const std = @import("std");
 const Builder = std.build.Builder;
 
 // libs
-const flecs_build = @import("libs/flecs/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
@@ -14,7 +13,6 @@ const ShaderCompileStep = renderkit_build.ShaderCompileStep;
 const Options = struct {
     build_options: *std.build.Step.Options,
     enable_imgui: bool,
-    include_flecs_explorer: bool,
 };
 
 const install_options: enum { all, only_current } = .only_current;
@@ -26,19 +24,15 @@ pub fn build(b: *std.Build) void {
     const options = Options{
         .build_options = b.addOptions(),
         .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
-        .include_flecs_explorer = b.option(bool, "include_flecs_explorer", "Include/exclude Flecs REST, HTTP, STATS and MONITOR modules") orelse true,
     };
 
     options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
-    options.build_options.addOption(bool, "include_flecs_explorer", options.include_flecs_explorer);
 
     for (getAllExamples(b, "examples")) |p| {
         addExecutable(b, target, optimize, options, p[0], p[1]);
     }
 
     addTests(b, target, optimize, options);
-
-    flecs_build.addFlecsUpdateStep(b, target);
 
     // shader compiler, run with `zig build compile-shaders`
     const shader_compile_step = ShaderCompileStep.init(b, .{
@@ -110,13 +104,11 @@ fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.Opti
         run_tests.step.dependOn(b.getInstallStep());
     }
 
-    const run_step = b.step("test", "Run tests");
+    const run_step = b.step("tests", "Run tests");
     run_step.dependOn(&run_tests.step);
 }
 
 fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
-    flecs_build.linkArtifact(b, exe, target, optimize, options.include_flecs_explorer);
-
     stb_build.linkArtifact(exe);
     const stb_module = stb_build.getModule(b);
 
