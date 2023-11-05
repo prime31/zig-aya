@@ -84,7 +84,6 @@ pub const GraphicsContext = struct {
     default_pass: DefaultOffscreenPass,
     blitted_to_screen: bool = false,
     debug_render_enabled: bool = false,
-    window_pixel_size: Size,
     draw: Draw,
 
     pub fn init() GraphicsContext {
@@ -104,7 +103,6 @@ pub const GraphicsContext = struct {
             .shader = Shader.initDefaultSpriteShader() catch unreachable,
             .debug_render_enabled = !config.disable_debug_render,
             .default_pass = DefaultOffscreenPass.init(design_w, design_h, config.texture_filter, config.resolution_policy),
-            .window_pixel_size = .{ .w = window_pixel_size.w, .h = window_pixel_size.h },
             .draw = Draw.init(),
         };
     }
@@ -116,7 +114,6 @@ pub const GraphicsContext = struct {
     }
 
     pub fn setWindowPixelSize(self: *GraphicsContext, size: Size) void {
-        self.window_pixel_size = size;
         self.default_pass.onWindowResizedCallback(size);
     }
 
@@ -153,8 +150,7 @@ pub const GraphicsContext = struct {
         var clear_command = config.asClearCommand();
 
         if (self.blitted_to_screen) {
-            // const size = aya.window.drawableSize(); // TODO
-            const size = self.window_pixel_size;
+            const size = aya.window.sizeInPixels();
             renderkit.beginDefaultPass(clear_command, size.w, size.h);
             proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(size.w)), @as(f32, @floatFromInt(size.h)));
         } else {

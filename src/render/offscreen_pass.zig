@@ -77,6 +77,8 @@ pub const DefaultOffscreenPass = struct {
     }
 
     pub fn onWindowResizedCallback(self: *DefaultOffscreenPass, size: Size) void {
+        if (self.policy == .none) return;
+
         if (size.w != 0 and size.h != 0 and self.policy == .default and (size.w != self.design_w or size.h != self.design_h)) {
             self.pass.resize(size.w, size.h);
             self.design_w = size.w;
