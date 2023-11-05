@@ -3,16 +3,13 @@ const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 const ig = @import("imgui");
 
-const App = aya.App;
 const Scancode = aya.Scancode;
 const Events = aya.Events;
 const EventReader = aya.EventReader;
 const EventWriter = aya.EventWriter;
 const Size = aya.Size;
 
-const eventLoop = @import("runner.zig").eventLoop;
-
-// TODO: add way more window events
+// TODO: add more window events
 pub const WindowResized = struct { width: f32, height: f32 };
 pub const WindowMoved = struct { x: f32, y: f32 };
 pub const WindowFocused = struct { focused: bool };
@@ -26,28 +23,6 @@ pub const WindowMouseFocused = struct { focused: bool };
 // SDL_EVENT_WINDOW_TAKE_FOCUS
 // SDL_EVENT_WINDOW_HIT_TEST
 // SDL_EVENT_WINDOW_DISPLAY_CHANGED
-
-pub const WindowPlugin = struct {
-    window_config: WindowConfig = .{},
-
-    pub fn build(self: WindowPlugin, app: *App) void {
-        _ = self;
-
-        _ = app
-            .setRunner(eventLoop)
-        // window
-            .addEvent(WindowResized)
-            .addEvent(WindowMoved)
-            .addEvent(WindowScaleFactorChanged)
-            .addEvent(WindowFocused)
-            .addEvent(WindowMouseFocused)
-        // mouse
-            .addEvent(aya.MouseMotion)
-            .addEvent(aya.MouseWheel)
-        // gamepad
-            .addEvent(aya.GamepadConnectionEvent);
-    }
-};
 
 pub const WindowMode = enum(u32) {
     windowed = 0,

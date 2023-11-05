@@ -27,7 +27,7 @@ pub const Input = struct {
         self.gamepads.deinit();
     }
 
-    pub fn clear(self: *Input) void {
+    pub fn newFrame(self: *Input) void {
         self.mouse.buttons.clear();
         self.keys.clear();
         self.gamepads.update();

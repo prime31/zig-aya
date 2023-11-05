@@ -1,41 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-const Transform = aya.Transform;
-const GlobalTransform = aya.GlobalTransform;
-
-pub const SpatialBundle = struct {
-    pub const is_bundle = true;
-
-    visibility: Visibility,
-    inherited_visibility: InheritedVisibility,
-    view_visibility: ViewVisibility,
-    transform: Transform,
-    global_transform: GlobalTransform,
-};
-
-pub const Visibility = enum {
-    /// An entity with `Visibility::Inherited` will inherit the Visibility of its [`Parent`].
-    /// A root-level entity that is set to `Inherited` will be visible.
-    inherited,
-    /// An entity with `Visibility::Hidden` will be unconditionally hidden.
-    hidden,
-    /// An entity with `Visibility::Visible` will be unconditionally visible.
-    ///
-    /// Note that an entity with `Visibility::Visible` will be visible regardless of whether the
-    /// [`Parent`] entity is hidden.
-    visible,
-};
-
-pub const ViewVisibility = struct {
-    visible: bool = false,
-};
-
-pub const InheritedVisibility = enum {
-    hidden,
-    visible,
-};
-
 pub const LayerMask = u32;
 pub const Layer = u8;
 
@@ -86,9 +51,4 @@ pub const RenderLayers = struct {
     pub fn intersects(self: RenderLayers, other: RenderLayers) bool {
         return (self.layers & other.layers) > 0;
     }
-};
-
-// TODO: organize
-pub const VisibleEntities = struct {
-    entities: std.ArrayList(u64),
 };

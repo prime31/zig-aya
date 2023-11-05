@@ -9,3 +9,13 @@ pub usingnamespace @import("rect.zig");
 pub usingnamespace @import("vec2.zig");
 pub usingnamespace @import("vec3.zig");
 pub usingnamespace @import("vec4.zig");
+
+pub const Axis = enum(u8) {
+    x,
+    y,
+};
+
+pub const Size = struct {
+    w: c_int = 0,
+    h: c_int = 0,
+};

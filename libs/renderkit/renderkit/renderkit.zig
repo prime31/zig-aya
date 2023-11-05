@@ -51,7 +51,7 @@ pub fn setup(desc: descriptions.RendererDesc, allocator: std.mem.Allocator) void
 }
 
 pub fn shutdown() void {
-    // TODO: destroy the items in the caches as well
+    // TODO: destroy the items in the caches as well using similar setup to zgpu.destroyResource(anytype)
     image_cache.deinit();
     pass_cache.deinit();
     buffer_cache.deinit();
