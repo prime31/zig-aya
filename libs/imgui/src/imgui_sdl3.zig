@@ -52,9 +52,8 @@ pub fn render(window: *sdl.SDL_Window, gl_ctx: sdl.SDL_GLContext) void {
     if ((io.ConfigFlags & imgui.ImGuiConfigFlags_ViewportsEnable) != 0) {
         imgui.igUpdatePlatformWindows();
         imgui.igRenderPlatformWindowsDefault(null, null);
+        _ = sdl.SDL_GL_MakeCurrent(window, gl_ctx);
     }
-
-    _ = sdl.SDL_GL_MakeCurrent(window, gl_ctx);
 }
 
 pub fn shutdown() void {

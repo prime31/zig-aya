@@ -8,8 +8,7 @@ pub const MouseMotion = struct {
 
 pub const MouseWheel = struct {
     pub const Direction = enum { normal, flipped };
-    /// The mouse scroll unit.
-    // unit: MouseScrollUnit,
+
     /// The horizontal scroll value.
     x: f32,
     /// The vertical scroll value.

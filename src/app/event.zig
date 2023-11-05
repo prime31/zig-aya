@@ -25,7 +25,7 @@ pub fn Events(comptime T: type) type {
             self.events_next_frame.deinit();
         }
 
-        fn update(self: *Self) void {
+        pub fn update(self: *Self) void {
             self.events.clearRetainingCapacity();
             std.mem.swap(std.ArrayList(T), &self.events, &self.events_next_frame);
         }
