@@ -153,9 +153,13 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     });
 
     exe.addModule("aya", aya_module);
-    exe.addModule("stb", stb_module);
     exe.addModule("sdl", sdl_module);
-    exe.addModule("imgui", imgui_module);
+    exe.addModule("shaders", b.createModule(.{
+        .source_file = .{ .path = thisDir() ++ "/examples/assets/shaders/shaders.zig" },
+        .dependencies = &.{
+            .{ .name = "aya", .module = aya_module },
+        },
+    }));
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {

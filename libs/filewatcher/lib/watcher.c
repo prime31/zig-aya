@@ -19,6 +19,21 @@ unsigned long hash(char *str) {
     return hash;
 }
 
+bool ends_with(char *str, size_t lenstr, const char *suffix) {
+    if (!str || !suffix)
+        return 0;
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+bool has_supported_extension(char *str, size_t lenstr) {
+    if (ends_with(str, lenstr, ".glsl")) return true;
+    if (ends_with(str, lenstr, ".png")) return true;
+    return false;
+}
+
 void fs_event_callback(
     ConstFSEventStreamRef streamRef,
     void *clientCallBackInfo,
@@ -30,12 +45,15 @@ void fs_event_callback(
     int i;
     char **paths = eventPaths;
 
-    unsigned long arr[25];
+    unsigned long arr[250];
     int arr_cnt = 0;
 
     for (i = 0; i < numEvents; i++) {
-        int len = strlen(paths[i]);
+        size_t len = strlen(paths[i]);
         if (paths[i][len - 1] == '~') continue;
+
+        if (!has_supported_extension(paths[i], len)) continue;
+
 
         if (eventFlags[i] & kFSEventStreamEventFlagItemIsFile) {
             if (eventFlags[i] & kFSEventStreamEventFlagItemModified
