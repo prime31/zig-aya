@@ -45,10 +45,11 @@ pub fn build(b: *std.Build) void {
             "const aya = @import(\"aya\");\n",
             "const ShaderState = aya.render.ShaderState;",
             "const Shader = aya.render.Shader;",
-            "const Mat4 = aya.math.Mat4;",
             "const Vec2 = aya.math.Vec2;",
             "const Vec3 = aya.math.Vec3;",
+            "const Mat4 = aya.math.Mat4;",
         },
+        .shader_load_style = .file,
     });
 
     const compile_shaders_step = b.step("compile-shaders", "compiles all shaders");

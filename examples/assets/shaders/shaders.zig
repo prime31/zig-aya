@@ -3,9 +3,9 @@ const aya = @import("aya");
 
 const ShaderState = aya.render.ShaderState;
 const Shader = aya.render.Shader;
-const Mat4 = aya.math.Mat4;
 const Vec2 = aya.math.Vec2;
 const Vec3 = aya.math.Vec3;
+const Mat4 = aya.math.Mat4;
 
 pub const DepthShader = ShaderState(DepthParamsFS);
 pub const DissolveShader = ShaderState(DissolveParams);
@@ -20,63 +20,63 @@ pub const VignetteShader = ShaderState(VignetteParams);
 
 pub fn createCubeShader() !Shader {
     const vert = @embedFile("cube_vs.glsl");
-    const frag = @embedFile("cube_fs.glsl");
+    const frag = "examples/assets/shaders/cube_fs.glsl";
     return try Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDepthShader() DepthShader {
-    const frag = @embedFile("depth_fs.glsl");
+    const frag = "examples/assets/shaders/depth_fs.glsl";
     return DepthShader.init(.{ .frag = frag, .onPostBind = DepthShader.onPostBind });
 }
 
 pub fn createDissolveShader() DissolveShader {
-    const frag = @embedFile("dissolve_fs.glsl");
+    const frag = "examples/assets/shaders/dissolve_fs.glsl";
     return DissolveShader.init(.{ .frag = frag, .onPostBind = DissolveShader.onPostBind });
 }
 
 pub fn createInstancedShader() !Shader {
     const vert = @embedFile("instanced_vs.glsl");
-    const frag = @embedFile("instanced_fs.glsl");
+    const frag = "examples/assets/shaders/instanced_fs.glsl";
     return try Shader.initWithVertFrag(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createLinesShader() LinesShader {
-    const frag = @embedFile("lines_fs.glsl");
+    const frag = "examples/assets/shaders/lines_fs.glsl";
     return LinesShader.init(.{ .frag = frag, .onPostBind = LinesShader.onPostBind });
 }
 
 pub fn createMetaFlamesShader() MetaFlamesShader {
-    const frag = @embedFile("meta_flames_fs.glsl");
+    const frag = "examples/assets/shaders/meta_flames_fs.glsl";
     return MetaFlamesShader.init(.{ .frag = frag, .onPostBind = MetaFlamesShader.onPostBind });
 }
 
 pub fn createMode7Shader() Mode7Shader {
-    const frag = @embedFile("mode7_fs.glsl");
+    const frag = "examples/assets/shaders/mode7_fs.glsl";
     return Mode7Shader.init(.{ .frag = frag, .onPostBind = Mode7Shader.onPostBind });
 }
 
 pub fn createNoiseShader() NoiseShader {
-    const frag = @embedFile("noise_fs.glsl");
+    const frag = "examples/assets/shaders/noise_fs.glsl";
     return NoiseShader.init(.{ .frag = frag, .onPostBind = NoiseShader.onPostBind });
 }
 
 pub fn createPixelGlitchShader() PixelGlitchShader {
-    const frag = @embedFile("pixel_glitch_fs.glsl");
+    const frag = "examples/assets/shaders/pixel_glitch_fs.glsl";
     return PixelGlitchShader.init(.{ .frag = frag, .onPostBind = PixelGlitchShader.onPostBind });
 }
 
 pub fn createRgbShiftShader() RgbShiftShader {
-    const frag = @embedFile("rgb_shift_fs.glsl");
+    const frag = "examples/assets/shaders/rgb_shift_fs.glsl";
     return RgbShiftShader.init(.{ .frag = frag, .onPostBind = RgbShiftShader.onPostBind });
 }
 
 pub fn createSepiaShader() SepiaShader {
-    const frag = @embedFile("sepia_fs.glsl");
+    const frag = "examples/assets/shaders/sepia_fs.glsl";
     return SepiaShader.init(.{ .frag = frag, .onPostBind = SepiaShader.onPostBind });
 }
 
 pub fn createVignetteShader() VignetteShader {
-    const frag = @embedFile("vignette_fs.glsl");
+    const frag = "examples/assets/shaders/vignette_fs.glsl";
     return VignetteShader.init(.{ .frag = frag, .onPostBind = VignetteShader.onPostBind });
 }
 

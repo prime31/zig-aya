@@ -37,9 +37,6 @@ pub const Shader = struct {
     const Empty = struct {};
 
     pub const ShaderOptions = struct {
-        /// if vert and frag are file paths an Allocator is required. If they are the shader code then no Allocator should be provided
-        allocator: ?std.mem.Allocator = null,
-
         /// optional vertex shader file path or shader code. If null, the default sprite shader vertex shader is used
         vert: ?[:0]const u8 = null,
 
@@ -70,12 +67,15 @@ pub const Shader = struct {
 
     // TODO: this shouldnt have `catch unreachable`s but in release mode builds fail to identify the error set....
     pub fn initWithVertFrag(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
+        var free_vert = false;
+        var free_frag = false;
+
         const vert = blk: {
             // if we were not provided a vert shader we substitute in the sprite shader
             if (options.vert) |vert| {
-                // if we were provided an allocator that means this is a file
-                if (options.allocator) |allocator| {
-                    break :blk fs.readZ(allocator, vert) catch unreachable;
+                if (std.mem.endsWith(u8, vert, ".glsl")) {
+                    free_vert = true;
+                    break :blk fs.readZ(aya.mem.allocator, vert) catch unreachable;
                 }
                 break :blk vert;
             } else {
@@ -83,8 +83,9 @@ pub const Shader = struct {
             }
         };
         const frag = blk: {
-            if (options.allocator) |allocator| {
-                break :blk fs.readZ(allocator, options.frag) catch unreachable;
+            if (std.mem.endsWith(u8, options.frag, ".glsl")) {
+                free_frag = true;
+                break :blk fs.readZ(aya.mem.allocator, options.frag) catch unreachable;
             }
             break :blk options.frag;
         };
@@ -96,10 +97,8 @@ pub const Shader = struct {
         };
 
         // only free data if we loaded from file
-        if (options.allocator) |allocator| {
-            if (options.vert != null) allocator.free(vert);
-            allocator.free(frag);
-        }
+        if (free_vert) aya.mem.allocator.free(vert);
+        if (free_frag) aya.mem.allocator.free(frag);
 
         return shader;
     }

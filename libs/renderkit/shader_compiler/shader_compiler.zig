@@ -8,6 +8,8 @@ const ShaderProgram = @import("shdc_parser.zig").ShaderProgram;
 const ReflectionData = @import("shdc_parser.zig").ReflectionData;
 const UniformBlock = @import("shdc_parser.zig").UniformBlock;
 
+const ShaderLoadStyle = enum { embed, file };
+
 fn warn(comptime format: []const u8, args: anytype) void {
     std.log.warn(format ++ "\n", args);
 }
@@ -27,6 +29,7 @@ pub const ShaderCompileStep = struct {
     package_out_path: []const u8,
     default_program_name: []const u8,
     additional_imports: ?[]const []const u8 = null,
+    shader_load_style: ShaderLoadStyle,
 
     /// map of types that can be added to manually here or via Sokol's `@ctype vec2 [2]f32`
     float2_type: []const u8 = "[2]f32",
@@ -59,6 +62,9 @@ pub const ShaderCompileStep = struct {
 
         /// dependencies to add to the package. For GameKit the `gamekit` package would be needed for the math imports.
         package_deps: ?[]std.build.Module = null,
+
+        // should shaders be loaded via @embedFile or file path
+        shader_load_style: ShaderLoadStyle = .embed,
     };
 
     /// Create a ShaderCompilerStep for `builder`. When this step is invoked by the build
@@ -116,6 +122,7 @@ pub const ShaderCompileStep = struct {
             .package_out_path = package_out_path,
             .default_program_name = options.default_program_name,
             .additional_imports = options.additional_imports,
+            .shader_load_style = options.shader_load_style,
         };
         return self;
     }
@@ -184,7 +191,7 @@ pub const ShaderCompileStep = struct {
         // if we have some shaders that use the default vert shader, setup a ShaderState and Shader creation method for them
         var relative_path_from_package_to_shaders = try std.fs.path.relative(self.builder.allocator, self.package_out_path, self.shader_out_path);
 
-        // ensure if we have a non-empty path that it ends in a '/'
+        // ensure if we have a non-empty path that ends in a '/'
         const rel_path_len = relative_path_from_package_to_shaders.len;
         if (rel_path_len > 0 and relative_path_from_package_to_shaders[rel_path_len - 1] != path.sep) {
             const with_sep = try self.builder.allocator.alloc(u8, rel_path_len + 1);
@@ -220,10 +227,12 @@ pub const ShaderCompileStep = struct {
 
                 // write out creation helper functions
                 try fn_writer.print("pub fn create{s}Shader() {s}Shader {{\n", .{ name, name });
-                try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{
-                    relative_path_from_package_to_shaders,
-                    program.fs,
-                });
+                if (self.shader_load_style == .embed) {
+                    try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.fs });
+                    try fn_writer.print("    return {0s}Shader.init(.{{ .frag = frag, .onPostBind = {0s}Shader.onPostBind }});\n", .{name});
+                } else {
+                    try fn_writer.print("    const frag = \"{0s}{1s}.glsl\";\n", .{ self.shader_out_path, program.fs });
+                }
                 try fn_writer.print("    return {0s}Shader.init(.{{ .frag = frag, .onPostBind = {0s}Shader.onPostBind }});\n", .{name});
                 try fn_writer.writeAll("}\n\n");
             } else {
@@ -250,8 +259,15 @@ pub const ShaderCompileStep = struct {
 
                 try fn_writer.print("pub fn create{s}Shader() !Shader {{\n", .{name});
                 try fn_writer.print("    const vert = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.vs });
-                try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.fs });
+
+                if (self.shader_load_style == .embed) {
+                    try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.fs });
+                    try fn_writer.print("    return try Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
+                } else {
+                    try fn_writer.print("    const frag = \"{0s}{1s}.glsl\";\n", .{ self.shader_out_path, program.fs });
+                }
                 try fn_writer.print("    return try Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
+
                 try fn_writer.writeAll("}\n\n");
             }
         }
