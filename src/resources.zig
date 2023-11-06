@@ -16,7 +16,7 @@ pub const Resources = struct {
 
     pub fn init() Self {
         return .{
-            .resources = std.AutoHashMap(usize, ErasedPtr).init(aya.allocator),
+            .resources = std.AutoHashMap(usize, ErasedPtr).init(aya.mem.allocator),
         };
     }
 
@@ -39,7 +39,7 @@ pub const Resources = struct {
             res.* = if (@hasDecl(T, "init")) blk: {
                 const params = @typeInfo(@TypeOf(T.init)).Fn.params;
                 if (params.len == 0) break :blk T.init();
-                if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(aya.allocator);
+                if (params.len == 1 and params[0].type.? == std.mem.Allocator) break :blk T.init(aya.mem.allocator);
                 @compileError("Resources with init method must be init() or init(Allocator). " ++ @typeName(T) ++ " has none of them.");
             } else std.mem.zeroes(T);
         } else {
@@ -51,12 +51,12 @@ pub const Resources = struct {
     }
 
     /// Insert a resource that already exists. Resource should be a stack allocated struct. It will be heap allocated
-    /// and assigned for storage. If it is already heap allocated it must have been allocated with aya.Allocator!
+    /// and assigned for storage. If it is already heap allocated it must have been allocated with aya.mem.allocator!
     pub fn insert(self: *Self, resource: anytype) void {
         const T = @TypeOf(resource);
         std.debug.assert(T != type);
 
-        const res = aya.allocator.create(T) catch unreachable;
+        const res = aya.mem.allocator.create(T) catch unreachable;
         res.* = resource;
         self.resources.put(typeId(T), ErasedPtr.initWithPtr(T, @intFromPtr(res))) catch unreachable;
     }

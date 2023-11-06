@@ -21,7 +21,7 @@ pub const AtlasBatch = struct {
 
     /// AtlasBatch does not take ownership of the texture passed in
     pub fn init(allocator: ?std.mem.Allocator, texture: aya.gfx.Texture, max_sprites: usize) !AtlasBatch {
-        const alloc = allocator orelse aya.allocator;
+        const alloc = allocator orelse aya.mem.allocator;
 
         return AtlasBatch{
             .mesh = try DynamicMesh(u16, Vertex).init(alloc, max_sprites * 4, try getIndexBufferData(max_sprites)),

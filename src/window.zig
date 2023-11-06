@@ -64,7 +64,7 @@ pub const Window = struct {
         var window = Window{ .sdl_window = sdl_window, .gl_ctx = sdl.SDL_GL_CreateContext(sdl_window), .id = sdl.SDL_GetWindowID(sdl_window) };
 
         const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
-        @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.allocator);
+        @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.mem.allocator);
 
         switch (config.vsync) {
             .adaptive => _ = sdl.SDL_GL_SetSwapInterval(-1),

@@ -10,7 +10,7 @@ pub const PostProcessStack = struct {
     pub fn init(design_w: i32, _: i32) PostProcessStack {
         _ = design_w;
         return .{
-            .processors = std.ArrayList(*PostProcessor).init(aya.allocator),
+            .processors = std.ArrayList(*PostProcessor).init(aya.mem.allocator),
             .pass = OffscreenPass.init(aya.window.width(), aya.window.height()),
         };
     }

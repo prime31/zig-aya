@@ -8,6 +8,7 @@ const imgui_build = @import("libs/imgui/build.zig");
 const fontstash_build = @import("libs/fontstash/build.zig");
 const renderkit_build = @import("libs/renderkit/build.zig");
 const zaudio_build = @import("libs/zaudio/build.zig");
+const watcher_build = @import("libs/filewatcher/build.zig");
 
 const ShaderCompileStep = renderkit_build.ShaderCompileStep;
 
@@ -129,6 +130,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zaudio_package = zaudio_build.package(b, target, optimize, .{});
     zaudio_package.link(exe);
 
+    watcher_build.linkArtifact(exe);
+
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
@@ -139,6 +142,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "fontstash", .module = fontstash_module },
             .{ .name = "renderkit", .module = renderkit_module },
             .{ .name = "zaudio", .module = zaudio_package.zaudio },
+            .{ .name = "watcher", .module = watcher_build.getModule(b) },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{

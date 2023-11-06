@@ -2,42 +2,47 @@ const std = @import("std");
 const aya = @import("aya");
 const ig = @import("imgui");
 
-const App = aya.App;
-const ResMut = aya.ResMut;
-const Res = aya.Res;
-const Input = aya.Input;
-const Scancode = aya.Scancode;
+const Texture = aya.render.Texture;
+const Color = aya.math.Color;
 
 pub fn main() !void {
     std.debug.print("\n", .{});
     try aya.run(.{
+        .init = init,
         .render = render,
+        .shutdown = shutdown,
     });
 }
 
-var clear_color = aya.Color.aya;
+var clear_color = Color.aya;
+var tex: Texture = undefined;
+
+fn init() !void {
+    tex = aya.assets.loadTexture("examples/assets/sword_dude.png", .nearest);
+}
 
 fn render() !void {
-    const tex = aya.Texture.initCheckerTexture(25);
-    defer tex.deinit();
-
-    if (ig.igBegin("poop", null, ig.ImGuiWindowFlags_Modal)) {
+    if (ig.igBegin("Clear Color Window", null, ig.ImGuiWindowFlags_Modal)) {
         defer ig.igEnd();
 
         var col = clear_color.asVec4();
-        if (ig.igColorPicker4("col", &col.x, 0, ig.ImGuiColorEditFlags_None)) {
-            clear_color = aya.Color.fromVec4(col);
+        if (ig.igColorPicker4("Clear Color", &col.x, 0, ig.ImGuiColorEditFlags_None)) {
+            clear_color = Color.fromVec4(col);
         }
     }
 
     if (!aya.input.keyPressed(.k)) {
         aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 400, .y = 20 }, null);
-        aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, aya.Color.dark_purple);
+        aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, Color.dark_purple);
     }
 
     aya.gfx.beginPass(.{ .color = clear_color });
     aya.gfx.draw.text("go fuck yourself", 24, 20, null);
-    aya.gfx.draw.rect(aya.Vec2.init(50, 50), 200, 400, aya.Color.lime);
-    aya.gfx.draw.tex(tex, 5, 400);
+    aya.gfx.draw.rect(aya.math.Vec2.init(50, 50), 200, 400, Color.lime);
+    aya.gfx.draw.texScale(tex, 5, 400, 10);
     aya.gfx.endPass();
+}
+
+fn shutdown() !void {
+    aya.assets.releaseTexture(tex);
 }

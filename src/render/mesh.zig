@@ -126,7 +126,7 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
         allocator: std.mem.Allocator,
 
         pub fn init(allocator: ?std.mem.Allocator, instance_count: usize, indices: []IndexT, verts: []VertT) Self {
-            const alloc = allocator orelse aya.allocator;
+            const alloc = allocator orelse aya.mem.allocator;
 
             var ibuffer = renderkit.createBuffer(IndexT, .{
                 .type = .index,

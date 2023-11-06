@@ -134,7 +134,7 @@ pub const Gamepads = struct {
     pads: std.AutoHashMap(GamepadId, Gamepad), // TODO: make this a fixed array of ?Gamepad
 
     pub fn init() Gamepads {
-        return .{ .pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.allocator) };
+        return .{ .pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.mem.allocator) };
     }
 
     pub fn deinit(self: *Gamepads) void {

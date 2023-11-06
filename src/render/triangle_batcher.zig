@@ -24,7 +24,7 @@ pub const TriangleBatcher = struct {
     }
 
     pub fn init(allocator: ?std.mem.Allocator, max_tris: u16) !TriangleBatcher {
-        const alloc = allocator orelse aya.allocator;
+        const alloc = allocator orelse aya.mem.allocator;
 
         var batcher = TriangleBatcher{
             .mesh = try createDynamicMesh(alloc, max_tris * 3),

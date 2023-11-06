@@ -1,11 +1,11 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 const stb_image = @import("stb");
-const renderkit = @import("renderkit");
+const rk = @import("renderkit");
 const fs = aya.fs;
 
 pub const Texture = struct {
-    img: renderkit.Image,
+    img: rk.Image,
     width: f32 = 0,
     height: f32 = 0,
 
@@ -13,12 +13,12 @@ pub const Texture = struct {
         return initWithOptions(width, height, .nearest, .clamp);
     }
 
-    pub fn initWithOptions(width: i32, height: i32, filter: renderkit.TextureFilter, wrap: renderkit.TextureWrap) Texture {
+    pub fn initWithOptions(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) Texture {
         return initWithDataOptions(u8, width, height, &[_]u8{}, filter, wrap);
     }
 
-    pub fn initDynamic(width: i32, height: i32, filter: renderkit.TextureFilter, wrap: renderkit.TextureWrap) Texture {
-        const img = renderkit.createImage(.{
+    pub fn initDynamic(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) Texture {
+        const img = rk.createImage(.{
             .width = width,
             .height = height,
             .usage = .dynamic,
@@ -35,14 +35,14 @@ pub const Texture = struct {
         };
     }
 
-    pub fn initFromFile(file: []const u8, filter: renderkit.TextureFilter) !Texture {
-        const image_contents = try fs.read(aya.mem.tmp_allocator, file);
+    pub fn initFromFile(file: []const u8, filter: rk.TextureFilter) Texture {
+        const image_contents = fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var w: c_int = undefined;
         var h: c_int = undefined;
         var channels: c_int = undefined;
         const load_res = stb_image.stbi_load_from_memory(image_contents.ptr, @as(c_int, @intCast(image_contents.len)), &w, &h, &channels, 4);
-        if (load_res == null) return error.ImageLoadFailed;
+        if (load_res == null) unreachable;
         defer stb_image.stbi_image_free(load_res);
 
         return initWithDataOptions(u8, w, h, load_res[0..@as(usize, @intCast(w * h * channels))], filter, .clamp);
@@ -52,8 +52,8 @@ pub const Texture = struct {
         return initWithDataOptions(T, width, height, pixels, .nearest, .clamp);
     }
 
-    pub fn initWithDataOptions(comptime T: type, width: i32, height: i32, pixels: []T, filter: renderkit.TextureFilter, wrap: renderkit.TextureWrap) Texture {
-        const img = renderkit.createImage(.{
+    pub fn initWithDataOptions(comptime T: type, width: i32, height: i32, pixels: []T, filter: rk.TextureFilter, wrap: rk.TextureWrap) Texture {
+        const img = rk.createImage(.{
             .width = width,
             .height = height,
             .min_filter = filter,
@@ -95,8 +95,8 @@ pub const Texture = struct {
         return initWithData(u32, 4, 4, pixels[0..]);
     }
 
-    pub fn initOffscreen(width: i32, height: i32, filter: renderkit.TextureFilter, wrap: renderkit.TextureWrap) Texture {
-        const img = renderkit.createImage(.{
+    pub fn initOffscreen(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) Texture {
+        const img = rk.createImage(.{
             .render_target = true,
             .width = width,
             .height = height,
@@ -112,8 +112,8 @@ pub const Texture = struct {
         };
     }
 
-    pub fn initStencil(width: i32, height: i32, filter: renderkit.TextureFilter, wrap: renderkit.TextureWrap) Texture {
-        const img = renderkit.createImage(.{
+    pub fn initStencil(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) Texture {
+        const img = rk.createImage(.{
             .render_target = true,
             .pixel_format = .stencil,
             .width = width,
@@ -157,11 +157,11 @@ pub const Texture = struct {
     }
 
     pub fn deinit(self: *const Texture) void {
-        renderkit.destroyImage(self.img);
+        rk.destroyImage(self.img);
     }
 
     pub fn setData(self: *Texture, comptime T: type, data: []T) void {
-        renderkit.updateImage(T, self.img, data);
+        rk.updateImage(T, self.img, data);
     }
 
     pub fn resize(self: *Texture, width: i32, height: i32) void {
@@ -172,6 +172,6 @@ pub const Texture = struct {
 
     /// if openGL, returns the tid else returns the Image as a ptr
     pub fn imTextureID(self: Texture) *anyopaque {
-        return @as(*anyopaque, @ptrFromInt(renderkit.getNativeTid(self.img)));
+        return @as(*anyopaque, @ptrFromInt(rk.getNativeTid(self.img)));
     }
 };

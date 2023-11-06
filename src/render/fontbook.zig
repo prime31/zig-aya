@@ -49,7 +49,7 @@ pub const FontBook = struct {
 
     // add fonts
     pub fn addFont(self: *FontBook, path: []const u8) c_int {
-        const c_file = aya.tmp_allocator.dupeZ(u8, path) catch unreachable;
+        const c_file = aya.mem.tmp_allocator.dupeZ(u8, path) catch unreachable;
 
         const file = std.fs.cwd().openFile(path, .{}) catch unreachable;
         defer file.close();
@@ -173,7 +173,7 @@ pub const FontBook = struct {
         }
 
         const tex_area = @as(usize, @intCast(self.width * self.height));
-        var pixels = aya.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
+        var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
             std.debug.print("failed to allocate texture data: {}\n", .{err});
             return 0;
         };

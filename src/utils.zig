@@ -45,7 +45,7 @@ pub const ErasedPtr = struct {
 
     pub fn init(comptime T: type) ErasedPtr {
         const res = aya.mem.create(T);
-        res.* = if (@hasDecl(T, "init")) T.init(aya.allocator) else std.mem.zeroes(T);
+        res.* = if (@hasDecl(T, "init")) T.init(aya.mem.allocator) else std.mem.zeroes(T);
         return initWithPtr(T, @intFromPtr(res));
     }
 
