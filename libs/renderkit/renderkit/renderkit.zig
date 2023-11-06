@@ -87,7 +87,7 @@ fn checkShaderError(shader: GLuint) bool {
             unreachable;
         }
 
-        std.debug.print("shader compilation error:\n{s}", .{buf[0..@as(usize, @intCast(total_len))]});
+        std.debug.print("[ERROR] shader compilation error:\n{s}", .{buf[0..@as(usize, @intCast(total_len))]});
         return false;
     }
     return true;
@@ -673,7 +673,11 @@ pub fn createShaderProgram(comptime VertUniformT: type, comptime FragUniformT: t
     const vertex_shader = compileShader(gl.VERTEX_SHADER, desc.vs);
     const frag_shader = compileShader(gl.FRAGMENT_SHADER, desc.fs);
 
-    if (vertex_shader == 0 and frag_shader == 0) return 0;
+    if (vertex_shader == 0 or frag_shader == 0) {
+        gl.deleteShader(vertex_shader);
+        gl.deleteShader(frag_shader);
+        return 0;
+    }
 
     const id = gl.createProgram();
     gl.attachShader(id, vertex_shader);
@@ -731,6 +735,16 @@ pub fn createShaderProgram(comptime VertUniformT: type, comptime FragUniformT: t
     gl.useProgram(@as(GLuint, @intCast(cur_prog)));
 
     return shader_cache.append(shader);
+}
+
+pub fn replaceShaderProgram(old_shader: types.ShaderProgram, new_shader: types.ShaderProgram) void {
+    const old_shdr = shader_cache.get(old_shader);
+    const new_shdr = shader_cache.get(new_shader);
+
+    cache.invalidateProgram(old_shdr.program);
+    gl.deleteProgram(old_shdr.program);
+
+    old_shdr.program = new_shdr.program;
 }
 
 pub fn destroyShaderProgram(shader: types.ShaderProgram) void {

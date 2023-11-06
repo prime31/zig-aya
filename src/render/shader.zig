@@ -40,10 +40,10 @@ pub const Shader = struct {
         /// if vert and frag are file paths an Allocator is required. If they are the shader code then no Allocator should be provided
         allocator: ?std.mem.Allocator = null,
 
-        /// optional vertex shader file path (without extension) or shader code. If null, the default sprite shader vertex shader is used
+        /// optional vertex shader file path or shader code. If null, the default sprite shader vertex shader is used
         vert: ?[:0]const u8 = null,
 
-        /// required frag shader file path (without extension) or shader code.
+        /// required frag shader file path or shader code.
         frag: [:0]const u8,
 
         /// optional function that will be called immediately after bind is called allowing you to auto-update uniforms
@@ -75,9 +75,7 @@ pub const Shader = struct {
             if (options.vert) |vert| {
                 // if we were provided an allocator that means this is a file
                 if (options.allocator) |allocator| {
-                    const vert_path = std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" }) catch unreachable;
-                    defer allocator.free(vert_path);
-                    break :blk fs.readZ(allocator, vert_path) catch unreachable;
+                    break :blk fs.readZ(allocator, vert) catch unreachable;
                 }
                 break :blk vert;
             } else {
@@ -86,18 +84,24 @@ pub const Shader = struct {
         };
         const frag = blk: {
             if (options.allocator) |allocator| {
-                const frag_path = std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" }) catch unreachable;
-                defer allocator.free(frag_path);
-                break :blk fs.readZ(allocator, frag_path) catch unreachable;
+                break :blk fs.readZ(allocator, options.frag) catch unreachable;
             }
             break :blk options.frag;
         };
 
-        return Shader{
+        const shader = Shader{
             .shader = rk.createShaderProgram(VertUniformT, FragUniformT, .{ .vs = vert, .fs = frag }),
             .onPostBind = options.onPostBind,
             .onSetTransformMatrix = options.onSetTransformMatrix,
         };
+
+        // only free data if we loaded from file
+        if (options.allocator) |allocator| {
+            if (options.vert != null) allocator.free(vert);
+            allocator.free(frag);
+        }
+
+        return shader;
     }
 
     pub fn deinit(self: Shader) void {
@@ -131,22 +135,27 @@ pub const Shader = struct {
 /// to the Shader.onPostBind so that the FragUniformT object is automatically updated when the Shader is bound.
 pub fn ShaderState(comptime FragUniformT: type) type {
     return struct {
+        const Self = @This();
+
         shader: Shader,
         frag_uniform: FragUniformT = .{},
 
-        pub fn init(options: Shader.ShaderOptions) @This() {
-            return .{
-                .shader = Shader.initWithFrag(FragUniformT, options) catch unreachable,
-            };
+        pub fn init(options: Shader.ShaderOptions) Self {
+            return .{ .shader = aya.assets.loadShader(VertexParams, FragUniformT, options) catch unreachable };
         }
 
-        pub fn deinit(self: @This()) void {
+        pub fn deinit(self: Self) void {
             self.shader.deinit();
         }
 
         pub fn onPostBind(shader: *Shader) void {
-            const self = @fieldParentPtr(@This(), "shader", shader);
+            const self = @fieldParentPtr(Self, "shader", shader);
             shader.setFragUniform(FragUniformT, &self.frag_uniform);
+        }
+
+        pub fn clone(self: Self) Self {
+            aya.assets.cloneShader(self.shader);
+            return self;
         }
     };
 }
