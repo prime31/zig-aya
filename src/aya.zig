@@ -29,6 +29,7 @@ pub const evt = @import("events/mod.zig");
 pub const win = @import("window.zig");
 pub const math = @import("math/mod.zig");
 pub const render = @import("render/mod.zig");
+pub const audio = @import("audio/mod.zig");
 
 // essentially our fields, just made globals for ease of access
 pub var window: Window = undefined;
@@ -71,6 +72,7 @@ fn init(comptime config: Config) void {
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
     event_writers = EventWriters.init();
+    audio.init();
 }
 
 fn deinit() void {
@@ -79,6 +81,7 @@ fn deinit() void {
     input.deinit();
     gfx.deinit();
     res.deinit();
+    audio.deinit();
 
     rk.shutdown();
 }
@@ -89,9 +92,7 @@ pub fn run(comptime config: Config) !void {
     if (config.init) |initFn| try initFn();
 
     while (!pollEvents()) {
-        EventWriters.newFrame();
         ig.sdl.newFrame();
-        input.newFrame();
         time.tick();
 
         if (config.update) |update| try update();
@@ -102,6 +103,10 @@ pub fn run(comptime config: Config) !void {
 
         ig.sdl.render(window.sdl_window, window.gl_ctx);
         _ = sdl.SDL_GL_SwapWindow(window.sdl_window);
+
+        // these rely on pollEvents so clear them before starting the loop
+        EventWriters.newFrame();
+        input.newFrame();
     }
     if (config.shutdown) |shutdown| try shutdown();
 
