@@ -1,18 +1,44 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-pub fn create(comptime T: type) *T {
-    return aya.allocator.create(T) catch unreachable;
-}
+const ScratchAllocator = @import("scratch_allocator.zig").ScratchAllocator;
 
-pub fn destroy(ptr: anytype) void {
-    aya.allocator.destroy(ptr);
-}
+// temp allocator is a ring buffer so memory doesnt need to be freed
+var tmp_allocator_instance: ScratchAllocator = undefined;
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
-pub fn alloc(comptime T: type, n: usize) []T {
-    return aya.allocator.alloc(T, n) catch unreachable;
-}
+pub const Mem = struct {
+    allocator: std.mem.Allocator,
+    tmp_allocator: std.mem.Allocator,
 
-pub fn free(memory: anytype) void {
-    aya.allocator.free(memory);
-}
+    pub fn init() Mem {
+        const allocator = gpa.allocator();
+        tmp_allocator_instance = ScratchAllocator.init(allocator);
+
+        return .{
+            .allocator = allocator,
+            .tmp_allocator = tmp_allocator_instance.allocator(),
+        };
+    }
+
+    pub fn deinit(_: Mem) void {
+        tmp_allocator_instance.deinit();
+        _ = gpa.deinit();
+    }
+
+    pub fn create(self: Mem, comptime T: type) *T {
+        return self.allocator.create(T) catch unreachable;
+    }
+
+    pub fn destroy(self: Mem, ptr: anytype) void {
+        self.allocator.destroy(ptr);
+    }
+
+    pub fn alloc(self: Mem, comptime T: type, n: usize) []T {
+        return self.allocator.alloc(T, n) catch unreachable;
+    }
+
+    pub fn free(self: Mem, memory: anytype) void {
+        self.allocator.free(memory);
+    }
+};

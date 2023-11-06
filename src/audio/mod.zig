@@ -3,21 +3,21 @@ const ma = @import("zaudio");
 const aya = @import("../aya.zig");
 
 pub var engine: *ma.Engine = undefined;
-pub var snd1: *ma.Sound = undefined;
-pub var snd2: *ma.Sound = undefined;
-pub var snd3: *ma.Sound = undefined;
-pub var music: *ma.Sound = undefined;
+pub var snd1: ?*ma.Sound = undefined;
+pub var snd2: ?*ma.Sound = undefined;
+pub var snd3: ?*ma.Sound = undefined;
+pub var music: ?*ma.Sound = undefined;
 
 pub fn init() void {
-    ma.init(aya.allocator);
+    ma.init(aya.mem.allocator);
     engine = ma.Engine.create(null) catch unreachable;
 }
 
 pub fn deinit() void {
-    snd1.destroy();
-    snd2.destroy();
-    snd3.destroy();
-    music.destroy();
+    if (snd1) |s| s.destroy();
+    if (snd2) |s| s.destroy();
+    if (snd3) |s| s.destroy();
+    if (music) |s| s.destroy();
     engine.destroy();
     ma.deinit();
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const rk = @import("renderkit");
+const rk = aya.rk;
 const fs = aya.fs;
 
 const Mat32 = aya.math.Mat32;
@@ -77,7 +77,7 @@ pub const Shader = struct {
                 if (options.allocator) |allocator| {
                     const vert_path = std.mem.concat(allocator, u8, &[_][]const u8{ vert, ".glsl\x00" }) catch unreachable;
                     defer allocator.free(vert_path);
-                    break :blk fs.readZ(vert_path) catch unreachable;
+                    break :blk fs.readZ(allocator, vert_path) catch unreachable;
                 }
                 break :blk vert;
             } else {
@@ -88,7 +88,7 @@ pub const Shader = struct {
             if (options.allocator) |allocator| {
                 const frag_path = std.mem.concat(allocator, u8, &[_][]const u8{ options.frag, ".glsl" }) catch unreachable;
                 defer allocator.free(frag_path);
-                break :blk fs.readZ(frag_path) catch unreachable;
+                break :blk fs.readZ(allocator, frag_path) catch unreachable;
             }
             break :blk options.frag;
         };

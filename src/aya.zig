@@ -13,18 +13,19 @@ const ImGuiConfig = ig.sdl.Config;
 
 const EventWriters = @import("event_writers.zig").EventWriters;
 const Events = @import("events/events.zig").Events;
+
+const Mem = @import("mem/mem.zig").Mem;
 const Debug = @import("render/debug.zig").Debug;
 const Time = @import("time.zig").Time;
 const InputState = @import("input/input_state.zig").InputState;
 const GraphicsContext = @import("render/graphics_context.zig").GraphicsContext;
 const GraphicsConfig = @import("render/graphics_context.zig").Config;
 const Resources = @import("resources.zig").Resources;
-const ScratchAllocator = @import("mem/scratch_allocator.zig").ScratchAllocator;
+const Assets = @import("assets.zig").Assets;
 
 // exports for easy access
 pub const utils = @import("utils.zig");
 pub const fs = @import("fs.zig");
-pub const mem = @import("mem/mem.zig");
 pub const evt = @import("events/mod.zig");
 pub const win = @import("window.zig");
 pub const math = @import("math/mod.zig");
@@ -32,21 +33,16 @@ pub const render = @import("render/mod.zig");
 pub const audio = @import("audio/mod.zig");
 
 // essentially our fields, just made globals for ease of access
+pub var mem: Mem = undefined;
 pub var window: Window = undefined;
 pub var debug: Debug = undefined;
 pub var time: Time = undefined;
 pub var input: InputState = undefined;
 pub var gfx: GraphicsContext = undefined;
 pub var res: Resources = undefined;
+pub var assets: Assets = undefined;
 
 var event_writers: EventWriters = undefined;
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub var allocator = gpa.allocator();
-
-// temp allocator is a ring buffer so memory doesnt need to be freed
-pub var tmp_allocator: std.mem.Allocator = undefined;
-var tmp_allocator_instance: ScratchAllocator = undefined;
 
 pub const Config = struct {
     init: ?fn () anyerror!void = null,
@@ -62,15 +58,15 @@ pub const Config = struct {
 };
 
 fn init(comptime config: Config) void {
-    tmp_allocator_instance = ScratchAllocator.init(allocator);
-    tmp_allocator = tmp_allocator_instance.allocator();
-
+    mem = Mem.init();
     window = Window.init(config.window, config.imgui);
     debug = Debug.init();
     time = Time.init(config.update_rate);
     input = InputState.init();
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
+    assets = Assets.init();
+
     event_writers = EventWriters.init();
     audio.init();
 }
@@ -81,9 +77,11 @@ fn deinit() void {
     input.deinit();
     gfx.deinit();
     res.deinit();
-    audio.deinit();
+    assets.deinit();
 
+    audio.deinit();
     rk.shutdown();
+    mem.deinit(); // must be last so everyone else can deinit!
 }
 
 pub fn run(comptime config: Config) !void {
@@ -192,7 +190,7 @@ fn pollEvents() bool {
             sdl.SDL_EVENT_DROP_FILE => {
                 if (event.window.windowID != aya.window.id) continue;
                 event_writers.file_dropped.send(.{
-                    .file = tmp_allocator.dupe(u8, std.mem.span(event.drop.file)) catch unreachable,
+                    .file = mem.tmp_allocator.dupe(u8, std.mem.span(event.drop.file)) catch unreachable,
                 });
                 sdl.SDL_free(event.drop.file);
             },

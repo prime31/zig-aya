@@ -54,7 +54,7 @@ pub const Debug = struct {
 
     pub fn init() Debug {
         return Debug{
-            .debug_items = std.ArrayList(DebugDrawCommand).initCapacity(aya.allocator, 5) catch unreachable,
+            .debug_items = std.ArrayList(DebugDrawCommand).initCapacity(aya.mem.allocator, 5) catch unreachable,
         };
     }
 
@@ -118,7 +118,7 @@ pub const Debug = struct {
     }
 
     pub fn drawTextFmt(self: *Debug, comptime fmt: []const u8, args: anytype, pos: Vec2, color: ?Color) void {
-        const text = std.fmt.allocPrint(aya.tmp_allocator, fmt, args) catch |err| {
+        const text = std.fmt.allocPrint(aya.mem.tmp_allocator, fmt, args) catch |err| {
             std.debug.print("drawTextFormat error: {}\n", .{err});
             return;
         };
