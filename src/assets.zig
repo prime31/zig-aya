@@ -114,7 +114,7 @@ pub const Assets = struct {
     // Shaders
     pub fn loadShader(self: *Assets, comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
         // we need to be loading a fragment shader from a file for hot reload to work
-        if (options.allocator == null) return Shader.initWithVertFrag(VertUniformT, FragUniformT, options);
+        if (!std.mem.endsWith(u8, options.frag, ".glsl")) return Shader.initWithVertFrag(VertUniformT, FragUniformT, options);
 
         if (self.shaders.getPtr(options.frag)) |rc| {
             rc.cnt += 1;

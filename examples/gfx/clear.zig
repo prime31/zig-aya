@@ -1,6 +1,7 @@
 const std = @import("std");
+const shaders = @import("shaders");
 const aya = @import("aya");
-const ig = @import("imgui");
+const ig = aya.ig;
 
 const Texture = aya.render.Texture;
 const Color = aya.math.Color;
@@ -16,9 +17,18 @@ pub fn main() !void {
 
 var clear_color = Color.aya;
 var tex: Texture = undefined;
+var lines_shader: shaders.LinesShader = undefined;
+var lines_shader2: shaders.LinesShader = undefined;
 
 fn init() !void {
     tex = aya.assets.loadTexture("examples/assets/sword_dude.png", .nearest);
+    lines_shader = shaders.createLinesShader();
+    lines_shader.frag_uniform.line_color = [_]f32{ 0.9, 0.8, 0.2, 1 };
+    lines_shader.frag_uniform.line_size = 4;
+
+    lines_shader2 = lines_shader.clone();
+    lines_shader2.frag_uniform.line_color = [_]f32{ 0.2, 0.4, 0.7, 1 };
+    lines_shader2.frag_uniform.line_size = 1;
 }
 
 fn render() !void {
@@ -26,7 +36,7 @@ fn render() !void {
         defer ig.igEnd();
 
         var col = clear_color.asVec4();
-        if (ig.igColorPicker4("Clear Color", &col.x, 0, ig.ImGuiColorEditFlags_None)) {
+        if (ig.igColorPicker4("Color", &col.x, 0, ig.ImGuiColorEditFlags_None)) {
             clear_color = Color.fromVec4(col);
         }
     }
@@ -39,10 +49,17 @@ fn render() !void {
     aya.gfx.beginPass(.{ .color = clear_color });
     aya.gfx.draw.text("go fuck yourself", 24, 20, null);
     aya.gfx.draw.rect(aya.math.Vec2.init(50, 50), 200, 400, Color.lime);
-    aya.gfx.draw.texScale(tex, 5, 400, 10);
+
+    aya.gfx.setShader(&lines_shader.shader);
+    aya.gfx.draw.texScale(tex, 5, 400, 5);
+
+    aya.gfx.setShader(&lines_shader2.shader);
+    aya.gfx.draw.texScale(tex, 305, 400, 5);
     aya.gfx.endPass();
 }
 
 fn shutdown() !void {
     aya.assets.releaseTexture(tex);
+    aya.assets.releaseShader(lines_shader.shader);
+    aya.assets.releaseShader(lines_shader2.shader);
 }
