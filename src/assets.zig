@@ -12,11 +12,13 @@ fn RefCounted(comptime T: type) type {
     };
 }
 
+const asset_path = "examples/assets";
+
 pub const Assets = struct {
     textures: std.StringHashMap(RefCounted(Texture)),
 
     pub fn init() Assets {
-        watcher.watchPath("examples/assets", onFileChanged);
+        watcher.watchPath(asset_path, onFileChanged);
         return .{
             .textures = std.StringHashMap(RefCounted(Texture)).init(aya.mem.allocator),
         };
@@ -26,10 +28,10 @@ pub const Assets = struct {
         self.textures.deinit();
     }
 
+    // Textures
     pub fn loadTexture(self: *Assets, file: []const u8, filter: rk.TextureFilter) Texture {
         if (self.textures.getPtr(file)) |rc| {
             rc.cnt += 1;
-            std.debug.print("--- fuck me man\n", .{});
             return rc.obj;
         }
 
@@ -50,7 +52,20 @@ pub const Assets = struct {
         }
     }
 
+    fn hotReloadTexture(self: *Assets, path: []const u8) void {
+        if (self.textures.getPtr(path)) |rc| {
+            var wh: usize = 0;
+            const new_img = Texture.dataFromFile(path, &wh, &wh) catch unreachable;
+            rc.obj.setData(u8, new_img);
+        }
+    }
+
     fn onFileChanged(path: [*c]const u8) callconv(.C) void {
-        std.debug.print("hot reload me: {s}\n", .{path});
+        const path_span = std.mem.span(path);
+        if (std.mem.indexOf(u8, path_span, asset_path)) |index| {
+            const ext = std.fs.path.extension(path_span);
+            if (std.mem.eql(u8, ext, ".png"))
+                aya.assets.hotReloadTexture(path_span[index..]);
+        }
     }
 };
