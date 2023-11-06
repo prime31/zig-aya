@@ -1,9 +1,9 @@
 const std = @import("std");
 const sdl = @import("sdl");
-const aya = @import("../aya.zig");
+const aya = @import("aya.zig");
 const ig = @import("imgui");
 
-const Size = aya.Size;
+const Size = aya.math.Size;
 
 // TODO: add more window events
 pub const WindowResized = struct { width: f32, height: f32 };

@@ -3,11 +3,11 @@ const aya = @import("../aya.zig");
 
 const Vertex = aya.gfx.Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;
-const RectI = aya.RectI;
-const Vec2 = aya.Vec2;
-const Mat32 = aya.Mat32;
-const Color = aya.Color;
-const Quad = aya.Quad;
+const RectI = aya.math.RectI;
+const Vec2 = aya.math.Vec2;
+const Mat32 = aya.math.Mat32;
+const Color = aya.math.Color;
+const Quad = aya.math.Quad;
 
 // TODO: who should own and deinit the Texture?
 // TODO: dont return errors for adds and just dynamically expand the vertex/index buffers

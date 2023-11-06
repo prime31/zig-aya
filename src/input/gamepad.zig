@@ -3,6 +3,8 @@ const sdl = @import("sdl");
 const aya = @import("../aya.zig");
 const win = aya.win;
 
+const GamepadButtons = @import("pressable_input.zig").GamepadButtons;
+
 pub const GamepadConnectionEvent = struct {
     gamepad_id: GamepadId,
     status: GamepadConnectionStatus,
@@ -73,7 +75,7 @@ pub const Gamepad = struct {
 
     id: GamepadId,
     sdl_gamepad: *sdl.SDL_Gamepad,
-    buttons: win.GamepadButtons = .{},
+    buttons: GamepadButtons = .{},
     axes: AxisMap = .{},
 
     pub fn init(id: GamepadId, sdl_gamepad: *sdl.SDL_Gamepad) Gamepad {

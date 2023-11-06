@@ -7,15 +7,15 @@ pub const ig = @import("imgui");
 pub const sdl = @import("sdl");
 
 // types
-const Window = @import("window/window.zig").Window;
-const WindowConfig = @import("window/window.zig").WindowConfig;
+const Window = @import("window.zig").Window;
+const WindowConfig = @import("window.zig").WindowConfig;
 const ImGuiConfig = ig.sdl.Config;
 
 const EventWriters = @import("event_writers.zig").EventWriters;
 const Events = @import("events/events.zig").Events;
 const Debug = @import("render/debug.zig").Debug;
 const Time = @import("time.zig").Time;
-const Input = @import("input.zig").Input;
+const InputState = @import("input/input_state.zig").InputState;
 const GraphicsContext = @import("render/graphics_context.zig").GraphicsContext;
 const GraphicsConfig = @import("render/graphics_context.zig").Config;
 const Resources = @import("resources.zig").Resources;
@@ -26,18 +26,15 @@ pub const utils = @import("utils.zig");
 pub const fs = @import("fs.zig");
 pub const mem = @import("mem/mem.zig");
 pub const evt = @import("events/mod.zig");
-
-// inner modules
-// TODO: be more restrictive with exports and possibly dump them into sub-structs per module
-pub const win = @import("window/mod.zig");
-pub usingnamespace @import("math/mod.zig");
-pub usingnamespace @import("render/mod.zig");
+pub const win = @import("window.zig");
+pub const math = @import("math/mod.zig");
+pub const render = @import("render/mod.zig");
 
 // essentially our fields, just made globals for ease of access
 pub var window: Window = undefined;
 pub var debug: Debug = undefined;
 pub var time: Time = undefined;
-pub var input: Input = undefined;
+pub var input: InputState = undefined;
 pub var gfx: GraphicsContext = undefined;
 pub var res: Resources = undefined;
 
@@ -70,7 +67,7 @@ fn init(comptime config: Config) void {
     window = Window.init(config.window, config.imgui);
     debug = Debug.init();
     time = Time.init(config.update_rate);
-    input = Input.init();
+    input = InputState.init();
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
     event_writers = EventWriters.init();
@@ -218,7 +215,7 @@ fn pollEvents() bool {
                     .xrel = event.motion.xrel,
                     .yrel = event.motion.yrel,
                 });
-                aya.input.mouse.pos = aya.Vec2.init(event.motion.x, event.motion.y);
+                aya.input.mouse.pos = aya.math.Vec2.init(event.motion.x, event.motion.y);
             },
             sdl.SDL_EVENT_MOUSE_WHEEL => {
                 if (event.wheel.windowID != aya.window.id) continue;

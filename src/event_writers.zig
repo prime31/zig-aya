@@ -14,12 +14,12 @@ const WindowMouseFocused = win.WindowMouseFocused;
 
 const FileDropped = evt.FileDropped;
 
-const MouseWheel = win.MouseWheel;
-const MouseMotion = win.MouseMotion;
-const MouseButton = win.MouseButton;
+const MouseWheel = @import("input/mouse.zig").MouseWheel;
+const MouseMotion = @import("input/mouse.zig").MouseMotion;
+const MouseButton = @import("input/mouse.zig").MouseButton;
 
-const GamePads = win.Gamepads;
-const GamepadConnectionEvent = win.GamepadConnectionEvent;
+const GamePads = @import("input/gamepad.zig").Gamepads;
+const GamepadConnectionEvent = @import("input/gamepad.zig").GamepadConnectionEvent;
 
 pub const EventWriters = struct {
     window_resized: EventWriter(WindowResized),

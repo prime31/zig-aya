@@ -1,15 +1,19 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-pub const MouseButtons = Input(aya.win.MouseButton);
-pub const Keys = Input(aya.win.Scancode);
-pub const GamepadButtons = Input(aya.win.GamepadButton);
+const MouseButton = @import("mouse.zig").MouseButton;
+const Scancode = @import("scancode.zig").Scancode;
+const GamepadButton = @import("gamepad.zig").GamepadButton;
+
+pub const MouseButtons = PressableInput(MouseButton);
+pub const Keys = PressableInput(Scancode);
+pub const GamepadButtons = PressableInput(GamepadButton);
 
 /// A pressable input of type `T`. When adding this resource for a new input type, you should:
 /// * Call the `clear` method at each frame start, before processing events.
 /// * Call the `press` method for each press event.
 /// * Call the `release` method for each release event.
-fn Input(comptime T: type) type {
+fn PressableInput(comptime T: type) type {
     return struct {
         const Self = @This();
         const InputBitSet = std.StaticBitSet(@as(usize, @intFromEnum(T.max)) + 1);
@@ -80,12 +84,14 @@ fn Input(comptime T: type) type {
             self.just_released_set.mask = 0;
         }
 
+        /// resets the state of `input` in all sets
         pub fn reset(self: *Self, input: T) void {
             self.pressed_set.unset(@intFromEnum(input));
             self.just_pressed_set.unset(@intFromEnum(input));
             self.just_released_set.unset(@intFromEnum(input));
         }
 
+        /// resets all sets to the empty state
         pub fn resetAll(self: *Self) void {
             self.pressed_set = InputBitSet.initEmpty();
             self.just_pressed_set = InputBitSet.initEmpty();
@@ -158,7 +164,7 @@ test "Input(T)" {
         pub const max = @This().sixth;
     };
 
-    var state = Input(TestEnum){};
+    var state = PressableInput(TestEnum){};
     try std.testing.expect(!state.justPressed(.first));
     try std.testing.expect(!state.pressed(.first));
     state.press(.first);
