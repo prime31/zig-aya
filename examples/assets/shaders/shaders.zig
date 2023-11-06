@@ -1,11 +1,11 @@
 const std = @import("std");
 const aya = @import("aya");
 
-const ShaderState = aya.ShaderState;
-const Shader = aya.Shader;
-const Mat4 = aya.Mat4;
-const Vec2 = aya.Vec2;
-const Vec3 = aya.Vec3;
+const ShaderState = aya.render.ShaderState;
+const Shader = aya.render.Shader;
+const Mat4 = aya.math.Mat4;
+const Vec2 = aya.math.Vec2;
+const Vec3 = aya.math.Vec3;
 
 pub const DepthShader = ShaderState(DepthParamsFS);
 pub const DissolveShader = ShaderState(DissolveParams);

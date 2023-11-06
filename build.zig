@@ -42,11 +42,11 @@ pub fn build(b: *std.Build) void {
         .package_output_path = "examples/assets/shaders",
         .additional_imports = &[_][]const u8{
             "const aya = @import(\"aya\");\n",
-            "const ShaderState = aya.ShaderState;",
-            "const Shader = aya.Shader;",
-            "const Mat4 = aya.Mat4;",
-            "const Vec2 = aya.Vec2;",
-            "const Vec3 = aya.Vec3;",
+            "const ShaderState = aya.render.ShaderState;",
+            "const Shader = aya.render.Shader;",
+            "const Mat4 = aya.math.Mat4;",
+            "const Vec2 = aya.math.Vec2;",
+            "const Vec3 = aya.math.Vec3;",
         },
     });
 
