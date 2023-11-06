@@ -1,10 +1,10 @@
+const std = @import("std");
 const aya = @import("../aya.zig");
 
 const Vec2 = @import("vec2.zig").Vec2;
 const Color = @import("color.zig").Color;
 const Quad = @import("quad.zig").Quad;
-const Vertex = aya.Vertex;
-const std = @import("std");
+const Vertex = aya.render.Vertex;
 const math = std.math;
 
 // 3 row, 2 col 2D matrix

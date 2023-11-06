@@ -1,18 +1,18 @@
 const std = @import("std");
-const renderkit = @import("renderkit");
+const rk = @import("renderkit");
 const aya = @import("../aya.zig");
 
-const Vertex = aya.Vertex;
-const Texture = aya.Texture;
-const DynamicMesh = aya.DynamicMesh;
+const Vertex = aya.render.Vertex;
+const Texture = @import("texture.zig").Texture;
+const DynamicMesh = @import("mesh.zig").DynamicMesh;
 
-const Vec2 = aya.Vec2;
-const Color = aya.Color;
-const Quad = aya.Quad;
-const Mat32 = aya.Mat32;
+const Vec2 = aya.math.Vec2;
+const Color = aya.math.Color;
+const Quad = aya.math.Quad;
+const Mat32 = aya.math.Mat32;
 
-const IndexBuffer = renderkit.IndexBuffer;
-const VertexBuffer = renderkit.VertexBuffer;
+const IndexBuffer = rk.IndexBuffer;
+const VertexBuffer = rk.VertexBuffer;
 
 pub const Batcher = struct {
     mesh: DynamicMesh(u16, Vertex),
@@ -25,7 +25,7 @@ pub const Batcher = struct {
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
 
     const DrawCall = struct {
-        image: renderkit.Image,
+        image: rk.Image,
         quad_count: i32,
     };
 
@@ -90,7 +90,7 @@ pub const Batcher = struct {
             self.mesh.draw(base_element, draw_call.quad_count * 6);
 
             self.buffer_offset += draw_call.quad_count * 4;
-            draw_call.image = renderkit.invalid_resource_id;
+            draw_call.image = rk.invalid_resource_id;
             base_element += draw_call.quad_count * 6;
         }
 

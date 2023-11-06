@@ -8,7 +8,7 @@ pub const FontBook = struct {
     pub const Quad = fons.Quad;
 
     stash: *fons.Context,
-    texture: ?aya.Texture,
+    texture: ?aya.render.Texture,
     tex_filter: rk.TextureFilter,
     width: i32 = 0,
     height: i32 = 0,
@@ -152,7 +152,7 @@ pub const FontBook = struct {
         }
 
         if (self.texture == null)
-            self.texture = aya.Texture.initDynamic(width, height, self.tex_filter, .clamp);
+            self.texture = aya.render.Texture.initDynamic(width, height, self.tex_filter, .clamp);
 
         self.width = width;
         self.height = height;

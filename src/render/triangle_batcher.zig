@@ -2,11 +2,11 @@ const std = @import("std");
 const renderkit = @import("renderkit");
 const aya = @import("../aya.zig");
 
-const Vertex = aya.gfx.Vertex;
-const DynamicMesh = aya.gfx.DynamicMesh;
-const Mat32 = aya.Mat32;
-const Vec2 = aya.Vec2;
-const Color = aya.Color;
+const Vertex = aya.render.Vertex;
+const DynamicMesh = aya.render.DynamicMesh;
+const Mat32 = aya.math.Mat32;
+const Vec2 = aya.math.Vec2;
+const Color = aya.math.Color;
 
 pub const TriangleBatcher = struct {
     mesh: DynamicMesh(void, Vertex),

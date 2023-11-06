@@ -2,8 +2,8 @@ const std = @import("std");
 const aya = @import("../aya.zig");
 
 const Draw = @import("draw.zig").Draw;
-const Vec2 = aya.Vec2;
-const Color = aya.Color;
+const Vec2 = aya.math.Vec2;
+const Color = aya.math.Color;
 
 pub const Debug = struct {
     debug_items: std.ArrayList(DebugDrawCommand),

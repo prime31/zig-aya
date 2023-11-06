@@ -1,14 +1,14 @@
 const aya = @import("../aya.zig");
 
-const Quad = aya.Quad;
-const Vec2 = aya.Vec2;
-const RectI = aya.RectI;
-const Mat32 = aya.Mat32;
-const Color = aya.Color;
+const Quad = aya.math.Quad;
+const Vec2 = aya.math.Vec2;
+const RectI = aya.math.RectI;
+const Mat32 = aya.math.Mat32;
+const Color = aya.math.Color;
 
-const Batcher = aya.Batcher;
-const FontBook = aya.FontBook;
-const Texture = aya.Texture;
+const Batcher = aya.render.Batcher;
+const FontBook = aya.render.FontBook;
+const Texture = aya.render.Texture;
 
 pub const Draw = struct {
     batcher: Batcher,
@@ -160,7 +160,7 @@ pub const Draw = struct {
 
         var i: usize = 0;
         while (i <= resolution) : (i += 1) {
-            const at = Vec2.angleToVec(@as(f32, @floatFromInt(i)) * aya.pi_over_2 / @as(f32, @floatFromInt(resolution)), radius);
+            const at = Vec2.angleToVec(@as(f32, @floatFromInt(i)) * aya.math.pi_over_2 / @as(f32, @floatFromInt(resolution)), radius);
             const at_p = at.orthogonal();
 
             self.line(center.add(last), center.add(at), thickness, color);

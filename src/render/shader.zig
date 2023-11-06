@@ -3,7 +3,7 @@ const aya = @import("../aya.zig");
 const rk = @import("renderkit");
 const fs = aya.fs;
 
-const Mat32 = aya.Mat32;
+const Mat32 = aya.math.Mat32;
 
 /// default params for the sprite shader. Translates the Mat32 into 2 arrays of f32 for the shader uniform slot.
 pub const VertexParams = extern struct {

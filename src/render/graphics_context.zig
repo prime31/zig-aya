@@ -20,17 +20,11 @@ const Batcher = aya.Batcher;
 const FontBook = aya.FontBook;
 const Texture = aya.Texture;
 
-const Vec2 = aya.Vec2;
-const Mat32 = aya.Mat32;
-const Color = aya.Color;
-const Quad = aya.Quad;
-const Size = aya.Size;
-
-pub const Vertex = extern struct {
-    pos: Vec2 = .{ .x = 0, .y = 0 },
-    uv: Vec2 = .{ .x = 0, .y = 0 },
-    col: u32 = 0xFFFFFFFF,
-};
+const Vec2 = aya.math.Vec2;
+const Mat32 = aya.math.Mat32;
+const Color = aya.math.Color;
+const Quad = aya.math.Quad;
+const Size = aya.math.Size;
 
 pub const Config = struct {
     disable_debug_render: bool = false, // when true, debug rendering will be disabled

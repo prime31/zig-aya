@@ -3,8 +3,8 @@ const aya = @import("../aya.zig");
 const rk = @import("renderkit");
 const gfx = @import("graphics_context.zig");
 
-const Size = aya.Size;
-const Texture = aya.Texture;
+const Size = aya.math.Size;
+const Texture = aya.render.Texture;
 
 pub const OffscreenPass = struct {
     pass: rk.Pass,

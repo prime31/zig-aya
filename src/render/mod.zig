@@ -1,6 +1,5 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
-const self = @This();
 
 pub usingnamespace @import("render_layers.zig");
 pub usingnamespace @import("texture.zig");
@@ -8,3 +7,9 @@ pub usingnamespace @import("graphics_context.zig");
 pub usingnamespace @import("batcher.zig");
 pub usingnamespace @import("fontbook.zig");
 pub usingnamespace @import("mesh.zig");
+
+pub const Vertex = extern struct {
+    pos: aya.math.Vec2 = .{ .x = 0, .y = 0 },
+    uv: aya.math.Vec2 = .{ .x = 0, .y = 0 },
+    col: u32 = 0xFFFFFFFF,
+};
