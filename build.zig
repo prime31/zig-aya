@@ -15,6 +15,7 @@ const ShaderCompileStep = renderkit_build.ShaderCompileStep;
 const Options = struct {
     build_options: *std.build.Step.Options,
     enable_imgui: bool,
+    enable_hot_reload: bool,
 };
 
 const install_options: enum { all, only_current } = .only_current;
@@ -25,10 +26,12 @@ pub fn build(b: *std.Build) void {
 
     const options = Options{
         .build_options = b.addOptions(),
-        .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
+        .enable_imgui = b.option(bool, "imgui", "Include/exclude Dear ImGui from the binary") orelse true,
+        .enable_hot_reload = b.option(bool, "hot_reload", "Include/exclude Filewatcher and hot reload") orelse true,
     };
 
-    options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
+    options.build_options.addOption(bool, "imgui", options.enable_imgui);
+    options.build_options.addOption(bool, "hot_reload", options.enable_hot_reload);
 
     for (getAllExamples(b, "examples")) |p| {
         addExecutable(b, target, optimize, options, p[0], p[1]);
@@ -131,7 +134,9 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zaudio_package = zaudio_build.package(b, target, optimize, .{});
     zaudio_package.link(exe);
 
-    watcher_build.linkArtifact(exe);
+    if (options.enable_hot_reload)
+        watcher_build.linkArtifact(exe);
+    const watcher_module = watcher_build.getModule(b, options.enable_hot_reload);
 
     // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
@@ -143,7 +148,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "fontstash", .module = fontstash_module },
             .{ .name = "renderkit", .module = renderkit_module },
             .{ .name = "zaudio", .module = zaudio_package.zaudio },
-            .{ .name = "watcher", .module = watcher_build.getModule(b) },
+            .{ .name = "watcher", .module = watcher_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{

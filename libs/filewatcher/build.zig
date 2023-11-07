@@ -10,8 +10,16 @@ pub fn linkArtifact(exe: *std.build.LibExeObjStep) void {
     });
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
-    return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/src/watcher.zig" } });
+pub fn getModule(b: *std.Build, enable_hot_reload: bool) *std.build.Module {
+    const step = b.addOptions();
+    step.addOption(bool, "hot_reload", enable_hot_reload);
+
+    return b.createModule(.{
+        .source_file = .{ .path = thisDir() ++ "/src/watcher.zig" },
+        .dependencies = &.{
+            .{ .name = "options", .module = step.createModule() },
+        },
+    });
 }
 
 inline fn thisDir() []const u8 {

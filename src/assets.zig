@@ -49,7 +49,10 @@ pub const Assets = struct {
     shaders: std.StringHashMap(RefCounted(ShaderInfo)),
 
     pub fn init() Assets {
-        watcher.watchPath(asset_path, onFileChanged);
+        // disable hot reload if the FileWatcher is disbled
+        if (watcher.enabled)
+            watcher.watchPath(asset_path, onFileChanged);
+
         return .{
             .textures = std.StringHashMap(RefCounted(Texture)).init(aya.mem.allocator),
             .shaders = std.StringHashMap(RefCounted(ShaderInfo)).init(aya.mem.allocator),
