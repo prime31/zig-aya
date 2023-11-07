@@ -44,7 +44,7 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
 
 pub fn getModule(b: *std.Build, sdl_module: *std.build.Module, enable_imgui: bool) *std.build.Module {
     const step = b.addOptions();
-    step.addOption(bool, "enable_imgui", enable_imgui);
+    step.addOption(bool, "imgui", enable_imgui);
 
     return b.createModule(.{
         .source_file = .{ .path = thisDir() ++ "/src/imgui.zig" },

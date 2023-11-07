@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const enabled = @import("options").hot_reload;
+
 pub fn watchPath(path: [*c]const u8, cb: ?*const fn (path: [*c]const u8) callconv(.C) void) void {
     if (builtin.target.os.tag == .macos) {
         file_watcher_watch_path(path, cb);
