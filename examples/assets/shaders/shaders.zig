@@ -55,6 +55,12 @@ pub fn createMode7Shader() Mode7Shader {
     return Mode7Shader.init(.{ .frag = frag, .onPostBind = Mode7Shader.onPostBind });
 }
 
+pub fn createMrtShader() !Shader {
+    const vert = @embedFile("sprite_vs.glsl");
+    const frag = "examples/assets/shaders/mrt_fs.glsl";
+    return try Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
+}
+
 pub fn createNoiseShader() NoiseShader {
     const frag = "examples/assets/shaders/noise_fs.glsl";
     return NoiseShader.init(.{ .frag = frag, .onPostBind = NoiseShader.onPostBind });

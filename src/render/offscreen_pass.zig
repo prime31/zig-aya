@@ -9,6 +9,9 @@ const Texture = aya.render.Texture;
 pub const OffscreenPass = struct {
     pass: rk.Pass,
     color_texture: Texture,
+    color_texture2: ?Texture = null,
+    color_texture3: ?Texture = null,
+    color_texture4: ?Texture = null,
     depth_stencil_texture: ?Texture = null,
 
     pub fn init(width: i32, height: i32) OffscreenPass {
@@ -22,6 +25,29 @@ pub const OffscreenPass = struct {
             .color_img = color_tex.img,
         });
         return .{ .pass = pass, .color_texture = color_tex };
+    }
+
+    pub fn initMrt(width: i32, height: i32, num_render_targets: u8, filter: rk.TextureFilter, wrap: rk.TextureWrap) OffscreenPass {
+        std.debug.assert(num_render_targets > 1 and num_render_targets <= 4);
+
+        var config = std.mem.zeroes(rk.PassDesc);
+        var mrts: [4]?Texture = [_]?Texture{null} ** 4;
+        for (0..num_render_targets) |i| {
+            mrts[i] = Texture.initOffscreen(width, height, filter, wrap);
+            if (i == 0) config.color_img = mrts[i].?.img;
+            if (i == 1) config.color_img2 = mrts[i].?.img;
+            if (i == 2) config.color_img3 = mrts[i].?.img;
+            if (i == 3) config.color_img4 = mrts[i].?.img;
+        }
+
+        const pass = rk.createPass(config);
+        return .{
+            .pass = pass,
+            .color_texture = mrts[0].?,
+            .color_texture2 = mrts[1],
+            .color_texture3 = mrts[2],
+            .color_texture4 = mrts[3],
+        };
     }
 
     pub fn initWithStencil(width: i32, height: i32, filter: rk.TextureFilter, wrap: rk.TextureWrap) OffscreenPass {
@@ -39,9 +65,10 @@ pub const OffscreenPass = struct {
         // Pass MUST be destroyed first! It relies on the Textures being present.
         rk.destroyPass(self.pass);
         self.color_texture.deinit();
-        if (self.depth_stencil_texture) |depth_stencil| {
-            depth_stencil.deinit();
-        }
+        if (self.color_texture2) |tex| tex.deinit();
+        if (self.color_texture3) |tex| tex.deinit();
+        if (self.color_texture4) |tex| tex.deinit();
+        if (self.depth_stencil_texture) |ds| ds.deinit();
     }
 
     pub fn resize(self: *OffscreenPass, width: i32, height: i32) void {
