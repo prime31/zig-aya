@@ -24,7 +24,7 @@ var pass: OffscreenPass = undefined;
 
 fn init() !void {
     tex = aya.assets.loadTexture("examples/assets/sword_dude.png", .nearest);
-    shader = try shaders.createMrtShader();
+    shader = shaders.createMrtShader();
     pass = OffscreenPass.initMrt(200, 200, 2, .nearest, .clamp);
 }
 
