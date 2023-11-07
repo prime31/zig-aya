@@ -18,10 +18,10 @@ pub const RgbShiftShader = ShaderState(RgbShiftParams);
 pub const SepiaShader = ShaderState(SepiaParams);
 pub const VignetteShader = ShaderState(VignetteParams);
 
-pub fn createCubeShader() !Shader {
+pub fn createCubeShader() Shader {
     const vert = @embedFile("cube_vs.glsl");
     const frag = "examples/assets/shaders/cube_fs.glsl";
-    return try Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
+    return aya.assets.loadShader(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
 }
 
 pub fn createDepthShader() DepthShader {
@@ -34,10 +34,10 @@ pub fn createDissolveShader() DissolveShader {
     return DissolveShader.init(.{ .frag = frag, .onPostBind = DissolveShader.onPostBind });
 }
 
-pub fn createInstancedShader() !Shader {
+pub fn createInstancedShader() Shader {
     const vert = @embedFile("instanced_vs.glsl");
     const frag = "examples/assets/shaders/instanced_fs.glsl";
-    return try Shader.initWithVertFrag(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
+    return aya.assets.loadShader(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
 }
 
 pub fn createLinesShader() LinesShader {
@@ -55,10 +55,10 @@ pub fn createMode7Shader() Mode7Shader {
     return Mode7Shader.init(.{ .frag = frag, .onPostBind = Mode7Shader.onPostBind });
 }
 
-pub fn createMrtShader() !Shader {
+pub fn createMrtShader() Shader {
     const vert = @embedFile("sprite_vs.glsl");
     const frag = "examples/assets/shaders/mrt_fs.glsl";
-    return try Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
+    return aya.assets.loadShader(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
 }
 
 pub fn createNoiseShader() NoiseShader {

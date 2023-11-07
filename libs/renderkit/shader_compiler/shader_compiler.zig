@@ -257,16 +257,15 @@ pub const ShaderCompileStep = struct {
                     break :blk "struct {}";
                 };
 
-                try fn_writer.print("pub fn create{s}Shader() !Shader {{\n", .{name});
+                try fn_writer.print("pub fn create{s}Shader() Shader {{\n", .{name});
                 try fn_writer.print("    const vert = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.vs });
 
                 if (self.shader_load_style == .embed) {
                     try fn_writer.print("    const frag = @embedFile(\"{0s}{1s}.glsl\");\n", .{ relative_path_from_package_to_shaders, program.fs });
-                    try fn_writer.print("    return try Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
                 } else {
                     try fn_writer.print("    const frag = \"{0s}{1s}.glsl\";\n", .{ self.shader_out_path, program.fs });
                 }
-                try fn_writer.print("    return try Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
+                try fn_writer.print("    return aya.assets.loadShader({s}, {s}, .{{ .frag = frag, .vert = vert }}) catch unreachable;\n", .{ vs_uni_type, fs_uni_type });
 
                 try fn_writer.writeAll("}\n\n");
             }
