@@ -387,6 +387,8 @@ pub fn beginPass(pass: types.Pass, action: types.ClearCommand) void {
 fn beginDefaultOrOffscreenPass(offscreen_pass: types.Pass, action: types.ClearCommand, width: c_int, height: c_int) void {
     var num_color_atts: usize = 1;
 
+    // TODO: do we need to call gl.drawBuffers for MRTs?
+
     // pass 0 is invalid so if its greater than 0 this is an offscreen pass
     if (offscreen_pass > 0) {
         const pass = pass_cache.get(offscreen_pass);
@@ -428,7 +430,7 @@ fn beginDefaultOrOffscreenPass(offscreen_pass: types.Pass, action: types.ClearCo
         if (clear_mask != 0) gl.clear(clear_mask);
     } else {
         for (action.colors, 0..) |color_action, i| {
-            const index: c_int = @as(c_int, @intCast(i));
+            const index: c_int = @intCast(i);
 
             if (color_action.clear) gl.clearBufferfv(gl.COLOR, index, &color_action.color);
 

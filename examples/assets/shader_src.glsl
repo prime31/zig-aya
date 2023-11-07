@@ -464,3 +464,23 @@ void main() {
 @end
 
 @program depth sprite_vs depth_fs
+
+
+
+@fs mrt_fs
+@include_block sprite_fs_main
+
+layout(location = 1) out vec4 frag_color2;
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec4 color = texture(tex, tex_coord);
+
+	// convert to greyscale and output to 2nd textures
+	float gray_scale = dot(color.rgb, vec3(0.3, 0.59, 0.11));
+	frag_color2 = vec4(gray_scale, gray_scale, gray_scale, 1.0) * color.a;
+
+	return color;
+}
+@end
+
+@program mrt sprite_vs mrt_fs
