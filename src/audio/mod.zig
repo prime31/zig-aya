@@ -18,6 +18,8 @@ pub const max_filter_q: f32 = 1.0;
 pub const min_filter_gain: f32 = -20.0;
 pub const max_filter_gain: f32 = 20.0;
 pub const filter_order: u32 = 4;
+pub const delay_in_frames: u32 = 100;
+pub const decay: f32 = 0;
 
 pub fn init() void {
     ma.init(aya.mem.allocator);
@@ -37,21 +39,23 @@ pub fn deinit() void {
     ma.deinit();
 }
 
-const AudioFilterType = enum {
+pub const AudioFilterType = enum {
     lpf,
     hpf,
     notch,
     peak,
     loshelf,
     hishelf,
+    delay,
 
-    const names = [_][:0]const u8{
+    pub const names = [_][:0]const u8{
         "Low-Pass Filter",
         "High-Pass Filter",
         "Notch Filter",
         "Peak Filter",
         "Low Shelf Filter",
         "High Shelf Filter",
+        "Delay Filter",
     };
 };
 
@@ -83,6 +87,10 @@ const AudioFilter = struct {
         config: ma.HishelfConfig,
         node: *ma.HishelfNode,
     },
+    delay: struct {
+        config: ma.DelayConfig,
+        node: *ma.DelayNode,
+    },
 
     fn getCurrentNode(filter: AudioFilter) *ma.Node {
         return switch (filter.current_type) {
@@ -92,6 +100,7 @@ const AudioFilter = struct {
             .peak => filter.peak.node.asNodeMut(),
             .loshelf => filter.loshelf.node.asNodeMut(),
             .hishelf => filter.hishelf.node.asNodeMut(),
+            .delay => filter.delay.node.asNodeMut(),
         };
     }
 
@@ -102,6 +111,7 @@ const AudioFilter = struct {
         filter.peak.node.destroy();
         filter.loshelf.node.destroy();
         filter.hishelf.node.destroy();
+        filter.delay.node.destroy();
     }
 };
 
@@ -162,6 +172,12 @@ pub fn start() void {
             min_filter_q,
             min_filter_fequency,
         );
+        const delay_config = ma.DelayNode.Config.init(
+            engine.getChannels(),
+            engine.getSampleRate(),
+            delay_in_frames,
+            decay,
+        );
 
         const af = AudioFilter{
             .lpf = .{
@@ -188,6 +204,10 @@ pub fn start() void {
                 .config = hishelf_config.hishelf,
                 .node = engine.createHishelfNode(hishelf_config) catch unreachable,
             },
+            .delay = .{
+                .config = delay_config.delay,
+                .node = engine.createDelayNode(delay_config) catch unreachable,
+            },
         };
 
         af.lpf.node.attachOutputBus(0, engine.getEndpointMut(), 0) catch unreachable;
@@ -196,6 +216,7 @@ pub fn start() void {
         af.peak.node.attachOutputBus(0, engine.getEndpointMut(), 0) catch unreachable;
         af.loshelf.node.attachOutputBus(0, engine.getEndpointMut(), 0) catch unreachable;
         af.hishelf.node.attachOutputBus(0, engine.getEndpointMut(), 0) catch unreachable;
+        af.delay.node.attachOutputBus(0, engine.getEndpointMut(), 0) catch unreachable;
 
         break :audio_filter af;
     };
@@ -223,8 +244,8 @@ pub fn updateAudioGraph() void {
     };
 
     music.?.attachOutputBus(0, node, 0) catch unreachable;
-    // waveform_node.attachOutputBus(0, node, 0) catch unreachable;
-    noise_node.?.attachOutputBus(0, node, 0) catch unreachable;
+    // waveform_node.?.attachOutputBus(0, node, 0) catch unreachable;
+    // noise_node.?.attachOutputBus(0, node, 0) catch unreachable;
     snd1.?.attachOutputBus(0, node, 0) catch unreachable;
     snd2.?.attachOutputBus(0, node, 0) catch unreachable;
     snd3.?.attachOutputBus(0, node, 0) catch unreachable;
