@@ -1,4 +1,5 @@
 const std = @import("std");
+const ma = @import("zaudio");
 const aya = @import("aya");
 const ig = aya.ig;
 
@@ -150,11 +151,6 @@ fn update() !void {
             },
             .delay => {
                 const config = &audio_filter.delay.config;
-                // if (ig.sliderScalar("Delay in Frames", u32, .{
-                //     .v = &config.delay_in_frames,
-                //     .min = 0,
-                //     .max = 500,
-                // })) audio_filter.delay.node.setWet(config.wet);
                 if (ig.sliderScalar("Wet", f32, .{
                     .v = &config.wet,
                     .min = 0,
@@ -182,6 +178,11 @@ fn render() !void {
     if (aya.input.keyJustPressed(.a)) aya.audio.snd3.?.start() catch unreachable;
     if (aya.input.keyJustPressed(.b)) aya.audio.snd1.?.start() catch unreachable;
     if (aya.input.keyJustPressed(.c)) aya.audio.snd2.?.start() catch unreachable;
+    if (aya.input.keyJustPressed(.d)) aya.audio.engine.playSound("examples/assets/audio/tabla_tas1.flac", null) catch unreachable;
+    if (aya.input.keyJustPressed(.e)) {
+        const sound = aya.audio.engine.createSoundCopy(aya.audio.snd3.?, .{}, null) catch unreachable;
+        sound.start() catch unreachable; // leaks
+    }
 
     aya.gfx.beginPass(.{});
     aya.gfx.draw.rect(aya.math.Vec2.init(50, 50), 200, 400, aya.math.Color.lime);

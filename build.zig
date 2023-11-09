@@ -160,6 +160,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
 
     exe.addModule("aya", aya_module);
     exe.addModule("sdl", sdl_module);
+    exe.addModule("zaudio", zaudio_package.zaudio);
     exe.addModule("shaders", b.createModule(.{
         .source_file = .{ .path = thisDir() ++ "/examples/assets/shaders/shaders.zig" },
         .dependencies = &.{

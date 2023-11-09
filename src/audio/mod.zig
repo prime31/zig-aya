@@ -1,12 +1,14 @@
 const std = @import("std");
 const ma = @import("zaudio");
 const aya = @import("../aya.zig");
+const SfxrDataSource = @import("sfxr.zig").SfxrDataSource;
 
 pub var engine: *ma.Engine = undefined;
 pub var snd1: ?*ma.Sound = null;
 pub var snd2: ?*ma.Sound = null;
 pub var snd3: ?*ma.Sound = null;
 pub var music: ?*ma.Sound = null;
+pub var sfxr: ?*SfxrDataSource = null;
 pub var audio_filter: ?AudioFilter = null;
 pub var noise_data_source: ?*ma.Noise = null;
 pub var noise_node: ?*ma.DataSourceNode = null;
@@ -31,6 +33,7 @@ pub fn deinit() void {
     if (snd2) |s| s.destroy();
     if (snd3) |s| s.destroy();
     if (music) |s| s.destroy();
+    if (sfxr) |s| s.destroy();
     if (audio_filter) |af| af.destroy();
     if (noise_data_source) |n| n.destroy();
     if (noise_node) |n| n.destroy();
@@ -234,6 +237,11 @@ pub fn start() void {
         ma.DataSourceNode.Config.init(noise_data_source.?.asDataSourceMut()),
     ) catch unreachable;
     noise_node.?.setState(.stopped) catch unreachable;
+
+    sfxr = SfxrDataSource.create(engine);
+    const sfxr_sound = sfxr.?.createSound();
+    sfxr.?.loadPreset(.jump, 669);
+    sfxr_sound.start() catch unreachable;
 }
 
 pub fn updateAudioGraph() void {
@@ -244,7 +252,6 @@ pub fn updateAudioGraph() void {
     };
 
     music.?.attachOutputBus(0, node, 0) catch unreachable;
-    // waveform_node.?.attachOutputBus(0, node, 0) catch unreachable;
     // noise_node.?.attachOutputBus(0, node, 0) catch unreachable;
     snd1.?.attachOutputBus(0, node, 0) catch unreachable;
     snd2.?.attachOutputBus(0, node, 0) catch unreachable;
