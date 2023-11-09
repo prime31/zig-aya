@@ -176,8 +176,8 @@ fn update() !void {
         ig.igSpacing();
 
         if (ig.igButton("Play SFXR Jump", .{})) {
-            const sfxr_sound = aya.audio.sfxr.?.createSound();
             aya.audio.sfxr.?.loadPreset(.jump, 669);
+            const sfxr_sound = aya.audio.sfxr.?.createSound();
             sfxr_sound.start() catch unreachable;
         }
 
