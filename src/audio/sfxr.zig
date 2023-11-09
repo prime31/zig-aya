@@ -527,7 +527,8 @@ pub const Sfxr = struct {
     }
 
     fn onSeek(ds: *ma.DataSource, frame_index: u64) callconv(.C) ma.Result {
-        std.debug.print("onSeek. ds: {}, frame_index: {}\n", .{ ds, frame_index });
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
+        self.rep_time = @intCast(frame_index);
         return .success;
     }
 
@@ -562,10 +563,9 @@ pub const Sfxr = struct {
     }
 
     fn onGetLength(ds: *ma.DataSource, length: ?*u64) callconv(.C) ma.Result {
-        var self: *Sfxr = @ptrCast(@alignCast(ds));
-        _ = self;
+        _ = ds;
+        _ = length;
         std.debug.print("onGetLength\n", .{});
-        length.?.* = 10000;
         return .success;
     }
 };
