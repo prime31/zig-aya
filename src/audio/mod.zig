@@ -1,7 +1,7 @@
 const std = @import("std");
 const ma = @import("zaudio");
 const aya = @import("../aya.zig");
-const SfxrDataSource = @import("sfxr.zig").SfxrDataSource;
+const SfxrDataSource = @import("sfxr.zig").Sfxr;
 
 pub var engine: *ma.Engine = undefined;
 pub var snd1: ?*ma.Sound = null;

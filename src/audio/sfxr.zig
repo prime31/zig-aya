@@ -210,7 +210,8 @@ const SfxrParams = extern struct {
     }
 };
 
-pub const SfxrDataSource = extern struct {
+// DataSource
+pub const Sfxr = extern struct {
     base: ma.DataSourceBase = undefined,
     engine: *Engine = undefined,
 
@@ -255,8 +256,8 @@ pub const SfxrDataSource = extern struct {
     data_source: *ma.DataSource = undefined,
     node: *ma.DataSourceNode = undefined,
 
-    pub fn create(engine: *Engine) *SfxrDataSource {
-        var dds = aya.mem.create(SfxrDataSource);
+    pub fn create(engine: *Engine) *Sfxr {
+        var dds = aya.mem.create(Sfxr);
         dds.* = .{};
         dds.resetSample(false);
         dds.engine = engine;
@@ -279,21 +280,21 @@ pub const SfxrDataSource = extern struct {
         return dds;
     }
 
-    pub fn destroy(self: *SfxrDataSource) void {
+    pub fn destroy(self: *Sfxr) void {
         self.node.destroy();
         aya.mem.destroy(self);
     }
 
-    pub fn createSound(self: *SfxrDataSource) *ma.Sound {
+    pub fn createSound(self: *Sfxr) *ma.Sound {
         return self.engine.createSoundFromDataSource(self.data_source, .{}, null) catch unreachable;
     }
 
-    pub fn loadPreset(self: *SfxrDataSource, preset: SfxrPreset, seed: u64) void {
+    pub fn loadPreset(self: *Sfxr, preset: SfxrPreset, seed: u64) void {
         self.params.loadPreset(preset, seed);
         self.resetSample(true);
     }
 
-    fn resetSample(self: *SfxrDataSource, restart: bool) void {
+    fn resetSample(self: *Sfxr, restart: bool) void {
         if (!restart)
             self.phase = 0;
         self.fperiod = 100.0 / (self.params.p_base_freq * self.params.p_base_freq + 0.001);
@@ -361,7 +362,7 @@ pub const SfxrDataSource = extern struct {
     }
 
     fn onRead(ds: *ma.DataSource, frames_out: ?*anyopaque, frame_count: u64, frames_read: *u64) callconv(.C) ma.Result {
-        var self: *SfxrDataSource = @ptrCast(@alignCast(ds));
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
         var out = @as([*]f32, @ptrCast(@alignCast(frames_out)))[0..frame_count];
 
         for (out, 0..) |*frame, i| {
@@ -527,7 +528,7 @@ pub const SfxrDataSource = extern struct {
         channel_map: ?[*]ma.Channel,
         channel_map_cap: usize,
     ) callconv(.C) ma.Result {
-        var self: *SfxrDataSource = @ptrCast(@alignCast(ds));
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
         _ = channel_map_cap;
         _ = channel_map;
         sample_rate.?.* = self.engine.getSampleRate();
@@ -537,21 +538,21 @@ pub const SfxrDataSource = extern struct {
     }
 
     fn onGetCursor(ds: *ma.DataSource, cursor: ?*u64) callconv(.C) ma.Result {
-        var self: *SfxrDataSource = @ptrCast(@alignCast(ds));
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
         std.debug.print("onGetCursor\n", .{});
         cursor.?.* = @intCast(self.rep_time);
         return .success;
     }
 
     fn onSetLooping(ds: *ma.DataSource, is_looping: ma.Bool32) callconv(.C) ma.Result {
-        var self: *SfxrDataSource = @ptrCast(@alignCast(ds));
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
         std.debug.print("onSetLooping: {}\n", .{is_looping});
         self.looping = is_looping == .true32;
         return .success;
     }
 
     fn onGetLength(ds: *ma.DataSource, length: ?*u64) callconv(.C) ma.Result {
-        var self: *SfxrDataSource = @ptrCast(@alignCast(ds));
+        var self: *Sfxr = @ptrCast(@alignCast(ds));
         _ = self;
         std.debug.print("onGetLength\n", .{});
         length.?.* = 10000;
