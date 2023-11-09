@@ -1,14 +1,14 @@
 const std = @import("std");
 const ma = @import("zaudio");
 const aya = @import("../aya.zig");
-const SfxrDataSource = @import("sfxr.zig").Sfxr;
+const Sfxr = @import("sfxr.zig").Sfxr;
 
 pub var engine: *ma.Engine = undefined;
 pub var snd1: ?*ma.Sound = null;
 pub var snd2: ?*ma.Sound = null;
 pub var snd3: ?*ma.Sound = null;
 pub var music: ?*ma.Sound = null;
-pub var sfxr: ?*SfxrDataSource = null;
+pub var sfxr: ?*Sfxr = null;
 pub var audio_filter: ?AudioFilter = null;
 pub var noise_data_source: ?*ma.Noise = null;
 pub var noise_node: ?*ma.DataSourceNode = null;
@@ -20,8 +20,8 @@ pub const max_filter_q: f32 = 1.0;
 pub const min_filter_gain: f32 = -20.0;
 pub const max_filter_gain: f32 = 20.0;
 pub const filter_order: u32 = 4;
-pub const delay_in_frames: u32 = 100;
-pub const decay: f32 = 0;
+pub const delay_in_seconds: f32 = 0.4;
+pub const decay: f32 = 0.5; // Volume falloff for each echo
 
 pub fn init() void {
     ma.init(aya.mem.allocator);
@@ -178,7 +178,7 @@ pub fn start() void {
         const delay_config = ma.DelayNode.Config.init(
             engine.getChannels(),
             engine.getSampleRate(),
-            delay_in_frames,
+            @intFromFloat(delay_in_seconds * @as(f32, @floatFromInt(engine.getSampleRate()))),
             decay,
         );
 
@@ -236,12 +236,10 @@ pub fn start() void {
     noise_node = engine.createDataSourceNode(
         ma.DataSourceNode.Config.init(noise_data_source.?.asDataSourceMut()),
     ) catch unreachable;
-    noise_node.?.setState(.stopped) catch unreachable;
+    noise_node.?.setState(.started) catch unreachable;
+    noise_node.?.setOutputBusVolume(0, 0.1) catch unreachable;
 
-    sfxr = SfxrDataSource.create(engine);
-    const sfxr_sound = sfxr.?.createSound();
-    sfxr.?.loadPreset(.jump, 669);
-    sfxr_sound.start() catch unreachable;
+    sfxr = Sfxr.create(engine);
 }
 
 pub fn updateAudioGraph() void {
@@ -252,7 +250,7 @@ pub fn updateAudioGraph() void {
     };
 
     music.?.attachOutputBus(0, node, 0) catch unreachable;
-    // noise_node.?.attachOutputBus(0, node, 0) catch unreachable;
+    noise_node.?.attachOutputBus(0, node, 0) catch unreachable;
     snd1.?.attachOutputBus(0, node, 0) catch unreachable;
     snd2.?.attachOutputBus(0, node, 0) catch unreachable;
     snd3.?.attachOutputBus(0, node, 0) catch unreachable;

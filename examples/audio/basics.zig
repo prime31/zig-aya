@@ -26,7 +26,6 @@ fn update() !void {
             aya.audio.updateAudioGraph();
 
         if (!audio_filter.is_enabled) ig.igBeginDisabled(true);
-        defer if (!audio_filter.is_enabled) ig.igEndDisabled();
 
         const selected_item = @intFromEnum(audio_filter.current_type);
         if (ig.beginCombo("Type", .{ .preview_value = aya.audio.AudioFilterType.names[selected_item] })) {
@@ -170,6 +169,28 @@ fn update() !void {
                     .cfmt = "%.3f",
                 })) audio_filter.delay.node.setDecay(config.decay);
             },
+        }
+
+        if (!audio_filter.is_enabled) ig.igEndDisabled();
+
+        ig.igSpacing();
+
+        if (ig.igButton("Play SFXR Jump", .{})) {
+            const sfxr_sound = aya.audio.sfxr.?.createSound();
+            aya.audio.sfxr.?.loadPreset(.jump, 669);
+            sfxr_sound.start() catch unreachable;
+        }
+
+        if (ig.igButton("Play SFXR Laser", .{})) {
+            const sfxr_sound = aya.audio.sfxr.?.createSound();
+            aya.audio.sfxr.?.loadPreset(.laser, 669);
+            sfxr_sound.start() catch unreachable;
+        }
+
+        if (ig.igButton("Play SFXR PowerUp", .{})) {
+            const sfxr_sound = aya.audio.sfxr.?.createSound();
+            aya.audio.sfxr.?.loadPreset(.power_up, 669);
+            sfxr_sound.start() catch unreachable;
         }
     }
 }

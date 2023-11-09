@@ -211,7 +211,7 @@ const SfxrParams = extern struct {
 };
 
 // DataSource
-pub const Sfxr = extern struct {
+pub const Sfxr = struct {
     base: ma.DataSourceBase = undefined,
     engine: *Engine = undefined,
 
@@ -255,12 +255,15 @@ pub const Sfxr = extern struct {
     params: SfxrParams = .{},
     data_source: *ma.DataSource = undefined,
     node: *ma.DataSourceNode = undefined,
+    sound_pool: std.ArrayList(*Sound),
 
     pub fn create(engine: *Engine) *Sfxr {
-        var dds = aya.mem.create(Sfxr);
-        dds.* = .{};
-        dds.resetSample(false);
-        dds.engine = engine;
+        var self = aya.mem.create(Sfxr);
+        self.* = .{
+            .sound_pool = std.ArrayList(*Sound).init(aya.mem.allocator),
+        };
+        self.resetSample(false);
+        self.engine = engine;
 
         var base_config = ma.DataSource.Config.init();
         base_config.vtable = &.{
@@ -273,20 +276,28 @@ pub const Sfxr = extern struct {
             .flags = .{},
         };
 
-        dds.data_source = ma.DataSource.create(base_config, &dds.base) catch unreachable;
-        const node_config = ma.DataSourceNode.Config.init(dds.data_source);
-        dds.node = engine.createDataSourceNode(node_config) catch unreachable;
+        self.data_source = ma.DataSource.create(base_config, &self.base) catch unreachable;
+        const node_config = ma.DataSourceNode.Config.init(self.data_source);
+        self.node = engine.createDataSourceNode(node_config) catch unreachable;
 
-        return dds;
+        return self;
     }
 
     pub fn destroy(self: *Sfxr) void {
+        for (self.sound_pool.items) |snd| snd.destroy();
+        self.sound_pool.deinit();
         self.node.destroy();
         aya.mem.destroy(self);
     }
 
     pub fn createSound(self: *Sfxr) *ma.Sound {
-        return self.engine.createSoundFromDataSource(self.data_source, .{}, null) catch unreachable;
+        for (self.sound_pool.items) |snd| {
+            if (snd.isAtEnd()) return snd;
+        }
+
+        const snd = self.engine.createSoundFromDataSource(self.data_source, .{}, null) catch unreachable;
+        self.sound_pool.append(snd) catch unreachable;
+        return snd;
     }
 
     pub fn loadPreset(self: *Sfxr, preset: SfxrPreset, seed: u64) void {
@@ -546,7 +557,6 @@ pub const Sfxr = extern struct {
 
     fn onSetLooping(ds: *ma.DataSource, is_looping: ma.Bool32) callconv(.C) ma.Result {
         var self: *Sfxr = @ptrCast(@alignCast(ds));
-        std.debug.print("onSetLooping: {}\n", .{is_looping});
         self.looping = is_looping == .true32;
         return .success;
     }
