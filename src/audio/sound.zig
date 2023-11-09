@@ -25,7 +25,7 @@ pub const Sound = struct {
     }
 
     pub fn isPlaying(self: *const Sound) bool {
-        return self.isPlaying();
+        return self.src.isPlaying();
     }
 
     pub fn setVolume(self: *Sound, volume: f32) void {
@@ -67,7 +67,10 @@ fn igInspect(sound: *Sound) void {
     if (ig.igBegin("Sound", null, ig.ImGuiWindowFlags_None)) {
         defer ig.igEnd();
 
-        // ig.igText("Is Playing: %d", if (sound.isPlaying()) @as(f32, 1.0) else @as(f32, 0.0));
+        var is_playing = sound.isPlaying();
+        if (ig.igCheckbox("Is Playing", &is_playing)) {
+            if (is_playing) sound.start() else sound.stop();
+        }
 
         var volume = sound.getVolume();
         if (ig.sliderScalar("Volume", f32, .{ .v = &volume, .min = 0, .max = 2 }))
@@ -76,5 +79,9 @@ fn igInspect(sound: *Sound) void {
         var pan = sound.getPan();
         if (ig.sliderScalar("Pan", f32, .{ .v = &pan, .min = -1, .max = 1 }))
             sound.setPan(pan);
+
+        var pitch = sound.getPitch();
+        if (ig.sliderScalar("Pitch", f32, .{ .v = &pitch, .min = 0, .max = 10 }))
+            sound.setPitch(pitch);
     }
 }

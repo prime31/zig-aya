@@ -23,7 +23,7 @@ pub const SoundGroup = struct {
     }
 
     pub fn isPlaying(self: *const SoundGroup) bool {
-        return self.isPlaying();
+        return self.src.isPlaying();
     }
 
     pub fn setVolume(self: *const SoundGroup, volume: f32) void {
@@ -59,20 +59,20 @@ pub const SoundGroup = struct {
     }
 };
 
-fn igInspect(sound: *SoundGroup) void {
+fn igInspect(group: *SoundGroup) void {
     if (!ig.enabled) return;
 
-    if (ig.igBegin("Sound", null, ig.ImGuiWindowFlags_None)) {
+    if (ig.igBegin("Sound Group", null, ig.ImGuiWindowFlags_None)) {
         defer ig.igEnd();
 
         // ig.igText("Is Playing: %d", if (sound.isPlaying()) @as(f32, 1.0) else @as(f32, 0.0));
 
-        var volume = sound.getVolume();
+        var volume = group.getVolume();
         if (ig.sliderScalar("Volume", f32, .{ .v = &volume, .min = 0, .max = 2 }))
-            sound.setVolume(volume);
+            group.setVolume(volume);
 
-        var pan = sound.getPan();
+        var pan = group.getPan();
         if (ig.sliderScalar("Pan", f32, .{ .v = &pan, .min = -1, .max = 1 }))
-            sound.setPan(pan);
+            group.setPan(pan);
     }
 }
