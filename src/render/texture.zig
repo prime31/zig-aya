@@ -4,6 +4,8 @@ const stb_image = @import("stb");
 const rk = @import("renderkit");
 const fs = aya.fs;
 
+const internal = @import("../internal.zig");
+
 pub const Texture = struct {
     img: rk.Image,
     width: f32 = 0,
@@ -36,6 +38,8 @@ pub const Texture = struct {
     }
 
     pub fn initFromFile(file: []const u8, filter: rk.TextureFilter) Texture {
+        if (internal.assets.tryGetTexture(file)) |tex| return tex;
+
         const image_contents = fs.read(aya.mem.tmp_allocator, file) catch unreachable;
 
         var w: c_int = undefined;
@@ -45,7 +49,9 @@ pub const Texture = struct {
         if (load_res == null) unreachable;
         defer stb_image.stbi_image_free(load_res);
 
-        return initWithDataOptions(u8, w, h, load_res[0..@as(usize, @intCast(w * h * channels))], filter, .clamp);
+        const texture = initWithDataOptions(u8, w, h, load_res[0..@as(usize, @intCast(w * h * channels))], filter, .clamp);
+        internal.assets.putTexture(file, texture);
+        return texture;
     }
 
     pub fn initWithData(comptime T: type, width: i32, height: i32, pixels: []T) Texture {

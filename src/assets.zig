@@ -1,11 +1,15 @@
 const std = @import("std");
 const watcher = @import("watcher");
+const ma = @import("zaudio");
+const internal = @import("internal.zig");
 const aya = @import("aya.zig");
 const rk = aya.rk;
+const audio = aya.audio;
 
 const Texture = aya.render.Texture;
 const Shader = aya.render.Shader;
 const ShaderOptions = aya.render.Shader.ShaderOptions;
+const Sound = aya.audio.Sound;
 
 fn RefCounted(comptime T: type) type {
     return struct {
@@ -23,10 +27,12 @@ const ShaderInfo = struct {
     pub fn init(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions, shader: Shader) ShaderInfo {
         const closure = struct {
             fn closure(opts: ShaderOptions) ?rk.ShaderProgram {
-                return if (Shader.initWithVertFrag(VertUniformT, FragUniformT, opts)) |shdr| {
-                    if (shdr.shader > 0) return shdr.shader;
-                    return null;
-                } else |_| return null;
+                var shader_load_options = opts;
+                shader_load_options.force_reload = true;
+
+                const shdr = Shader.initWithVertFrag(VertUniformT, FragUniformT, shader_load_options);
+                if (shdr.shader > 0) return shdr.shader;
+                return null;
             }
         }.closure;
 
@@ -47,6 +53,7 @@ const asset_path = "examples/assets";
 pub const Assets = struct {
     textures: std.StringHashMap(RefCounted(Texture)),
     shaders: std.StringHashMap(RefCounted(ShaderInfo)),
+    sounds: std.StringHashMap(RefCounted(Sound)),
 
     pub fn init() Assets {
         // disable hot reload if the FileWatcher is disbled
@@ -56,6 +63,7 @@ pub const Assets = struct {
         return .{
             .textures = std.StringHashMap(RefCounted(Texture)).init(aya.mem.allocator),
             .shaders = std.StringHashMap(RefCounted(ShaderInfo)).init(aya.mem.allocator),
+            .sounds = std.StringHashMap(RefCounted(Sound)).init(aya.mem.allocator),
         };
     }
 
@@ -67,18 +75,23 @@ pub const Assets = struct {
         var shader_iter = self.shaders.valueIterator();
         while (shader_iter.next()) |rc| rc.obj.shader.deinit();
         self.shaders.deinit();
+
+        var sound_iter = self.sounds.valueIterator();
+        while (sound_iter.next()) |rc| rc.obj.src.destroy();
+        self.sounds.deinit();
     }
 
     // Textures
-    pub fn loadTexture(self: *Assets, file: []const u8, filter: rk.TextureFilter) Texture {
-        if (self.textures.getPtr(file)) |rc| {
+    pub fn tryGetTexture(self: *Assets, filepath: [:0]const u8) ?Texture {
+        if (self.textures.getPtr(filepath)) |rc| {
             rc.cnt += 1;
             return rc.obj;
         }
+        return null;
+    }
 
-        const texture = Texture.initFromFile(file, filter);
-        self.textures.put(file, .{ .obj = texture }) catch unreachable;
-        return texture;
+    pub fn putTexture(self: *Assets, filepath: [:0]const u8, texture: Texture) void {
+        self.textures.put(filepath, .{ .obj = texture }) catch unreachable;
     }
 
     /// increases the ref count on the texture
@@ -92,18 +105,19 @@ pub const Assets = struct {
         }
     }
 
-    pub fn releaseTexture(self: *Assets, tex: Texture) void {
+    /// returns true if the ref count reached 0 and the asset should be destroyed
+    pub fn releaseTexture(self: *Assets, tex: Texture) bool {
         var iter = self.textures.iterator();
         while (iter.next()) |*entry| {
             if (entry.value_ptr.obj.img == tex.img) {
                 entry.value_ptr.cnt -= 1;
                 if (entry.value_ptr.cnt == 0) {
                     _ = self.textures.removeByPtr(entry.key_ptr);
-                    tex.deinit();
+                    return true;
                 }
-                return;
             }
         }
+        return false;
     }
 
     fn hotReloadTexture(self: *Assets, path: []const u8) void {
@@ -115,18 +129,17 @@ pub const Assets = struct {
     }
 
     // Shaders
-    pub fn loadShader(self: *Assets, comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
-        // we need to be loading a fragment shader from a file for hot reload to work
-        if (!std.mem.endsWith(u8, options.frag, ".glsl")) return Shader.initWithVertFrag(VertUniformT, FragUniformT, options);
-
-        if (self.shaders.getPtr(options.frag)) |rc| {
+    pub fn tryGetShader(self: *Assets, frag_path: []const u8) ?Shader {
+        if (self.shaders.getPtr(frag_path)) |rc| {
             rc.cnt += 1;
             return rc.obj.shader;
         }
+        return null;
+    }
 
-        const shader = try Shader.initWithVertFrag(VertUniformT, FragUniformT, options);
-        try self.shaders.put(options.frag, .{ .obj = ShaderInfo.init(VertUniformT, FragUniformT, options, shader) });
-        return shader;
+    pub fn putShader(self: *Assets, comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions, shader: Shader) void {
+        const shader_info = ShaderInfo.init(VertUniformT, FragUniformT, options, shader);
+        self.shaders.put(options.frag, .{ .obj = shader_info }) catch unreachable;
     }
 
     /// increases the ref count on the shader
@@ -140,18 +153,18 @@ pub const Assets = struct {
         }
     }
 
-    pub fn releaseShader(self: *Assets, shader: Shader) void {
+    pub fn releaseShader(self: *Assets, shader: Shader) bool {
         var iter = self.shaders.iterator();
         while (iter.next()) |*entry| {
             if (entry.value_ptr.obj.shader.shader == shader.shader) {
                 entry.value_ptr.cnt -= 1;
                 if (entry.value_ptr.cnt == 0) {
                     _ = self.shaders.removeByPtr(entry.key_ptr);
-                    shader.deinit();
+                    return true;
                 }
-                return;
             }
         }
+        return false;
     }
 
     fn hotReloadShader(self: *Assets, path: []const u8) void {
@@ -163,6 +176,46 @@ pub const Assets = struct {
             }
         }
     }
+
+    // Sounds
+    pub fn tryGetSound(self: *Assets, filepath: [:0]const u8) ?Sound {
+        if (self.sounds.getPtr(filepath)) |rc| {
+            rc.cnt += 1;
+            return rc.obj;
+        }
+        return null;
+    }
+
+    pub fn putSound(self: *Assets, filepath: [:0]const u8, sound: Sound) void {
+        self.sounds.put(filepath, .{ .obj = sound }) catch unreachable;
+    }
+
+    /// increases the ref count on the Sound
+    pub fn cloneSound(self: *Assets, sound: Sound) void {
+        var iter = self.sounds.valueIterator();
+        while (iter.next()) |rc| {
+            if (rc.obj.src == sound.src) {
+                rc.cnt += 1;
+                return;
+            }
+        }
+    }
+
+    /// returns true if the ref count reached 0 and the asset should be destroyed
+    pub fn releaseSound(self: *Assets, sound: Sound) bool {
+        var iter = self.sounds.iterator();
+        while (iter.next()) |*entry| {
+            if (entry.value_ptr.obj.src == sound.src) {
+                entry.value_ptr.cnt -= 1;
+                if (entry.value_ptr.cnt == 0) {
+                    _ = self.sounds.removeByPtr(entry.key_ptr);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 };
 
 // hot reload handler
@@ -171,8 +224,8 @@ fn onFileChanged(path: [*c]const u8) callconv(.C) void {
     if (std.mem.indexOf(u8, path_span, asset_path)) |index| {
         const ext = std.fs.path.extension(path_span);
         if (std.mem.eql(u8, ext, ".png"))
-            aya.assets.hotReloadTexture(path_span[index..]);
+            internal.assets.hotReloadTexture(path_span[index..]);
         if (std.mem.eql(u8, ext, ".glsl"))
-            aya.assets.hotReloadShader(path_span[index..]);
+            internal.assets.hotReloadShader(path_span[index..]);
     }
 }

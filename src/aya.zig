@@ -21,7 +21,6 @@ const InputState = @import("input/input_state.zig").InputState;
 const GraphicsContext = @import("render/graphics_context.zig").GraphicsContext;
 const GraphicsConfig = @import("render/graphics_context.zig").Config;
 const Resources = @import("resources.zig").Resources;
-const Assets = @import("assets.zig").Assets;
 
 // exports for easy access
 pub const utils = @import("utils.zig");
@@ -40,9 +39,9 @@ pub var time: Time = undefined;
 pub var input: InputState = undefined;
 pub var gfx: GraphicsContext = undefined;
 pub var res: Resources = undefined;
-pub var assets: Assets = undefined;
 
 var event_writers: EventWriters = undefined;
+const internal = @import("internal.zig");
 
 pub const Config = struct {
     init: ?fn () anyerror!void = null,
@@ -59,13 +58,13 @@ pub const Config = struct {
 
 fn init(comptime config: Config) void {
     mem = Mem.init();
+    internal.init();
     window = Window.init(config.window, config.imgui);
     debug = Debug.init();
     time = Time.init(config.update_rate);
     input = InputState.init();
     gfx = GraphicsContext.init(config.gfx);
     res = Resources.init();
-    assets = Assets.init();
 
     event_writers = EventWriters.init();
     audio.init();
@@ -77,9 +76,9 @@ fn deinit() void {
     input.deinit();
     gfx.deinit();
     res.deinit();
-    assets.deinit();
 
     audio.deinit();
+    internal.deinit();
     rk.shutdown();
     mem.deinit(); // must be last so everyone else can deinit!
 }

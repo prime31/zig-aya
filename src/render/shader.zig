@@ -1,4 +1,5 @@
 const std = @import("std");
+const internal = @import("../internal.zig");
 const aya = @import("../aya.zig");
 const rk = aya.rk;
 const fs = aya.fs;
@@ -50,6 +51,9 @@ pub const Shader = struct {
         /// custom vertex shader and isnt necessary if the standard sprite vertex shader is used. Note that the shader is already
         /// bound when this is called if `gfx.setShader` is used so send your uniform immediately!
         onSetTransformMatrix: ?*const fn (*Mat32) void = null,
+
+        /// used internally to skip checking the cache during hot reload
+        force_reload: bool = false,
     };
 
     pub fn initDefaultSpriteShader() !Shader {
@@ -65,8 +69,13 @@ pub const Shader = struct {
         return initWithVertFrag(VertexParams, FragUniformT, options);
     }
 
-    // TODO: this shouldnt have `catch unreachable`s but in release mode builds fail to identify the error set....
-    pub fn initWithVertFrag(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) !Shader {
+    pub fn initWithVertFrag(comptime VertUniformT: type, comptime FragUniformT: type, options: ShaderOptions) Shader {
+        var cache_shader = false;
+        if (!options.force_reload and std.mem.endsWith(u8, options.frag, ".glsl")) {
+            if (internal.assets.tryGetShader(options.frag)) |shd| return shd;
+            cache_shader = true;
+        }
+
         var free_vert = false;
         var free_frag = false;
 
@@ -96,6 +105,9 @@ pub const Shader = struct {
             .onSetTransformMatrix = options.onSetTransformMatrix,
         };
 
+        if (cache_shader)
+            internal.assets.putShader(VertUniformT, FragUniformT, options, shader);
+
         // only free data if we loaded from file
         if (free_vert) aya.mem.allocator.free(vert);
         if (free_frag) aya.mem.allocator.free(frag);
@@ -104,7 +116,8 @@ pub const Shader = struct {
     }
 
     pub fn deinit(self: Shader) void {
-        rk.destroyShaderProgram(self.shader);
+        if (internal.assets.releaseShader(self))
+            rk.destroyShaderProgram(self.shader);
     }
 
     pub fn bind(self: *Shader) void {
