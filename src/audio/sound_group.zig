@@ -59,20 +59,27 @@ pub const SoundGroup = struct {
     }
 };
 
-fn igInspect(group: *SoundGroup) void {
+fn igInspect(sound: *SoundGroup) void {
     if (!ig.enabled) return;
 
     if (ig.igBegin("Sound Group", null, ig.ImGuiWindowFlags_None)) {
         defer ig.igEnd();
 
-        // ig.igText("Is Playing: %d", if (sound.isPlaying()) @as(f32, 1.0) else @as(f32, 0.0));
+        var is_playing = sound.isPlaying();
+        if (ig.igCheckbox("Is Playing", &is_playing)) {
+            if (is_playing) sound.start() else sound.stop();
+        }
 
-        var volume = group.getVolume();
+        var volume = sound.getVolume();
         if (ig.sliderScalar("Volume", f32, .{ .v = &volume, .min = 0, .max = 2 }))
-            group.setVolume(volume);
+            sound.setVolume(volume);
 
-        var pan = group.getPan();
+        var pan = sound.getPan();
         if (ig.sliderScalar("Pan", f32, .{ .v = &pan, .min = -1, .max = 1 }))
-            group.setPan(pan);
+            sound.setPan(pan);
+
+        var pitch = sound.getPitch();
+        if (ig.sliderScalar("Pitch", f32, .{ .v = &pitch, .min = 0, .max = 10 }))
+            sound.setPitch(pitch);
     }
 }
