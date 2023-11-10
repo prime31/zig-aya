@@ -1,4 +1,4 @@
-// pub usingnamespace @import("dear_imgui.zig");
+const std = @import("std");
 pub const sdl = @import("imgui_sdl3.zig");
 pub const icons = @import("font_awesome.zig");
 pub const enabled = @import("options").imgui;
@@ -9,6 +9,17 @@ pub usingnamespace @cImport({
 });
 
 const ig = @This();
+
+// helper for getting window titles and other dynamic strings for Dear ImGui
+var temp_buffer: [512]u8 = undefined;
+
+pub fn format(comptime fmt: []const u8, args: anytype) []const u8 {
+    return std.fmt.bufPrint(&temp_buffer, fmt, args) catch unreachable;
+}
+
+pub fn formatZ(comptime fmt: []const u8, args: anytype) [:0]const u8 {
+    return std.fmt.bufPrintZ(&temp_buffer, fmt, args) catch unreachable;
+}
 
 const DataType = enum(c_int) { I8, U8, I16, U16, I32, U32, I64, U64, F32, F64 };
 
