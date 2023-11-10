@@ -4,6 +4,7 @@ const aya = @import("aya");
 const ig = aya.ig;
 
 var tabla: aya.audio.Sound = undefined;
+var music: aya.audio.Sound = undefined;
 
 pub fn main() !void {
     std.debug.print("\n", .{});
@@ -17,17 +18,31 @@ pub fn main() !void {
 
 fn init() !void {
     tabla = aya.audio.loadSound("examples/assets/audio/tabla_tas1.flac", .{});
+    music = aya.audio.loadSound("examples/assets/audio/Broke For Free - Night Owl.mp3", .{ .flags = .{ .stream = true } });
 }
 
 fn shutdown() !void {
     tabla.deinit();
+    music.deinit();
 }
 
 fn update() !void {
     tabla.inspect();
+    music.inspect();
 
     if (ig.igBegin("Audio Buttons", null, ig.ImGuiWindowFlags_None)) {
         defer ig.igEnd();
+
+        if (ig.igButton("One Shot Tabla", .{}))
+            aya.audio.playOneShot("examples/assets/audio/tabla_tas1.flac", null);
+
+        if (music.isPlaying()) {
+            if (ig.igButton("Stop Music", .{ .x = 100 }))
+                music.stop();
+        } else {
+            if (ig.igButton("Start Music", .{ .x = 100 }))
+                music.start();
+        }
 
         // if (ig.igButton("Play SFXR Jump", .{})) {
         //     aya.audio.sfxr.?.loadPreset(.jump, 669);
