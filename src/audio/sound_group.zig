@@ -184,8 +184,6 @@ fn igInspect(sound: *SoundGroup) void {
 
     const title = ig.formatZ("Sound Group##{}", .{@intFromPtr(sound.src)});
     if (ig.igBegin(title, null, ig.ImGuiWindowFlags_None)) {
-        defer ig.igEnd();
-
         var is_playing = sound.isPlaying();
         if (ig.igCheckbox("Is Playing", &is_playing)) {
             if (is_playing) sound.start() else sound.stop();
@@ -203,4 +201,5 @@ fn igInspect(sound: *SoundGroup) void {
         if (ig.sliderScalar("Pitch", f32, .{ .v = &pitch, .min = 0, .max = 10 }))
             sound.setPitch(pitch);
     }
+    ig.igEnd();
 }

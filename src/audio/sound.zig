@@ -185,9 +185,7 @@ fn igInspect(sound: *Sound) void {
     if (!ig.enabled) return;
 
     const title = ig.formatZ("Sound##{}", .{@intFromPtr(sound.src)});
-    if (ig.igBegin(title, null, ig.ImGuiWindowFlags_None)) {
-        defer ig.igEnd();
-
+    if (ig.igBegin(title, null, ig.ImGuiWindowFlags_AlwaysAutoResize)) {
         var is_playing = sound.isPlaying();
         if (ig.igCheckbox("Is Playing", &is_playing)) {
             if (is_playing) sound.start() else sound.stop();
@@ -202,7 +200,8 @@ fn igInspect(sound: *Sound) void {
             sound.setPan(pan);
 
         var pitch = sound.getPitch();
-        if (ig.sliderScalar("Pitch", f32, .{ .v = &pitch, .min = 0, .max = 10 }))
+        if (ig.sliderScalar("Pitch", f32, .{ .v = &pitch, .min = 0, .max = 2 }))
             sound.setPitch(pitch);
     }
+    ig.igEnd();
 }
