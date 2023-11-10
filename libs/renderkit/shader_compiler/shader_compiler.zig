@@ -265,7 +265,7 @@ pub const ShaderCompileStep = struct {
                 } else {
                     try fn_writer.print("    const frag = \"{0s}{1s}.glsl\";\n", .{ self.shader_out_path, program.fs });
                 }
-                try fn_writer.print("    return aya.assets.loadShader({s}, {s}, .{{ .frag = frag, .vert = vert }}) catch unreachable;\n", .{ vs_uni_type, fs_uni_type });
+                try fn_writer.print("    return Shader.initWithVertFrag({s}, {s}, .{{ .frag = frag, .vert = vert }});\n", .{ vs_uni_type, fs_uni_type });
 
                 try fn_writer.writeAll("}\n\n");
             }

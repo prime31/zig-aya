@@ -23,7 +23,7 @@ var shader: Shader = undefined;
 var pass: OffscreenPass = undefined;
 
 fn init() !void {
-    tex = aya.assets.loadTexture("examples/assets/sword_dude.png", .nearest);
+    tex = Texture.initFromFile("examples/assets/sword_dude.png", .nearest);
     shader = shaders.createMrtShader();
     pass = OffscreenPass.initMrt(200, 200, 2, .nearest, .clamp);
 }
@@ -43,7 +43,7 @@ fn render() !void {
 }
 
 fn shutdown() !void {
-    aya.assets.releaseTexture(tex);
-    aya.assets.releaseShader(shader);
+    tex.deinit();
+    shader.deinit();
     pass.deinit();
 }

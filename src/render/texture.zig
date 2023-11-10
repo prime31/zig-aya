@@ -37,7 +37,7 @@ pub const Texture = struct {
         };
     }
 
-    pub fn initFromFile(file: []const u8, filter: rk.TextureFilter) Texture {
+    pub fn initFromFile(file: [:0]const u8, filter: rk.TextureFilter) Texture {
         if (internal.assets.tryGetTexture(file)) |tex| return tex;
 
         const image_contents = fs.read(aya.mem.tmp_allocator, file) catch unreachable;
@@ -163,7 +163,8 @@ pub const Texture = struct {
     }
 
     pub fn deinit(self: *const Texture) void {
-        rk.destroyImage(self.img);
+        if (internal.assets.releaseTexture(self))
+            rk.destroyImage(self.img);
     }
 
     pub fn setData(self: *Texture, comptime T: type, data: []T) void {

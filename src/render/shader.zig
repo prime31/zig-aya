@@ -153,7 +153,7 @@ pub fn ShaderState(comptime FragUniformT: type) type {
         frag_uniform: FragUniformT = .{},
 
         pub fn init(options: Shader.ShaderOptions) Self {
-            return .{ .shader = aya.assets.loadShader(VertexParams, FragUniformT, options) catch unreachable };
+            return .{ .shader = try Shader.initWithVertFrag(VertexParams, FragUniformT, options) catch unreachable };
         }
 
         pub fn deinit(self: Self) void {
