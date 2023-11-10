@@ -129,55 +129,52 @@ pub const Gamepad = struct {
     }
 };
 
-/// Resource. A collection of connected gamepads
-pub const Gamepads = struct {
-    pads: std.AutoHashMap(GamepadId, Gamepad), // TODO: make this a fixed array of ?Gamepad
+var pads: std.AutoHashMap(GamepadId, Gamepad) = undefined;
 
-    pub fn init() Gamepads {
-        return .{ .pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.mem.allocator) };
+pub fn init() void {
+    pads = std.AutoHashMap(GamepadId, Gamepad).init(aya.mem.allocator);
+}
+
+pub fn deinit() void {
+    pads.deinit();
+}
+
+pub fn newFrame() void {
+    var iter = pads.valueIterator();
+    while (iter.next()) |gamepad| gamepad.buttons.clear();
+}
+
+pub fn contains(id: GamepadId) bool {
+    return pads.contains(id);
+}
+
+/// Registers the `gamepad`, marking it as connected.
+pub fn register(id: GamepadId) void {
+    if (sdl.SDL_OpenGamepad(id)) |pad| {
+        pads.put(id, Gamepad.init(id, pad)) catch unreachable;
+    }
+}
+
+/// Deregisters the `gamepad`, marking it as disconnected.
+pub fn deregister(id: GamepadId) void {
+    _ = pads.remove(id);
+}
+
+pub fn get(id: GamepadId) ?*Gamepad {
+    return pads.getPtr(id);
+}
+
+pub fn nextGamepad() ?*Gamepad {
+    const I = struct {
+        var iter: ?std.AutoHashMap(GamepadId, Gamepad).ValueIterator = null;
+    };
+
+    if (I.iter == null) I.iter = pads.valueIterator();
+
+    if (I.iter) |*iter| {
+        if (iter.next()) |next| return next;
+        I.iter = null;
     }
 
-    pub fn deinit(self: *Gamepads) void {
-        self.pads.deinit();
-    }
-
-    pub fn contains(self: Gamepads, id: GamepadId) bool {
-        return self.pads.contains(id);
-    }
-
-    /// Registers the `gamepad`, marking it as connected.
-    pub fn register(self: *Gamepads, id: GamepadId) void {
-        if (sdl.SDL_OpenGamepad(id)) |pad| {
-            self.pads.put(id, Gamepad.init(id, pad)) catch unreachable;
-        }
-    }
-
-    /// Deregisters the `gamepad`, marking it as disconnected.
-    pub fn deregister(self: *Gamepads, id: GamepadId) void {
-        _ = self.pads.remove(id);
-    }
-
-    pub fn update(self: *Gamepads) void {
-        var iter = self.pads.valueIterator();
-        while (iter.next()) |gamepad| gamepad.buttons.clear();
-    }
-
-    pub fn get(self: *const Gamepads, id: GamepadId) ?*Gamepad {
-        return self.pads.getPtr(id);
-    }
-
-    pub fn nextGamepad(self: *const Gamepads) ?*Gamepad {
-        const I = struct {
-            var iter: ?std.AutoHashMap(GamepadId, Gamepad).ValueIterator = null;
-        };
-
-        if (I.iter == null) I.iter = self.pads.valueIterator();
-
-        if (I.iter) |*iter| {
-            if (iter.next()) |next| return next;
-            I.iter = null;
-        }
-
-        return null;
-    }
-};
+    return null;
+}

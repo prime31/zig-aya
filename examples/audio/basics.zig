@@ -65,8 +65,8 @@ fn update() !void {
 }
 
 fn render() !void {
-    if (aya.input.keyJustPressed(.a)) aya.audio.playOneShot("examples/assets/audio/tabla_tas1.flac", null);
-    if (aya.input.keyJustPressed(.b)) tabla.start();
+    if (aya.kb.justPressed(.a)) aya.audio.playOneShot("examples/assets/audio/tabla_tas1.flac", null);
+    if (aya.kb.justPressed(.b)) tabla.start();
     // if (aya.input.keyJustPressed(.b)) aya.audio.snd3.?.start() catch unreachable;
     // if (aya.input.keyJustPressed(.c)) aya.audio.snd1.?.start() catch unreachable;
     // if (aya.input.keyJustPressed(.d)) aya.audio.snd2.?.start() catch unreachable;

@@ -1,3 +1,8 @@
+const std = @import("std");
+const aya = @import("../aya.zig");
+
+const MouseButtons = @import("pressable_input.zig").MouseButtons;
+
 pub const MouseMotion = struct {
     x: f32,
     y: f32,
@@ -23,3 +28,25 @@ pub const MouseButton = enum(u8) {
 
     pub const max = MouseButton.right;
 };
+
+// state
+pub var buttons: MouseButtons = .{};
+pub var wheel_x: f32 = 0;
+pub var wheel_y: f32 = 0;
+pub var pos: aya.math.Vec2 = .{};
+
+pub fn newFrame() void {
+    buttons.clear();
+}
+
+pub fn justPressed(btn: MouseButton) bool {
+    return buttons.justPressed(btn);
+}
+
+pub fn pressed(btn: MouseButton) bool {
+    return buttons.pressed(btn);
+}
+
+pub fn justReleased(btn: MouseButton) bool {
+    return buttons.justReleased(btn);
+}

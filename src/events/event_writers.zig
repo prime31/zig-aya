@@ -1,25 +1,24 @@
 const std = @import("std");
-const aya = @import("aya.zig");
-const evt = aya.evt;
-const win = aya.win;
+const aya = @import("../aya.zig");
+const evt = @import("mod.zig");
+const window = aya.window;
 
-const Events = @import("events/events.zig").Events;
+const Events = @import("events.zig").Events;
 const EventWriter = evt.EventWriter;
 
-const WindowResized = win.WindowResized;
-const WindowMoved = win.WindowMoved;
-const WindowFocused = win.WindowFocused;
-const WindowScaleFactorChanged = win.WindowScaleFactorChanged;
-const WindowMouseFocused = win.WindowMouseFocused;
+const WindowResized = window.WindowResized;
+const WindowMoved = window.WindowMoved;
+const WindowFocused = window.WindowFocused;
+const WindowScaleFactorChanged = window.WindowScaleFactorChanged;
+const WindowMouseFocused = window.WindowMouseFocused;
 
 const FileDropped = evt.FileDropped;
 
-const MouseWheel = @import("input/mouse.zig").MouseWheel;
-const MouseMotion = @import("input/mouse.zig").MouseMotion;
-const MouseButton = @import("input/mouse.zig").MouseButton;
+const MouseWheel = @import("../input/mouse.zig").MouseWheel;
+const MouseMotion = @import("../input/mouse.zig").MouseMotion;
+const MouseButton = @import("../input/mouse.zig").MouseButton;
 
-const GamePads = @import("input/gamepad.zig").Gamepads;
-const GamepadConnectionEvent = @import("input/gamepad.zig").GamepadConnectionEvent;
+const GamepadConnectionEvent = @import("../input/gamepad.zig").GamepadConnectionEvent;
 
 pub const EventWriters = struct {
     window_resized: EventWriter(WindowResized),
@@ -45,7 +44,7 @@ pub const EventWriters = struct {
         return self;
     }
 
-    pub fn newFrame() void {
+    pub fn newFrame(_: EventWriters) void {
         inline for (std.meta.fields(EventWriters)) |field| {
             aya.res.get(Events(field.type.event_type)).?.update();
         }

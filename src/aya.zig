@@ -7,40 +7,35 @@ pub const ig = @import("imgui");
 pub const sdl = @import("sdl");
 
 // types
-const Window = @import("window.zig").Window;
 const WindowConfig = @import("window.zig").WindowConfig;
 const ImGuiConfig = ig.sdl.Config;
 
-const EventWriters = @import("event_writers.zig").EventWriters;
 const Events = @import("events/events.zig").Events;
 
-const Mem = @import("mem/mem.zig").Mem;
 const Debug = @import("render/debug.zig").Debug;
-const Time = @import("time.zig").Time;
-const InputState = @import("input/input_state.zig").InputState;
 const GraphicsContext = @import("render/graphics_context.zig").GraphicsContext;
 const GraphicsConfig = @import("render/graphics_context.zig").Config;
 const Resources = @import("resources.zig").Resources;
 
 // exports for easy access
-pub const utils = @import("utils.zig");
-pub const fs = @import("fs.zig");
-pub const evt = @import("events/mod.zig");
-pub const win = @import("window.zig");
-pub const math = @import("math/mod.zig");
-pub const render = @import("render/mod.zig");
 pub const audio = @import("audio/mod.zig");
+pub const evt = @import("events/mod.zig");
+pub const fs = @import("fs.zig");
+pub const gamepad = @import("input/gamepad.zig");
+pub const math = @import("math/mod.zig");
+pub const mem = @import("mem/mem.zig");
+pub const mouse = @import("input/mouse.zig");
+pub const kb = @import("input/keyboard.zig");
+pub const render = @import("render/mod.zig");
+pub const time = @import("time.zig");
+pub const utils = @import("utils.zig");
+pub const window = @import("window.zig");
 
 // essentially our fields, just made globals for ease of access
-pub var mem: Mem = undefined;
-pub var window: Window = undefined;
 pub var debug: Debug = undefined;
-pub var time: Time = undefined;
-pub var input: InputState = undefined;
 pub var gfx: GraphicsContext = undefined;
 pub var res: Resources = undefined;
 
-var event_writers: EventWriters = undefined;
 const internal = @import("internal.zig");
 
 pub const Config = struct {
@@ -57,25 +52,23 @@ pub const Config = struct {
 };
 
 fn init(comptime config: Config) void {
-    mem = Mem.init();
-    internal.init();
-    window = Window.init(config.window, config.imgui);
-    debug = Debug.init();
-    time = Time.init(config.update_rate);
-    input = InputState.init();
-    gfx = GraphicsContext.init(config.gfx);
+    mem.init();
     res = Resources.init();
-
-    event_writers = EventWriters.init();
+    internal.init(); // needs res
+    gamepad.init();
+    window.init(config.window, config.imgui);
+    debug = Debug.init();
+    time.init(config.update_rate);
+    gfx = GraphicsContext.init(config.gfx); // needs window
     audio.init();
 }
 
 fn deinit() void {
     window.deinit();
     debug.deinit();
-    input.deinit();
     gfx.deinit();
     res.deinit();
+    gamepad.deinit();
 
     audio.deinit();
     internal.deinit();
@@ -102,8 +95,10 @@ pub fn run(comptime config: Config) !void {
         _ = sdl.SDL_GL_SwapWindow(window.sdl_window);
 
         // these rely on pollEvents so clear them before starting the loop
-        EventWriters.newFrame();
-        input.newFrame();
+        internal.event_writers.newFrame();
+        mouse.newFrame();
+        kb.newFrame();
+        gamepad.newFrame();
     }
     if (config.shutdown) |shutdown| try shutdown();
 
@@ -129,6 +124,8 @@ pub fn getEventWriter(comptime T: type) evt.EventWriter(T) {
 }
 
 fn pollEvents() bool {
+    const event_writers = internal.event_writers;
+
     var event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&event) != 0) {
         if (ig.sdl.handleEvent(&event)) continue;
@@ -196,17 +193,17 @@ fn pollEvents() bool {
             // keyboard
             sdl.SDL_EVENT_KEY_DOWN, sdl.SDL_EVENT_KEY_UP => {
                 if (event.key.state == 0) {
-                    aya.input.keys.release(@enumFromInt(event.key.keysym.scancode));
+                    aya.kb.keys.release(@enumFromInt(event.key.keysym.scancode));
                 } else {
-                    aya.input.keys.press(@enumFromInt(event.key.keysym.scancode));
+                    aya.kb.keys.press(@enumFromInt(event.key.keysym.scancode));
                 }
             },
             // mouse
             sdl.SDL_EVENT_MOUSE_BUTTON_DOWN, sdl.SDL_EVENT_MOUSE_BUTTON_UP => {
                 if (event.button.state == 0) {
-                    aya.input.mouse.buttons.release(@enumFromInt(event.button.button));
+                    aya.mouse.buttons.release(@enumFromInt(event.button.button));
                 } else {
-                    aya.input.mouse.buttons.press(@enumFromInt(event.button.button));
+                    aya.mouse.buttons.press(@enumFromInt(event.button.button));
                 }
             },
             sdl.SDL_EVENT_MOUSE_MOTION => {
@@ -217,7 +214,7 @@ fn pollEvents() bool {
                     .xrel = event.motion.xrel,
                     .yrel = event.motion.yrel,
                 });
-                aya.input.mouse.pos = aya.math.Vec2.init(event.motion.x, event.motion.y);
+                aya.mouse.pos = aya.math.Vec2.init(event.motion.x, event.motion.y);
             },
             sdl.SDL_EVENT_MOUSE_WHEEL => {
                 if (event.wheel.windowID != aya.window.id) continue;
@@ -226,29 +223,29 @@ fn pollEvents() bool {
                     .y = event.wheel.y,
                     .direction = @enumFromInt(event.wheel.direction),
                 });
-                aya.input.mouse.wheel_x = event.wheel.x;
-                aya.input.mouse.wheel_y = event.wheel.y;
+                mouse.wheel_x = event.wheel.x;
+                mouse.wheel_y = event.wheel.y;
             },
             // gamepads
             sdl.SDL_EVENT_GAMEPAD_ADDED => {
-                aya.input.gamepads.register(event.gdevice.which);
+                gamepad.register(event.gdevice.which);
                 event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .connected });
             },
             sdl.SDL_EVENT_GAMEPAD_REMOVED => {
-                aya.input.gamepads.deregister(event.gdevice.which);
+                gamepad.deregister(event.gdevice.which);
                 event_writers.gamepad_connected.send(.{ .gamepad_id = event.gdevice.which, .status = .disconnected });
             },
             sdl.SDL_EVENT_GAMEPAD_AXIS_MOTION => {
-                const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
-                gamepad.axes.put(@enumFromInt(event.gaxis.axis), @as(f32, @floatFromInt(event.gaxis.value)) / @as(f32, std.math.maxInt(i16)));
+                const gpad = gamepad.get(event.gaxis.which) orelse continue;
+                gpad.axes.put(@enumFromInt(event.gaxis.axis), @as(f32, @floatFromInt(event.gaxis.value)) / @as(f32, std.math.maxInt(i16)));
             },
             sdl.SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
-                const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
-                gamepad.buttons.press(@enumFromInt(event.gbutton.button));
+                const gpad = gamepad.get(event.gaxis.which) orelse continue;
+                gpad.buttons.press(@enumFromInt(event.gbutton.button));
             },
             sdl.SDL_EVENT_GAMEPAD_BUTTON_UP => {
-                const gamepad = aya.input.gamepads.get(event.gaxis.which) orelse continue;
-                gamepad.buttons.release(@enumFromInt(event.gbutton.button));
+                const gpad = gamepad.get(event.gaxis.which) orelse continue;
+                gpad.buttons.release(@enumFromInt(event.gbutton.button));
             },
             sdl.SDL_EVENT_GAMEPAD_REMAPPED => std.debug.print("GAMEPAD REMAPPED\n", .{}),
             sdl.SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => std.debug.print("GAMEPAD TOUCHPAD_DOWN\n", .{}),

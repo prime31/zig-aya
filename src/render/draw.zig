@@ -1,3 +1,4 @@
+const std = @import("std");
 const aya = @import("../aya.zig");
 
 const Quad = aya.math.Quad;

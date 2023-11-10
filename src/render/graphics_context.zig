@@ -16,10 +16,6 @@ pub const ShaderState = @import("shader.zig").ShaderState;
 const DefaultOffscreenPass = @import("offscreen_pass.zig").DefaultOffscreenPass;
 const Draw = @import("draw.zig").Draw;
 
-const Batcher = aya.Batcher;
-const FontBook = aya.FontBook;
-const Texture = aya.Texture;
-
 const Vec2 = aya.math.Vec2;
 const Mat32 = aya.math.Mat32;
 const Color = aya.math.Color;

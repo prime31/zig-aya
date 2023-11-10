@@ -7,38 +7,32 @@ const ScratchAllocator = @import("scratch_allocator.zig").ScratchAllocator;
 var tmp_allocator_instance: ScratchAllocator = undefined;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
-pub const Mem = struct {
-    allocator: std.mem.Allocator,
-    tmp_allocator: std.mem.Allocator,
+pub var allocator: std.mem.Allocator = undefined;
+pub var tmp_allocator: std.mem.Allocator = undefined;
 
-    pub fn init() Mem {
-        const allocator = gpa.allocator();
-        tmp_allocator_instance = ScratchAllocator.init(allocator);
+pub fn init() void {
+    allocator = gpa.allocator();
+    tmp_allocator_instance = ScratchAllocator.init(allocator);
+    tmp_allocator = tmp_allocator_instance.allocator();
+}
 
-        return .{
-            .allocator = allocator,
-            .tmp_allocator = tmp_allocator_instance.allocator(),
-        };
-    }
+pub fn deinit() void {
+    tmp_allocator_instance.deinit();
+    _ = gpa.deinit();
+}
 
-    pub fn deinit(_: Mem) void {
-        tmp_allocator_instance.deinit();
-        _ = gpa.deinit();
-    }
+pub fn create(comptime T: type) *T {
+    return allocator.create(T) catch unreachable;
+}
 
-    pub fn create(self: Mem, comptime T: type) *T {
-        return self.allocator.create(T) catch unreachable;
-    }
+pub fn destroy(ptr: anytype) void {
+    allocator.destroy(ptr);
+}
 
-    pub fn destroy(self: Mem, ptr: anytype) void {
-        self.allocator.destroy(ptr);
-    }
+pub fn alloc(comptime T: type, n: usize) []T {
+    return allocator.alloc(T, n) catch unreachable;
+}
 
-    pub fn alloc(self: Mem, comptime T: type, n: usize) []T {
-        return self.allocator.alloc(T, n) catch unreachable;
-    }
-
-    pub fn free(self: Mem, memory: anytype) void {
-        self.allocator.free(memory);
-    }
-};
+pub fn free(memory: anytype) void {
+    allocator.free(memory);
+}
