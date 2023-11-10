@@ -106,7 +106,7 @@ pub const Assets = struct {
     }
 
     /// returns true if the ref count reached 0 and the asset should be destroyed
-    pub fn releaseTexture(self: *Assets, tex: Texture) bool {
+    pub fn releaseTexture(self: *Assets, tex: *const Texture) bool {
         var iter = self.textures.iterator();
         while (iter.next()) |*entry| {
             if (entry.value_ptr.obj.img == tex.img) {

@@ -21,7 +21,7 @@ pub const VignetteShader = ShaderState(VignetteParams);
 pub fn createCubeShader() Shader {
     const vert = @embedFile("cube_vs.glsl");
     const frag = "examples/assets/shaders/cube_fs.glsl";
-    return aya.assets.loadShader(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
+    return Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDepthShader() DepthShader {
@@ -37,7 +37,7 @@ pub fn createDissolveShader() DissolveShader {
 pub fn createInstancedShader() Shader {
     const vert = @embedFile("instanced_vs.glsl");
     const frag = "examples/assets/shaders/instanced_fs.glsl";
-    return aya.assets.loadShader(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
+    return Shader.initWithVertFrag(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createLinesShader() LinesShader {
@@ -58,7 +58,7 @@ pub fn createMode7Shader() Mode7Shader {
 pub fn createMrtShader() Shader {
     const vert = @embedFile("sprite_vs.glsl");
     const frag = "examples/assets/shaders/mrt_fs.glsl";
-    return aya.assets.loadShader(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert }) catch unreachable;
+    return Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createNoiseShader() NoiseShader {
