@@ -151,9 +151,10 @@ pub fn ShaderState(comptime FragUniformT: type) type {
 
         shader: Shader,
         frag_uniform: FragUniformT = .{},
+        textures: AdditionalTextures(FragUniformT) = undefined,
 
         pub fn init(options: Shader.ShaderOptions) Self {
-            return .{ .shader = try Shader.initWithVertFrag(VertexParams, FragUniformT, options) catch unreachable };
+            return .{ .shader = Shader.initWithVertFrag(VertexParams, FragUniformT, options) };
         }
 
         pub fn deinit(self: Self) void {
@@ -163,11 +164,30 @@ pub fn ShaderState(comptime FragUniformT: type) type {
         pub fn onPostBind(shader: *Shader) void {
             const self = @fieldParentPtr(Self, "shader", shader);
             shader.setFragUniform(FragUniformT, &self.frag_uniform);
+
+            // bind any additional textures, starting at slot 1 because slot 0 will be handled by Batcher
+            for (self.textures, 1..) |tex, i| aya.gfx.draw.bindTexture(tex, @intCast(i));
         }
 
+        /// creates a duplicate of this ShaderState sharing the underlying Shader. Clones must have
+        /// deinit called as well.
         pub fn clone(self: Self) Self {
             aya.assets.cloneShader(self.shader);
             return self;
         }
     };
+}
+
+/// returns an array of Texture that is used when binding the Shader to set any other Textures besides main_tex
+fn AdditionalTextures(comptime T: type) type {
+    const Texture = aya.render.Texture;
+
+    // the main texture is handled by Mesh/DynamicMesh/Batcher so we only handle additional textures here
+    if (@hasDecl(T, "metadata") and @hasField(@TypeOf(T.metadata), "images")) {
+        const images = @field(T.metadata, "images");
+        const count = images.len;
+        if (count > 1) return [count - 1]Texture;
+    }
+
+    return [0]Texture;
 }

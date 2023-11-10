@@ -1,3 +1,5 @@
+const mod = @This();
+
 pub usingnamespace @import("math.zig");
 pub usingnamespace @import("color.zig");
 pub usingnamespace @import("edge.zig");
@@ -18,4 +20,8 @@ pub const Axis = enum(u8) {
 pub const Size = struct {
     w: c_int = 0,
     h: c_int = 0,
+
+    pub fn asVec2(self: Size) mod.Vec2 {
+        return mod.Vec2.init(@floatFromInt(self.w), @floatFromInt(self.h));
+    }
 };
