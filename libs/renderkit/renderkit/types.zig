@@ -129,12 +129,12 @@ pub const ColorMask = enum(u32) {
     force_u32 = 0x7FFFFFFF,
 };
 
-pub const RenderState = extern struct {
-    const Depth = extern struct {
+pub const RenderState = struct {
+    const Depth = struct {
         enabled: bool = false,
         compare_func: CompareFunc = .always,
     };
-    const Stencil = extern struct {
+    const Stencil = struct {
         enabled: bool = true,
         write_mask: u8 = 0xFF, // glStencilMask
         fail_op: StencilOp = .keep, // glStencilOp
@@ -144,7 +144,7 @@ pub const RenderState = extern struct {
         ref: u8 = 0, // glStencilFunc
         read_mask: u8 = 0xFF, // glStencilFunc
     };
-    const Blend = extern struct {
+    const Blend = struct {
         enabled: bool = true,
         src_factor_rgb: BlendFactor = .src_alpha,
         dst_factor_rgb: BlendFactor = .one_minus_src_alpha,
@@ -159,12 +159,12 @@ pub const RenderState = extern struct {
     depth: Depth = .{},
     stencil: Stencil = .{},
     blend: Blend = .{},
-    scissor: bool = false,
+    scissor: bool = true,
     cull_mode: CullMode = .none,
     face_winding: FaceWinding = .ccw,
 };
 
-pub const ClearCommand = extern struct {
+pub const ClearCommand = struct {
     pub const ColorAttachmentAction = extern struct {
         clear: bool = true,
         color: [4]f32 = [_]f32{ 0.8, 0.2, 0.3, 1.0 },
@@ -175,6 +175,14 @@ pub const ClearCommand = extern struct {
     stencil: u8 = 0,
     clear_depth: bool = false,
     depth: f64 = 1,
+    viewport: ?Viewport = null,
+};
+
+pub const Viewport = struct {
+    x: c_int,
+    y: c_int,
+    w: c_int,
+    h: c_int,
 };
 
 pub const BufferBindings = struct {

@@ -21,7 +21,7 @@ var lines_shader: shaders.LinesShader = undefined;
 var lines_shader2: shaders.LinesShader = undefined;
 
 fn init() !void {
-    tex = aya.assets.loadTexture("examples/assets/sword_dude.png", .nearest);
+    tex = Texture.initFromFile("examples/assets/sword_dude.png", .nearest);
     lines_shader = shaders.createLinesShader();
     lines_shader.frag_uniform.line_color = [_]f32{ 0.9, 0.8, 0.2, 1 };
     lines_shader.frag_uniform.line_size = 4;
@@ -41,7 +41,7 @@ fn render() !void {
         }
     }
 
-    if (!aya.input.keyPressed(.k)) {
+    if (!aya.kb.pressed(.k)) {
         aya.debug.drawTextFmt("fps: {d:0.4}, dt: {d:0.4}", .{ aya.time.fps(), aya.time.rawDeltaTime() }, .{ .x = 400, .y = 20 }, null);
         aya.debug.drawHollowCircle(.{ .x = 600, .y = 600 }, 30, 4, Color.dark_purple);
     }
@@ -59,7 +59,7 @@ fn render() !void {
 }
 
 fn shutdown() !void {
-    aya.assets.releaseTexture(tex);
-    aya.assets.releaseShader(lines_shader.shader);
-    aya.assets.releaseShader(lines_shader2.shader);
+    tex.deinit();
+    lines_shader.shader.deinit();
+    lines_shader2.shader.deinit();
 }

@@ -163,6 +163,13 @@ pub fn ShaderState(comptime FragUniformT: type) type {
 
         pub fn onPostBind(shader: *Shader) void {
             const self = @fieldParentPtr(Self, "shader", shader);
+
+            // set any automatic frag params
+            if (@hasField(FragUniformT, "time"))
+                self.frag_uniform.time = aya.time.seconds();
+            if (@hasField(FragUniformT, "sin_time"))
+                self.frag_uniform.progress = aya.time.sinTime();
+
             shader.setFragUniform(FragUniformT, &self.frag_uniform);
 
             // bind any additional textures, starting at slot 1 because slot 0 will be handled by Batcher
@@ -172,7 +179,7 @@ pub fn ShaderState(comptime FragUniformT: type) type {
         /// creates a duplicate of this ShaderState sharing the underlying Shader. Clones must have
         /// deinit called as well.
         pub fn clone(self: Self) Self {
-            aya.assets.cloneShader(self.shader);
+            internal.assets.cloneShader(self.shader);
             return self;
         }
     };

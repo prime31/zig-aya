@@ -42,12 +42,16 @@ pub fn frames() u32 {
     return frame_count;
 }
 
-pub fn ticks() u32 {
+pub fn ticks() u64 {
     return sdl.SDL_GetTicks();
 }
 
 pub fn seconds() f32 {
     return @as(f32, @floatFromInt(sdl.SDL_GetTicks())) / 1000;
+}
+
+pub fn sinTime() f32 {
+    return @sin(seconds());
 }
 
 pub fn fps() u64 {
