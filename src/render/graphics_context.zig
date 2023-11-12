@@ -1,6 +1,6 @@
 const std = @import("std");
 const sdl = @import("sdl");
-const renderkit = @import("renderkit");
+const rk = @import("renderkit");
 const aya = @import("../aya.zig");
 
 pub const ResolutionPolicy = @import("resolution_policy.zig").ResolutionPolicy;
@@ -27,7 +27,7 @@ pub const Config = struct {
     design_width: i32 = 0, // the width of the main offscreen render texture when the policy is not .default
     design_height: i32 = 0, // the height of the main offscreen render texture when the policy is not .default
     resolution_policy: ResolutionPolicy = .default, // defines how the main render texture should be blitted to the backbuffer
-    texture_filter: renderkit.TextureFilter = .nearest,
+    texture_filter: rk.TextureFilter = .nearest,
     depth_stencil: bool = false,
 };
 
@@ -48,9 +48,17 @@ pub const PassConfig = struct {
     trans_mat: ?Mat32 = null,
     shader: ?*Shader = null,
     pass: ?OffscreenPass = null,
+    /// only used when pass is not null. Sets the viewport and the proj matrix with the viewport values
+    viewport: ?rk.Viewport = null,
 
-    pub fn asClearCommand(self: PassConfig) renderkit.ClearCommand {
-        var cmd = renderkit.ClearCommand{};
+    pub fn asClearCommand(self: PassConfig) rk.ClearCommand {
+        var cmd = rk.ClearCommand{
+            .clear_stencil = self.clear_stencil,
+            .clear_depth = self.clear_depth,
+            .stencil = self.stencil,
+            .depth = self.depth,
+            .viewport = self.viewport,
+        };
         cmd.colors[0].clear = self.clear_color;
         cmd.colors[0].color = self.color.asArray();
 
@@ -61,10 +69,6 @@ pub const PassConfig = struct {
             };
         }
 
-        cmd.clear_stencil = self.clear_stencil;
-        cmd.stencil = self.stencil;
-        cmd.clear_depth = self.clear_depth;
-        cmd.depth = self.depth;
         return cmd;
     }
 };
@@ -118,9 +122,9 @@ pub const GraphicsContext = struct {
         self.draw.batcher.begin();
     }
 
-    pub fn setRenderState(self: *GraphicsContext, rk_state: renderkit.RenderState) void {
+    pub fn setRenderState(self: *GraphicsContext, rk_state: rk.RenderState) void {
         self.draw.batcher.flush();
-        renderkit.setRenderState(rk_state);
+        rk.setRenderState(rk_state);
     }
 
     /// calling this instead of beginPass skips all rendering to the faux backbuffer including blitting it to screen. The default shader
@@ -135,18 +139,23 @@ pub const GraphicsContext = struct {
     // DefaultOffscreenPass. After all passes are run you can optionally call postProcess and then blitToScreen.
     // If another pass is run after blitToScreen rendering will be to the backbuffer.
     pub fn beginPass(self: *GraphicsContext, config: PassConfig) void {
-        var proj_mat: Mat32 = Mat32.init();
+        var proj_mat: Mat32 = undefined;
         var clear_command = config.asClearCommand();
 
         if (self.blitted_to_screen) {
             const size = aya.window.sizeInPixels();
-            renderkit.beginDefaultPass(clear_command, size.w, size.h);
+            rk.beginDefaultPass(&clear_command, size.w, size.h);
             proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(size.w)), @as(f32, @floatFromInt(size.h)));
         } else {
             const pass = config.pass orelse self.default_pass.pass;
-            renderkit.beginPass(pass.pass, clear_command);
+            rk.beginPass(pass.pass, &clear_command);
+
             // inverted for OpenGL offscreen passes
-            proj_mat = Mat32.initOrthoInverted(pass.color_texture.width, pass.color_texture.height);
+            if (config.viewport) |vp| {
+                proj_mat = Mat32.initOrthoInverted(@floatFromInt(vp.w), @floatFromInt(vp.h));
+            } else {
+                proj_mat = Mat32.initOrthoInverted(pass.color_texture.width, pass.color_texture.height);
+            }
         }
 
         // if we were given a transform matrix multiply it here
@@ -165,7 +174,7 @@ pub const GraphicsContext = struct {
         self.setShader(null);
         if (aya.debug.render(&self.draw, self.debug_render_enabled))
             self.flush();
-        renderkit.endPass();
+        rk.endPass();
     }
 
     pub fn flush(self: *GraphicsContext) void {
@@ -194,6 +203,6 @@ pub const GraphicsContext = struct {
 
         self.draw.batcher.end();
         self.blitted_to_screen = false;
-        renderkit.commitFrame();
+        rk.commitFrame();
     }
 };

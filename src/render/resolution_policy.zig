@@ -11,11 +11,19 @@ pub const ResolutionScaler = struct {
 
 pub const ResolutionPolicy = enum {
     none, // here be dragons: if you use this no faux backbuffer will be created and you must always call gfx.beginNullPass first!
+    /// RenderTarget matches the sceen size
     default,
+    /// The entire application fills the specified area, without distortion but possibly with some cropping
     no_border,
+    /// Pixel perfect version of NoBorder. Scaling is limited to integer values.
     no_border_pixel_perfect,
+    /// The entire application is visible in the specified area without distortion while maintaining the original
+    /// aspect ratio of the application. Borders can appear on two sides of the application.
     show_all,
+    /// Pixel perfect version of ShowAll. Scaling is limited to integer values.
     show_all_pixel_perfect,
+    /// The application takes the width and height that best fits the design resolution with optional cropping inside of the "bleed area"
+    /// and possible letter/pillar boxing. Works just like ShowAll except with horizontal/vertical bleed (padding).
     best_fit,
 
     pub fn getScaler(self: ResolutionPolicy, design_w: i32, design_h: i32) ResolutionScaler {

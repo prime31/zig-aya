@@ -372,19 +372,18 @@ pub fn destroyPass(offscreen_pass: types.Pass) void {
     }
 }
 
-pub fn beginDefaultPass(action: types.ClearCommand, width: c_int, height: c_int) void {
+pub fn beginDefaultPass(action: *const types.ClearCommand, width: c_int, height: c_int) void {
     std.debug.assert(!in_pass);
-    in_pass = true;
     beginDefaultOrOffscreenPass(0, action, width, height);
 }
 
-pub fn beginPass(pass: types.Pass, action: types.ClearCommand) void {
+pub fn beginPass(pass: types.Pass, action: *const types.ClearCommand) void {
     std.debug.assert(!in_pass);
-    in_pass = true;
     beginDefaultOrOffscreenPass(pass, action, -1, -1);
 }
 
-fn beginDefaultOrOffscreenPass(offscreen_pass: types.Pass, action: types.ClearCommand, width: c_int, height: c_int) void {
+fn beginDefaultOrOffscreenPass(offscreen_pass: types.Pass, action: *const types.ClearCommand, width: c_int, height: c_int) void {
+    in_pass = true;
     var num_color_atts: usize = 1;
 
     // TODO: do we need to call gl.drawBuffers for MRTs?
@@ -394,11 +393,20 @@ fn beginDefaultOrOffscreenPass(offscreen_pass: types.Pass, action: types.ClearCo
         const pass = pass_cache.get(offscreen_pass);
         const img = image_cache.get(pass.color_atts[0]);
         gl.bindFramebuffer(gl.FRAMEBUFFER, pass.framebuffer_tid);
-        gl.viewport(0, 0, img.width, img.height);
+
+        if (action.viewport) |vp| {
+            gl.viewport(vp.x, vp.y, vp.w, vp.h);
+            gl.scissor(vp.x, vp.y, vp.w, vp.h);
+        } else {
+            gl.viewport(0, 0, img.width, img.height);
+            gl.scissor(0, 0, img.width, img.height);
+        }
+
         cur_pass_h = img.height;
         num_color_atts = pass.num_color_atts;
     } else {
         gl.viewport(0, 0, width, height);
+        gl.scissor(0, 0, width, height);
         cur_pass_h = height;
     }
 
