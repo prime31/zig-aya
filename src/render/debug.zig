@@ -93,7 +93,7 @@ pub const Debug = struct {
     }
 
     pub fn drawLine(self: *Debug, pt1: Vec2, pt2: Vec2, thickness: f32, color: ?Color) void {
-        const line = Line{ .pt2 = pt1, .pt2 = pt2, .thickness = thickness, .color = color orelse Color.white };
+        const line = Line{ .pt1 = pt1, .pt2 = pt2, .thickness = thickness, .color = color orelse Color.white };
         self.debug_items.append(.{ .line = line }) catch return;
     }
 
