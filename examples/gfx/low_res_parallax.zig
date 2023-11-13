@@ -60,14 +60,18 @@ fn shutdown() !void {
 fn update() !void {
     ig.igText("Default Camera");
     ig.igText("Cam Start Pos.x %0.2f", cam_start_x);
-    _ = ig.igDragFloat2("Cam Start Pos.x", &cam_start_x, 0.1, -80, 80, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igDragFloat("Cam Start Pos.x", &cam_start_x, 0.1, -80, 80, null, ig.ImGuiSliderFlags_None);
     _ = ig.igDragFloat2("Cam Pos##1", &camera.pos.x, 0.1, -80, 80, null, ig.ImGuiSliderFlags_None);
     _ = ig.igDragFloat("Cam Speed", &cam_speed, 0.1, 0, 5, null, ig.ImGuiSliderFlags_None);
     _ = ig.igDragFloat("Cam Scroll Dist", &cam_scroll_distance, 0.1, 0.01, 25, null, ig.ImGuiSliderFlags_None);
 
     ig.igDummy(.{ .y = 20 });
-    for (layers) |layer| {
-        ig.igText("Layer - Ratio: %.2f, Offset.x: %.4f, Render.x: %.2f", layer.ratio, layer.offset.x, layer.cam_render.x);
+    for (&layers) |*layer| {
+        ig.igPushID_Ptr(layer);
+        defer ig.igPopID();
+
+        ig.igText("Layer - Ratio: %.2f, Offset.x: %.4f, Remainder.x: %.2f", layer.ratio, layer.offset.x, layer.cam_remainder.x);
+        _ = ig.igDragFloat("Ratio", &layer.ratio, 0.1, -2, 5, null, ig.ImGuiSliderFlags_None);
     }
 
     if (cam_speed > 0)
@@ -90,14 +94,28 @@ fn render() !void {
         aya.gfx.endPass();
     }
 
+    // for (0..4) |i| {
+    //     aya.gfx.beginPass(.{
+    //         .pass = super_pass.pass,
+    //         .color = Color.transparent,
+    //         .viewport = super_pass.viewport(@intCast(i)),
+    //         .trans_mat = camera.transMat(),
+    //     });
+
+    //     aya.gfx.draw.tex(bgs[i], -16 + layers[i].offset.x, 0);
+    //     aya.gfx.draw.tex(bgs[i], layers[i].offset.x, 0);
+    //     aya.gfx.draw.tex(bgs[i], 16 + layers[i].offset.x, 0);
+    //     aya.gfx.endPass();
+    // }
+
     aya.gfx.beginPass(.{});
     // aya.gfx.draw.texScale(super_pass.pass.color_texture, 0, 0, 32); // 64 for full width
     // aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(0), Mat32.initTransform(.{ .sx = 32, .sy = 32 }));
     for (0..4) |i| {
         const scale = 32;
-        var offset_x = layers[i].offset.x * 0;
-        offset_x = 0;
-        aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(@intCast(i)), Mat32.initTransform(.{ .x = offset_x * scale, .y = 0, .sx = scale, .sy = scale }));
+        var offset_x = layers[i].cam_remainder.x;
+        const mat = Mat32.initTransform(.{ .x = offset_x * scale, .y = 0, .sx = scale, .sy = scale });
+        aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(@intCast(i)), mat);
     }
     aya.gfx.endPass();
 
@@ -157,13 +175,15 @@ const ParallaxLayer = struct {
     /// 0 is central layer, -n is forground and +n is bg. Over 1 reverses parallax
     ratio: f32 = 0,
     offset: Vec2 = .{},
-    cam_render: Vec2 = .{},
+    cam_remainder: Vec2 = .{},
 
     pub fn update(self: *ParallaxLayer, cam: Camera) void {
         const cam_displacement_x = cam.pos.x - cam_start_x;
         self.offset.x = self.ratio * cam_displacement_x;
 
-        self.cam_render.x = cam_start_x + self.offset.x - cam_displacement_x;
+        const cam_x = cam.pos.x - self.offset.x;
+        const remainder = @round(cam_x) - cam_x;
+        self.cam_remainder.x = remainder;
         // const cam_offset_x = self.cam_render.x - @round(self.cam_render.x);
         // self.cam_render.x -= cam_offset_x;
 
@@ -223,13 +243,7 @@ pub const Camera = struct {
         var transform = Mat32.identity;
         var tmp = Mat32.identity;
 
-        // const pos_x = self.pos.x - layer.cam_render.x;
-        const pos_x = layer.cam_render.x;
-        if (layer.ratio == -1) {
-            std.debug.print("self.pos.x: {d}, pos_x: {d}\n", .{ self.pos.x, pos_x });
-        }
-        // const pos_x = cam_start_x + layer.offset.x - layer.offset.x;
-
+        const pos_x = self.pos.x - layer.offset.x;
         tmp.translate(@round(-pos_x), @round(-self.pos.y));
         transform = tmp.mul(transform);
 
