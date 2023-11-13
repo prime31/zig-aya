@@ -78,7 +78,12 @@ fn update() !void {
 
 fn render() !void {
     for (0..4) |i| {
-        aya.gfx.beginPass(.{ .pass = super_pass.pass, .color = Color.transparent, .viewport = super_pass.viewport(@intCast(i)), .trans_mat = camera.transMatClampedToLayer(layers[i]) });
+        aya.gfx.beginPass(.{
+            .pass = super_pass.pass,
+            .color = Color.transparent,
+            .viewport = super_pass.viewport(@intCast(i)),
+            .trans_mat = camera.transMatClampedToLayer(layers[i]),
+        });
         aya.gfx.draw.tex(bgs[i], -16, 0);
         aya.gfx.draw.tex(bgs[i], 0, 0);
         aya.gfx.draw.tex(bgs[i], 16, 0);
@@ -89,8 +94,10 @@ fn render() !void {
     // aya.gfx.draw.texScale(super_pass.pass.color_texture, 0, 0, 32); // 64 for full width
     // aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(0), Mat32.initTransform(.{ .sx = 32, .sy = 32 }));
     for (0..4) |i| {
-        const offset_x = layers[i].offset.x;
-        aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(@intCast(i)), Mat32.initTransform(.{ .x = offset_x * 32, .y = 0, .sx = 32, .sy = 32 }));
+        const scale = 32;
+        var offset_x = layers[i].offset.x * 0;
+        offset_x = 0;
+        aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(@intCast(i)), Mat32.initTransform(.{ .x = offset_x * scale, .y = 0, .sx = scale, .sy = scale }));
     }
     aya.gfx.endPass();
 
@@ -147,7 +154,7 @@ const SuperPass = struct {
 };
 
 const ParallaxLayer = struct {
-    /// distance from the central ParallaxLayer. Can be negative if in front of it.
+    /// 0 is central layer, -n is forground and +n is bg. Over 1 reverses parallax
     ratio: f32 = 0,
     offset: Vec2 = .{},
     cam_render: Vec2 = .{},
@@ -156,9 +163,9 @@ const ParallaxLayer = struct {
         const cam_displacement_x = cam.pos.x - cam_start_x;
         self.offset.x = self.ratio * cam_displacement_x;
 
-        self.cam_render.x = cam_start_x + self.offset.x;
-        const cam_offset_x = self.cam_render.x - @round(self.cam_render.x);
-        self.cam_render.x -= cam_offset_x;
+        self.cam_render.x = cam_start_x + self.offset.x - cam_displacement_x;
+        // const cam_offset_x = self.cam_render.x - @round(self.cam_render.x);
+        // self.cam_render.x -= cam_offset_x;
 
         // const rounded_x = @round(cam_displacement_x);
         // self.round_remainder.x = rounded_x - cam_displacement_x;
@@ -168,7 +175,6 @@ const ParallaxLayer = struct {
 
 pub const Camera = struct {
     pos: Vec2 = .{},
-    /// distance from the central ParallaxLayer
     zoom: f32 = 1,
     size: ?Vec2 = null,
 
@@ -217,7 +223,8 @@ pub const Camera = struct {
         var transform = Mat32.identity;
         var tmp = Mat32.identity;
 
-        const pos_x = self.pos.x - layer.offset.x;
+        // const pos_x = self.pos.x - layer.cam_render.x;
+        const pos_x = layer.cam_render.x;
         if (layer.ratio == -1) {
             std.debug.print("self.pos.x: {d}, pos_x: {d}\n", .{ self.pos.x, pos_x });
         }
