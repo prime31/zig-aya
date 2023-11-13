@@ -24,14 +24,13 @@ var upscale_camera: Camera = .{};
 var cam_speed: f32 = 1;
 var cam_scroll_distance: f32 = 10;
 var cam_start_x: f32 = 0;
+var render_scale: f32 = 32;
 
-var tex: Texture = undefined;
 var super_pass: SuperPass = undefined;
 var bgs: [4]Texture = undefined;
 var layers: [4]ParallaxLayer = [_]ParallaxLayer{ .{ .ratio = 1 }, .{ .ratio = 0.5 }, .{ .ratio = 0.0 }, .{ .ratio = -1 } };
 
 fn init() !void {
-    tex = Texture.initFromFile("examples/assets/sword_dude.png", .nearest);
     super_pass = SuperPass.init(16, 9, 2);
 
     bgs[0] = Texture.initFromFile("examples/assets/bg0.png", .nearest);
@@ -52,7 +51,6 @@ fn init() !void {
 }
 
 fn shutdown() !void {
-    tex.deinit();
     super_pass.deinit();
     for (bgs) |bg| bg.deinit();
 }
@@ -64,6 +62,7 @@ fn update() !void {
     _ = ig.igDragFloat2("Cam Pos##1", &camera.pos.x, 0.1, -80, 80, null, ig.ImGuiSliderFlags_None);
     _ = ig.igDragFloat("Cam Speed", &cam_speed, 0.1, 0, 5, null, ig.ImGuiSliderFlags_None);
     _ = ig.igDragFloat("Cam Scroll Dist", &cam_scroll_distance, 0.1, 0.01, 25, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igDragFloat("Final Render Scale", &render_scale, 1, 1, 64, null, ig.ImGuiSliderFlags_None);
 
     ig.igDummy(.{ .y = 20 });
     for (&layers) |*layer| {
@@ -81,6 +80,7 @@ fn update() !void {
 }
 
 fn render() !void {
+    // render into the quadrants of our offscreen texture
     for (0..4) |i| {
         aya.gfx.beginPass(.{
             .pass = super_pass.pass,
@@ -94,27 +94,11 @@ fn render() !void {
         aya.gfx.endPass();
     }
 
-    // for (0..4) |i| {
-    //     aya.gfx.beginPass(.{
-    //         .pass = super_pass.pass,
-    //         .color = Color.transparent,
-    //         .viewport = super_pass.viewport(@intCast(i)),
-    //         .trans_mat = camera.transMat(),
-    //     });
-
-    //     aya.gfx.draw.tex(bgs[i], -16 + layers[i].offset.x, 0);
-    //     aya.gfx.draw.tex(bgs[i], layers[i].offset.x, 0);
-    //     aya.gfx.draw.tex(bgs[i], 16 + layers[i].offset.x, 0);
-    //     aya.gfx.endPass();
-    // }
-
+    // render the quadrants layered on top of each other
     aya.gfx.beginPass(.{});
-    // aya.gfx.draw.texScale(super_pass.pass.color_texture, 0, 0, 32); // 64 for full width
-    // aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(0), Mat32.initTransform(.{ .sx = 32, .sy = 32 }));
     for (0..4) |i| {
-        const scale = 32;
         var offset_x = layers[i].cam_remainder.x;
-        const mat = Mat32.initTransform(.{ .x = offset_x * scale, .y = 0, .sx = scale, .sy = scale });
+        const mat = Mat32.initTransform(.{ .x = offset_x * render_scale, .y = 0, .sx = render_scale, .sy = render_scale });
         aya.gfx.draw.texViewport(super_pass.pass.color_texture, super_pass.viewportRect(@intCast(i)), mat);
     }
     aya.gfx.endPass();
@@ -184,12 +168,6 @@ const ParallaxLayer = struct {
         const cam_x = cam.pos.x - self.offset.x;
         const remainder = @round(cam_x) - cam_x;
         self.cam_remainder.x = remainder;
-        // const cam_offset_x = self.cam_render.x - @round(self.cam_render.x);
-        // self.cam_render.x -= cam_offset_x;
-
-        // const rounded_x = @round(cam_displacement_x);
-        // self.round_remainder.x = rounded_x - cam_displacement_x;
-        // self.offset.x = rounded_x * self.factor(cam.z_dist);
     }
 };
 
