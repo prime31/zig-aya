@@ -24,6 +24,18 @@ pub fn createCubeShader() Shader {
     return Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
+pub fn createDeferredShader() Shader {
+    const vert = @embedFile("deferred_vs.glsl");
+    const frag = "examples/assets/shaders/deferred_fs.glsl";
+    return Shader.initWithVertFrag(DeferredVertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
+}
+
+pub fn createDeferredPointShader() Shader {
+    const vert = @embedFile("sprite_vs.glsl");
+    const frag = "examples/assets/shaders/deferred_point_fs.glsl";
+    return Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex", "normals_tex" } }; }, .{ .frag = frag, .vert = vert });
+}
+
 pub fn createDepthShader() DepthShader {
     const frag = "examples/assets/shaders/depth_fs.glsl";
     return DepthShader.init(.{ .frag = frag, .onPostBind = DepthShader.onPostBind });
@@ -182,6 +194,14 @@ pub const DissolveParams = extern struct {
     threshold: f32 = 0,
     _pad8_0_: [8]u8 = [_]u8{0} ** 8,
     threshold_color: [4]f32 = [_]f32{0} ** 4,
+};
+
+pub const DeferredVertexParams = extern struct {
+    pub const metadata = .{
+        .uniforms = .{ .DeferredVertexParams = .{ .type = .float4, .array_count = 2 } },
+    };
+
+    transform_matrix: [8]f32 = [_]f32{0} ** 8,
 };
 
 pub const Mode7Params = extern struct {
