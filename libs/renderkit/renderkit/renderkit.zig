@@ -520,7 +520,9 @@ pub fn createBuffer(comptime T: type, desc: descriptions.BufferDesc(T)) types.Bu
                                     switch (type_info.fields.len) {
                                         2, 3, 4 => {
                                             const off = if (offset) |o| @as(*anyopaque, @ptrFromInt(o)) else null;
-                                            gl.vertexAttribPointer(attr_index.*, type_info.fields.len, gl.FLOAT, gl.FALSE, @sizeOf(T), off);
+                                            const normalized = gl.FALSE; // TODO: make this configurable via a comptime struct field
+
+                                            gl.vertexAttribPointer(attr_index.*, type_info.fields.len, gl.FLOAT, normalized, @sizeOf(T), off);
                                             gl.enableVertexAttribArray(attr_index.*);
                                             gl.vertexAttribDivisor(attr_index.*, step_func);
                                             attr_index.* += 1;

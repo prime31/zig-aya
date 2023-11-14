@@ -484,3 +484,95 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @end
 
 @program mrt sprite_vs mrt_fs
+
+
+
+@vs deferred_vs
+uniform DeferredVertexParams {
+	vec4 transform_matrix[2];
+};
+
+layout(location = 0) in vec2 pos_in;
+layout(location = 1) in vec2 uv_in;
+layout(location = 2) in vec2 normal_in;
+
+out vec2 uv_out;
+out vec2 normal_out;
+
+void main() {
+	uv_out = uv_in;
+	normal_out = normal_in;
+	mat3x2 trans_mat = mat3x2(transform_matrix[0].x, transform_matrix[0].y, transform_matrix[0].z, transform_matrix[0].w, transform_matrix[1].x, transform_matrix[1].y);
+
+	gl_Position = vec4(trans_mat * vec3(pos_in, 1), 0, 1);
+}
+@end
+
+
+@fs deferred_fs
+uniform sampler2D main_tex;
+
+in vec2 uv_out;
+in vec2 normal_out;
+out vec4 frag_color;
+
+void main() {
+	// pack the normals
+	vec2 normals = (normal_out + vec2(1.0)) / 2.0;
+	frag_color.rg = texture(main_tex, uv_out).a * normals;
+	frag_color.b = texture(main_tex, uv_out).a * 1; // b channel is used for normal_falloff in light shaders
+}
+@end
+
+@program deferred deferred_vs deferred_fs
+
+
+@fs deferred_point_fs
+@include_block sprite_fs_main
+uniform DeferredPointParams {
+	vec2 resolution;
+	vec4 color;
+	float intensity; // 0 - 1
+	float falloff; // 0 - 1
+	// float angular_falloff; // 0 - 1
+	float volumetric_intensity; // 0 - 1
+};
+
+uniform sampler2D normals_tex;
+
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec4 base_color = texture(tex, tex_coord);
+	vec4 normal_color = texture(normals_tex, tex_coord);
+
+	// TODO: add to uniform
+	float max_angle = 360;
+	float min_angle = 0;
+	float angle = 0;
+
+	vec2 st = gl_FragCoord.xy / resolution;
+
+	// TODO: calc using center of light and fragments coordinate in local space
+	float distance = distance(st, vec2(0.5));
+
+	float radial_falloff = pow(1.0 - distance, 2.0);
+	float angular_falloff = smoothstep(max_angle, min_angle, angle);
+
+	// vec2 normal_vector = normalize(world_space_pos_center_of_light - world_space_frag_pos)
+	// vec2 dir_to_light = ?
+	vec2 light_vector = vec2(0.0);
+
+    // tranform normal back into [-1,1] range
+    vec2 normal = 2.0 * normal_color.xy - 1.0;
+	float normal_falloff = clamp(dot(light_vector, normal), 0, 1) * normal_color.b;
+
+
+	float final_intensity = intensity * radial_falloff * angular_falloff * normal_falloff;
+	vec3 light_color = final_intensity * color.rgb;
+	vec3 shaded_color = base_color.rgb * light_color.rgb;
+	shaded_color += light_color * volumetric_intensity;
+
+	return vec4(shaded_color, 1) * normal_color;
+}
+@end
+
+@program deferred_point sprite_vs deferred_point_fs
