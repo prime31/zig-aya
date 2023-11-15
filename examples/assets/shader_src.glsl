@@ -541,26 +541,41 @@ uniform DeferredPointParams {
 
 uniform sampler2D normals_tex;
 
+// maps a value from some arbitrary range to the 0 to 1 range
+float map01(float value, float min, float max) {
+	return (value - min) * 1 / (max - min);
+}
+
+// maps value (which is in the range leftMin - leftMax) to a value in the range rightMin - rightMax
+float map(float value, float leftMin, float leftMax, float rightMin, float rightMax) {
+	return rightMin + (value - leftMin) * (rightMax - rightMin) / (leftMax - leftMin);
+}
+
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 	vec4 base_color = texture(tex, tex_coord);
 	vec4 normal_color = texture(normals_tex, tex_coord);
 
 	// TODO: add to uniform
-	float min_angle = radians(0.0);
-	float max_angle = radians(45.0);
+	float min_angle = radians(0.0) / 3.141592;
+	float max_angle = radians(45.0) / 3.141592;
 
-	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5);
-	if (angle > -radians(25.0) && angle < radians(25.0)) return vec4(1.0, 0, 0, 1);
-	//angle = mod(angle + 3.14, 3.14);
+	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5) + radians(180.0);
+	angle /= 2 * 3.141592;
+	if (angle > radians(0.0) / (2 * 3.141592) && angle < radians(45.0) / (2 * 3.141592)) return vec4(1.0, 0, 0, 1);
+	// if (angle > radians(90.0) && angle < radians(100.0)) return vec4(1.0, 0, 0, 1);
+	//angle = mod(angle + 3.141592, 3.141592);
 	//angle = atan(0.5 - tex_coord.t, 0.5 - tex_coord.s);
-	return vec4(0, abs(angle) / 3.14, 0, 1);
-	return vec4(0, 0, 1, 1) * smoothstep(min_angle, max_angle, angle);
+	// return vec4(0, angle, 0, 1);
+	float blur = 0.1;
+	// return vec4(1, 0, 1, 1) * (1 - smoothstep(max_angle, max_angle + blur, angle));
+	// return vec4(1, 0, 1, 1) * smoothstep(min_angle + blur, min_angle, angle);
+	return vec4(1, 0, 1, 1) * (1 - smoothstep(min_angle, max_angle, angle)) * smoothstep(max_angle, min_angle, angle);
 
 	// vec2 st = gl_FragCoord.xy / resolution;
 
 
 	// TODO: calc using center of light and fragments coordinate in local space
-	float distance = distance(vec2(0.5), tex_coord);
+	float distance = distance(vec2(0.5), tex_coord) * 2.0; // center to extent of quad is max of 0.5 but we want 0-1
 
 	float radial_falloff = pow(1.0 - distance, 2.0);
 	float angular_falloff = smoothstep(min_angle, max_angle, angle);
@@ -570,7 +585,8 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 
 	// vec2 normal_vector = normalize(world_space_pos_center_of_light - world_space_frag_pos)
 	// vec2 dir_to_light = ?
-	vec2 light_vector = vec2(0.0);
+	vec2 light_vector = normalize(tex_coord - vec2(0.5));
+	// light_vector /= length(light_vector);
 
     // tranform normal back into [-1,1] range
     vec2 normal = 2.0 * normal_color.xy - 1.0;
