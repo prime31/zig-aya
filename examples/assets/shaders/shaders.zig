@@ -33,7 +33,7 @@ pub fn createDeferredShader() Shader {
 pub fn createDeferredPointShader() Shader {
     const vert = @embedFile("sprite_vs.glsl");
     const frag = "examples/assets/shaders/deferred_point_fs.glsl";
-    return Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex", "normals_tex" } }; }, .{ .frag = frag, .vert = vert });
+    return Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDepthShader() DepthShader {

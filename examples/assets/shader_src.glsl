@@ -521,6 +521,7 @@ void main() {
 	vec2 normals = (normal_out + vec2(1.0)) / 2.0;
 	frag_color.rg = texture(main_tex, uv_out).a * normals;
 	frag_color.b = texture(main_tex, uv_out).a * 1; // b channel is used for normal_falloff in light shaders
+	frag_color.a = texture(main_tex, uv_out).a;
 }
 @end
 
@@ -545,17 +546,27 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 	vec4 normal_color = texture(normals_tex, tex_coord);
 
 	// TODO: add to uniform
-	float max_angle = 360;
-	float min_angle = 0;
-	float angle = 0;
+	float min_angle = radians(0.0);
+	float max_angle = radians(45.0);
 
-	vec2 st = gl_FragCoord.xy / resolution;
+	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5);
+	if (angle > -radians(25.0) && angle < radians(25.0)) return vec4(1.0, 0, 0, 1);
+	//angle = mod(angle + 3.14, 3.14);
+	//angle = atan(0.5 - tex_coord.t, 0.5 - tex_coord.s);
+	return vec4(0, abs(angle) / 3.14, 0, 1);
+	return vec4(0, 0, 1, 1) * smoothstep(min_angle, max_angle, angle);
+
+	// vec2 st = gl_FragCoord.xy / resolution;
+
 
 	// TODO: calc using center of light and fragments coordinate in local space
-	float distance = distance(st, vec2(0.5));
+	float distance = distance(vec2(0.5), tex_coord);
 
 	float radial_falloff = pow(1.0 - distance, 2.0);
-	float angular_falloff = smoothstep(max_angle, min_angle, angle);
+	float angular_falloff = smoothstep(min_angle, max_angle, angle);
+
+	// return  vec4(1, 1, 0, 1);
+	return /*radial_falloff * */ angular_falloff * vec4(1, 0, 0.5, 1);
 
 	// vec2 normal_vector = normalize(world_space_pos_center_of_light - world_space_frag_pos)
 	// vec2 dir_to_light = ?
