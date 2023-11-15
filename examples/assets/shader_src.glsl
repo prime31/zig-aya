@@ -551,17 +551,27 @@ float map(float value, float leftMin, float leftMax, float rightMin, float right
 	return rightMin + (value - leftMin) * (rightMax - rightMin) / (leftMax - leftMin);
 }
 
+#define PI radians(180)
+#define PI_2 radians(360)
+
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 	vec4 base_color = texture(tex, tex_coord);
 	vec4 normal_color = texture(normals_tex, tex_coord);
 
 	// TODO: add to uniform
-	float min_angle = radians(0.0) / 3.141592;
-	float max_angle = radians(45.0) / 3.141592;
+	float min_angle = radians(0.0) / PI_2;
+	float max_angle = radians(90.0) / PI_2;
+	float falloff_angle = radians(25.0) / PI_2;
+	// min_angle = min_angle - falloff_angle;
+	max_angle = max_angle + falloff_angle;
 
 	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5) + radians(180.0);
-	angle /= 2 * 3.141592;
-	if (angle > radians(0.0) / (2 * 3.141592) && angle < radians(45.0) / (2 * 3.141592)) return vec4(1.0, 0, 0, 1);
+	angle /= PI_2;
+
+	return vec4(1, 0, 1, 1) * smoothstep(min_angle, min_angle + falloff_angle, angle) * (1 - smoothstep(max_angle - falloff_angle, max_angle, angle));
+	// return vec4(1, 0, 1, 1) * smoothstep(min_angle, min_angle + falloff_angle, angle);
+
+	// if (angle > min_angle && angle < max_angle) return vec4(1.0, 0, 0, 1);
 	// if (angle > radians(90.0) && angle < radians(100.0)) return vec4(1.0, 0, 0, 1);
 	//angle = mod(angle + 3.141592, 3.141592);
 	//angle = atan(0.5 - tex_coord.t, 0.5 - tex_coord.s);
