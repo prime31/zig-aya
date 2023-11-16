@@ -4,6 +4,7 @@ const aya = @import("../aya.zig");
 
 const Vertex = aya.render.Vertex;
 const DynamicMesh = aya.render.DynamicMesh;
+const Texture = aya.render.Texture;
 const Mat32 = aya.math.Mat32;
 const Vec2 = aya.math.Vec2;
 const Color = aya.math.Color;
@@ -11,7 +12,7 @@ const Color = aya.math.Color;
 pub const TriangleBatcher = struct {
     mesh: DynamicMesh(void, Vertex),
     draw_calls: std.ArrayList(i32),
-    white_tex: aya.gfx.Texture = undefined,
+    white_tex: Texture = undefined,
 
     begin_called: bool = false,
     frame: u32 = 0, // tracks when a batch is started in a new frame so that state can be reset
@@ -19,21 +20,19 @@ pub const TriangleBatcher = struct {
     vert_count: i32 = 0, // total verts that we have not yet rendered
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
 
-    fn createDynamicMesh(allocator: std.mem.Allocator, max_tris: u16) !DynamicMesh(void, Vertex) {
-        return try DynamicMesh(void, Vertex).init(allocator, max_tris * 3, &[_]void{});
+    fn createDynamicMesh(max_tris: u16) DynamicMesh(void, Vertex) {
+        return DynamicMesh(void, Vertex).init(aya.mem.allocator, max_tris * 3, &[_]void{}) catch unreachable;
     }
 
-    pub fn init(allocator: ?std.mem.Allocator, max_tris: u16) !TriangleBatcher {
-        const alloc = allocator orelse aya.mem.allocator;
-
+    pub fn init(max_tris: u16) TriangleBatcher {
         var batcher = TriangleBatcher{
-            .mesh = try createDynamicMesh(alloc, max_tris * 3),
-            .draw_calls = try std.ArrayList(i32).initCapacity(alloc, 10),
+            .mesh = DynamicMesh(void, Vertex).init(max_tris * 3, &[_]void{}),
+            .draw_calls = std.ArrayList(i32).initCapacity(aya.mem.allocator, 10) catch unreachable,
         };
         errdefer batcher.deinit();
 
         var pixels = [_]u32{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-        batcher.white_tex = aya.gfx.Texture.initWithData(u32, 2, 2, pixels[0..]);
+        batcher.white_tex = Texture.initWithData(u32, 2, 2, pixels[0..]);
 
         return batcher;
     }
@@ -116,6 +115,12 @@ pub const TriangleBatcher = struct {
         self.draw_calls.items[self.draw_calls.items.len - 1] += 3;
         self.vert_count += 3;
         self.vert_index += 3;
+    }
+
+    pub fn drawPolygon(self: *TriangleBatcher, verts: []Vec2, color: Color) void {
+        for (0..verts.len - 1) |i| {
+            self.drawTriangle(verts[0], verts[i], verts[i + 1], color);
+        }
     }
 };
 

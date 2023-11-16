@@ -9,6 +9,7 @@ const Color = aya.math.Color;
 const Shader = aya.render.Shader;
 const OffscreenPass = aya.render.OffscreenPass;
 const ColorAttachmentAction = aya.render.PassConfig.ColorAttachmentAction;
+const TriangleBatcher = aya.render.TriangleBatcher;
 
 const Vec2 = aya.math.Vec2;
 const Mat32 = aya.math.Mat32;
@@ -28,13 +29,39 @@ var ball_tex: Texture = undefined;
 var ball_n_tex: Texture = undefined;
 
 var normals_shader: Shader = undefined;
+var alpha_test_shader: Shader = undefined;
 var light_shader: shaders.DeferredPointShader = undefined;
 var light_pos = Vec2.init(40, 20);
 
 var diffuse_pass: OffscreenPass = undefined;
 var normal_pass: OffscreenPass = undefined;
 var light_pass: OffscreenPass = undefined;
+
 var mesh: DynamicMesh(u16, Vertex) = undefined;
+var tri_batch: TriangleBatcher = undefined;
+
+var stencil_write_incr: aya.rk.RenderState = .{
+    .stencil = .{
+        .pass_op = .incr_clamp,
+        .ref = 1,
+    },
+    .blend = .{ .color_write_mask = .none },
+};
+var stencil_write_decr: aya.rk.RenderState = .{
+    .stencil = .{
+        .pass_op = .decr_clamp,
+        .ref = 1,
+    },
+    .blend = .{ .color_write_mask = .none },
+};
+var stencil_read: aya.rk.RenderState = .{
+    .depth = .{ .enabled = false },
+    .stencil = .{
+        .write_mask = 0x00,
+        .compare_func = .greater_equal,
+        .ref = 0,
+    },
+};
 
 fn init() !void {
     ground_tex = Texture.initFromFile("examples/assets/ground.png", .nearest);
@@ -50,6 +77,8 @@ fn init() !void {
         }
     }.set;
 
+    alpha_test_shader = shaders.createAlphaTestShader();
+
     light_shader = shaders.createDeferredPointShader();
     light_shader.frag_uniform.color[0] = 1.0;
     light_shader.frag_uniform.color[3] = 1.0;
@@ -58,13 +87,14 @@ fn init() !void {
     light_shader.frag_uniform.max_angle = 25;
     light_shader.frag_uniform.volumetric_intensity = 1.0;
     light_shader.frag_uniform.intensity = 1.0;
-    light_shader.frag_uniform.color = Color.yellow.asArray();
+    light_shader.frag_uniform.color = Color.light_gray.asArray();
     light_shader.frag_uniform.resolution = Vec2.init(100, 50);
 
     diffuse_pass = OffscreenPass.init(100, 50);
     normal_pass = OffscreenPass.init(100, 50);
-    light_pass = OffscreenPass.init(100, 50);
+    light_pass = OffscreenPass.initWithStencil(100, 50, .nearest, .clamp);
     mesh = createDynamicMesh(1);
+    tri_batch = TriangleBatcher.init(64);
 }
 
 fn update() !void {
@@ -75,6 +105,12 @@ fn update() !void {
     _ = ig.igSliderFloat("intensity", &light_shader.frag_uniform.intensity, 0, 3, null, ig.ImGuiSliderFlags_None);
     _ = ig.igColorEdit3("light color", &light_shader.frag_uniform.color[0], ig.ImGuiColorEditFlags_DisplayRGB);
     _ = ig.igDragFloat2("light pos", &light_pos.x, 1, 0, 150, null, ig.ImGuiSliderFlags_None);
+
+    if (ig.igButton("Make into point light", .{})) {
+        light_shader.frag_uniform.min_angle = -180;
+        light_shader.frag_uniform.max_angle = 360;
+        light_shader.frag_uniform.falloff_angle = 0;
+    }
 }
 
 fn render() !void {
@@ -93,9 +129,41 @@ fn render() !void {
     // lights
     light_shader.textures[0] = normal_pass.color_texture;
     light_shader.textures[1] = diffuse_pass.color_texture;
-    aya.gfx.beginPass(.{ .pass = light_pass, .shader = &light_shader.shader, .color = Color.black });
-    aya.gfx.draw.point(light_pos, 150, Color.white);
+    aya.gfx.beginPass(.{ .pass = light_pass, .shader = &alpha_test_shader, .color = Color.black, .clear_stencil = true });
+    // write 1+ in stencil where we have shadows
+    {
+        aya.gfx.setRenderState(stencil_write_incr);
+        tri_batch.begin();
+        var ball_verts = buildSymmetricalPolygon(12, 23 * 0.5);
+        renderShadowVerts(Vec2.init(50 + ball_tex.width * 0.5, 15 + ball_tex.height * 0.5), light_pos, ball_verts);
+        tri_batch.end();
+
+        // decrement stencil where our occluders are so they are still rendered
+        aya.gfx.setRenderState(stencil_write_decr);
+        drawTex(ball_tex, .{ .x = 50, .y = 15 });
+        aya.gfx.flush();
+    }
+
+    // write lights only where stencil is 0 (ie not in shadow)
+    {
+        aya.gfx.setShader(&light_shader.shader);
+        aya.gfx.setRenderState(stencil_read);
+        aya.gfx.draw.point(light_pos, 150, Color.white);
+    }
     aya.gfx.endPass();
+    aya.gfx.setRenderState(.{});
+
+    // debug render polygon
+    // aya.gfx.beginPass(.{ .pass = light_pass, .color = Color.black, .clear_stencil = true });
+    // tri_batch.begin();
+    // var ball_verts = buildSymmetricalPolygon(12, 23 * 0.5);
+    // renderShadowVerts(Vec2.init(50 + ball_tex.width * 0.5, 15 + ball_tex.height * 0.5), light_pos, ball_verts);
+    // tri_batch.flush();
+    // tri_batch.end();
+
+    // drawTex(ball_tex, .{ .x = 50, .y = 15 });
+    // aya.gfx.flush();
+    // aya.gfx.endPass();
 
     aya.gfx.beginPass(.{ .color = Color.blue });
     const scale = 5.0;
@@ -110,11 +178,13 @@ fn shutdown() !void {
     ball_tex.deinit();
     ball_n_tex.deinit();
     normals_shader.deinit();
+    alpha_test_shader.deinit();
     light_shader.deinit();
     diffuse_pass.deinit();
     normal_pass.deinit();
     light_pass.deinit();
     mesh.deinit();
+    tri_batch.deinit();
 }
 
 fn createDynamicMesh(max_sprites: u16) DynamicMesh(u16, Vertex) {
@@ -162,3 +232,37 @@ pub const Vertex = extern struct {
     uv: Vec2 = .{ .x = 0, .y = 0 },
     normal: Vec2 = .{ .x = 0, .y = 0 },
 };
+
+fn buildSymmetricalPolygon(vert_count: usize, radius: f32) []Vec2 {
+    var verts = aya.mem.tmp_allocator.alloc(Vec2, vert_count) catch unreachable;
+
+    for (0..vert_count) |i| {
+        var a = 2.0 * std.math.pi * (@as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(vert_count)));
+        verts[i] = Vec2.init(@cos(a), @sin(a)).mul(Vec2.init(radius, radius));
+    }
+
+    return verts;
+}
+
+fn renderShadowVerts(position: Vec2, light_position: Vec2, verts: []Vec2) void {
+    for (verts, 0..) |v, i| {
+        var vert = v.add(position);
+        var next_vert = verts[@mod(i + 1, verts.len)].add(position);
+        var start_to_end = next_vert.subtract(vert);
+        var normal = Vec2.init(start_to_end.y, -start_to_end.x).normalize();
+        var light_to_start = light_position.subtract(vert);
+
+        var ndl = normal.dot(light_to_start);
+        if (ndl > 0) {
+            // var midpoint = next_vert.add(vert).scale(0.5);
+            // aya.debug.drawLine(vert, next_vert, 1, Color.green);
+            // aya.debug.drawLine(midpoint, midpoint.add(normal.scale(10)), 1, Color.green);
+
+            var pt1 = next_vert.add(next_vert.subtract(light_position).scale(150));
+            var pt2 = next_vert.add(vert.subtract(light_position).scale(150));
+
+            var poly = [_]Vec2{ next_vert, pt1, pt2, vert };
+            tri_batch.drawPolygon(&poly, Color.green);
+        }
+    }
+}
