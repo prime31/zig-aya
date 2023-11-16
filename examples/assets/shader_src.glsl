@@ -57,6 +57,18 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 @program sprite sprite_vs sprite_fs
 
 
+@fs alpha_test_fs
+@include_block sprite_fs_main
+vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
+	vec4 col = texture(tex, tex_coord);
+	if (col.a < 0.1) discard;
+	return texture(tex, tex_coord) * vert_color;
+}
+@end
+
+@program alpha_test sprite_vs alpha_test_fs
+
+
 
 @fs sepia_fs
 @include_block sprite_fs_main

@@ -156,7 +156,7 @@ pub const Draw = struct {
         self.quad.setFill(self.white_tex.width, self.white_tex.height);
 
         var last = Vec2.init(1, 0);
-        last.scale(radius);
+        last.scaleInPlace(radius);
         var last_p = last.orthogonal();
 
         var i: usize = 0;

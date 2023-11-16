@@ -17,8 +17,8 @@ pub const Vec2 = extern struct {
         }
     }
 
-    pub fn angleToVec(radians: f32, length: f32) Vec2 {
-        return .{ .x = math.cos(radians) * length, .y = math.sin(radians) * length };
+    pub fn angleToVec(radians: f32, len: f32) Vec2 {
+        return .{ .x = math.cos(radians) * len, .y = math.sin(radians) * len };
     }
 
     pub fn orthogonal(self: Vec2) Vec2 {
@@ -37,9 +37,33 @@ pub const Vec2 = extern struct {
         return .{ .x = self.x * other.x, .y = self.y * other.y };
     }
 
-    pub fn scale(self: *Vec2, s: f32) void {
+    pub fn scaleInPlace(self: *Vec2, s: f32) void {
         self.x *= s;
         self.y *= s;
+    }
+
+    pub fn scale(self: Vec2, s: f32) Vec2 {
+        return .{ .x = self.x * s, .y = self.y * s };
+    }
+
+    pub fn dot(a: Vec2, b: Vec2) f32 {
+        var result: f32 = 0;
+        inline for (@typeInfo(Vec2).Struct.fields) |fld| {
+            result += @field(a, fld.name) * @field(b, fld.name);
+        }
+        return result;
+    }
+
+    pub fn lengthSq(a: Vec2) f32 {
+        return Vec2.dot(a, a);
+    }
+
+    pub fn length(a: Vec2) f32 {
+        return std.math.sqrt(a.lengthSq());
+    }
+
+    pub fn normalize(vec: Vec2) Vec2 {
+        return vec.scale(1.0 / vec.length());
     }
 
     pub fn clamp(self: Vec2, min: Vec2, max: Vec2) Vec2 {
