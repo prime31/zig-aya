@@ -25,8 +25,9 @@ pub fn main() !void {
 
 var ground_tex: Texture = undefined;
 var ball_tex: Texture = undefined;
+var ball_n_tex: Texture = undefined;
 
-var shader: Shader = undefined;
+var normals_shader: Shader = undefined;
 var light_shader: shaders.DeferredPointShader = undefined;
 var light_pos = Vec2.init(40, 20);
 
@@ -38,13 +39,14 @@ var mesh: DynamicMesh(u16, Vertex) = undefined;
 fn init() !void {
     ground_tex = Texture.initFromFile("examples/assets/ground.png", .nearest);
     ball_tex = Texture.initFromFile("examples/assets/ball.png", .nearest);
+    ball_n_tex = Texture.initFromFile("examples/assets/ball_n.png", .nearest);
 
-    shader = shaders.createDeferredShader();
-    shader.onSetTransformMatrix = struct {
+    normals_shader = shaders.createDeferredShader();
+    normals_shader.onSetTransformMatrix = struct {
         fn set(mat: *Mat32) void {
             var params = shaders.DeferredVertexParams{};
             std.mem.copy(f32, &params.transform_matrix, &mat.data);
-            shader.setVertUniform(shaders.DeferredVertexParams, &params);
+            normals_shader.setVertUniform(shaders.DeferredVertexParams, &params);
         }
     }.set;
 
@@ -76,13 +78,14 @@ fn update() !void {
 }
 
 fn render() !void {
+    // diffuse
     aya.gfx.beginPass(.{ .pass = diffuse_pass, .color = Color.black });
     aya.gfx.draw.tex(ground_tex, 0, 0);
     aya.gfx.draw.tex(ball_tex, 50, 15);
     aya.gfx.endPass();
 
-    // render diffuse and normals
-    aya.gfx.beginPass(.{ .pass = normal_pass, .shader = &shader, .color = Color.fromRgb(0.5, 0.5, 0) });
+    // normals
+    aya.gfx.beginPass(.{ .pass = normal_pass, .shader = &normals_shader, .color = Color.fromRgb(0.5, 0.5, 0) });
     drawTex(ground_tex, .{});
     drawTex(ball_tex, .{ .x = 50, .y = 15 });
     aya.gfx.endPass();
@@ -105,7 +108,8 @@ fn render() !void {
 fn shutdown() !void {
     ground_tex.deinit();
     ball_tex.deinit();
-    shader.deinit();
+    ball_n_tex.deinit();
+    normals_shader.deinit();
     light_shader.deinit();
     diffuse_pass.deinit();
     normal_pass.deinit();
