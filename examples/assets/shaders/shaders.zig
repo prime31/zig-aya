@@ -22,17 +22,13 @@ pub const VignetteShader = ShaderState(VignetteParams);
 pub fn createCubeShader() Shader {
     const vert = @embedFile("cube_vs.glsl");
     const frag = "examples/assets/shaders/cube_fs.glsl";
-    return Shader.initWithVertFrag(CubeParamsVS, struct {
-        pub const metadata = .{ .images = .{"tex"} };
-    }, .{ .frag = frag, .vert = vert });
+    return Shader.initWithVertFrag(CubeParamsVS, struct { pub const metadata = .{ .images = .{ "tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDeferredShader() Shader {
     const vert = @embedFile("deferred_vs.glsl");
     const frag = "examples/assets/shaders/deferred_fs.glsl";
-    return Shader.initWithVertFrag(DeferredVertexParams, struct {
-        pub const metadata = .{ .images = .{"main_tex"} };
-    }, .{ .frag = frag, .vert = vert });
+    return Shader.initWithVertFrag(DeferredVertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createDeferredPointShader() DeferredPointShader {
@@ -53,9 +49,7 @@ pub fn createDissolveShader() DissolveShader {
 pub fn createInstancedShader() Shader {
     const vert = @embedFile("instanced_vs.glsl");
     const frag = "examples/assets/shaders/instanced_fs.glsl";
-    return Shader.initWithVertFrag(InstancedVertParams, struct {
-        pub const metadata = .{ .images = .{"main_tex"} };
-    }, .{ .frag = frag, .vert = vert });
+    return Shader.initWithVertFrag(InstancedVertParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createLinesShader() LinesShader {
@@ -76,9 +70,7 @@ pub fn createMode7Shader() Mode7Shader {
 pub fn createMrtShader() Shader {
     const vert = @embedFile("sprite_vs.glsl");
     const frag = "examples/assets/shaders/mrt_fs.glsl";
-    return Shader.initWithVertFrag(VertexParams, struct {
-        pub const metadata = .{ .images = .{"main_tex"} };
-    }, .{ .frag = frag, .vert = vert });
+    return Shader.initWithVertFrag(VertexParams, struct { pub const metadata = .{ .images = .{ "main_tex" } }; }, .{ .frag = frag, .vert = vert });
 }
 
 pub fn createNoiseShader() NoiseShader {
@@ -106,6 +98,7 @@ pub fn createVignetteShader() VignetteShader {
     return VignetteShader.init(.{ .frag = frag, .onPostBind = VignetteShader.onPostBind });
 }
 
+
 pub const DeferredPointParams = extern struct {
     pub const metadata = .{
         .images = .{ "main_tex", "normals_tex", "diffuse_tex" },
@@ -120,33 +113,34 @@ pub const DeferredPointParams = extern struct {
     _pad8_0_: [8]u8 = [_]u8{0} ** 8,
     color: [4]f32 = [_]f32{0} ** 4,
     intensity: f32 = 0,
+    __pad3: [3]f32 = [_]f32{0} ** 3,
 };
 
 pub const NoiseParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .NoiseParams = .{ .type = .float4, .array_count = 1 } },
     };
 
     time: f32 = 0,
     power: f32 = 0,
-    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
+    __pad2: [2]f32 = [_]f32{0} ** 2,
 };
 
 pub const DepthParamsFS = extern struct {
     pub const metadata = .{
-        .images = .{},
+        .images = .{  },
         .uniforms = .{ .DepthParamsFS = .{ .type = .float4, .array_count = 1 } },
     };
 
     near: f32 = 0,
     far: f32 = 0,
-    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
+    __pad2: [2]f32 = [_]f32{0} ** 2,
 };
 
 pub const RgbShiftParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .RgbShiftParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -165,7 +159,7 @@ pub const InstancedVertParams = extern struct {
 
 pub const MetaFlamesParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .MetaFlamesParams = .{ .type = .float4, .array_count = 2 } },
     };
 
@@ -180,12 +174,12 @@ pub const MetaFlamesParams = extern struct {
 
 pub const SepiaParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .SepiaParams = .{ .type = .float4, .array_count = 1 } },
     };
 
     sepia_tone: Vec3 = .{},
-    _pad12_0_: [4]u8 = [_]u8{0} ** 4,
+    __pad1: [1]f32 = [_]f32{0} ** 1,
 };
 
 pub const VertexParams = extern struct {
@@ -198,13 +192,13 @@ pub const VertexParams = extern struct {
 
 pub const LinesParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .LinesParams = .{ .type = .float4, .array_count = 2 } },
     };
 
     line_color: [4]f32 = [_]f32{0} ** 4,
     line_size: f32 = 0,
-    _pad20_0_: [12]u8 = [_]u8{0} ** 12,
+    __pad3: [3]f32 = [_]f32{0} ** 3,
 };
 
 pub const DissolveParams = extern struct {
@@ -249,18 +243,18 @@ pub const Mode7Params = extern struct {
 
 pub const VignetteParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .VignetteParams = .{ .type = .float4, .array_count = 1 } },
     };
 
     radius: f32 = 0,
     power: f32 = 0,
-    _pad8_0_: [8]u8 = [_]u8{0} ** 8,
+    __pad2: [2]f32 = [_]f32{0} ** 2,
 };
 
 pub const PixelGlitchParams = extern struct {
     pub const metadata = .{
-        .images = .{"main_tex"},
+        .images = .{ "main_tex" },
         .uniforms = .{ .PixelGlitchParams = .{ .type = .float4, .array_count = 1 } },
     };
 
@@ -276,3 +270,4 @@ pub const CubeParamsVS = extern struct {
 
     mvp: Mat4 = .{},
 };
+
