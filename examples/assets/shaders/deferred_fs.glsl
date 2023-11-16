@@ -11,5 +11,6 @@ void main()
     vec2 _35 = ((normal_out + vec2(1.0)) * vec2(0.5)) * texture(main_tex, uv_out).w;
     frag_color = vec4(_35.x, _35.y, frag_color.z, frag_color.w);
     frag_color.z = texture(main_tex, uv_out).w;
+    frag_color.w = texture(main_tex, uv_out).w;
 }
 

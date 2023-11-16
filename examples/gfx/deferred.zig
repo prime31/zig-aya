@@ -17,6 +17,7 @@ pub fn main() !void {
     std.debug.print("\n", .{});
     try aya.run(.{
         .init = init,
+        .update = update,
         .render = render,
         .shutdown = shutdown,
     });
@@ -26,7 +27,8 @@ var ground_tex: Texture = undefined;
 var ball_tex: Texture = undefined;
 
 var shader: Shader = undefined;
-var light_shader: Shader = undefined;
+var light_shader: shaders.DeferredPointShader = undefined;
+var light_pos = Vec2.init(40, 20);
 
 var diffuse_pass: OffscreenPass = undefined;
 var normal_pass: OffscreenPass = undefined;
@@ -47,11 +49,30 @@ fn init() !void {
     }.set;
 
     light_shader = shaders.createDeferredPointShader();
+    light_shader.frag_uniform.color[0] = 1.0;
+    light_shader.frag_uniform.color[3] = 1.0;
+    light_shader.frag_uniform.falloff_angle = 15;
+    light_shader.frag_uniform.min_angle = -25;
+    light_shader.frag_uniform.max_angle = 25;
+    light_shader.frag_uniform.volumetric_intensity = 1.0;
+    light_shader.frag_uniform.intensity = 1.0;
+    light_shader.frag_uniform.color = Color.yellow.asArray();
+    light_shader.frag_uniform.resolution = Vec2.init(100, 50);
 
     diffuse_pass = OffscreenPass.init(100, 50);
     normal_pass = OffscreenPass.init(100, 50);
     light_pass = OffscreenPass.init(100, 50);
     mesh = createDynamicMesh(1);
+}
+
+fn update() !void {
+    _ = ig.igSliderFloat("min angle", &light_shader.frag_uniform.min_angle, -180, 360, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igSliderFloat("max angle", &light_shader.frag_uniform.max_angle, -180, 360, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igSliderFloat("falloff angle", &light_shader.frag_uniform.falloff_angle, 0, 45, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igSliderFloat("volumetric intensity", &light_shader.frag_uniform.volumetric_intensity, 0, 1, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igSliderFloat("intensity", &light_shader.frag_uniform.intensity, 0, 3, null, ig.ImGuiSliderFlags_None);
+    _ = ig.igColorEdit3("light color", &light_shader.frag_uniform.color[0], ig.ImGuiColorEditFlags_DisplayRGB);
+    _ = ig.igDragFloat2("light pos", &light_pos.x, 1, 0, 150, null, ig.ImGuiSliderFlags_None);
 }
 
 fn render() !void {
@@ -67,8 +88,10 @@ fn render() !void {
     aya.gfx.endPass();
 
     // lights
-    aya.gfx.beginPass(.{ .pass = light_pass, .shader = &light_shader, .color = Color.black });
-    aya.gfx.draw.point(.{ .x = 60, .y = 20 }, 50, Color.white);
+    light_shader.textures[0] = normal_pass.color_texture;
+    light_shader.textures[1] = diffuse_pass.color_texture;
+    aya.gfx.beginPass(.{ .pass = light_pass, .shader = &light_shader.shader, .color = Color.black });
+    aya.gfx.draw.point(light_pos, 150, Color.white);
     aya.gfx.endPass();
 
     aya.gfx.beginPass(.{ .color = Color.blue });

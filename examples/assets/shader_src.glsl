@@ -531,15 +531,17 @@ void main() {
 @fs deferred_point_fs
 @include_block sprite_fs_main
 uniform DeferredPointParams {
+	float min_angle; // degrees
+	float max_angle; // degrees
+	float falloff_angle; // degrees. falloff_angle < (max_angle - min_angle)
+	float volumetric_intensity; // 0 - 1
 	vec2 resolution;
 	vec4 color;
 	float intensity; // 0 - 1
-	float falloff; // 0 - 1
-	// float angular_falloff; // 0 - 1
-	float volumetric_intensity; // 0 - 1
 };
 
 uniform sampler2D normals_tex;
+uniform sampler2D diffuse_tex;
 
 // maps a value from some arbitrary range to the 0 to 1 range
 float map01(float value, float min, float max) {
@@ -556,19 +558,20 @@ float map(float value, float leftMin, float leftMax, float rightMin, float right
 
 vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 	vec4 base_color = texture(tex, tex_coord);
-	vec4 normal_color = texture(normals_tex, tex_coord);
+	vec4 normal_color = texture(normals_tex, gl_FragCoord.xy / resolution);
+	vec4 diffuse_color = texture(diffuse_tex, gl_FragCoord.xy / resolution);
 
-	// TODO: add to uniform
-	float min_angle = radians(0.0) / PI_2;
-	float max_angle = radians(90.0) / PI_2;
-	float falloff_angle = radians(25.0) / PI_2;
-	// min_angle = min_angle - falloff_angle;
-	max_angle = max_angle + falloff_angle;
+	// convert to radians
+	float min_ang = radians(min_angle);
+	float max_ang = radians(max_angle);
+	float falloff_ang = radians(falloff_angle);
 
-	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5) + radians(180.0);
-	angle /= PI_2;
+	min_ang = min_ang - falloff_ang * 0.7;
+	max_ang = max_ang + falloff_ang * 0.7;
 
-	return vec4(1, 0, 1, 1) * smoothstep(min_angle, min_angle + falloff_angle, angle) * (1 - smoothstep(max_angle - falloff_angle, max_angle, angle));
+	float angle = atan(tex_coord.t - 0.5, tex_coord.s - 0.5);
+
+	float angular_falloff = smoothstep(min_ang, min_ang + falloff_ang, angle) * (1 - smoothstep(max_ang - falloff_ang, max_ang, angle));
 	// return vec4(1, 0, 1, 1) * smoothstep(min_angle, min_angle + falloff_angle, angle);
 
 	// if (angle > min_angle && angle < max_angle) return vec4(1.0, 0, 0, 1);
@@ -576,39 +579,45 @@ vec4 effect(sampler2D tex, vec2 tex_coord, vec4 vert_color) {
 	//angle = mod(angle + 3.141592, 3.141592);
 	//angle = atan(0.5 - tex_coord.t, 0.5 - tex_coord.s);
 	// return vec4(0, angle, 0, 1);
-	float blur = 0.1;
+	// float blur = 0.1;
 	// return vec4(1, 0, 1, 1) * (1 - smoothstep(max_angle, max_angle + blur, angle));
 	// return vec4(1, 0, 1, 1) * smoothstep(min_angle + blur, min_angle, angle);
-	return vec4(1, 0, 1, 1) * (1 - smoothstep(min_angle, max_angle, angle)) * smoothstep(max_angle, min_angle, angle);
+	// return vec4(1, 0, 1, 1) * (1 - smoothstep(min_angle, max_angle, angle)) * smoothstep(max_angle, min_angle, angle);
 
 	// vec2 st = gl_FragCoord.xy / resolution;
 
 
-	// TODO: calc using center of light and fragments coordinate in local space
-	float distance = distance(vec2(0.5), tex_coord) * 2.0; // center to extent of quad is max of 0.5 but we want 0-1
+	// TODO: calc using center of light and fragment coordinate in local space
+	float distance = distance(vec2(0.5), tex_coord) * 2; // center to extent of quad is max of 0.5 but we want 0-1
 
-	float radial_falloff = pow(1.0 - distance, 2.0);
-	float angular_falloff = smoothstep(min_angle, max_angle, angle);
+	float radial_falloff = pow(1.0 - distance, 2);
 
 	// return  vec4(1, 1, 0, 1);
-	return /*radial_falloff * */ angular_falloff * vec4(1, 0, 0.5, 1);
+	// angular_falloff = angular_falloff * 0.0000001 + 1;
+	// return radial_falloff * angular_falloff * vec4(1, 0, 0.5, 1) + 0.00001 * vert_color * base_color * normal_color;
+
+
 
 	// vec2 normal_vector = normalize(world_space_pos_center_of_light - world_space_frag_pos)
 	// vec2 dir_to_light = ?
-	vec2 light_vector = normalize(tex_coord - vec2(0.5));
-	// light_vector /= length(light_vector);
+	vec2 light_vector = normalize(vec2(0.5) - tex_coord);
 
     // tranform normal back into [-1,1] range
-    vec2 normal = 2.0 * normal_color.xy - 1.0;
+    vec2 normal = normalize(2.0 * normal_color.xy - 1.0);
 	float normal_falloff = clamp(dot(light_vector, normal), 0, 1) * normal_color.b;
 
 
 	float final_intensity = intensity * radial_falloff * angular_falloff * normal_falloff;
-	vec3 light_color = final_intensity * color.rgb;
-	vec3 shaded_color = base_color.rgb * light_color.rgb;
-	shaded_color += light_color * volumetric_intensity;
+	// final_intensity + color.r * 0.0000001;
 
-	return vec4(shaded_color, 1) * normal_color;
+	// return final_intensity * vec4(1, 0, 0.5, 1) * 0.00001 + intensity * vec4(normal_falloff, normal_falloff, normal_falloff, 1);
+
+	vec3 light_color = final_intensity * color.rgb;
+	vec3 shaded_color = diffuse_color.rgb * light_color.rgb;
+
+	shaded_color += radial_falloff * angular_falloff * color.rgb * volumetric_intensity; // TODO: why is radial_falloff needed thrice???
+
+	return vec4(shaded_color, 1); // * 0.00001 + color * radial_falloff;
 }
 @end
 
