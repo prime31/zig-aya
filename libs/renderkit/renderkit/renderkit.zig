@@ -753,10 +753,8 @@ pub fn replaceShaderProgram(old_shader: types.ShaderProgram, new_shader: types.S
     const old_shdr = shader_cache.get(old_shader);
     const new_shdr = shader_cache.get(new_shader);
 
-    cache.invalidateProgram(old_shdr.program);
-    gl.deleteProgram(old_shdr.program);
-
-    old_shdr.program = new_shdr.program;
+    std.mem.swap(GLuint, &old_shdr.program, &new_shdr.program);
+    destroyShaderProgram(new_shader);
 }
 
 pub fn destroyShaderProgram(shader: types.ShaderProgram) void {
