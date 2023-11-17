@@ -162,9 +162,12 @@ pub const Assets = struct {
                     _ = self.shaders.removeByPtr(entry.key_ptr);
                     return true;
                 }
+                return false;
             }
         }
-        return false;
+
+        // we didnt find the shader. that means it has embedded vert/frag so we want it to be destroyed
+        return true;
     }
 
     fn hotReloadShader(self: *Assets, path: []const u8) void {
