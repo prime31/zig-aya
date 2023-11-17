@@ -33,7 +33,7 @@ fn defaultFragmentShader() [:0]const u8 {
 pub const Shader = struct {
     shader: rk.ShaderProgram,
     onPostBind: ?*const fn (*Shader) void,
-    onSetTransformMatrix: ?*const fn (*Mat32) void,
+    onSetTransformMatrix: ?*const fn (*Shader, *Mat32) void,
 
     const Empty = struct {};
 
@@ -50,7 +50,7 @@ pub const Shader = struct {
         /// optional function that lets you override the behavior when the transform matrix is set. This is used when there is a
         /// custom vertex shader and isnt necessary if the standard sprite vertex shader is used. Note that the shader is already
         /// bound when this is called if `gfx.setShader` is used so send your uniform immediately!
-        onSetTransformMatrix: ?*const fn (*Mat32) void = null,
+        onSetTransformMatrix: ?*const fn (*Shader, *Mat32) void = null,
 
         /// used internally to skip checking the cache during hot reload
         force_reload: bool = false,
@@ -125,9 +125,9 @@ pub const Shader = struct {
         if (self.onPostBind) |onPostBind| onPostBind(self);
     }
 
-    pub fn setTransformMatrix(self: Shader, matrix: *Mat32) void {
+    pub fn setTransformMatrix(self: *Shader, matrix: *Mat32) void {
         if (self.onSetTransformMatrix) |setMatrix| {
-            setMatrix(matrix);
+            setMatrix(self, matrix);
         } else {
             var params = VertexParams.init(matrix);
             self.setVertUniform(VertexParams, &params);

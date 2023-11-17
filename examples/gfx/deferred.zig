@@ -28,6 +28,7 @@ var ground_tex: Texture = undefined;
 var ball_tex: Texture = undefined;
 var ball_n_tex: Texture = undefined;
 
+var light_extrusion_shader: LightExtrusionShader = undefined;
 var normals_shader: Shader = undefined;
 var alpha_test_shader: Shader = undefined;
 var light_shader: shaders.DeferredPointShader = undefined;
@@ -38,6 +39,7 @@ var normal_pass: OffscreenPass = undefined;
 var light_pass: OffscreenPass = undefined;
 
 var mesh: DynamicMesh(u16, Vertex) = undefined;
+var light_extrusion_mesh: LightExtrusionMesh = undefined;
 var tri_batch: TriangleBatcher = undefined;
 
 var stencil_write_incr: aya.rk.RenderState = .{
@@ -68,12 +70,13 @@ fn init() !void {
     ball_tex = Texture.initFromFile("examples/assets/ball.png", .nearest);
     ball_n_tex = Texture.initFromFile("examples/assets/ball_n.png", .nearest);
 
+    light_extrusion_shader = LightExtrusionShader.init();
     normals_shader = shaders.createDeferredShader();
     normals_shader.onSetTransformMatrix = struct {
-        fn set(mat: *Mat32) void {
+        fn set(shader: *Shader, mat: *Mat32) void {
             var params = shaders.DeferredVertexParams{};
             std.mem.copy(f32, &params.transform_matrix, &mat.data);
-            normals_shader.setVertUniform(shaders.DeferredVertexParams, &params);
+            shader.setVertUniform(shaders.DeferredVertexParams, &params);
         }
     }.set;
 
@@ -93,7 +96,9 @@ fn init() !void {
     diffuse_pass = OffscreenPass.init(100, 50);
     normal_pass = OffscreenPass.init(100, 50);
     light_pass = OffscreenPass.initWithStencil(100, 50, .nearest, .clamp);
+
     mesh = createDynamicMesh(1);
+    light_extrusion_mesh = LightExtrusionMesh.init(64);
     tri_batch = TriangleBatcher.init(64);
 }
 
@@ -177,13 +182,17 @@ fn shutdown() !void {
     ground_tex.deinit();
     ball_tex.deinit();
     ball_n_tex.deinit();
+
+    light_extrusion_shader.deinit();
     normals_shader.deinit();
     alpha_test_shader.deinit();
     light_shader.deinit();
     diffuse_pass.deinit();
     normal_pass.deinit();
     light_pass.deinit();
+
     mesh.deinit();
+    light_extrusion_mesh.deinit();
     tri_batch.deinit();
 }
 
@@ -266,3 +275,70 @@ fn renderShadowVerts(position: Vec2, light_position: Vec2, verts: []Vec2) void {
         }
     }
 }
+
+pub const LightExtrusionVertex = extern struct {
+    pos: Vec2 = .{ .x = 0, .y = 0 },
+    normal: Vec2 = .{ .x = 0, .y = 0 },
+};
+
+pub const LightExtrusionShader = struct {
+    const LightExtrusionVertexParams = extern struct {
+        pub const metadata = .{
+            .uniforms = .{ .transform_matrix = .{ .type = .float4, .array_count = 2 } },
+        };
+
+        transform_matrix: [8]f32 = [_]f32{0} ** 8,
+    };
+
+    shader: Shader,
+    vert_uniform: LightExtrusionVertexParams = .{},
+
+    pub fn init() LightExtrusionShader {
+        const vert = "examples/assets/shaders/light_extrusion_vs.glsl";
+        const frag = "examples/assets/shaders/light_extrusion_fs.glsl";
+        var shader = Shader.initWithVertFrag(
+            LightExtrusionVertexParams,
+            struct {},
+            .{ .frag = frag, .vert = vert },
+        );
+
+        shader.onSetTransformMatrix = struct {
+            fn set(self: *Shader, mat: *Mat32) void {
+                var params = shaders.DeferredVertexParams{};
+                std.mem.copy(f32, &params.transform_matrix, &mat.data);
+                self.setVertUniform(shaders.DeferredVertexParams, &params);
+            }
+        }.set;
+
+        return .{ .shader = shader };
+    }
+
+    pub fn deinit(self: LightExtrusionShader) void {
+        self.shader.deinit();
+    }
+
+    pub fn setLightPos(self: *LightExtrusionShader, pos: Vec2) void {
+        self.vert_uniform.transform_matrix[6] = pos.x;
+        self.vert_uniform.transform_matrix[7] = pos.y;
+    }
+};
+
+const LightExtrusionMesh = struct {
+    mesh: DynamicMesh(u16, LightExtrusionVertex),
+
+    pub fn init(max_tris: u16) LightExtrusionMesh {
+        var indices = aya.mem.tmp_allocator.alloc(u16, max_tris * 3) catch unreachable;
+        var i: usize = 0;
+        while (i < max_tris) : (i += 1) {
+            indices[i * 3 + 0] = @as(u16, @intCast(i)) * 4 + 0;
+            indices[i * 3 + 1] = @as(u16, @intCast(i)) * 4 + 1;
+            indices[i * 3 + 2] = @as(u16, @intCast(i)) * 4 + 2;
+        }
+
+        return .{ .mesh = DynamicMesh(u16, LightExtrusionVertex).init(max_tris * 3, indices) };
+    }
+
+    pub fn deinit(self: *LightExtrusionMesh) void {
+        self.mesh.deinit();
+    }
+};
