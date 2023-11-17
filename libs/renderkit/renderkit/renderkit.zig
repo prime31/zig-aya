@@ -736,7 +736,7 @@ pub fn createShaderProgram(comptime VertUniformT: type, comptime FragUniformT: t
                 if (@import("builtin").mode == .Debug and uniform_cache[i] == -1) std.debug.print("Uniform [{s}] not found!\n", .{field.name});
             }
         } else {
-            // cache a uniform for each struct fields. It is prefered to use the `metadata` approach above but this path is supported as well.
+            // cache a uniform for each struct field. It is prefered to use the `metadata` approach above but this path is supported as well.
             inline for (@typeInfo(UniformT).Struct.fields, 0..) |field, i| {
                 uniform_cache[i] = gl.getUniformLocation(id, field.name ++ "\x00");
                 if (@import("builtin").mode == .Debug and uniform_cache[i] == -1) std.debug.print("Uniform [{s}] not found!\n", .{field.name});
