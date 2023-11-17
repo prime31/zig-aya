@@ -540,6 +540,7 @@ void main() {
 @program deferred deferred_vs deferred_fs
 
 
+
 @fs deferred_point_fs
 @include_block sprite_fs_main
 uniform DeferredPointParams {
