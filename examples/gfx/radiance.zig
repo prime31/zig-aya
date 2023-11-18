@@ -48,8 +48,14 @@ fn init() !void {
     radiance_shader.frag_uniform.should_do_render = 1;
 
     const size = aya.window.sizeInPixels();
-    passes[0] = OffscreenPass.init(size.w, size.h);
-    passes[1] = OffscreenPass.init(size.w, size.h);
+    const d0: f32 = 1; // distance between probes in cascade 0
+    const r0 = 4; // number of rays in cascade 0
+    const n0: i32 = @intFromFloat(@floor(2 * @floatFromInt(size.w) / d0)); // number of probes in cascade 0 per dimension
+    const pass_w = r0 * n0;
+    const pass_h = n0;
+
+    passes[0] = OffscreenPass.init(pass_w, pass_h);
+    passes[1] = OffscreenPass.init(pass_w, pass_h);
 }
 
 fn update() !void {}
