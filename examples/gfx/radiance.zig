@@ -50,7 +50,7 @@ fn init() !void {
     const size = aya.window.sizeInPixels();
     const d0: f32 = 1; // distance between probes in cascade 0
     const r0 = 4; // number of rays in cascade 0
-    const n0: i32 = @intFromFloat(@floor(2 * @floatFromInt(size.w) / d0)); // number of probes in cascade 0 per dimension
+    const n0: i32 = @intFromFloat(@floor(2 * @as(f32, @floatFromInt(size.w)) / d0)); // number of probes in cascade 0 per dimension
     const pass_w = r0 * n0;
     const pass_h = n0;
 
