@@ -1,9 +1,11 @@
 const std = @import("std");
 const sdl = @import("sdl");
 const aya = @import("aya.zig");
-const ig = @import("imgui");
 
-const Size = aya.math.Size;
+pub const Size = struct {
+    w: c_int = 0,
+    h: c_int = 0,
+};
 
 // TODO: add more window events
 pub const WindowResized = struct { width: f32, height: f32 };
@@ -63,20 +65,11 @@ pub var id: u32 = 0;
 pub var focused: bool = true;
 pub var gl_ctx: sdl.SDL_GLContext = null;
 
-pub fn init(config: WindowConfig, imgui_config: ig.sdl.Config) void {
+pub fn init(config: WindowConfig) void {
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_HAPTIC | sdl.SDL_INIT_GAMEPAD) != 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         @panic("could not init SDL");
     }
-
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_FLAGS, sdl.SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_PROFILE_MASK, sdl.SDL_GL_CONTEXT_PROFILE_CORE);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_CONTEXT_MINOR_VERSION, 3);
-
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DOUBLEBUFFER, 1);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_DEPTH_SIZE, 24);
-    _ = sdl.SDL_GL_SetAttribute(sdl.SDL_GL_STENCIL_SIZE, 8);
 
     var flags: c_uint = @intFromEnum(WindowFlags.opengl);
     if (config.resizable) flags |= @intFromEnum(WindowFlags.resizable);
@@ -87,25 +80,16 @@ pub fn init(config: WindowConfig, imgui_config: ig.sdl.Config) void {
         sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
         @panic("no window created");
     };
-
-    gl_ctx = sdl.SDL_GL_CreateContext(sdl_window);
     id = sdl.SDL_GetWindowID(sdl_window);
-
-    const gl_loader = @as(*const fn ([*c]const u8) callconv(.C) ?*anyopaque, @ptrFromInt(@intFromPtr(&sdl.SDL_GL_GetProcAddress)));
-    @import("renderkit").setup(.{ .gl_loader = gl_loader }, aya.mem.allocator);
 
     switch (config.vsync) {
         .adaptive => _ = sdl.SDL_GL_SetSwapInterval(-1),
         .immediate => _ = sdl.SDL_GL_SetSwapInterval(0),
         .synchronized => _ = sdl.SDL_GL_SetSwapInterval(1),
     }
-
-    ig.sdl.init(sdl_window, imgui_config);
 }
 
 pub fn deinit() void {
-    ig.sdl.shutdown();
-
     sdl.SDL_DestroyWindow(sdl_window);
     sdl.SDL_Quit();
 }

@@ -1,21 +1,14 @@
 const std = @import("std");
-const Builder = std.build.Builder;
 
-// libs
-const stb_build = @import("libs/stb/build.zig");
+const wgpu_build = @import("libs/wgpu/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
-const imgui_build = @import("libs/imgui/build.zig");
-const fontstash_build = @import("libs/fontstash/build.zig");
-const renderkit_build = @import("libs/renderkit/build.zig");
-const zaudio_build = @import("libs/zaudio/build.zig");
-const watcher_build = @import("libs/filewatcher/build.zig");
-
-const ShaderCompileStep = renderkit_build.ShaderCompileStep;
+const stb_build = @import("libs/stb/build.zig");
+const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
     enable_imgui: bool,
-    enable_hot_reload: bool,
+    include_flecs_explorer: bool,
 };
 
 const install_options: enum { all, only_current } = .only_current;
@@ -26,38 +19,16 @@ pub fn build(b: *std.Build) void {
 
     const options = Options{
         .build_options = b.addOptions(),
-        .enable_imgui = b.option(bool, "imgui", "Include/exclude Dear ImGui from the binary") orelse true,
-        .enable_hot_reload = b.option(bool, "hot_reload", "Include/exclude Filewatcher and hot reload") orelse true,
+        .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
+        .include_flecs_explorer = b.option(bool, "include_flecs_explorer", "Include/exclude Flecs REST, HTTP, STATS and MONITOR modules") orelse true,
     };
 
-    options.build_options.addOption(bool, "imgui", options.enable_imgui);
-    options.build_options.addOption(bool, "hot_reload", options.enable_hot_reload);
+    options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
+    options.build_options.addOption(bool, "include_flecs_explorer", options.include_flecs_explorer);
 
     for (getAllExamples(b, "examples")) |p| {
         addExecutable(b, target, optimize, options, p[0], p[1]);
     }
-
-    addTests(b, target, optimize, options);
-
-    // shader compiler, run with `zig build compile-shaders`
-    const shader_compile_step = ShaderCompileStep.init(b, .{
-        .shader = "examples/assets/shader_src.glsl",
-        .shader_output_path = "examples/assets/shaders",
-        .package_output_path = "examples/assets/shaders",
-        .additional_imports = &[_][]const u8{
-            "const aya = @import(\"aya\");\n",
-            "const ShaderState = aya.render.ShaderState;",
-            "const Shader = aya.render.Shader;",
-            "const Vec2 = aya.math.Vec2;",
-            "const Vec3 = aya.math.Vec3;",
-            "const Mat4 = aya.math.Mat4;",
-        },
-        .shader_load_style = .file,
-    });
-
-    const compile_shaders_step = b.step("compile-shaders", "compiles all shaders");
-    b.default_step.dependOn(compile_shaders_step);
-    compile_shaders_step.dependOn(&shader_compile_step.step);
 }
 
 fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
@@ -88,67 +59,30 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
     run_step.dependOn(&run_cmd.step);
 }
 
-// add tests.zig file runnable via "zig build test"
-fn addTests(b: *Builder, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
-    const tests = b.addTest(.{
-        .name = "tests",
-        .root_source_file = .{ .path = "src/tests.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // in case tests start requiring some modules from libs add them here
-    linkLibs(b, tests, target, optimize, options);
-
-    const run_tests = b.addRunArtifact(tests);
-
-    if (install_options == .only_current) {
-        const add_install_step = b.addInstallArtifact(tests, .{});
-        run_tests.step.dependOn(&add_install_step.step);
-    } else {
-        b.installArtifact(tests);
-        run_tests.step.dependOn(b.getInstallStep());
-    }
-
-    const run_step = b.step("tests", "Run tests");
-    run_step.dependOn(&run_tests.step);
-}
-
 fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
-    stb_build.linkArtifact(exe);
-    const stb_module = stb_build.getModule(b);
+    wgpu_build.linkArtifact(exe);
+    const wgpu_module = wgpu_build.getModule(b);
 
     sdl_build.linkArtifact(b, exe);
     const sdl_module = sdl_build.getModule(b);
 
-    if (options.enable_imgui)
-        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
-    const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
+    stb_build.linkArtifact(exe);
+    const stb_module = stb_build.getModule(b);
 
-    fontstash_build.linkArtifact(exe);
-    const fontstash_module = fontstash_build.getModule(b);
+    zig_gamedev_build.linkArtifact(b, exe, target, optimize);
+    const zmath_module = zig_gamedev_build.getMathModule(b);
+    const zmesh_module = zig_gamedev_build.getMeshModule();
+    const zpool_module = zig_gamedev_build.getPoolModule(b);
 
-    renderkit_build.linkArtifact(exe, target);
-    const renderkit_module = renderkit_build.getModule(b);
-
-    const zaudio_package = zaudio_build.package(b, target, optimize, .{});
-    zaudio_package.link(exe);
-
-    if (options.enable_hot_reload)
-        watcher_build.linkArtifact(exe);
-    const watcher_module = watcher_build.getModule(b, options.enable_hot_reload);
-
-    // aya module gets all previous modules as dependencies
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
         .dependencies = &.{
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
-            .{ .name = "imgui", .module = imgui_module },
-            .{ .name = "fontstash", .module = fontstash_module },
-            .{ .name = "renderkit", .module = renderkit_module },
-            .{ .name = "zaudio", .module = zaudio_package.zaudio },
-            .{ .name = "watcher", .module = watcher_module },
+            .{ .name = "wgpu", .module = wgpu_module },
+            .{ .name = "zmath", .module = zmath_module },
+            .{ .name = "zmesh", .module = zmesh_module },
+            .{ .name = "zpool", .module = zpool_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
@@ -159,14 +93,11 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     });
 
     exe.addModule("aya", aya_module);
+    exe.addModule("wgpu", wgpu_module);
     exe.addModule("sdl", sdl_module);
-    exe.addModule("zaudio", zaudio_package.zaudio);
-    exe.addModule("shaders", b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/examples/assets/shaders/shaders.zig" },
-        .dependencies = &.{
-            .{ .name = "aya", .module = aya_module },
-        },
-    }));
+    exe.addModule("stb", stb_module);
+    exe.addModule("zmath", zmath_module);
+    exe.addModule("zmesh", zmesh_module);
 }
 
 fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]const u8 {
@@ -205,8 +136,4 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
     recursor(b.allocator, root_directory, &list);
 
     return list.toOwnedSlice() catch unreachable;
-}
-
-inline fn thisDir() []const u8 {
-    return comptime std.fs.path.dirname(@src().file) orelse ".";
 }
