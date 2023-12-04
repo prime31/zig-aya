@@ -35,7 +35,7 @@ fn init() !void {
     state.batcher = Batcher.init(128);
 
     // texture
-    const image = @import("stb").Image.init(aya.mem.allocator, "examples/image.png") catch unreachable;
+    const image = @import("stb").Image.init(aya.mem.allocator, "examples/tree0.png") catch unreachable;
     defer image.deinit();
 
     const check_image = @import("stb").Image.init(aya.mem.allocator, "examples/checkbox.png") catch unreachable;
@@ -80,9 +80,9 @@ fn shutdown() !void {
 }
 
 fn update() !void {
-    const ticks = @as(f32, @floatFromInt(aya.sdl.SDL_GetTicks()));
-    const x = @sin(ticks / 1000);
-    drawTex(state.texture, x, -0.9);
+    // const ticks = @as(f32, @floatFromInt(aya.sdl.SDL_GetTicks()));
+    // const x = @sin(ticks / 1000);
+    // drawTex(state.texture, x, -0.9);
 }
 
 fn render() !void {
@@ -115,7 +115,7 @@ fn render() !void {
     var command_encoder = aya.gctx.device.createCommandEncoder(&.{ .label = "Command Encoder" });
 
     // begin the render pass
-    var pass_encoder = command_encoder.beginRenderPass(&.{
+    var pass = command_encoder.beginRenderPass(&.{
         .label = "Render Pass Encoder",
         .color_attachment_count = 1,
         .color_attachments = &.{
@@ -126,21 +126,21 @@ fn render() !void {
         },
     });
 
-    pass_encoder.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
-    pass_encoder.setIndexBuffer(ib_info.gpuobj.?, .uint16, 0, ib_info.size);
-    pass_encoder.setPipeline(pip);
-    pass_encoder.setBindGroup(0, bg, 0, null);
-    pass_encoder.drawIndexed(6, 1, 0, 0, 0);
+    pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
+    pass.setIndexBuffer(ib_info.gpuobj.?, .uint16, 0, ib_info.size);
+    pass.setPipeline(pip);
+    pass.setBindGroup(0, bg, 0, null);
+    pass.drawIndexed(6, 1, 0, 0, 0);
 
-    state.batcher.begin(pass_encoder);
-    state.batcher.drawTex(.{ .x = 2500 }, 0, state.check_texture);
+    state.batcher.begin(pass);
+    state.batcher.drawTex(.{ .x = 50 }, 0, state.check_texture);
     state.batcher.drawTex(.{}, 0, state.texture);
-    state.batcher.drawTex(.{ .x = 1500 }, 0, state.check_texture);
-    state.batcher.drawTex(.{ .y = 1000 }, 0, state.texture);
+    state.batcher.drawTex(.{ .x = 150 }, 0, state.check_texture);
+    state.batcher.drawTex(.{ .y = 100 }, 0, state.texture);
     state.batcher.end();
 
-    pass_encoder.end();
-    pass_encoder.release();
+    pass.end();
+    pass.release();
 
     var command_buffer = command_encoder.finish(&.{ .label = "Command buffer" });
     aya.gctx.submit(&.{command_buffer});
@@ -355,7 +355,7 @@ pub const Batcher = struct {
 
             pass.setBindGroup(0, bggg, 0, null);
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
-            std.debug.print("-- base_element: {}, element count: {}\n", .{ base_element, draw_call.quad_count * 6 });
+
             // pass_encoder.drawIndexed(6, 1, 0, 0, 0);
             // drawIndexed(index_count: u32, instance_count: u32, first_index: u32, base_vertex: i32, first_instance: u32)
             // self.mesh.draw(base_element, draw_call.quad_count * 6);
@@ -423,7 +423,7 @@ pub const Batcher = struct {
 
         // TODO: lol
         const win_size = aya.window.sizeInPixels();
-        var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)) * 15, @as(f32, @floatFromInt(win_size.h)) * 15);
+        var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
         proj_mat.transformVertex2Slice(verts);
 
         // const x = -0.9;

@@ -710,6 +710,19 @@ pub const VertexAttribute = extern struct {
 };
 
 pub const BlendState = extern struct {
+    pub const alpha_blending = .{
+        .color = .{
+            .src_factor = .src_alpha,
+            .dst_factor = .one_minus_src_alpha,
+            .operation = .add,
+        },
+        .alpha = .{
+            .src_factor = .one,
+            .dst_factor = .one_minus_src_alpha,
+            .operation = .add,
+        },
+    };
+
     color: BlendComponent = @import("std").mem.zeroes(BlendComponent),
     alpha: BlendComponent = @import("std").mem.zeroes(BlendComponent),
 };

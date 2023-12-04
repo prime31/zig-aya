@@ -348,6 +348,7 @@ pub const GraphicsContext = struct {
         source: [*:0]const u8,
         bgls: []const wgpu.BindGroupLayout = &.{},
         vbuffers: []const wgpu.VertexBufferLayout = &.{},
+        blend_state: wgpu.BlendState = wgpu.BlendState.alpha_blending,
     };
 
     pub fn createPipeline(self: *GraphicsContext, desc: *const PipelineDesc) RenderPipelineHandle {
@@ -373,7 +374,10 @@ pub const GraphicsContext = struct {
                 .entry_point = "fs_main",
                 .target_count = 1,
                 .targets = &[_]wgpu.ColorTargetState{
-                    .{ .format = swapchain_format },
+                    .{
+                        .format = swapchain_format,
+                        .blend = &desc.blend_state,
+                    },
                 },
             },
         };
