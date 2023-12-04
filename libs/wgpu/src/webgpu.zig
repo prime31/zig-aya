@@ -1407,8 +1407,13 @@ pub const Buffer = *opaque {
     }
     extern fn wgpuBufferGetMapState(buffer: Buffer) BufferMapState;
 
-    pub inline fn getMappedRange(self: *Self, offset: usize, size: usize) ?*anyopaque {
-        return wgpuBufferGetMappedRange(self, offset, size);
+    // `offset` has to be a multiple of 8 (otherwise `null` will be returned).
+    // `@sizeOf(T) * len` has to be a multiple of 4 (otherwise `null` will be returned).
+    pub inline fn getMappedRange(buffer: Buffer, comptime T: type, offset: usize, len: usize) ?[]T {
+        if (len == 0) return null;
+        const ptr = wgpuBufferGetMappedRange(buffer, offset, @sizeOf(T) * len);
+        if (ptr == null) return null;
+        return @as([*]T, @ptrCast(@alignCast(ptr)))[0..len];
     }
     extern fn wgpuBufferGetMappedRange(buffer: Buffer, offset: usize, size: usize) ?*anyopaque;
 

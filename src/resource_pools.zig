@@ -1,5 +1,6 @@
 const std = @import("std");
-const wgpu = @import("wgpu");
+const aya = @import("aya.zig");
+const wgpu = aya.wgpu;
 
 const GraphicsContext = @import("graphics_context.zig").GraphicsContext;
 
@@ -24,17 +25,17 @@ pub const ResourcePools = struct {
     bind_group_layout_pool: BindGroupLayoutPool,
     pipeline_layout_pool: PipelineLayoutPool,
 
-    pub fn init(allocator: std.mem.Allocator) ResourcePools {
+    pub fn init() ResourcePools {
         return .{
-            .buffer_pool = BufferPool.init(allocator, 128),
-            .texture_pool = TexturePool.init(allocator, 128),
-            .texture_view_pool = TextureViewPool.init(allocator, 128),
-            .sampler_pool = SamplerPool.init(allocator, 16),
-            .render_pipeline_pool = RenderPipelinePool.init(allocator, 128),
-            .compute_pipeline_pool = ComputePipelinePool.init(allocator, 32),
-            .bind_group_pool = BindGroupPool.init(allocator, 32),
-            .bind_group_layout_pool = BindGroupLayoutPool.init(allocator, 32),
-            .pipeline_layout_pool = PipelineLayoutPool.init(allocator, 32),
+            .buffer_pool = BufferPool.init(128),
+            .texture_pool = TexturePool.init(128),
+            .texture_view_pool = TextureViewPool.init(128),
+            .sampler_pool = SamplerPool.init(16),
+            .render_pipeline_pool = RenderPipelinePool.init(128),
+            .compute_pipeline_pool = ComputePipelinePool.init(32),
+            .bind_group_pool = BindGroupPool.init(32),
+            .bind_group_layout_pool = BindGroupLayoutPool.init(32),
+            .pipeline_layout_pool = PipelineLayoutPool.init(32),
         };
     }
 
@@ -186,9 +187,8 @@ fn ResourcePool(comptime Info: type, comptime Resource: type) type {
 
         pool: Pool,
 
-        pub fn init(allocator: std.mem.Allocator, capacity: u32) Self {
-            const pool = Pool.initCapacity(allocator, capacity) catch unreachable;
-            return .{ .pool = pool };
+        pub fn init(capacity: u32) Self {
+            return .{ .pool = Pool.initCapacity(aya.mem.allocator, capacity) catch unreachable };
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {

@@ -1,19 +1,31 @@
 const std = @import("std");
-const stb = @import("stb");
+const aya = @This();
 
+// libs
 pub const sdl = @import("sdl");
 pub const wgpu = @import("wgpu");
+pub const stb = @import("stb");
 
 pub usingnamespace @import("graphics_context.zig");
 pub const gpu = @import("gpu.zig");
 
+// types
+const WindowConfig = @import("window.zig").WindowConfig;
+// const Debug = @import("render/debug.zig").Debug;
+// const GraphicsConfig = @import("graphics_context.zig").GraphicsConfig;
+// const Resources = @import("resources.zig").Resources;
+
 // exports for easy access
-pub var gctx: *GraphicsContext = undefined;
+pub const fs = @import("fs.zig");
+pub const math = @import("math/mod.zig");
 pub const mem = @import("mem/mem.zig");
+pub const render = @import("render/mod.zig");
 pub const window = @import("window.zig");
 
-const WindowConfig = @import("window.zig").WindowConfig;
-const GraphicsContext = @import("graphics_context.zig").GraphicsContext;
+// essentially our fields, just made globals for ease of access
+// pub var debug: Debug = undefined;
+pub var gctx: *aya.GraphicsContext = undefined;
+// pub var res: Resources = undefined;
 
 pub const Config = struct {
     init: ?fn () anyerror!void = null,
@@ -21,18 +33,19 @@ pub const Config = struct {
     render: ?fn () anyerror!void = null,
     shutdown: ?fn () anyerror!void = null,
 
+    // gfx: GraphicsConfig = .{},
     window: WindowConfig = .{},
 };
 
 fn init(comptime config: Config) !void {
     mem.init();
     window.init(config.window);
-    gctx = try GraphicsContext.init(mem.allocator);
+    gctx = try aya.GraphicsContext.init();
 }
 
 fn deinit() void {
     window.deinit();
-    gctx.deinit(mem.allocator);
+    gctx.deinit();
     mem.deinit(); // must be last so everyone else can deinit!
 }
 
@@ -43,7 +56,7 @@ pub fn run(comptime config: Config) !void {
 
     while (!pollEvents()) {
         if (config.update) |update| try update();
-        if (config.render) |render| try render();
+        if (config.render) |rend| try rend();
     }
     if (config.shutdown) |shutdown| try shutdown();
 

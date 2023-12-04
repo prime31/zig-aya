@@ -1,11 +1,12 @@
 const std = @import("std");
 const aya = @import("aya.zig");
-const wgpu = @import("wgpu");
+const wgpu = aya.wgpu;
 const c = wgpu.c;
 
 const pools = @import("resource_pools.zig");
 
 const ResourcePools = @import("resource_pools.zig").ResourcePools;
+const UniformBufferCache = @import("uniform_buffer_cache.zig").UniformBufferCache;
 const Instance = wgpu.Instance;
 
 pub const BufferHandle = pools.BufferHandle;
@@ -29,8 +30,9 @@ pub const GraphicsContext = struct {
     surface_config: wgpu.SurfaceConfiguration,
 
     pools: ResourcePools,
+    uniforms: UniformBufferCache,
 
-    pub fn init(allocator: std.mem.Allocator) !*GraphicsContext {
+    pub fn init() !*GraphicsContext {
         const instance = wgpu.createInstance();
         errdefer instance.release();
 
@@ -63,7 +65,7 @@ pub const GraphicsContext = struct {
 
         const win_size = aya.window.sizeInPixels();
 
-        // for now, dont use srgb
+        // for now, dont use srgb which is the preferred format
         // swapchain_format = surface.getPreferredFormat(adapter);
 
         const surface_config = wgpu.SurfaceConfiguration{
@@ -77,31 +79,34 @@ pub const GraphicsContext = struct {
         };
         surface.configure(&surface_config);
 
-        const gctx = try allocator.create(GraphicsContext);
+        const gctx = aya.mem.create(GraphicsContext);
         gctx.* = .{
             .instance = instance,
             .device = device,
             .queue = device.getQueue(),
             .surface = surface,
             .surface_config = surface_config,
-            .pools = ResourcePools.init(allocator),
+            .pools = ResourcePools.init(),
+            .uniforms = undefined,
         };
+        gctx.uniforms = UniformBufferCache.init(gctx);
         return gctx;
     }
 
-    pub fn deinit(self: *GraphicsContext, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *GraphicsContext) void {
         // Wait for the GPU to finish all encoded commands.
         while (self.stats.cpu_frame_number != self.stats.gpu_frame_number)
             _ = self.device.poll(true, null);
 
-        self.pools.deinit(allocator);
+        self.pools.deinit(aya.mem.allocator);
+        // self.uniforms.deinit();
 
         self.surface.release();
         self.queue.release();
         self.device.release();
         self.device.destroy();
 
-        allocator.destroy(self);
+        aya.mem.destroy(self);
     }
 
     pub fn resize(self: *GraphicsContext, width: i32, height: i32) void {
@@ -113,10 +118,40 @@ pub const GraphicsContext = struct {
     }
 
     pub fn submit(self: *GraphicsContext, commands: []const wgpu.CommandBuffer) void {
+        const stage_commands = stage_commands: {
+            const stage_encoder = self.device.createCommandEncoder(null);
+            defer stage_encoder.release();
+
+            const current = self.uniforms.stage.current;
+            std.debug.assert(self.uniforms.stage.buffers[current].slice != null);
+
+            self.uniforms.stage.buffers[current].slice = null;
+            self.uniforms.stage.buffers[current].buffer.unmap();
+
+            if (self.uniforms.offset > 0) {
+                stage_encoder.copyBufferToBuffer(
+                    self.uniforms.stage.buffers[current].buffer,
+                    0,
+                    self.lookupResource(self.uniforms.buffer).?,
+                    0,
+                    self.uniforms.offset,
+                );
+            }
+
+            break :stage_commands stage_encoder.finish(null);
+        };
+        defer stage_commands.release();
+
+        // TODO: We support up to 8 command buffers for now. Make it more robust.
+        var command_buffers = std.BoundedArray(wgpu.CommandBuffer, 8).init(0) catch unreachable;
+        command_buffers.append(stage_commands) catch unreachable;
+        command_buffers.appendSlice(commands) catch unreachable;
+
         onSubmittedWorkDone(self.queue, self, gpuWorkDone);
-        self.queue.submit(commands.len, commands.ptr);
+        self.queue.submit(command_buffers.slice().len, &command_buffers.buffer);
 
         self.stats.tick();
+        self.uniforms.nextStagingBuffer(self);
     }
 
     inline fn gpuWorkDone(self: *GraphicsContext, status: wgpu.QueueWorkDoneStatus) void {
@@ -177,8 +212,7 @@ pub const GraphicsContext = struct {
             .mapped_at_creation = true,
         });
 
-        var mapped_range = buffer.getMappedRange(0, size + size % 4);
-        var mapped_data = @as([*]T, @ptrCast(@alignCast(mapped_range)))[0..size];
+        var mapped_data = buffer.getMappedRange(T, 0, data.len).?;
         std.mem.copy(T, mapped_data, data[0..]);
         buffer.unmap();
 
@@ -187,6 +221,30 @@ pub const GraphicsContext = struct {
             .size = size,
             .usage = usage,
         });
+    }
+
+    pub fn createTextureFromFile(self: *GraphicsContext, file: []const u8) TextureHandle {
+        const image = aya.stb.Image.init(aya.mem.tmp_allocator, file) catch unreachable;
+
+        var desc = wgpu.TextureDescriptor{
+            .size = .{ .width = image.w, .height = image.h },
+            .usage = .{ .texture_binding = true, .copy_dst = true },
+            .format = swapchain_format,
+        };
+
+        const handle = self.pools.texture_pool.addResource(self.*, .{
+            .gpuobj = self.device.createTexture(&desc),
+            .usage = desc.usage,
+            .dimension = desc.dimension,
+            .size = desc.size,
+            .format = desc.format,
+            .mip_level_count = desc.mip_level_count,
+            .sample_count = desc.sample_count,
+        });
+
+        self.writeTexture(handle, u8, image.getImageData());
+
+        return handle;
     }
 
     pub fn createTexture(self: *GraphicsContext, width: u32, height: u32, format: wgpu.TextureFormat) TextureHandle {

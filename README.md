@@ -1,6 +1,4 @@
-# aya 2D Zig Framework
-
-`export NO_ENSURE_SUBMODULES=true` until Mach fixes it
+# aya Zig Game Framework
 
 Import aya via `const aya = @import("aya");` to gain access to the public interface.
 
@@ -71,73 +69,3 @@ _ = commands.spawnWithBundle("Name", VecBundle{
 });
 ```
 
-
-## TODO
-- Renderer: Pipeline.rs (in bevy_render) has some caching ideas
-- Renderer: make RenderDevice once we get an understanding of how rendering comes together
-- add more Window events
-
-
-### Renderer
-
-```zig
-type DrawMaterial<M> = (
-    SetItemPipeline,
-    SetMeshViewBindGroup<0>,
-    SetMaterialBindGroup<M, 1>,
-    SetMeshBindGroup<2>,
-    DrawMesh,
-);
-
-app
-    .add_render_command::<Transparent3d, DrawMaterial<M>>()
-    .add_render_command::<Opaque3d, DrawMaterial<M>>()
-    .add_render_command::<AlphaMask3d, DrawMaterial<M>>();
-
-
-pub struct TrackedRenderPass<'a> {
-    pass: RenderPass<'a>,
-    state: DrawState,
-}
-
-pub trait RenderCommand<P: PhaseItem> {
-    /// Specifies the general ECS data (e.g. resources) required by [`RenderCommand::render`].
-    /// All parameters have to be read only.
-    type Param: SystemParam + 'static;
-
-    /// Specifies the ECS data of the view entity required by [`RenderCommand::render`].
-    /// The view entity refers to the camera, or shadow-casting light, etc. from which the phase
-    /// item will be rendered from.
-    type ViewWorldQuery: ReadOnlyWorldQuery;
-
-    /// Specifies the ECS data of the item entity required by [`RenderCommand::render`].
-    /// The item is the entity that will be rendered for the corresponding view.
-    type ItemWorldQuery: ReadOnlyWorldQuery;
-
-    /// Renders a [`PhaseItem`] by recording commands (e.g. setting pipelines, binding bind groups,
-    /// issuing draw calls, etc.) via the [`TrackedRenderPass`].
-    fn render<'w>(
-        item: &P,
-        view: ROQueryItem<'w, Self::ViewWorldQuery>,
-        entity: ROQueryItem<'w, Self::ItemWorldQuery>,
-        param: SystemParamItem<'w, '_, Self::Param>,
-        pass: &mut TrackedRenderPass<'w>,
-    ) -> RenderCommandResult;
-}
-
-pub trait Draw<P: PhaseItem>: Send + Sync + 'static {
-    /// Prepares the draw function to be used. This is called once and only once before the phase
-    /// begins. There may be zero or more [`draw`](Draw::draw) calls following a call to this function.
-    /// Implementing this is optional.
-    fn prepare(&mut self, world: &'_ World) {}
-
-    /// Draws a [`PhaseItem`] by issuing zero or more `draw` calls via the [`TrackedRenderPass`].
-    fn draw<'w>(
-        &mut self,
-        world: &'w World,
-        pass: &mut TrackedRenderPass<'w>,
-        view: Entity,
-        item: &P,
-    );
-}
-```

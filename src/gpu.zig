@@ -1,5 +1,4 @@
 const std = @import("std");
-const sdl = @import("sdl");
 const wgpu = @import("wgpu");
 
 const pools = @import("graphics_context.zig");
@@ -60,8 +59,8 @@ pub fn vertexAttributesForType(comptime T: type) VertexAttributesReturnType(T) {
                     switch (type_info.bits) {
                         32 => {
                             // u32 is color
+                            vert_attributes[attr_index] = .{ .format = .unorm8x4, .offset = @offsetOf(T, field.name), .shader_location = @intCast(attr_index) };
                             attr_index += 1;
-                            @panic("not finished");
                         },
                         else => unreachable,
                     }
@@ -76,9 +75,17 @@ pub fn vertexAttributesForType(comptime T: type) VertexAttributesReturnType(T) {
                 switch (@typeInfo(field_type)) {
                     .Float => {
                         switch (type_info.fields.len) {
-                            2, 3, 4 => {
-                                attr_index.* += 1;
-                                @panic("not finished");
+                            1, 2, 3, 4 => |field_count| {
+                                const format: wgpu.VertexFormat = switch (field_count) {
+                                    1 => .float32,
+                                    2 => .float32x2,
+                                    3 => .float32x3,
+                                    4 => .float32x4,
+                                    else => @panic("invalid f32 array size"),
+                                };
+
+                                vert_attributes[attr_index] = .{ .format = format, .offset = @offsetOf(T, field.name), .shader_location = @intCast(attr_index) };
+                                attr_index += 1;
                             },
                             else => unreachable,
                         }
