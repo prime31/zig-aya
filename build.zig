@@ -5,11 +5,14 @@ const sdl_build = @import("libs/sdl/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
+const zaudio_build = @import("libs/zaudio/build.zig");
+const fontstash_build = @import("libs/fontstash/build.zig");
+const watcher_build = @import("libs/filewatcher/build.zig");
 
 const Options = struct {
     build_options: *std.build.Step.Options,
     enable_imgui: bool,
-    include_flecs_explorer: bool,
+    enable_hot_reload: bool,
 };
 
 const install_options: enum { all, only_current } = .only_current;
@@ -21,11 +24,11 @@ pub fn build(b: *std.Build) void {
     const options = Options{
         .build_options = b.addOptions(),
         .enable_imgui = b.option(bool, "enable_imgui", "Include/exclude Dear ImGui from the binary") orelse true,
-        .include_flecs_explorer = b.option(bool, "include_flecs_explorer", "Include/exclude Flecs REST, HTTP, STATS and MONITOR modules") orelse true,
+        .enable_hot_reload = b.option(bool, "include_flecs_explorer", "Include/exclude Filewatcher and hot reload") orelse true,
     };
 
     options.build_options.addOption(bool, "enable_imgui", options.enable_imgui);
-    options.build_options.addOption(bool, "include_flecs_explorer", options.include_flecs_explorer);
+    options.build_options.addOption(bool, "hot_reload", options.enable_hot_reload);
 
     for (getAllExamples(b, "examples")) |p| {
         addExecutable(b, target, optimize, options, p[0], p[1]);
@@ -79,6 +82,16 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zmesh_module = zig_gamedev_build.getMeshModule();
     const zpool_module = zig_gamedev_build.getPoolModule(b);
 
+    const zaudio_package = zaudio_build.package(b, target, optimize, .{});
+    zaudio_package.link(exe);
+
+    fontstash_build.linkArtifact(exe);
+    const fontstash_module = fontstash_build.getModule(b);
+
+    if (options.enable_hot_reload)
+        watcher_build.linkArtifact(exe);
+    const watcher_module = watcher_build.getModule(b, options.enable_hot_reload);
+
     const aya_module = b.createModule(.{
         .source_file = .{ .path = "src/aya.zig" },
         .dependencies = &.{
@@ -89,6 +102,9 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "zpool", .module = zpool_module },
+            .{ .name = "zaudio", .module = zaudio_package.zaudio },
+            .{ .name = "fontstash", .module = fontstash_module },
+            .{ .name = "watcher", .module = watcher_module },
             .{
                 .name = "build_options",
                 .module = b.createModule(.{

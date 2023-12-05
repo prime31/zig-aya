@@ -1,12 +1,12 @@
-const imgui = @import("dear_imgui.zig");
+const std = @import("std");
 const sdl = @import("sdl");
+const imgui = @import("dear_imgui.zig");
+const icons = @import("imgui.zig").icons;
 const imgui_enabled = @import("imgui.zig").enabled;
-
-// all references to SDL_Window, SDL_Event and SDL_Renderer were changed to anyopaque
 
 // ImGui lifecycle helpers, wrapping ImGui and SDL3 Impl
 pub fn init(
-    window: *const anyopaque, // SDL_Window
+    window: *const sdl.SDL_Window, // SDL_Window
     wgpu_device: *const anyopaque, // wgpu.Device
     wgpu_swap_chain_format: u32, // wgpu.TextureFormat
     depth_format: u32, // wgpu.TextureFormat
@@ -14,11 +14,27 @@ pub fn init(
     if (!imgui_enabled) return;
 
     _ = imgui.igCreateContext(null);
-    _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO()[0].Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
+    _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO().Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
-    var io = imgui.igGetIO().*;
+    var io = imgui.igGetIO();
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= imgui.ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= imgui.ImGuiConfigFlags_ViewportsEnable;
+
+    // optionally add FontAwesome
+    if (true) {
+        var icons_config = imgui.ImFontConfig_ImFontConfig();
+        icons_config[0].MergeMode = true;
+        icons_config[0].PixelSnapH = true;
+        icons_config[0].FontDataOwnedByAtlas = false;
+        icons_config[0].GlyphOffset = .{ .x = 0, .y = 2 };
+
+        const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ icons.icon_range_min, icons.icon_range_max, 0 };
+        var data = @embedFile("assets/" ++ icons.font_icon_filename_fas);
+        _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, @constCast(data.ptr), data.len, 14, icons_config, &font_awesome_range);
+        _ = imgui.ImFontAtlas_Build(io.Fonts);
+    }
 
     if (!ImGui_ImplSDL3_InitForOther(window)) unreachable;
     if (!ImGui_ImplWGPU_Init(wgpu_device, 1, wgpu_swap_chain_format, depth_format)) unreachable;

@@ -19,12 +19,12 @@ const Vertex = extern struct {
 
 var state: struct {
     batcher: Batcher = undefined,
-    texture: aya.TextureHandle,
-    check_texture: aya.TextureHandle,
-    tex_view: aya.TextureViewHandle,
-    check_tex_view: aya.TextureViewHandle,
-    sampler: aya.SamplerHandle,
-    pipeline: aya.RenderPipelineHandle,
+    texture: aya.render.TextureHandle,
+    check_texture: aya.render.TextureHandle,
+    tex_view: aya.render.TextureViewHandle,
+    check_tex_view: aya.render.TextureViewHandle,
+    sampler: aya.render.SamplerHandle,
+    pipeline: aya.render.RenderPipelineHandle,
 } = undefined;
 
 pub fn main() !void {

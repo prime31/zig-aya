@@ -30,8 +30,8 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
     return struct {
         const Self = @This();
 
-        ibuff: aya.BufferHandle,
-        vbuff: aya.BufferHandle,
+        ibuff: aya.render.BufferHandle,
+        vbuff: aya.render.BufferHandle,
         buffer_offset: u32 = 0,
         verts: []VertT,
         element_count: u32,

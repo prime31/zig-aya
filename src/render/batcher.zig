@@ -21,7 +21,7 @@ pub const Batcher = struct {
     pass: ?wgpu.RenderPassEncoder = null,
 
     const DrawCall = struct {
-        image: aya.TextureHandle,
+        image: aya.render.TextureHandle,
         quad_count: i32,
     };
 
@@ -119,7 +119,7 @@ pub const Batcher = struct {
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
 
             self.buffer_offset += draw_call.quad_count * 4;
-            draw_call.image = aya.TextureHandle.nil;
+            draw_call.image = aya.render.TextureHandle.nil;
             base_element += draw_call.quad_count * 6;
         }
 
@@ -128,7 +128,7 @@ pub const Batcher = struct {
     }
 
     /// ensures the vert buffer has enough space and manages the draw call command buffer when textures change
-    fn ensureCapacity(self: *Batcher, texture: aya.TextureHandle) !void {
+    fn ensureCapacity(self: *Batcher, texture: aya.render.TextureHandle) !void {
         // if we run out of buffer we have to flush the batch and possibly discard and resize the whole buffer
         if (self.vert_index + 4 > self.mesh.verts.len - 1) {
             self.flush();
@@ -145,7 +145,7 @@ pub const Batcher = struct {
         }
     }
 
-    pub fn drawTex(self: *Batcher, pos: Vec2, col: u32, texture: aya.TextureHandle) void {
+    pub fn drawTex(self: *Batcher, pos: Vec2, col: u32, texture: aya.render.TextureHandle) void {
         self.ensureCapacity(texture) catch |err| {
             std.debug.print("Batcher.draw failed to append a draw call with error: {}\n", .{err});
             return;

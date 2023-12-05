@@ -348,8 +348,8 @@ pub const struct_ImVector_ImDrawIdx = extern struct {
 };
 pub const ImVector_ImDrawIdx = struct_ImVector_ImDrawIdx;
 pub const struct_ImVec2 = extern struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0,
+    y: f32 = 0,
 };
 pub const ImVec2 = struct_ImVec2;
 pub const ImU32 = c_uint;
@@ -3134,7 +3134,7 @@ pub extern fn igCreateContext(shared_font_atlas: [*c]ImFontAtlas) [*c]ImGuiConte
 pub extern fn igDestroyContext(ctx: [*c]ImGuiContext) void;
 pub extern fn igGetCurrentContext() [*c]ImGuiContext;
 pub extern fn igSetCurrentContext(ctx: [*c]ImGuiContext) void;
-pub extern fn igGetIO() [*c]ImGuiIO;
+pub extern fn igGetIO() *ImGuiIO;
 pub extern fn igGetStyle() [*c]ImGuiStyle;
 pub extern fn igNewFrame() void;
 pub extern fn igEndFrame() void;
