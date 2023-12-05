@@ -3,6 +3,7 @@ const std = @import("std");
 const wgpu_build = @import("libs/wgpu/build.zig");
 const sdl_build = @import("libs/sdl/build.zig");
 const stb_build = @import("libs/stb/build.zig");
+const imgui_build = @import("libs/imgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
 
 const Options = struct {
@@ -69,6 +70,10 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     stb_build.linkArtifact(exe);
     const stb_module = stb_build.getModule(b);
 
+    if (options.enable_imgui)
+        imgui_build.linkArtifact(b, exe, target, optimize, thisDir() ++ "/libs/sdl");
+    const imgui_module = imgui_build.getModule(b, sdl_module, options.enable_imgui);
+
     zig_gamedev_build.linkArtifact(b, exe, target, optimize);
     const zmath_module = zig_gamedev_build.getMathModule(b);
     const zmesh_module = zig_gamedev_build.getMeshModule();
@@ -79,6 +84,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
         .dependencies = &.{
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
+            .{ .name = "imgui", .module = imgui_module },
             .{ .name = "wgpu", .module = wgpu_module },
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
@@ -96,6 +102,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     exe.addModule("wgpu", wgpu_module);
     exe.addModule("sdl", sdl_module);
     exe.addModule("stb", stb_module);
+    exe.addModule("imgui", imgui_module);
     exe.addModule("zmath", zmath_module);
     exe.addModule("zmesh", zmesh_module);
 }
@@ -136,4 +143,8 @@ fn getAllExamples(b: *std.build.Builder, root_directory: []const u8) [][2][]cons
     recursor(b.allocator, root_directory, &list);
 
     return list.toOwnedSlice() catch unreachable;
+}
+
+inline fn thisDir() []const u8 {
+    return comptime std.fs.path.dirname(@src().file) orelse ".";
 }

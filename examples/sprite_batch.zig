@@ -121,6 +121,9 @@ fn render() !void {
     pass.end();
     pass.release();
 
+    // TODO: move this in aya
+    aya.ig.sdl.draw(aya.gctx, command_encoder, texture_view);
+
     var command_buffer = command_encoder.finish(&.{ .label = "Command buffer" });
     aya.gctx.submit(&.{command_buffer});
     aya.gctx.surface.present();

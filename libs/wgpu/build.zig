@@ -1,7 +1,8 @@
 const std = @import("std");
 
 pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
-    exe.addIncludePath(.{ .path = thisDir() ++ "/../ffi" });
+    // Dear ImGui will need this
+    exe.addIncludePath(.{ .path = thisDir() ++ "/headers/webgpu" });
 
     if (@import("builtin").os.tag == .macos) {
         exe.addObjectFile(.{ .path = thisDir() ++ "/libs/macos/libwgpu_native.a" });

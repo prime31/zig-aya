@@ -548,6 +548,45 @@ pub const GraphicsContext = struct {
         });
     }
 
+    /// Helper function for creating render passes. Supports: One color attachment and optional depth attachment.
+    pub fn beginRenderPassSimple(
+        self: *GraphicsContext,
+        encoder: wgpu.CommandEncoder,
+        load_op: wgpu.LoadOp,
+        color_texv: wgpu.TextureView,
+        clear_color: ?wgpu.Color,
+        depth_texv: ?wgpu.TextureView,
+        clear_depth: ?f32,
+    ) wgpu.RenderPassEncoder {
+        _ = self;
+        if (depth_texv == null) {
+            std.debug.assert(clear_depth == null);
+        }
+        const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
+            .view = color_texv,
+            .load_op = load_op,
+            .store_op = .store,
+            .clear_value = if (clear_color) |cc| cc else .{ .r = 0, .g = 0, .b = 0, .a = 0 },
+        }};
+        if (depth_texv) |dtexv| {
+            const depth_attachment = wgpu.RenderPassDepthStencilAttachment{
+                .view = dtexv,
+                .depth_load_op = load_op,
+                .depth_store_op = .store,
+                .depth_clear_value = if (clear_depth) |cd| cd else 0.0,
+            };
+            return encoder.beginRenderPass(&.{
+                .color_attachment_count = color_attachments.len,
+                .color_attachments = &color_attachments,
+                .depth_stencil_attachment = &depth_attachment,
+            });
+        }
+        return encoder.beginRenderPass(&.{
+            .color_attachment_count = color_attachments.len,
+            .color_attachments = &color_attachments,
+        });
+    }
+
     // Resource management
     pub fn lookupResource(self: GraphicsContext, handle: anytype) ?pools.HandleToGpuResourceType(@TypeOf(handle)) {
         if (self.isResourceValid(handle)) {
