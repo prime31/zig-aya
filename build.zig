@@ -5,7 +5,6 @@ const sdl_build = @import("libs/sdl/build.zig");
 const stb_build = @import("libs/stb/build.zig");
 const imgui_build = @import("libs/imgui/build.zig");
 const zig_gamedev_build = @import("libs/zig-gamedev/build.zig");
-const zaudio_build = @import("libs/zaudio/build.zig");
 const fontstash_build = @import("libs/fontstash/build.zig");
 const watcher_build = @import("libs/filewatcher/build.zig");
 
@@ -81,9 +80,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const zmath_module = zig_gamedev_build.getMathModule(b);
     const zmesh_module = zig_gamedev_build.getMeshModule();
     const zpool_module = zig_gamedev_build.getPoolModule(b);
-
-    const zaudio_package = zaudio_build.package(b, target, optimize, .{});
-    zaudio_package.link(exe);
+    const zaudio_package = zig_gamedev_build.getAudioModule();
 
     fontstash_build.linkArtifact(exe);
     const fontstash_module = fontstash_build.getModule(b);
@@ -102,7 +99,7 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{ .name = "zmath", .module = zmath_module },
             .{ .name = "zmesh", .module = zmesh_module },
             .{ .name = "zpool", .module = zpool_module },
-            .{ .name = "zaudio", .module = zaudio_package.zaudio },
+            .{ .name = "zaudio", .module = zaudio_package },
             .{ .name = "fontstash", .module = fontstash_module },
             .{ .name = "watcher", .module = watcher_module },
             .{
