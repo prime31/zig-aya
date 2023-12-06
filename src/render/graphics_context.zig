@@ -4,6 +4,7 @@ const wgpu = aya.wgpu;
 
 const pools = @import("resource_pools.zig");
 
+const RenderContext = @import("render_context.zig").RenderContext;
 const ResourcePools = @import("resource_pools.zig").ResourcePools;
 const UniformBufferCache = @import("uniform_buffer_cache.zig").UniformBufferCache;
 const Instance = wgpu.Instance;
@@ -30,6 +31,7 @@ pub const GraphicsContext = struct {
     surface: wgpu.Surface,
     surface_config: wgpu.SurfaceConfiguration,
 
+    render_context: RenderContext,
     pools: ResourcePools,
     uniforms: UniformBufferCache,
 
@@ -87,6 +89,7 @@ pub const GraphicsContext = struct {
             .queue = device.getQueue(),
             .surface = surface,
             .surface_config = surface_config,
+            .render_context = RenderContext.init(),
             .pools = ResourcePools.init(),
             .uniforms = undefined,
         };

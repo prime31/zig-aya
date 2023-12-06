@@ -41,7 +41,7 @@ const internal = @import("internal.zig");
 pub const Config = struct {
     init: ?fn () anyerror!void = null,
     update: ?fn () anyerror!void = null,
-    render: ?fn () anyerror!void = null,
+    render: ?fn (*render.RenderContext) anyerror!void = null,
     shutdown: ?fn () anyerror!void = null,
 
     window: WindowConfig = .{},
@@ -81,8 +81,10 @@ pub fn run(comptime config: Config) !void {
         time.tick();
 
         if (config.update) |update| try update();
-        if (config.render) |rend| try rend();
-        // ig.sdl.draw(gctx); // TODO: handle setting up the command encode and swapchain before render
+
+        prepareRenderContext();
+        if (config.render) |rend| try rend(&gctx.render_context);
+        finishRenderContext();
 
         // these rely on pollEvents so clear them before starting the loop
         internal.event_writers.newFrame();
@@ -94,6 +96,41 @@ pub fn run(comptime config: Config) !void {
 
     ig.sdl.shutdown();
     deinit();
+}
+
+/// kicks off the frames rendering. Fetches the swapchain texture and prepares the RenderContext
+fn prepareRenderContext() void {
+    // get the current texture view for the swap chain
+    var surface_texture: wgpu.SurfaceTexture = undefined;
+    gctx.surface.getCurrentTexture(&surface_texture);
+    gctx.render_context.surface_texture = surface_texture;
+
+    switch (surface_texture.status) {
+        .success => {},
+        .timeout, .outdated, .lost => {
+            const size = window.sizeInPixels();
+            gctx.resize(size.w, size.h);
+            return;
+        },
+        .out_of_memory, .device_lost => {
+            std.debug.print("shits gone down: {}\n", .{surface_texture.status});
+            @panic("unhandled surface texture status!");
+        },
+    }
+}
+
+/// completes rendering: finishes the RenderContext, submits the CommandBuffers, and presents the surface
+fn finishRenderContext() void {
+    if (ig.enabled) {
+        var command_encoder = gctx.render_context.commandEncoder();
+        ig.sdl.draw(gctx, command_encoder, gctx.render_context.swapchainTextureView());
+    }
+
+    gctx.render_context.finish();
+    gctx.submit(gctx.render_context.command_buffers.constSlice());
+    gctx.surface.present();
+
+    gctx.render_context.releaseResources();
 }
 
 pub fn addEvent(comptime T: type) void {

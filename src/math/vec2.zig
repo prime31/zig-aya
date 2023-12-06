@@ -9,6 +9,16 @@ pub const Vec2 = extern struct {
         return .{ .x = x, .y = y };
     }
 
+    pub fn format(self: Vec2, comptime fmt: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+        if (fmt.len == 0 or comptime std.mem.eql(u8, fmt, "p")) {
+            return std.fmt.format(writer, "({d:.2},{d:.2})", .{ self.x, self.y });
+        } else if (comptime std.mem.eql(u8, fmt, "d")) {
+            return std.fmt.format(writer, "{d:.2}x{d:.2}", .{ self.x, self.y });
+        } else {
+            @compileError("unknown format character: '" ++ fmt ++ "'");
+        }
+    }
+
     fn getField(vec: Vec2, comptime index: comptime_int) f32 {
         switch (index) {
             0 => return vec.x,

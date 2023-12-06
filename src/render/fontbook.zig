@@ -146,8 +146,8 @@ pub const FontBook = struct {
     fn renderCreate(ctx: ?*anyopaque, width: c_int, height: c_int) callconv(.C) c_int {
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
 
-        // TODO: check width/height and recreate if they change.  `and (self.texture.?.width != @as(f32, @floatFromInt(width)) or self.texture.?.height != @as(f32, @floatFromInt(height)))`
-        if (self.texture.id != aya.render.TextureHandle.nil.id) {
+        const tex_info = aya.gctx.lookupResourceInfo(self.texture);
+        if (self.texture.id != aya.render.TextureHandle.nil.id and (tex_info.?.size.width != @as(u32, @intCast(width)) or tex_info.?.size.height != @as(u32, @intCast(height)))) {
             aya.gctx.releaseResource(self.texture);
             self.texture = aya.render.TextureHandle.nil;
         }
@@ -166,32 +166,43 @@ pub const FontBook = struct {
         return renderCreate(ctx, width, height);
     }
 
-    fn renderUpdate(ctx: ?*anyopaque, _: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
-        // TODO: only update the rect that changed. see Beyleys ztyping for zig FontStash
+    fn renderUpdate(ctx: ?*anyopaque, rect: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
         if (!self.tex_dirty or self.last_update == aya.time.frames()) {
             self.tex_dirty = true;
-            std.debug.print("tex dirty \n", .{});
             return 0;
         }
 
-        const tex_area = @as(usize, @intCast(self.width * self.height));
-        var pixels = aya.mem.tmp_allocator.alloc(u8, tex_area * 4) catch |err| {
-            std.debug.print("failed to allocate texture data: {}\n", .{err});
-            return 0;
-        };
-        const source = data[0..tex_area];
+        const rect_x: usize = @intCast(rect[0]);
+        const rect_y: usize = @intCast(rect[1]);
+        const rect_w: usize = @intCast(rect[2]);
+        const rect_h: usize = @intCast(rect[3]);
 
-        for (source, 0..) |alpha, i| {
-            pixels[i * 4 + 0] = 255;
-            pixels[i * 4 + 1] = 255;
-            pixels[i * 4 + 2] = 255;
-            pixels[i * 4 + 3] = alpha;
+        var pixel_rect = aya.mem.tmp_allocator.alloc(u8, @intCast(rect_w * rect_h * 4)) catch unreachable;
+        const tex_width = aya.gctx.lookupResourceInfo(self.texture).?.size.width;
+
+        for (0..rect_h) |y| {
+            for (0..rect_w) |x| {
+                const i = y * rect_w + x;
+                pixel_rect[i * 4 + 0] = 255;
+                pixel_rect[i * 4 + 1] = 255;
+                pixel_rect[i * 4 + 2] = 255;
+                pixel_rect[i * 4 + 3] = data[(rect_y + y) * tex_width + x + rect_x];
+            }
         }
 
-        std.debug.print("write size {} \n", .{source.len});
+        const texture_info = aya.gctx.lookupResourceInfo(self.texture).?;
+        aya.gctx.queue.writeTexture(
+            &.{ .texture = texture_info.gpuobj.?, .origin = .{ .x = @intCast(rect_x), .y = @intCast(rect_y) } },
+            @as(*const anyopaque, @ptrCast(pixel_rect.ptr)),
+            @as(usize, @intCast(pixel_rect.len)) * @sizeOf(u8),
+            &.{
+                .bytes_per_row = @intCast(rect_w * 4),
+                .rows_per_image = texture_info.size.height,
+            },
+            &.{ .width = @intCast(rect_w), .height = @intCast(rect_h) },
+        );
 
-        aya.gctx.writeTexture(self.texture, u8, pixels);
         self.tex_dirty = false;
         self.last_update = aya.time.frames();
         return 1;

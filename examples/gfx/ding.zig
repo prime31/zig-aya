@@ -75,38 +75,15 @@ fn shutdown() !void {
     state.fontbook.deinit();
 }
 
-fn render() !void {
+fn render(ctx: *aya.render.RenderContext) !void {
     const pip = aya.gctx.lookupResource(state.pipeline) orelse return;
 
-    // get the current texture view for the swap chain
-    var surface_texture: wgpu.SurfaceTexture = undefined;
-    aya.gctx.surface.getCurrentTexture(&surface_texture);
-    defer if (surface_texture.texture) |t| t.release();
-
-    switch (surface_texture.status) {
-        .success => {},
-        .timeout, .outdated, .lost => {
-            const size = aya.window.sizeInPixels();
-            aya.gctx.resize(size.w, size.h);
-            return;
-        },
-        .out_of_memory, .device_lost => {
-            std.debug.print("shits gone down: {}\n", .{surface_texture.status});
-            @panic("unhandled surface texture status!");
-        },
-    }
-
-    const texture_view = surface_texture.texture.?.createView(null);
-    defer texture_view.release();
-
-    var command_encoder = aya.gctx.device.createCommandEncoder(&.{ .label = "Ding Command Encoder" });
-
     // begin the render pass
-    var pass = command_encoder.beginRenderPass(&.{
+    var pass = ctx.beginRenderPass(&.{
         .label = "Ding Render Pass Encoder",
         .color_attachment_count = 1,
         .color_attachments = &.{
-            .view = texture_view,
+            .view = ctx.swapchainTextureView(),
             .load_op = .clear,
             .store_op = .store,
             .clear_value = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 1.0 },
@@ -116,7 +93,7 @@ fn render() !void {
     pass.setPipeline(pip);
 
     state.batcher.begin(pass);
-    text("SSSSSSSSSSSSSSSSSS", 10, 50);
+    text("Fuck off you dumbass! i cant believe you did that in Batcher", 10, 50);
     state.batcher.drawTex(.{ .x = 200, .y = 200 }, Color.white.value, state.fontbook.texture);
     // state.batcher.drawTex(.{ .x = 50 }, Color.blue.value, state.check_texture);
     // state.batcher.drawTex(.{}, Color.red.value, state.texture);
@@ -128,18 +105,14 @@ fn render() !void {
 
     pass.end();
     pass.release();
-
-    // TODO: move this in aya
-    aya.ig.sdl.draw(aya.gctx, command_encoder, texture_view);
-
-    var command_buffer = command_encoder.finish(&.{ .label = "Ding Command buffer" });
-    aya.gctx.submit(&.{command_buffer});
-    aya.gctx.surface.present();
 }
 
 var quad = Quad.init(0, 0, 1, 1, 1, 1);
 
 fn text(str: []const u8, x: f32, y: f32) void {
+    const img_info = aya.gctx.pools.texture_pool.getInfo(state.fontbook.texture);
+    quad.setFill(@floatFromInt(img_info.size.width), @floatFromInt(img_info.size.height));
+
     // TODO: dont hardcode scale
     var matrix = Mat32.initTransform(.{ .x = x, .y = y, .sx = 2, .sy = 2 });
 
@@ -155,11 +128,6 @@ fn text(str: []const u8, x: f32, y: f32) void {
         quad.uvs[1] = .{ .x = fons_quad.s1, .y = fons_quad.t0 };
         quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
         quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
-
-        quad.uvs[0] = .{ .x = 0, .y = 0 };
-        quad.uvs[1] = .{ .x = 1, .y = 0 };
-        quad.uvs[2] = .{ .x = 1, .y = 1 };
-        quad.uvs[3] = .{ .x = 0, .y = 1 };
 
         state.batcher.draw(state.fontbook.texture, quad, matrix, Color{ .value = iter.color });
     }

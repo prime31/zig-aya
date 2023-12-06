@@ -190,10 +190,16 @@ pub const Batcher = struct {
         };
 
         // copy the quad positions, uvs and color into vertex array transforming them with the matrix as we do it
-        mat.transformQuad(self.mesh.verts[self.vert_index .. self.vert_index + 4], quad, color);
+        var verts = self.mesh.verts[self.vert_index .. self.vert_index + 4];
+        mat.transformQuad(verts, quad, color);
 
         self.draw_calls.items[self.draw_calls.items.len - 1].quad_count += 1;
         self.quad_count += 1;
         self.vert_index += 4;
+
+        // TODO: lol
+        const win_size = aya.window.sizeInPixels();
+        var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
+        proj_mat.transformVertexSlice(verts);
     }
 };
