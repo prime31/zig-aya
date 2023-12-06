@@ -8,7 +8,7 @@ pub const FontBook = struct {
     pub const Quad = fons.Quad;
 
     stash: *fons.Context,
-    texture: ?aya.render.Texture,
+    texture: aya.render.TextureHandle,
     width: i32 = 0,
     height: i32 = 0,
     tex_dirty: bool = false,
@@ -16,7 +16,7 @@ pub const FontBook = struct {
 
     pub const Align = fons.Align;
 
-    pub fn init(width: i32, height: i32, filter: wgpu.FilterMode) *FontBook {
+    pub fn init(width: i32, height: i32) *FontBook {
         var book = aya.mem.create(FontBook);
 
         var params = fons.Params{
@@ -29,8 +29,7 @@ pub const FontBook = struct {
             .renderUpdate = renderUpdate,
         };
 
-        book.texture = null;
-        book.tex_filter = filter;
+        book.texture = aya.render.TextureHandle.nil;
         book.width = width;
         book.height = height;
         book.stash = fons.Context.init(&params) catch unreachable;
@@ -42,7 +41,9 @@ pub const FontBook = struct {
 
     pub fn deinit(self: *FontBook) void {
         self.stash.deinit();
-        if (self.texture != null) self.texture.?.deinit();
+        if (self.texture.id != aya.render.TextureHandle.nil.id) {
+            aya.gctx.releaseResource(self.texture);
+        }
         aya.mem.destroy(self);
     }
 
@@ -145,13 +146,15 @@ pub const FontBook = struct {
     fn renderCreate(ctx: ?*anyopaque, width: c_int, height: c_int) callconv(.C) c_int {
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
 
-        if (self.texture != null and (self.texture.?.width != @as(f32, @floatFromInt(width)) or self.texture.?.height != @as(f32, @floatFromInt(height)))) {
-            self.texture.?.deinit();
-            self.texture = null;
+        // TODO: check width/height and recreate if they change.  `and (self.texture.?.width != @as(f32, @floatFromInt(width)) or self.texture.?.height != @as(f32, @floatFromInt(height)))`
+        if (self.texture.id != aya.render.TextureHandle.nil.id) {
+            aya.gctx.releaseResource(self.texture);
+            self.texture = aya.render.TextureHandle.nil;
         }
 
-        if (self.texture == null)
-            self.texture = aya.render.Texture.initDynamic(width, height, self.tex_filter, .clamp);
+        if (self.texture.id == aya.render.TextureHandle.nil.id) {
+            self.texture = aya.gctx.createTexture(@intCast(width), @intCast(height), aya.render.GraphicsContext.swapchain_format);
+        }
 
         self.width = width;
         self.height = height;
@@ -164,10 +167,11 @@ pub const FontBook = struct {
     }
 
     fn renderUpdate(ctx: ?*anyopaque, _: [*c]c_int, data: [*c]const u8) callconv(.C) c_int {
-        // TODO: only update the rect that changed
+        // TODO: only update the rect that changed. see Beyleys ztyping for zig FontStash
         var self = @as(*FontBook, @ptrCast(@alignCast(ctx)));
         if (!self.tex_dirty or self.last_update == aya.time.frames()) {
             self.tex_dirty = true;
+            std.debug.print("tex dirty \n", .{});
             return 0;
         }
 
@@ -185,7 +189,9 @@ pub const FontBook = struct {
             pixels[i * 4 + 3] = alpha;
         }
 
-        self.texture.?.setData(u8, pixels);
+        std.debug.print("write size {} \n", .{source.len});
+
+        aya.gctx.writeTexture(self.texture, u8, pixels);
         self.tex_dirty = false;
         self.last_update = aya.time.frames();
         return 1;

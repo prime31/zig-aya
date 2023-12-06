@@ -183,7 +183,7 @@ pub const Batcher = struct {
         proj_mat.transformVertexSlice(verts);
     }
 
-    pub fn draw(self: *Batcher, texture: aya.TextureHandle, quad: Quad, mat: Mat32, color: Color) void {
+    pub fn draw(self: *Batcher, texture: aya.render.TextureHandle, quad: Quad, mat: Mat32, color: Color) void {
         self.ensureCapacity(texture) catch |err| {
             std.debug.print("Batcher.draw failed to append a draw call with error: {}\n", .{err});
             return;
