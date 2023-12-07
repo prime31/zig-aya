@@ -2105,8 +2105,17 @@ pub const RenderPassEncoder = *opaque {
     }
     extern fn wgpuRenderPassEncoderPushDebugGroup(renderPassEncoder: RenderPassEncoder, groupLabel: [*c]const u8) void;
 
-    pub inline fn setBindGroup(self: *Self, group_index: u32, group: BindGroup, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) void {
+    pub inline fn setBindGroupWgpu(self: *Self, group_index: u32, group: BindGroup, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) void {
         return wgpuRenderPassEncoderSetBindGroup(self, group_index, group, dynamic_offset_count, dynamic_offsets);
+    }
+    pub inline fn setBindGroup(render_pass_encoder: RenderPassEncoder, group_index: u32, group: BindGroup, dynamic_offsets: ?[]const u32) void {
+        wgpuRenderPassEncoderSetBindGroup(
+            render_pass_encoder,
+            group_index,
+            group,
+            if (dynamic_offsets) |dynoff| @as(u32, @intCast(dynoff.len)) else 0,
+            if (dynamic_offsets) |dynoff| dynoff.ptr else null,
+        );
     }
     extern fn wgpuRenderPassEncoderSetBindGroup(renderPassEncoder: RenderPassEncoder, groupIndex: u32, group: BindGroup, dynamicOffsetCount: usize, dynamicOffsets: [*c]const u32) void;
 

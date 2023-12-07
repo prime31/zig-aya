@@ -114,8 +114,9 @@ pub const Batcher = struct {
             // defer aya.gctx.releaseResource(bgg); // TODO: dont leak bind groups
 
             const bg = aya.gctx.lookupResource(bind_group) orelse return;
+            aya.gctx.releaseResourceDelayed(bind_group);
 
-            pass.setBindGroup(0, bg, 0, null);
+            pass.setBindGroup(0, bg, null);
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
 
             self.buffer_offset += draw_call.quad_count * 4;
@@ -178,9 +179,9 @@ pub const Batcher = struct {
         self.vert_index += 4;
 
         // TODO: lol
-        const win_size = aya.window.sizeInPixels();
-        var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
-        proj_mat.transformVertexSlice(verts);
+        // const win_size = aya.window.sizeInPixels();
+        // var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
+        // proj_mat.transformVertexSlice(verts);
     }
 
     pub fn draw(self: *Batcher, texture: aya.render.TextureHandle, quad: Quad, mat: Mat32, color: Color) void {
@@ -198,8 +199,8 @@ pub const Batcher = struct {
         self.vert_index += 4;
 
         // TODO: lol
-        const win_size = aya.window.sizeInPixels();
-        var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
-        proj_mat.transformVertexSlice(verts);
+        // const win_size = aya.window.sizeInPixels();
+        // var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
+        // proj_mat.transformVertexSlice(verts);
     }
 };

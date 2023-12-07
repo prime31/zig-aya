@@ -4,6 +4,7 @@ const wgpu = aya.wgpu;
 
 const pools = @import("resource_pools.zig");
 
+const DeletionQueue = @import("deletion_queue.zig").DeletionQueue;
 const ResourcePools = @import("resource_pools.zig").ResourcePools;
 const UniformBufferCache = @import("uniform_buffer_cache.zig").UniformBufferCache;
 const Instance = wgpu.Instance;
@@ -31,6 +32,7 @@ pub const GraphicsContext = struct {
     surface_config: wgpu.SurfaceConfiguration,
 
     pools: ResourcePools,
+    deletion_queue: DeletionQueue,
     uniforms: UniformBufferCache,
 
     pub fn init() !*GraphicsContext {
@@ -88,6 +90,7 @@ pub const GraphicsContext = struct {
             .surface = surface,
             .surface_config = surface_config,
             .pools = ResourcePools.init(),
+            .deletion_queue = DeletionQueue.init(),
             .uniforms = undefined,
         };
         gctx.uniforms = UniformBufferCache.init(gctx);
@@ -99,6 +102,7 @@ pub const GraphicsContext = struct {
         while (self.cpu_frame_number != self.gpu_frame_number)
             _ = self.device.poll(true, null);
 
+        self.deletion_queue.deinit();
         self.pools.deinit(aya.mem.allocator);
         self.uniforms.deinit();
 
@@ -153,6 +157,7 @@ pub const GraphicsContext = struct {
 
         self.cpu_frame_number += 1;
         self.uniforms.nextStagingBuffer(self);
+        self.deletion_queue.flush();
     }
 
     inline fn gpuWorkDone(self: *GraphicsContext, status: wgpu.QueueWorkDoneStatus) void {
@@ -645,6 +650,11 @@ pub const GraphicsContext = struct {
             PipelineLayoutHandle => self.pools.pipeline_layout_pool.destroyResource(handle, false),
             else => @compileError("[gpu] GraphicsContext.releaseResource() not implemented for " ++ @typeName(T)),
         }
+    }
+
+    /// releases the resource at the end of the frame
+    pub fn releaseResourceDelayed(self: *GraphicsContext, handle: anytype) void {
+        self.deletion_queue.append(handle);
     }
 
     pub fn destroyResource(self: *GraphicsContext, handle: anytype) void {

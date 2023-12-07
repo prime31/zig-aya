@@ -17,9 +17,14 @@ const Vertex = extern struct {
     uv: Vec2,
 };
 
+const Uniform = extern struct {
+    transform_matrix: Mat32,
+};
+
 var state: struct {
     batcher: Batcher = undefined,
     pipeline: aya.render.RenderPipelineHandle,
+    bind_group: aya.render.BindGroupHandle,
     fontbook: *aya.render.FontBook,
 } = undefined;
 
@@ -35,18 +40,31 @@ fn init() !void {
     var gctx = aya.gctx;
     state.batcher = Batcher.init(128);
 
-    const bind_group_layout = gctx.createBindGroupLayout(&.{
+    const bind_group_layout0 = gctx.createBindGroupLayout(&.{
         .label = "Bind Group",
         .entries = &.{
             .{ .visibility = .{ .fragment = true }, .texture = .{} },
             .{ .visibility = .{ .fragment = true }, .sampler = .{} },
         },
     });
-    defer gctx.releaseResource(bind_group_layout); // TODO: do we have to hold onto these?
+    defer gctx.releaseResource(bind_group_layout0); // TODO: do we have to hold onto these?
+
+    const bind_group_layout1 = gctx.createBindGroupLayout(&.{
+        .label = "Uniform Bind Group",
+        .entries = &.{
+            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+        },
+    });
+    defer gctx.releaseResource(bind_group_layout1); // TODO: do we have to hold onto these?
+
+    state.bind_group = gctx.createBindGroup(bind_group_layout1, &.{
+        .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
+    });
 
     state.pipeline = gctx.createPipeline(&.{
         .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/quad.wgsl") catch unreachable,
         .vbuffers = &aya.gpu.vertexAttributesForType(aya.render.Vertex).vertexBufferLayouts(),
+        .bgls = &.{ gctx.lookupResource(bind_group_layout0).?, gctx.lookupResource(bind_group_layout1).? },
     });
 
     state.fontbook = aya.render.FontBook.init(128, 128);
@@ -61,6 +79,7 @@ fn shutdown() !void {
 
 fn render(ctx: *aya.render.RenderContext) !void {
     const pip = aya.gctx.lookupResource(state.pipeline) orelse return;
+    const bg = aya.gctx.lookupResource(state.bind_group) orelse return;
 
     // begin the render pass
     var pass = ctx.beginRenderPass(&.{
@@ -75,6 +94,17 @@ fn render(ctx: *aya.render.RenderContext) !void {
     });
 
     pass.setPipeline(pip);
+
+    // projection matrix uniform
+    {
+        const win_size = aya.window.sizeInPixels();
+
+        const mem = aya.gctx.uniforms.allocate(Uniform, 1);
+        mem.slice[0] = .{
+            .transform_matrix = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h))),
+        };
+        pass.setBindGroup(1, bg, &.{mem.offset});
+    }
 
     state.batcher.begin(pass);
     text("Fuck off you dumbass! i cant believe you did that in Batcher", 10, 50);
