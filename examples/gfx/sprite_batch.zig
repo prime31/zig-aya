@@ -60,7 +60,7 @@ fn init() !void {
     defer gctx.releaseResource(bind_group_layout); // TODO: do we have to hold onto these?
 
     state.pipeline = gctx.createPipeline(&.{
-        .source = @embedFile("assets/shaders/quad.wgsl"),
+        .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/quad.wgsl") catch unreachable,
         .vbuffers = &aya.gpu.vertexAttributesForType(aya.render.Vertex).vertexBufferLayouts(),
     });
 }
@@ -69,38 +69,15 @@ fn shutdown() !void {
     state.batcher.deinit();
 }
 
-fn render() !void {
+fn render(ctx: *aya.render.RenderContext) !void {
     const pip = aya.gctx.lookupResource(state.pipeline) orelse return;
 
-    // get the current texture view for the swap chain
-    var surface_texture: wgpu.SurfaceTexture = undefined;
-    aya.gctx.surface.getCurrentTexture(&surface_texture);
-    defer if (surface_texture.texture) |t| t.release();
-
-    switch (surface_texture.status) {
-        .success => {},
-        .timeout, .outdated, .lost => {
-            const size = aya.window.sizeInPixels();
-            aya.gctx.resize(size.w, size.h);
-            return;
-        },
-        .out_of_memory, .device_lost => {
-            std.debug.print("shits gone down: {}\n", .{surface_texture.status});
-            @panic("unhandled surface texture status!");
-        },
-    }
-
-    const texture_view = surface_texture.texture.?.createView(null);
-    defer texture_view.release();
-
-    var command_encoder = aya.gctx.device.createCommandEncoder(&.{ .label = "Command Encoder" });
-
     // begin the render pass
-    var pass = command_encoder.beginRenderPass(&.{
+    var pass = ctx.beginRenderPass(&.{
         .label = "Render Pass Encoder",
         .color_attachment_count = 1,
         .color_attachments = &.{
-            .view = texture_view,
+            .view = ctx.swapchain_view,
             .load_op = .clear,
             .store_op = .store,
             .clear_value = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 1.0 },
@@ -120,11 +97,4 @@ fn render() !void {
 
     pass.end();
     pass.release();
-
-    // TODO: move this in aya
-    aya.ig.sdl.draw(aya.gctx, command_encoder, texture_view);
-
-    var command_buffer = command_encoder.finish(&.{ .label = "Command buffer" });
-    aya.gctx.submit(&.{command_buffer});
-    aya.gctx.surface.present();
 }

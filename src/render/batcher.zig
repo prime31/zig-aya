@@ -85,7 +85,6 @@ pub const Batcher = struct {
 
         const vbuff = aya.gctx.lookupResourceInfo(self.mesh.vbuff) orelse return;
         const ibuff = aya.gctx.lookupResourceInfo(self.mesh.ibuff) orelse return;
-        // const bg = aya.gctx.lookupResource(state.bind_group) orelse return;
 
         pass.setVertexBuffer(0, vbuff.gpuobj.?, self.mesh.buffer_offset, vbuff.size);
         pass.setIndexBuffer(ibuff.gpuobj.?, .uint16, 0, ibuff.size);
@@ -107,6 +106,7 @@ pub const Batcher = struct {
             });
             defer aya.gctx.releaseResource(bind_group_layout);
 
+            // creating bind groups every time is not great
             const bind_group = aya.gctx.createBindGroup(bind_group_layout, &.{
                 .{ .texture_view_handle = tex_view },
                 .{ .sampler_handle = aya.gctx.createSampler(&.{}) },

@@ -19,11 +19,6 @@ const Vertex = extern struct {
 
 var state: struct {
     batcher: Batcher = undefined,
-    texture: aya.render.TextureHandle,
-    check_texture: aya.render.TextureHandle,
-    tex_view: aya.render.TextureViewHandle,
-    check_tex_view: aya.render.TextureViewHandle,
-    sampler: aya.render.SamplerHandle,
     pipeline: aya.render.RenderPipelineHandle,
     fontbook: *aya.render.FontBook,
 } = undefined;
@@ -39,17 +34,6 @@ pub fn main() !void {
 fn init() !void {
     var gctx = aya.gctx;
     state.batcher = Batcher.init(128);
-
-    // textures
-    state.texture = gctx.createTextureFromFile("examples/assets/tree0.png");
-    state.check_texture = gctx.createTextureFromFile("examples/assets/checkbox.png");
-
-    // texture view
-    state.tex_view = gctx.createTextureView(state.texture, &.{});
-    state.check_tex_view = gctx.createTextureView(state.check_texture, &.{});
-
-    // sampler
-    state.sampler = gctx.createSampler(&.{});
 
     const bind_group_layout = gctx.createBindGroupLayout(&.{
         .label = "Bind Group",
@@ -83,7 +67,7 @@ fn render(ctx: *aya.render.RenderContext) !void {
         .label = "Ding Render Pass Encoder",
         .color_attachment_count = 1,
         .color_attachments = &.{
-            .view = ctx.swapchainTextureView(),
+            .view = ctx.swapchain_view,
             .load_op = .clear,
             .store_op = .store,
             .clear_value = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 1.0 },
@@ -95,12 +79,6 @@ fn render(ctx: *aya.render.RenderContext) !void {
     state.batcher.begin(pass);
     text("Fuck off you dumbass! i cant believe you did that in Batcher", 10, 50);
     state.batcher.drawTex(.{ .x = 200, .y = 200 }, Color.white.value, state.fontbook.texture);
-    // state.batcher.drawTex(.{ .x = 50 }, Color.blue.value, state.check_texture);
-    // state.batcher.drawTex(.{}, Color.red.value, state.texture);
-    // state.batcher.drawTex(.{ .x = 150 }, Color.white.value, state.check_texture);
-    // state.batcher.drawTex(.{ .x = 200 }, Color.white.value, state.check_texture);
-    // state.batcher.drawTex(.{ .x = 250 }, Color.white.value, state.check_texture);
-    // state.batcher.drawTex(.{ .y = 100 }, Color.white.value, state.texture);
     state.batcher.end();
 
     pass.end();

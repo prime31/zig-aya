@@ -4,7 +4,7 @@ const aya = @import("../aya.zig");
 pub usingnamespace @import("graphics_context.zig");
 pub usingnamespace @import("render_context.zig");
 // pub usingnamespace @import("render_layers.zig");
-// pub usingnamespace @import("graphics_context.zig");
+pub usingnamespace @import("graphics_context.zig");
 pub usingnamespace @import("batcher.zig");
 // pub usingnamespace @import("triangle_batcher.zig");
 pub usingnamespace @import("fontbook.zig");
