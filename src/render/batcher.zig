@@ -88,7 +88,6 @@ pub const Batcher = struct {
 
         pass.setVertexBuffer(0, vbuff.gpuobj.?, self.mesh.buffer_offset, vbuff.size);
         pass.setIndexBuffer(ibuff.gpuobj.?, .uint16, 0, ibuff.size);
-        // pass.setPipeline(pip);
 
         self.mesh.appendVertSlice(@as(usize, @intCast(self.buffer_offset)), @as(usize, @intCast(self.quad_count * 4)));
 
@@ -97,6 +96,9 @@ pub const Batcher = struct {
         for (self.draw_calls.items) |*draw_call| {
             const tex_view = aya.gctx.createTextureView(draw_call.image, &.{});
             defer aya.gctx.releaseResource(tex_view);
+
+            const sampler = aya.gctx.createSampler(&.{});
+            defer aya.gctx.releaseResource(sampler);
 
             const bind_group_layout = aya.gctx.createBindGroupLayout(&.{
                 .entries = &.{
@@ -109,12 +111,11 @@ pub const Batcher = struct {
             // creating bind groups every time is not great
             const bind_group = aya.gctx.createBindGroup(bind_group_layout, &.{
                 .{ .texture_view_handle = tex_view },
-                .{ .sampler_handle = aya.gctx.createSampler(&.{}) },
+                .{ .sampler_handle = sampler },
             });
-            // defer aya.gctx.releaseResource(bgg); // TODO: dont leak bind groups
+            aya.gctx.releaseResourceDelayed(bind_group);
 
             const bg = aya.gctx.lookupResource(bind_group) orelse return;
-            aya.gctx.releaseResourceDelayed(bind_group);
 
             pass.setBindGroup(0, bg, null);
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
