@@ -60,12 +60,8 @@ pub const Batcher = struct {
         self.pass = pass;
 
         // reset all state for new frame
-        // if (self.frame != aya.time.frames()) {
-        //     self.frame = aya.time.frames();
-        //     self.vert_index = 0;
-        //     self.buffer_offset = 0;
-        // }
-        if (true) {
+        if (self.frame != aya.time.frames()) {
+            self.frame = aya.time.frames();
             self.vert_index = 0;
             self.buffer_offset = 0;
             self.mesh.buffer_offset = 0;
@@ -117,7 +113,7 @@ pub const Batcher = struct {
 
             const bg = aya.gctx.lookupResource(bind_group) orelse return;
 
-            pass.setBindGroup(0, bg, null);
+            pass.setBindGroup(1, bg, null);
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
 
             self.buffer_offset += draw_call.quad_count * 4;

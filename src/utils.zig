@@ -91,3 +91,83 @@ pub const ErasedPlugin = struct {
         };
     }
 };
+
+pub fn Vec(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        list: std.ArrayListUnmanaged(T),
+
+        pub fn init() Self {
+            return .{ .list = std.ArrayListUnmanaged(T).initCapacity(aya.mem.allocator, 0) };
+        }
+
+        pub fn initCapacity(num: usize) Self {
+            return .{ .list = std.ArrayListUnmanaged(T).initCapacity(aya.mem.allocator, num) };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.list.deinit(aya.mem.allocator);
+        }
+
+        pub fn insert(self: *Self, n: usize, item: T) void {
+            self.list.insert(aya.mem.allocator, n, item) catch unreachable;
+        }
+
+        pub fn insertSlice(self: *Self, index: usize, items: []const T) void {
+            self.list.insertSlice(aya.mem.allocator, index, items) catch unreachable;
+        }
+
+        pub fn append(self: *Self, item: T) void {
+            self.list.append(aya.mem.allocator, item) catch unreachable;
+        }
+
+        pub fn swapRemove(self: *Self, i: usize) T {
+            return self.list.swapRemove(i);
+        }
+
+        pub fn appendSlice(self: *Self, items: []const T) void {
+            self.list.appendSlice(aya.mem.allocator, items) catch unreachable;
+        }
+
+        pub fn slice(self: *Self) []T {
+            return self.list.items;
+        }
+
+        pub fn writer(self: *Self) std.ArrayListUnmanaged(T).Writer {
+            return self.list.writer(aya.mem.allocator);
+        }
+
+        pub fn clearRetainingCapacity(self: *Self) void {
+            self.list.clearRetainingCapacity();
+        }
+
+        pub fn clearAndFree(self: *Self) void {
+            self.list.clearAndFree(aya.mem.allocator);
+        }
+
+        pub fn ensureTotalCapacity(self: *Self, new_capacity: usize) void {
+            self.list.ensureTotalCapacity(aya.mem.allocator, new_capacity) catch unreachable;
+        }
+
+        pub fn expandToCapacity(self: *Self) void {
+            self.list.expandToCapacity();
+        }
+
+        pub fn pop(self: *Self) T {
+            return self.pop();
+        }
+
+        pub fn popOrNull(self: *Self) ?T {
+            return self.popOrNull();
+        }
+
+        pub fn getLast(self: Self) T {
+            return self.getLast();
+        }
+
+        pub fn getLastOrNull(self: Self) ?T {
+            return self.getLastOrNull();
+        }
+    };
+}

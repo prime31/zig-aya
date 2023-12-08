@@ -5,10 +5,13 @@ Import aya via `const aya = @import("aya");` to gain access to the public interf
 
 ## TODO
 - fill in TrackedRenderPass
+- consider adding a Texture obj (TextureHandle, SamplerHandle, TextureViewHandle, width, height) so that Assets can manager its lifetime
 
 
 
-
+## Renderer
+- bind group 0: view data (camera proj matrix)
+- bind group 1: texture views and samplers
 
 
 

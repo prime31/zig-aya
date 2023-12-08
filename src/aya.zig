@@ -13,7 +13,6 @@ pub const gpu = render.gpu; // TODO: this is almost empty now
 
 // types
 const WindowConfig = @import("window.zig").WindowConfig;
-const Debug = @import("render/debug.zig").Debug;
 const Resources = @import("resources.zig").Resources;
 const Events = @import("events/events.zig").Events;
 
@@ -32,7 +31,6 @@ pub const utils = @import("utils.zig");
 pub const window = @import("window.zig");
 
 // essentially our fields, just made globals for ease of access
-pub var debug: Debug = undefined;
 pub var gctx: *render.GraphicsContext = undefined;
 pub var res: Resources = undefined;
 
@@ -53,14 +51,12 @@ fn init(comptime config: Config) !void {
     internal.init(); // needs res
     gamepad.init();
     window.init(config.window);
-    debug = Debug.init();
     gctx = try render.GraphicsContext.init();
     audio.init();
 }
 
 fn deinit() void {
     window.deinit();
-    debug.deinit();
     gctx.deinit();
     res.deinit();
     gamepad.deinit();

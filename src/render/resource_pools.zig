@@ -268,6 +268,16 @@ fn ResourcePool(comptime Info: type, comptime Resource: type) type {
             self.pool.removeAssumeLive(handle);
         }
 
+        /// calls `reference` on the gpuobj to increment its ref counter
+        pub fn cloneResource(self: *Self, handle: Handle) void {
+            if (!self.isHandleValid(handle))
+                return;
+
+            const resource_info = self.pool.getColumnPtrAssumeLive(handle, .info);
+            const gpuobj = resource_info.gpuobj.?;
+            gpuobj.reference();
+        }
+
         pub fn isHandleValid(self: Self, handle: Handle) bool {
             return self.pool.isLiveHandle(handle);
         }

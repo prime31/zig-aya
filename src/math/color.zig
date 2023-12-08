@@ -1,4 +1,7 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
+
+const WgpuColor = aya.wgpu.Color;
 const Vec4 = @import("vec4.zig").Vec4;
 
 pub const Color = extern union {
@@ -157,6 +160,15 @@ pub const Color = extern union {
             @as(f32, @floatFromInt(self.comps.g)) / 255,
             @as(f32, @floatFromInt(self.comps.b)) / 255,
             @as(f32, @floatFromInt(self.comps.a)) / 255,
+        };
+    }
+
+    pub fn asWgpuColor(self: Color) WgpuColor {
+        return .{
+            .r = @as(f64, @floatFromInt(self.comps.r)) / 255,
+            .g = @as(f64, @floatFromInt(self.comps.g)) / 255,
+            .b = @as(f64, @floatFromInt(self.comps.b)) / 255,
+            .a = @as(f64, @floatFromInt(self.comps.a)) / 255,
         };
     }
 

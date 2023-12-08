@@ -3,6 +3,7 @@ const aya = @import("../aya.zig");
 const wgpu = aya.wgpu;
 
 const pools = @import("resource_pools.zig");
+const internal = @import("../internal.zig");
 
 const DeletionQueue = @import("deletion_queue.zig").DeletionQueue;
 const ResourcePools = @import("resource_pools.zig").ResourcePools;
@@ -230,6 +231,8 @@ pub const GraphicsContext = struct {
     }
 
     pub fn createTextureFromFile(self: *GraphicsContext, file: []const u8) TextureHandle {
+        if (internal.assets.tryGetTexture(file)) |tex| return tex;
+
         const image = aya.stb.Image.init(aya.mem.tmp_allocator, file) catch unreachable;
 
         var desc = wgpu.TextureDescriptor{
@@ -249,6 +252,7 @@ pub const GraphicsContext = struct {
         });
 
         self.writeTexture(handle, u8, image.getImageData());
+        internal.assets.putTexture(file, handle);
 
         return handle;
     }
@@ -634,6 +638,22 @@ pub const GraphicsContext = struct {
             };
         }
         return null;
+    }
+
+    pub fn cloneResource(self: *GraphicsContext, handle: anytype) void {
+        const T = @TypeOf(handle);
+        switch (T) {
+            BufferHandle => self.pools.buffer_pool.cloneResource(handle),
+            TextureHandle => self.pools.texture_pool.cloneResource(handle),
+            TextureViewHandle => self.pools.texture_view_pool.cloneResource(handle),
+            SamplerHandle => self.pools.sampler_pool.cloneResource(handle),
+            RenderPipelineHandle => self.pools.render_pipeline_pool.cloneResource(handle),
+            ComputePipelineHandle => self.pools.compute_pipeline_pool.cloneResource(handle),
+            BindGroupHandle => self.pools.bind_group_pool.cloneResource(handle),
+            BindGroupLayoutHandle => self.pools.bind_group_layout_pool.cloneResource(handle),
+            PipelineLayoutHandle => self.pools.pipeline_layout_pool.cloneResource(handle),
+            else => @compileError("[gpu] GraphicsContext.cloneResource() not implemented for " ++ @typeName(T)),
+        }
     }
 
     pub fn releaseResource(self: *GraphicsContext, handle: anytype) void {

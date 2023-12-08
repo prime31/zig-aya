@@ -12,11 +12,6 @@ const Color = aya.math.Color;
 
 const Batcher = aya.render.Batcher;
 
-const Vertex = extern struct {
-    pos: Vec2,
-    uv: Vec2,
-};
-
 var state: struct {
     batcher: Batcher = undefined,
     texture: aya.render.TextureHandle,
@@ -25,6 +20,7 @@ var state: struct {
     check_tex_view: aya.render.TextureViewHandle,
     sampler: aya.render.SamplerHandle,
     pipeline: aya.render.RenderPipelineHandle,
+    view_bind_group: aya.render.BindGroupHandle,
 } = undefined;
 
 pub fn main() !void {
@@ -50,27 +46,42 @@ fn init() !void {
     // sampler
     state.sampler = gctx.createSampler(&.{});
 
-    const bind_group_layout = gctx.createBindGroupLayout(&.{
+    const bind_group_layout0 = gctx.createBindGroupLayout(&.{
+        .label = "View Uniform Bind Group",
+        .entries = &.{
+            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+        },
+    });
+    defer gctx.releaseResource(bind_group_layout0);
+
+    const bind_group_layout1 = gctx.createBindGroupLayout(&.{
         .label = "Bind Group",
         .entries = &.{
             .{ .visibility = .{ .fragment = true }, .texture = .{} },
             .{ .visibility = .{ .fragment = true }, .sampler = .{} },
         },
     });
-    defer gctx.releaseResource(bind_group_layout); // TODO: do we have to hold onto these?
+    defer gctx.releaseResource(bind_group_layout1);
+
+    state.view_bind_group = gctx.createBindGroup(bind_group_layout0, &.{
+        .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
+    });
 
     state.pipeline = gctx.createPipeline(&.{
         .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/quad.wgsl") catch unreachable,
         .vbuffers = &aya.gpu.vertexAttributesForType(aya.render.Vertex).vertexBufferLayouts(),
+        .bgls = &.{ gctx.lookupResource(bind_group_layout0).?, gctx.lookupResource(bind_group_layout1).? },
     });
 }
 
 fn shutdown() !void {
     state.batcher.deinit();
+    aya.gctx.releaseResource(state.view_bind_group);
 }
 
 fn render(ctx: *aya.render.RenderContext) !void {
     const pip = aya.gctx.lookupResource(state.pipeline) orelse return;
+    const bg = aya.gctx.lookupResource(state.view_bind_group) orelse return;
 
     // begin the render pass
     var pass = ctx.beginRenderPass(&.{
@@ -85,6 +96,15 @@ fn render(ctx: *aya.render.RenderContext) !void {
     });
 
     pass.setPipeline(pip);
+
+    // projection matrix uniform
+    {
+        const win_size = aya.window.sizeInPixels();
+
+        const mem = aya.gctx.uniforms.allocate(Mat32, 1);
+        mem.slice[0] = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
+        pass.setBindGroup(0, bg, &.{mem.offset});
+    }
 
     state.batcher.begin(pass);
     state.batcher.drawTex(.{ .x = 50 }, Color.blue.value, state.check_texture);
