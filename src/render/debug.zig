@@ -1,7 +1,7 @@
 const std = @import("std");
 const aya = @import("../aya.zig");
 
-// const Draw = @import("draw.zig").Draw;
+const Draw = @import("draw.zig").Draw;
 const Vec2 = aya.math.Vec2;
 const Color = aya.math.Color;
 
@@ -62,30 +62,30 @@ pub const Debug = struct {
         self.debug_items.deinit();
     }
 
-    /// renders
-    // pub fn render(self: *Debug, draw: *Draw, enabled: bool) bool {
-    //     if (enabled and self.debug_items.items.len > 0) {
-    //         for (self.debug_items.items) |item| {
-    //             switch (item) {
-    //                 .point => |pt| draw.point(pt.pos, pt.size, pt.color),
-    //                 .line => |line| draw.line(line.pt1, line.pt2, line.thickness, line.color),
-    //                 .rect => |rect| {
-    //                     if (rect.hollow) {
-    //                         draw.hollowRect(rect.pos, rect.w, rect.h, rect.thickness, rect.color);
-    //                     } else {
-    //                         draw.rect(rect.pos, rect.w, rect.h, rect.color);
-    //                     }
-    //                 },
-    //                 .circle => |circle| draw.circle(circle.center, circle.r, circle.thickness, 12, circle.color),
-    //                 .text => |text| draw.textOptions(text.text, null, .{ .x = text.pos.x, .y = text.pos.y, .color = text.color, .sx = 2, .sy = 2 }),
-    //             }
-    //         }
-    //         self.debug_items.items.len = 0;
-    //         return true;
-    //     }
-    //     self.debug_items.items.len = 0;
-    //     return false;
-    // }
+    /// renders and returns true if any rendering was done
+    pub fn render(self: *Debug, draw: *Draw, enabled: bool) bool {
+        if (enabled and self.debug_items.items.len > 0) {
+            for (self.debug_items.items) |item| {
+                switch (item) {
+                    .point => |pt| draw.point(pt.pos, pt.size, pt.color),
+                    .line => |line| draw.line(line.pt1, line.pt2, line.thickness, line.color),
+                    .rect => |rect| {
+                        if (rect.hollow) {
+                            draw.hollowRect(rect.pos, rect.w, rect.h, rect.thickness, rect.color);
+                        } else {
+                            draw.rect(rect.pos, rect.w, rect.h, rect.color);
+                        }
+                    },
+                    .circle => |circle| draw.circle(circle.center, circle.r, circle.thickness, 12, circle.color),
+                    .text => |text| draw.textOptions(text.text, null, .{ .x = text.pos.x, .y = text.pos.y, .color = text.color, .sx = 2, .sy = 2 }),
+                }
+            }
+            self.debug_items.items.len = 0;
+            return true;
+        }
+        self.debug_items.items.len = 0;
+        return false;
+    }
 
     pub fn drawPoint(self: *Debug, pos: Vec2, size: f32, color: ?Color) void {
         const point = Point{ .pos = pos, .size = size, .color = color orelse Color.white };

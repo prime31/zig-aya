@@ -74,7 +74,8 @@ pub const TrackedRenderPass = struct {
 };
 
 pub const DrawState = struct {
-    // pipeline: Option<RenderPipelineId>,
+    pipeline: ?wgpu.RenderPipeline,
+    bind_groups: std.ArrayList(.{ wgpu.BindGroup, u32 }),
     // bind_groups: Vec<(Option<BindGroupId>, Vec<u32>)>,
     // vertex_buffers: Vec<Option<(BufferId, u64)>>,
     // index_buffer: Option<(BufferId, u64, IndexFormat)>,

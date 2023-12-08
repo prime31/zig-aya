@@ -10,21 +10,27 @@ const Color = aya.math.Color;
 const Batcher = aya.render.Batcher;
 const FontBook = aya.render.FontBook;
 const TextureHandle = aya.render.TextureHandle;
+const TextureViewHandle = aya.render.TextureViewHandle;
 
 pub const Draw = struct {
     batcher: Batcher,
     fontbook: *FontBook,
     white_tex: TextureHandle,
+    white_tex_view: TextureViewHandle,
     quad: Quad = Quad.init(0, 0, 1, 1, 1, 1),
 
     pub fn init() Draw {
-        const fontbook = FontBook.init(128, 128, .nearest);
+        const fontbook = FontBook.init(128, 128);
         _ = fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
         fontbook.setSize(10);
 
+        const white_tex = aya.gctx.createTexture(1, 1, aya.render.GraphicsContext.swapchain_format);
+        aya.gctx.writeTexture(white_tex, u8, &[_]u8{ 255, 255, 255, 255 });
+
         return .{
             .batcher = Batcher.init(5000),
-            .white_tex = TextureHandle.initSingleColor(0xFFFFFFFF),
+            .white_tex = white_tex,
+            .white_tex_view = aya.gctx.createTextureView(white_tex, &.{}),
             .fontbook = fontbook,
         };
     }
@@ -32,25 +38,30 @@ pub const Draw = struct {
     pub fn deinit(self: *Draw) void {
         self.batcher.deinit();
         self.fontbook.deinit();
+        aya.gctx.releaseResource(self.white_tex);
+        aya.gctx.releaseResource(self.white_tex_view);
     }
 
     // Drawing
     pub fn tex(self: *Draw, texture: TextureHandle, x: f32, y: f32) void {
-        self.quad.setFill(texture.width, texture.height);
+        const tex_info: aya.render.TextureInfo = aya.gctx.lookupResourceInfo(texture) orelse return;
+        self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
         var mat = Mat32.initTransform(.{ .x = x, .y = y });
         self.batcher.draw(texture, self.quad, mat, Color.white);
     }
 
     pub fn texScale(self: *Draw, texture: TextureHandle, x: f32, y: f32, scale: f32) void {
-        self.quad.setFill(texture.width, texture.height);
+        const tex_info = aya.gctx.lookupResourceInfo(texture) orelse return;
+        self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
         var mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale });
         self.batcher.draw(texture, self.quad, mat, Color.white);
     }
 
     pub fn texScaleOrigin(self: *Draw, texture: TextureHandle, x: f32, y: f32, scale: f32, ox: f32, oy: f32) void {
-        self.quad.setFill(texture.width, texture.height);
+        const tex_info = aya.gctx.lookupResourceInfo(texture) orelse return;
+        self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
         var mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale, .ox = ox, .oy = oy });
         self.batcher.draw(texture, self.quad, mat, Color.white);
@@ -80,7 +91,7 @@ pub const Draw = struct {
             self.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
             self.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            self.batcher.draw(book.texture.?, self.quad, matrix, Color{ .value = iter.color });
+            self.batcher.draw(book.texture, self.quad, matrix, Color{ .value = iter.color });
         }
     }
 
@@ -102,7 +113,7 @@ pub const Draw = struct {
             self.quad.uvs[2] = .{ .x = fons_quad.s1, .y = fons_quad.t1 };
             self.quad.uvs[3] = .{ .x = fons_quad.s0, .y = fons_quad.t1 };
 
-            self.batcher.draw(book.texture.?, self.quad, matrix, options.color);
+            self.batcher.draw(book.texture, self.quad, matrix, options.color);
         }
     }
 
@@ -142,7 +153,7 @@ pub const Draw = struct {
     }
 
     pub fn circle(self: *Draw, center: Vec2, radius: f32, thickness: f32, resolution: i32, color: Color) void {
-        self.quad.setFill(self.white_tex.width, self.white_tex.height);
+        self.quad.setFill(1, 1);
 
         var last = Vec2.init(1, 0);
         last.scaleInPlace(radius);

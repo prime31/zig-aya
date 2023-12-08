@@ -177,11 +177,6 @@ pub const Batcher = struct {
         self.draw_calls.items[self.draw_calls.items.len - 1].quad_count += 1;
         self.quad_count += 1;
         self.vert_index += 4;
-
-        // TODO: lol
-        // const win_size = aya.window.sizeInPixels();
-        // var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
-        // proj_mat.transformVertexSlice(verts);
     }
 
     pub fn draw(self: *Batcher, texture: aya.render.TextureHandle, quad: Quad, mat: Mat32, color: Color) void {
@@ -197,10 +192,5 @@ pub const Batcher = struct {
         self.draw_calls.items[self.draw_calls.items.len - 1].quad_count += 1;
         self.quad_count += 1;
         self.vert_index += 4;
-
-        // TODO: lol
-        // const win_size = aya.window.sizeInPixels();
-        // var proj_mat = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h)));
-        // proj_mat.transformVertexSlice(verts);
     }
 };

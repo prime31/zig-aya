@@ -9,15 +9,15 @@ const ResourcePools = @import("resource_pools.zig").ResourcePools;
 const UniformBufferCache = @import("uniform_buffer_cache.zig").UniformBufferCache;
 const Instance = wgpu.Instance;
 
-pub const BufferHandle = pools.BufferHandle;
-pub const TextureHandle = pools.TextureHandle;
-pub const TextureViewHandle = pools.TextureViewHandle;
-pub const SamplerHandle = pools.SamplerHandle;
-pub const RenderPipelineHandle = pools.RenderPipelineHandle;
-pub const ComputePipelineHandle = pools.ComputePipelineHandle;
-pub const BindGroupHandle = pools.BindGroupHandle;
-pub const BindGroupLayoutHandle = pools.BindGroupLayoutHandle;
-pub const PipelineLayoutHandle = pools.PipelineLayoutHandle;
+const BufferHandle = pools.BufferHandle;
+const TextureHandle = pools.TextureHandle;
+const TextureViewHandle = pools.TextureViewHandle;
+const SamplerHandle = pools.SamplerHandle;
+const RenderPipelineHandle = pools.RenderPipelineHandle;
+const ComputePipelineHandle = pools.ComputePipelineHandle;
+const BindGroupHandle = pools.BindGroupHandle;
+const BindGroupLayoutHandle = pools.BindGroupLayoutHandle;
+const PipelineLayoutHandle = pools.PipelineLayoutHandle;
 
 pub const GraphicsContext = struct {
     pub var swapchain_format = wgpu.TextureFormat.bgra8_unorm;
