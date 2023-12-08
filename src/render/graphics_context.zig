@@ -69,7 +69,7 @@ pub const GraphicsContext = struct {
 
         const win_size = aya.window.sizeInPixels();
 
-        // for now, dont use srgb which is the preferred format
+        // for now, dont use srgb which is the preferred format until we get tonemapping in
         // swapchain_format = surface.getPreferredFormat(adapter);
 
         const surface_config = wgpu.SurfaceConfiguration{
@@ -238,7 +238,7 @@ pub const GraphicsContext = struct {
         var desc = wgpu.TextureDescriptor{
             .size = .{ .width = image.w, .height = image.h },
             .usage = .{ .texture_binding = true, .copy_dst = true },
-            .format = swapchain_format,
+            .format = .rgba8_unorm,
         };
 
         const handle = self.pools.texture_pool.addResource(self.*, .{

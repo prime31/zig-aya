@@ -67,6 +67,7 @@ fn render(ctx: *aya.render.RenderContext) !void {
     state.renderer.draw.line(.{ .x = 750, .y = 10 }, .{ .x = 400, .y = 700 }, 6, Color.orange);
 
     state.renderer.endPass();
+    state.renderer.endFrame();
 }
 
 pub fn initCheckerTexture(comptime scale: usize) aya.render.TextureHandle {

@@ -102,7 +102,6 @@ pub const BasicRenderer = struct {
     }
 
     pub fn endPass(self: *BasicRenderer) void {
-        _ = self.debug.render(&self.draw, true);
         self.draw.batcher.end();
 
         const pass = self.pass orelse return;
@@ -110,5 +109,10 @@ pub const BasicRenderer = struct {
         pass.release();
 
         self.pass = null;
+    }
+
+    pub fn endFrame(self: *BasicRenderer) void {
+        if (self.debug.render(&self.draw, true))
+            self.draw.batcher.flush();
     }
 };
