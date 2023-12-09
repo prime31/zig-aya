@@ -58,7 +58,7 @@ pub const Assets = struct {
         self.textures.put(filepath, .{ .obj = texture }) catch unreachable;
     }
 
-    // /// increases the ref count on the texture
+    /// increases the ref count on the texture
     pub fn cloneTexture(self: *Assets, texture: TextureHandle) void {
         var iter = self.textures.valueIterator();
         while (iter.next()) |rc| {
@@ -69,13 +69,14 @@ pub const Assets = struct {
         }
     }
 
-    // /// returns true if the ref count reached 0 and the asset should be destroyed
+    /// returns true if the ref count reached 0 and the asset should be destroyed
     pub fn releaseTexture(self: *Assets, tex: *const TextureHandle) bool {
         var iter = self.textures.iterator();
         while (iter.next()) |*entry| {
             if (entry.value_ptr.obj.img == tex.img) {
                 entry.value_ptr.cnt -= 1;
                 if (entry.value_ptr.cnt == 0) {
+                    // TODO: remove the gpu resources from GraphicsContext pools
                     _ = self.textures.removeByPtr(entry.key_ptr);
                     return true;
                 }

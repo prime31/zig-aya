@@ -4,6 +4,7 @@ const wgpu = aya.wgpu;
 
 const Vertex = aya.render.Vertex;
 const DynamicMesh = @import("mesh.zig").DynamicMesh;
+const BindGroupCache = @import("bind_group_cache.zig").BindGroupCache;
 
 const Vec2 = aya.math.Vec2;
 const Color = aya.math.Color;
@@ -19,6 +20,8 @@ pub const Batcher = struct {
     quad_count: usize = 0, // total quads that we have not yet rendered
     buffer_offset: i32 = 0, // offset into the vertex buffer of the first non-rendered vert
     pass: ?wgpu.RenderPassEncoder = null,
+    bind_group_cache: BindGroupCache,
+    sampler_handle: aya.render.SamplerHandle,
 
     const DrawCall = struct {
         image: aya.render.TextureHandle,
@@ -46,12 +49,15 @@ pub const Batcher = struct {
         return .{
             .mesh = _createDynamicMesh(max_sprites),
             .draw_calls = std.ArrayList(DrawCall).initCapacity(aya.mem.allocator, 10) catch unreachable,
+            .bind_group_cache = BindGroupCache.init(),
+            .sampler_handle = aya.gctx.createSampler(&.{}),
         };
     }
 
     pub fn deinit(self: *Batcher) void {
         self.mesh.deinit();
         self.draw_calls.deinit();
+        self.bind_group_cache.deinit();
     }
 
     pub fn begin(self: *Batcher, pass: wgpu.RenderPassEncoder) void {
@@ -90,28 +96,7 @@ pub const Batcher = struct {
         // run through all our accumulated draw calls
         var base_element: i32 = 0;
         for (self.draw_calls.items) |*draw_call| {
-            const tex_view = aya.gctx.createTextureView(draw_call.image, &.{});
-            defer aya.gctx.releaseResource(tex_view);
-
-            const sampler = aya.gctx.createSampler(&.{});
-            defer aya.gctx.releaseResource(sampler);
-
-            const bind_group_layout = aya.gctx.createBindGroupLayout(&.{
-                .entries = &.{
-                    .{ .visibility = .{ .fragment = true }, .texture = .{} },
-                    .{ .visibility = .{ .fragment = true }, .sampler = .{} },
-                },
-            });
-            defer aya.gctx.releaseResource(bind_group_layout);
-
-            // creating bind groups every time is not great
-            const bind_group = aya.gctx.createBindGroup(bind_group_layout, &.{
-                .{ .texture_view_handle = tex_view },
-                .{ .sampler_handle = sampler },
-            });
-            aya.gctx.releaseResourceDelayed(bind_group);
-
-            const bg = aya.gctx.lookupResource(bind_group) orelse return;
+            const bg = aya.gctx.lookupResource(self.bind_group_cache.get(draw_call.image)) orelse return;
 
             pass.setBindGroup(1, bg, null);
             pass.drawIndexed(@intCast(draw_call.quad_count * 6), 1, @intCast(base_element), 0, 0);
@@ -135,11 +120,29 @@ pub const Batcher = struct {
             self.buffer_offset = 0;
 
             self.mesh.updateAllVerts();
+            return error.MeshOverflow;
         }
 
         // start a new draw call if we dont already have one going or whenever the texture changes
         if (self.draw_calls.items.len == 0 or self.draw_calls.items[self.draw_calls.items.len - 1].image.id != texture.id) {
             try self.draw_calls.append(.{ .image = texture, .quad_count = 0 });
+
+            // create a BindGroup for the texture if we dont already have one
+            if (self.bind_group_cache.containsOrPut(texture)) |bgh| {
+                const bind_group_layout = aya.gctx.createBindGroupLayout(&.{
+                    .entries = &.{
+                        .{ .visibility = .{ .fragment = true }, .texture = .{} },
+                        .{ .visibility = .{ .fragment = true }, .sampler = .{} },
+                    },
+                });
+                defer aya.gctx.releaseResource(bind_group_layout);
+
+                const tex_view = aya.gctx.createTextureView(texture, &.{});
+                bgh.* = aya.gctx.createBindGroup(bind_group_layout, &.{
+                    .{ .texture_view_handle = tex_view },
+                    .{ .sampler_handle = self.sampler_handle },
+                });
+            }
         }
     }
 
