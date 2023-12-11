@@ -21,13 +21,14 @@
         {
             "label": "Build and Run Project",
             "type": "shell",
-            "command": "source ~/.zshrc && zig build test",
+            "command": "source ~/.zshrc && zig build ${input:zigLastTarget}",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "presentation": {
-                "clear": true
+                "clear": true,
+                "reveal": "silent"
             }
         },
         {

@@ -99,11 +99,11 @@ pub fn Vec(comptime T: type) type {
         list: std.ArrayListUnmanaged(T),
 
         pub fn init() Self {
-            return .{ .list = std.ArrayListUnmanaged(T).initCapacity(aya.mem.allocator, 0) };
+            return initCapacity(0);
         }
 
         pub fn initCapacity(num: usize) Self {
-            return .{ .list = std.ArrayListUnmanaged(T).initCapacity(aya.mem.allocator, num) };
+            return .{ .list = std.ArrayListUnmanaged(T).initCapacity(aya.mem.allocator, num) catch unreachable };
         }
 
         pub fn deinit(self: *Self) void {
@@ -162,12 +162,16 @@ pub fn Vec(comptime T: type) type {
             return self.popOrNull();
         }
 
+        pub fn getFirst(self: Self) T {
+            return self.list.items[0];
+        }
+
         pub fn getLast(self: Self) T {
-            return self.getLast();
+            return self.list.getLast();
         }
 
         pub fn getLastOrNull(self: Self) ?T {
-            return self.getLastOrNull();
+            return self.list.getLastOrNull();
         }
     };
 }
