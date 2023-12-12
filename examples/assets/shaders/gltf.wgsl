@@ -39,7 +39,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 // Some hardcoded lighting
 const lightDir = vec3f(0.25, 0.5, 1.);
 const lightColor = vec3f(1.);
-const ambientColor = vec3f(0.8);
+const ambientColor = vec3f(0.4);
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4f {

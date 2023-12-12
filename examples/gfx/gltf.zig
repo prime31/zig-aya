@@ -250,16 +250,6 @@ fn render(ctx: *aya.render.RenderContext) !void {
         pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
     }
 
-    for (all_meshes.items) |mesh| {
-        const object_to_world = zm.mul(zm.scaling(10, 10, 10), zm.translation(0.3, 0.3, 0.3));
-
-        const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
-        mem.slice[0].object_to_world = zm.transpose(object_to_world);
-        pass.setBindGroup(1, object_bg, &.{mem.offset});
-
-        pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
-    }
-
     pass.end();
     pass.release();
 }
@@ -400,7 +390,8 @@ fn loadGltfTexture(gltf_texture: zmesh.io.zcgltf.Texture) void {
 
     var x: c_int = undefined;
     var y: c_int = undefined;
-    const stb_image = aya.stb.stbi_load_from_memory(@ptrCast(data), @intCast(buffer_view.buffer.size), &x, &y, null, 4);
+    const buffer_bytes = @as([*]const u8, @ptrCast(data))[buffer_view.offset .. buffer_view.offset + buffer_view.size];
+    const stb_image = aya.stb.stbi_load_from_memory(buffer_bytes.ptr, @intCast(buffer_bytes.len), &x, &y, null, 4);
     defer aya.stb.stbi_image_free(stb_image);
 
     texture = aya.gctx.createTexture(@intCast(x), @intCast(y), .rgba8_unorm);
