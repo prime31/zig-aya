@@ -619,14 +619,14 @@ pub const PrimitiveDepthClipControl = extern struct {
 
 pub const RenderPassDepthStencilAttachment = extern struct {
     view: ?TextureView = @import("std").mem.zeroes(?TextureView),
-    depth_load_op: LoadOp = @import("std").mem.zeroes(LoadOp),
-    depth_store_op: StoreOp = @import("std").mem.zeroes(StoreOp),
-    depth_clear_value: f32 = @import("std").mem.zeroes(f32),
-    depth_read_only: bool = @import("std").mem.zeroes(bool),
-    stencil_load_op: LoadOp = @import("std").mem.zeroes(LoadOp),
-    stencil_store_op: StoreOp = @import("std").mem.zeroes(StoreOp),
-    stencil_clear_value: u32 = @import("std").mem.zeroes(u32),
-    stencil_read_only: bool = @import("std").mem.zeroes(bool),
+    depth_load_op: LoadOp = .undefined,
+    depth_store_op: StoreOp = .undefined,
+    depth_clear_value: f32 = 0.0,
+    depth_read_only: bool = false,
+    stencil_load_op: LoadOp = .undefined,
+    stencil_store_op: StoreOp = .undefined,
+    stencil_clear_value: u32 = 0,
+    stencil_read_only: bool = false,
 };
 
 pub const RenderPassDescriptorMaxDrawCount = extern struct {

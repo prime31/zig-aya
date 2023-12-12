@@ -46,7 +46,7 @@ pub fn sinTime() f32 {
     return @sin(seconds());
 }
 
-pub fn dt() u64 {
+pub fn dt() f32 {
     return delta_time;
 }
 

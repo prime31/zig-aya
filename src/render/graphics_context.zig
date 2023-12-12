@@ -477,7 +477,7 @@ pub const GraphicsContext = struct {
         vertex_attribs: ?[]const wgpu.VertexAttribute,
         primitive_state: wgpu.PrimitiveState,
         rt_format: wgpu.TextureFormat,
-        depth_state: ?wgpu.DepthStencilState,
+        depth_state: ?*const wgpu.DepthStencilState,
     ) RenderPipelineHandle {
         const pl = self.device.createPipelineLayout(&.{
             .bind_group_layout_count = bgls.len,
@@ -510,36 +510,9 @@ pub const GraphicsContext = struct {
                 .target_count = color_targets.len,
                 .targets = &color_targets,
             },
-            .depth_stencil = if (depth_state) |ds| &ds else null,
+            .depth_stencil = if (depth_state) |ds| ds else null,
             .primitive = primitive_state,
         };
-
-        // const pipeline_layout = if (desc.bgls.len == 0) null else self.device.createPipelineLayout(&.{
-        //     .bind_group_layout_count = desc.bgls.len,
-        //     .bind_group_layouts = desc.bgls.ptr,
-        // });
-        // defer if (pipeline_layout) |pl| pl.release();
-
-        // const pipe_desc = wgpu.RenderPipelineDescriptor{
-        //     .layout = pipeline_layout,
-        //     .vertex = wgpu.VertexState{
-        //         .module = shader_module,
-        //         .entry_point = "vs_main",
-        //         .buffer_count = desc.vbuffers.len,
-        //         .buffers = desc.vbuffers.ptr,
-        //     },
-        //     .fragment = &wgpu.FragmentState{
-        //         .module = shader_module,
-        //         .entry_point = "fs_main",
-        //         .target_count = 1,
-        //         .targets = &[_]wgpu.ColorTargetState{
-        //             .{
-        //                 .format = swapchain_format,
-        //                 .blend = &desc.blend_state,
-        //             },
-        //         },
-        //     },
-        // };
 
         return self.pools.render_pipeline_pool.addResource(self.*, .{
             .gpuobj = self.device.createRenderPipeline(&pipe_desc),

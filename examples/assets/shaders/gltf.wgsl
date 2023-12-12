@@ -1,5 +1,5 @@
 struct Camera {
-    projection: mat4x4f,
+    world_to_clip: mat4x4f,
     view: mat4x4f,
     position: vec3f,
     time: f32,
@@ -21,7 +21,8 @@ struct VertexOutput {
 fn vs_main(input: VertexInput) -> VertexOutput {
     var output: VertexOutput;
 
-    output.position = camera.projection * camera.view * model * vec4f(input.position, 1.);
+    output.position = vec4(input.position, 1.0) * model * camera.world_to_clip;
+    //output.position = camera.projection * camera.view * model * vec4f(input.position, 1.);
     output.normal = normalize((camera.view * model * vec4f(input.normal, 0.)).xyz);
 
     return output;

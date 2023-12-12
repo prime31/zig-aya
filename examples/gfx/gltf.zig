@@ -16,10 +16,14 @@ const RectI = aya.math.RectI;
 const Color = aya.math.Color;
 
 const CameraUniform = struct {
-    projection: Mat,
+    world_to_clip: Mat,
     view: Mat,
-    position: Vec3 = .{ .x = 0.0, .y = 7.0, .z = -7.0 },
+    position: [3]f32 = [_]f32{ 0.0, 4.0, -4.0 },
     time: f32 = 0,
+};
+
+const ObjectUniform = struct {
+    object_to_world: zm.Mat,
 };
 
 const GltfVertex = struct {
@@ -45,12 +49,23 @@ var frame_bind_group: aya.render.BindGroupHandle = undefined;
 var gltf_pipeline: aya.render.RenderPipelineHandle = undefined;
 var vertex_buf: aya.render.BufferHandle = undefined;
 var index_buf: aya.render.BufferHandle = undefined;
-var depth_tex: aya.render.TextureHandle = undefined;
 var depth_texv: aya.render.TextureViewHandle = undefined;
+
+var camera: struct {
+    position: [3]f32 = .{ 0.0, 4.0, -4.0 },
+    forward: [3]f32 = .{ 0.0, 0.0, 1.0 },
+    pitch: f32 = 0.15 * std.math.pi,
+    yaw: f32 = 0.0,
+    cam_world_to_clip: Mat = zm.identity(),
+} = .{};
+var mouse: struct {
+    cursor_pos: [2]f64 = .{ 0, 0 },
+} = .{};
 
 pub fn main() !void {
     try aya.run(.{
         .init = init,
+        .update = update,
         .render = render,
         .shutdown = shutdown,
     });
@@ -77,21 +92,14 @@ fn init() !void {
     // ****
     // ####
 
-    const depth = createDepthTexture();
-    depth_tex = depth.tex;
-    depth_texv = depth.texv;
+    depth_texv = createDepthTexture();
 
     // pipeline
-    const common_depth_state = wgpu.DepthStencilState{
-        .format = .depth32_float,
-        .depth_write_enabled = true,
-        .depth_compare = .less,
-    };
-
     const pos_norm_attribs = [_]wgpu.VertexAttribute{
         .{ .format = .float32x3, .offset = 0, .shader_location = 0 },
         .{ .format = .float32x3, .offset = @offsetOf(GltfVertex, "normal"), .shader_location = 1 },
     };
+
     gltf_pipeline = gctx.createPipelineSimple(
         &.{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(frame_bind_group_layout).? },
         aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable,
@@ -99,7 +107,11 @@ fn init() !void {
         pos_norm_attribs[0..],
         .{ .front_face = .cw, .cull_mode = .none },
         aya.render.GraphicsContext.swapchain_format,
-        common_depth_state,
+        &.{
+            .format = .depth32_float,
+            .depth_write_enabled = true,
+            .depth_compare = .less,
+        },
     );
 }
 
@@ -126,8 +138,8 @@ fn render(ctx: *aya.render.RenderContext) !void {
         },
         .depth_stencil_attachment = &.{
             .view = depth_view,
-            .depth_load_op = .clear,
-            .depth_store_op = .store,
+            .depth_load_op = .load, // .clear
+            .depth_store_op = .discard, // .store
             .depth_clear_value = 1.0,
         },
     });
@@ -138,17 +150,22 @@ fn render(ctx: *aya.render.RenderContext) !void {
 
     // projection matrix uniform
     {
-        const size = aya.window.sizeInPixels();
         const mem = aya.gctx.uniforms.allocate(CameraUniform, 1);
         mem.slice[0] = .{
-            .projection = zm.perspectiveFovRh(std.math.pi * 0.5, @as(f32, @floatFromInt(size.w)) / @as(f32, @floatFromInt(size.h)), 0.1, 5000.0),
+            .world_to_clip = camera.cam_world_to_clip,
+            .view = camera.cam_world_to_clip,
+            .position = camera.position,
         };
         pass.setBindGroup(0, bg, &.{mem.offset});
-        pass.setBindGroup(1, bg, &.{mem.offset});
     }
 
     for (all_meshes.items) |mesh| {
-        std.debug.print("draw\n", .{});
+        const object_to_world = zm.translationV(zm.loadArr3(.{ 0, 0, 0 }));
+
+        const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
+        mem.slice[0].object_to_world = zm.transpose(object_to_world);
+        pass.setBindGroup(1, bg, &.{mem.offset});
+
         pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
     }
 
@@ -178,12 +195,9 @@ fn loadGltf() void {
 
     const total_num_vertices = @as(u32, @intCast(all_vertices.items.len));
     const total_num_indices = @as(u32, @intCast(all_indices.items.len));
+    _ = total_num_indices;
 
     // Create a vertex buffer.
-    vertex_buf = aya.gctx.createBuffer(&.{
-        .usage = .{ .copy_dst = true, .vertex = true },
-        .size = total_num_vertices * @sizeOf(GltfVertex),
-    });
     {
         var vertex_data = std.ArrayList(GltfVertex).init(arena_allocator);
         defer vertex_data.deinit();
@@ -193,16 +207,12 @@ fn loadGltf() void {
             vertex_data.items[i].position = all_vertices.items[i].position;
             vertex_data.items[i].normal = all_vertices.items[i].normal;
         }
-        aya.gctx.writeBuffer(vertex_buf, 0, GltfVertex, vertex_data.items);
-        aya.gctx.lookupResource(vertex_buf).?.unmap();
+
+        vertex_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .vertex = true }, GltfVertex, vertex_data.items);
     }
 
     // Create an index buffer.
-    index_buf = aya.gctx.createBuffer(&.{
-        .usage = .{ .copy_dst = true, .index = true },
-        .size = total_num_indices * @sizeOf(u32),
-    });
-    aya.gctx.writeBuffer(index_buf, 0, u32, all_indices.items);
+    index_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .index = true }, u32, all_indices.items);
 }
 
 fn loadMesh(
@@ -292,7 +302,7 @@ fn loadMesh(
     }
 }
 
-fn createDepthTexture() struct { tex: aya.render.TextureHandle, texv: aya.render.TextureViewHandle } {
+fn createDepthTexture() aya.render.TextureViewHandle {
     const tex = aya.gctx.createTextureConfig(&.{
         .usage = .{ .render_attachment = true },
         .dimension = .dim_2d,
@@ -305,8 +315,64 @@ fn createDepthTexture() struct { tex: aya.render.TextureHandle, texv: aya.render
         .mip_level_count = 1,
         .sample_count = 1,
     });
-    const texv = aya.gctx.createTextureView(tex, &.{});
-    return .{ .tex = tex, .texv = texv };
+    return aya.gctx.createTextureView(tex, &.{});
+}
+
+fn update() !void {
+    // Handle camera rotation with mouse.
+    if (aya.mouse.pressed(.left)) {
+        for (aya.getEventReader(aya.mouse.MouseMotion).read()) |evt| {
+            camera.pitch += 0.0025 * evt.yrel;
+            camera.yaw += 0.0025 * evt.xrel;
+            camera.pitch = @min(camera.pitch, 0.48 * std.math.pi);
+            camera.pitch = @max(camera.pitch, -0.48 * std.math.pi);
+            camera.yaw = zm.modAngle(camera.yaw);
+        }
+    }
+
+    // Handle camera movement with 'WASD' keys.
+    {
+        const speed = zm.f32x4s(2.0);
+        const delta_time = zm.f32x4s(aya.time.dt());
+        const transform = zm.mul(zm.rotationX(camera.pitch), zm.rotationY(camera.yaw));
+        var forward = zm.normalize3(zm.mul(zm.f32x4(0.0, 0.0, 1.0, 0.0), transform));
+
+        zm.storeArr3(&camera.forward, forward);
+
+        const right = speed * delta_time * zm.normalize3(zm.cross3(zm.f32x4(0.0, 1.0, 0.0, 0.0), forward));
+        forward = speed * delta_time * forward;
+
+        var cam_pos = zm.loadArr3(camera.position);
+
+        if (aya.kb.pressed(.w)) {
+            cam_pos += forward;
+        } else if (aya.kb.pressed(.s)) {
+            cam_pos -= forward;
+        }
+        if (aya.kb.pressed(.d)) {
+            cam_pos += right;
+        } else if (aya.kb.pressed(.a)) {
+            cam_pos -= right;
+        }
+
+        zm.storeArr3(&camera.position, cam_pos);
+    }
+
+    const fb_width = aya.gctx.surface_config.width;
+    const fb_height = aya.gctx.surface_config.height;
+
+    const cam_world_to_view = zm.lookToLh(
+        zm.loadArr3(camera.position),
+        zm.loadArr3(camera.forward),
+        zm.f32x4(0.0, 1.0, 0.0, 0.0),
+    );
+    const cam_view_to_clip = zm.perspectiveFovLh(
+        0.25 * std.math.pi,
+        @as(f32, @floatFromInt(fb_width)) / @as(f32, @floatFromInt(fb_height)),
+        0.01,
+        200.0,
+    );
+    camera.cam_world_to_clip = zm.mul(cam_world_to_view, cam_view_to_clip);
 }
 
 // *****
