@@ -1,6 +1,11 @@
 const std = @import("std");
 
 // Injected
+pub const Bool = enum(u32) {
+    false,
+    true,
+};
+
 pub const SubmissionIndex = u64;
 
 pub const InstanceBackend = enum(u32) {
@@ -51,7 +56,7 @@ pub const BindGroupEntry = extern struct {
 pub const BufferBindingLayout = extern struct {
     next_in_chain: [*c]const ChainedStruct = @import("std").mem.zeroes([*c]const ChainedStruct),
     type: BufferBindingType = @import("std").mem.zeroes(BufferBindingType),
-    has_dynamic_offset: bool = @import("std").mem.zeroes(bool),
+    has_dynamic_offset: Bool = .false,
     min_binding_size: u64 = @import("std").mem.zeroes(u64),
 };
 
@@ -60,7 +65,7 @@ pub const BufferDescriptor = extern struct {
     label: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
     usage: BufferUsage = @import("std").mem.zeroes(BufferUsage),
     size: u64 = @import("std").mem.zeroes(u64),
-    mapped_at_creation: bool = @import("std").mem.zeroes(bool),
+    mapped_at_creation: Bool = .false,
 };
 
 pub const CommandBufferDescriptor = extern struct {
@@ -100,7 +105,7 @@ pub const MultisampleState = extern struct {
     next_in_chain: [*c]const ChainedStruct = @import("std").mem.zeroes([*c]const ChainedStruct),
     count: u32 = 1,
     mask: u32 = 0xffff_ffff,
-    alpha_to_coverage_enabled: bool = @import("std").mem.zeroes(bool),
+    alpha_to_coverage_enabled: Bool = .false,
 };
 
 pub const PipelineLayoutDescriptor = extern struct {
@@ -142,8 +147,8 @@ pub const RenderBundleEncoderDescriptor = extern struct {
     color_formats: [*c]const TextureFormat = @import("std").mem.zeroes([*c]const TextureFormat),
     depth_stencil_format: TextureFormat = @import("std").mem.zeroes(TextureFormat),
     sample_count: u32 = @import("std").mem.zeroes(u32),
-    depth_read_only: bool = @import("std").mem.zeroes(bool),
-    stencil_read_only: bool = @import("std").mem.zeroes(bool),
+    depth_read_only: Bool = .false,
+    stencil_read_only: Bool = .false,
 };
 
 pub const RequestAdapterOptions = extern struct {
@@ -151,7 +156,7 @@ pub const RequestAdapterOptions = extern struct {
     compatible_surface: ?Surface = @import("std").mem.zeroes(?Surface),
     power_preference: PowerPreference = @import("std").mem.zeroes(PowerPreference),
     backend_type: BackendType = @import("std").mem.zeroes(BackendType),
-    force_fallback_adapter: bool = @import("std").mem.zeroes(bool),
+    force_fallback_adapter: Bool = .false,
 };
 
 pub const SamplerBindingLayout = extern struct {
@@ -219,7 +224,7 @@ pub const TextureBindingLayout = extern struct {
     next_in_chain: [*c]const ChainedStruct = @import("std").mem.zeroes([*c]const ChainedStruct),
     sample_type: TextureSampleType = .float,
     view_dimension: TextureViewDimension = .dim_2d,
-    multisampled: bool = false,
+    multisampled: Bool = .false,
 };
 
 pub const TextureDataLayout = extern struct {
@@ -273,8 +278,8 @@ pub const ComputePassDescriptor = extern struct {
 
 pub const DepthStencilState = extern struct {
     next_in_chain: [*c]const ChainedStruct = null,
-    format: TextureFormat = @import("std").mem.zeroes(TextureFormat),
-    depth_write_enabled: bool = false,
+    format: TextureFormat = .undefined,
+    depth_write_enabled: Bool = .false,
     depth_compare: CompareFunction = .always,
     stencil_front: StencilFaceState = .{},
     stencil_back: StencilFaceState = .{},
@@ -614,19 +619,19 @@ pub const Origin3D = extern struct {
 
 pub const PrimitiveDepthClipControl = extern struct {
     chain: ChainedStruct = @import("std").mem.zeroes(ChainedStruct),
-    unclipped_depth: bool = @import("std").mem.zeroes(bool),
+    unclipped_depth: Bool = .false,
 };
 
 pub const RenderPassDepthStencilAttachment = extern struct {
-    view: ?TextureView = @import("std").mem.zeroes(?TextureView),
+    view: ?TextureView = null,
     depth_load_op: LoadOp = .undefined,
     depth_store_op: StoreOp = .undefined,
     depth_clear_value: f32 = 0.0,
-    depth_read_only: bool = false,
+    depth_read_only: Bool = .false,
     stencil_load_op: LoadOp = .undefined,
     stencil_store_op: StoreOp = .undefined,
     stencil_clear_value: u32 = 0,
-    stencil_read_only: bool = false,
+    stencil_read_only: Bool = .false,
 };
 
 pub const RenderPassDescriptorMaxDrawCount = extern struct {
@@ -694,12 +699,12 @@ pub const SurfaceDescriptorFromXcbWindow = extern struct {
 pub const SurfaceDescriptorFromXlibWindow = extern struct {
     chain: ChainedStruct = @import("std").mem.zeroes(ChainedStruct),
     display: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
-    window: u32 = @import("std").mem.zeroes(u32),
+    window: u64 = @import("std").mem.zeroes(u64),
 };
 
 pub const SurfaceTexture = extern struct {
     texture: ?Texture = @import("std").mem.zeroes(?Texture),
-    suboptimal: bool = @import("std").mem.zeroes(bool),
+    suboptimal: Bool = .false,
     status: SurfaceGetCurrentTextureStatus = @import("std").mem.zeroes(SurfaceGetCurrentTextureStatus),
 };
 
@@ -1065,6 +1070,8 @@ pub const StencilOperation = enum(u32) {
 pub const StorageTextureAccess = enum(u32) {
     undefined = 0,
     write_only = 1,
+    read_only = 2,
+    read_write = 3,
 };
 
 pub const StoreOp = enum(u32) {
@@ -1120,76 +1127,77 @@ pub const TextureFormat = enum(u32) {
     rgba8_sint = 22,
     bgra8_unorm = 23,
     bgra8_unorm_srgb = 24,
-    rgb10_a2_unorm = 25,
-    rg11_b10_ufloat = 26,
-    rgb9_e5_ufloat = 27,
-    rg32_float = 28,
-    rg32_uint = 29,
-    rg32_sint = 30,
-    rgba16_uint = 31,
-    rgba16_sint = 32,
-    rgba16_float = 33,
-    rgba32_float = 34,
-    rgba32_uint = 35,
-    rgba32_sint = 36,
-    stencil8 = 37,
-    depth16_unorm = 38,
-    depth24_plus = 39,
-    depth24_plus_stencil8 = 40,
-    depth32_float = 41,
-    depth32_float_stencil8 = 42,
-    bc1_rgba_unorm = 43,
-    bc1_rgba_unorm_srgb = 44,
-    bc2_rgba_unorm = 45,
-    bc2_rgba_unorm_srgb = 46,
-    bc3_rgba_unorm = 47,
-    bc3_rgba_unorm_srgb = 48,
-    bc4_r_unorm = 49,
-    bc4_r_snorm = 50,
-    bc5_rg_unorm = 51,
-    bc5_rg_snorm = 52,
-    bc6_hrgb_ufloat = 53,
-    bc6_hrgb_float = 54,
-    bc7_rgba_unorm = 55,
-    bc7_rgba_unorm_srgb = 56,
-    etc2_rgb8_unorm = 57,
-    etc2_rgb8_unorm_srgb = 58,
-    etc2_rgb8_a1_unorm = 59,
-    etc2_rgb8_a1_unorm_srgb = 60,
-    etc2_rgba8_unorm = 61,
-    etc2_rgba8_unorm_srgb = 62,
-    eacr11_unorm = 63,
-    eacr11_snorm = 64,
-    eacrg11_unorm = 65,
-    eacrg11_snorm = 66,
-    astc4x4_unorm = 67,
-    astc4x4_unorm_srgb = 68,
-    astc5x4_unorm = 69,
-    astc5x4_unorm_srgb = 70,
-    astc5x5_unorm = 71,
-    astc5x5_unorm_srgb = 72,
-    astc6x5_unorm = 73,
-    astc6x5_unorm_srgb = 74,
-    astc6x6_unorm = 75,
-    astc6x6_unorm_srgb = 76,
-    astc8x5_unorm = 77,
-    astc8x5_unorm_srgb = 78,
-    astc8x6_unorm = 79,
-    astc8x6_unorm_srgb = 80,
-    astc8x8_unorm = 81,
-    astc8x8_unorm_srgb = 82,
-    astc10x5_unorm = 83,
-    astc10x5_unorm_srgb = 84,
-    astc10x6_unorm = 85,
-    astc10x6_unorm_srgb = 86,
-    astc10x8_unorm = 87,
-    astc10x8_unorm_srgb = 88,
-    astc10x10_unorm = 89,
-    astc10x10_unorm_srgb = 90,
-    astc12x10_unorm = 91,
-    astc12x10_unorm_srgb = 92,
-    astc12x12_unorm = 93,
-    astc12x12_unorm_srgb = 94,
+    rgb10_a2_uint = 25,
+    rgb10_a2_unorm = 26,
+    rg11_b10_ufloat = 27,
+    rgb9_e5_ufloat = 28,
+    rg32_float = 29,
+    rg32_uint = 30,
+    rg32_sint = 31,
+    rgba16_uint = 32,
+    rgba16_sint = 33,
+    rgba16_float = 34,
+    rgba32_float = 35,
+    rgba32_uint = 36,
+    rgba32_sint = 37,
+    stencil8 = 38,
+    depth16_unorm = 39,
+    depth24_plus = 40,
+    depth24_plus_stencil8 = 41,
+    depth32_float = 42,
+    depth32_float_stencil8 = 43,
+    bc1_rgba_unorm = 44,
+    bc1_rgba_unorm_srgb = 45,
+    bc2_rgba_unorm = 46,
+    bc2_rgba_unorm_srgb = 47,
+    bc3_rgba_unorm = 48,
+    bc3_rgba_unorm_srgb = 49,
+    bc4_r_unorm = 50,
+    bc4_r_snorm = 51,
+    bc5_rg_unorm = 52,
+    bc5_rg_snorm = 53,
+    bc6_hrgb_ufloat = 54,
+    bc6_hrgb_float = 55,
+    bc7_rgba_unorm = 56,
+    bc7_rgba_unorm_srgb = 57,
+    etc2_rgb8_unorm = 58,
+    etc2_rgb8_unorm_srgb = 59,
+    etc2_rgb8_a1_unorm = 60,
+    etc2_rgb8_a1_unorm_srgb = 61,
+    etc2_rgba8_unorm = 62,
+    etc2_rgba8_unorm_srgb = 63,
+    eacr11_unorm = 64,
+    eacr11_snorm = 65,
+    eacrg11_unorm = 66,
+    eacrg11_snorm = 67,
+    astc4x4_unorm = 68,
+    astc4x4_unorm_srgb = 69,
+    astc5x4_unorm = 70,
+    astc5x4_unorm_srgb = 71,
+    astc5x5_unorm = 72,
+    astc5x5_unorm_srgb = 73,
+    astc6x5_unorm = 74,
+    astc6x5_unorm_srgb = 75,
+    astc6x6_unorm = 76,
+    astc6x6_unorm_srgb = 77,
+    astc8x5_unorm = 78,
+    astc8x5_unorm_srgb = 79,
+    astc8x6_unorm = 80,
+    astc8x6_unorm_srgb = 81,
+    astc8x8_unorm = 82,
+    astc8x8_unorm_srgb = 83,
+    astc10x5_unorm = 84,
+    astc10x5_unorm_srgb = 85,
+    astc10x6_unorm = 86,
+    astc10x6_unorm_srgb = 87,
+    astc10x8_unorm = 88,
+    astc10x8_unorm_srgb = 89,
+    astc10x10_unorm = 90,
+    astc10x10_unorm_srgb = 91,
+    astc12x10_unorm = 92,
+    astc12x10_unorm_srgb = 93,
+    astc12x12_unorm = 94,
+    astc12x12_unorm_srgb = 95,
 };
 
 pub const TextureSampleType = enum(u32) {
@@ -1321,9 +1329,9 @@ pub const Adapter = *opaque {
     extern fn wgpuAdapterEnumerateFeatures(adapter: Adapter, features: [*c]FeatureName) usize;
 
     pub inline fn getLimits(self: *Self, limits: *SupportedLimits) bool {
-        return wgpuAdapterGetLimits(self, limits);
+        return wgpuAdapterGetLimits(self, limits) == .true;
     }
-    extern fn wgpuAdapterGetLimits(adapter: Adapter, limits: [*c]SupportedLimits) bool;
+    extern fn wgpuAdapterGetLimits(adapter: Adapter, limits: [*c]SupportedLimits) Bool;
 
     pub inline fn getProperties(self: *Self, properties: *AdapterProperties) void {
         return wgpuAdapterGetProperties(self, properties);
@@ -1331,9 +1339,9 @@ pub const Adapter = *opaque {
     extern fn wgpuAdapterGetProperties(adapter: Adapter, properties: [*c]AdapterProperties) void;
 
     pub inline fn hasFeature(self: *Self, feature: FeatureName) bool {
-        return wgpuAdapterHasFeature(self, feature);
+        return wgpuAdapterHasFeature(self, feature) == .true;
     }
-    extern fn wgpuAdapterHasFeature(adapter: Adapter, feature: FeatureName) bool;
+    extern fn wgpuAdapterHasFeature(adapter: Adapter, feature: FeatureName) Bool;
 
     pub inline fn requestDevice(self: *Self, descriptor: ?*const DeviceDescriptor, callback: RequestDeviceCallback, userdata: ?*anyopaque) void {
         return wgpuAdapterRequestDevice(self, descriptor, callback, userdata);
@@ -1653,9 +1661,10 @@ pub const Device = *opaque {
     const Self = @This();
 
     pub inline fn poll(self: *Self, wait: bool, wrapped_submission_index: ?*const WrappedSubmissionIndex) bool {
-        return wgpuDevicePoll(self, wait, wrapped_submission_index);
+        const wait_bool = if (wait) .true else .false;
+        return wgpuDevicePoll(self, wait_bool, wrapped_submission_index) == .true;
     }
-    extern fn wgpuDevicePoll(device: Device, wait: bool, wrappedSubmissionIndex: [*c]const WrappedSubmissionIndex) bool;
+    extern fn wgpuDevicePoll(device: Device, wait: Bool, wrappedSubmissionIndex: [*c]const WrappedSubmissionIndex) Bool;
 
     pub inline fn createBindGroup(self: *Self, descriptor: *const BindGroupDescriptor) BindGroup {
         return wgpuDeviceCreateBindGroup(self, descriptor);
@@ -1738,9 +1747,9 @@ pub const Device = *opaque {
     extern fn wgpuDeviceEnumerateFeatures(device: Device, features: [*c]FeatureName) usize;
 
     pub inline fn getLimits(self: *Self, limits: *SupportedLimits) bool {
-        return wgpuDeviceGetLimits(self, limits);
+        return wgpuDeviceGetLimits(self, limits) == .true;
     }
-    extern fn wgpuDeviceGetLimits(device: Device, limits: [*c]SupportedLimits) bool;
+    extern fn wgpuDeviceGetLimits(device: Device, limits: [*c]SupportedLimits) Bool;
 
     pub inline fn getQueue(self: *Self) Queue {
         return wgpuDeviceGetQueue(self);
@@ -1748,9 +1757,9 @@ pub const Device = *opaque {
     extern fn wgpuDeviceGetQueue(device: Device) Queue;
 
     pub inline fn hasFeature(self: *Self, feature: FeatureName) bool {
-        return wgpuDeviceHasFeature(self, feature);
+        return wgpuDeviceHasFeature(self, feature) == .true;
     }
-    extern fn wgpuDeviceHasFeature(device: Device, feature: FeatureName) bool;
+    extern fn wgpuDeviceHasFeature(device: Device, feature: FeatureName) Bool;
 
     pub inline fn popErrorScope(self: *Self, callback: ErrorCallback, userdata: ?*anyopaque) void {
         return wgpuDevicePopErrorScope(self, callback, userdata);

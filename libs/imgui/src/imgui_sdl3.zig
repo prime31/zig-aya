@@ -13,6 +13,8 @@ pub fn init(
 ) void {
     if (!imgui_enabled) return;
 
+    if (depth_format != 0) @panic("add support for passing the depth view to draw");
+
     _ = imgui.igCreateContext(null);
     _ = imgui.ImFontAtlas_AddFontFromFileTTF(imgui.igGetIO().Fonts, "examples/assets/Roboto-Medium.ttf", 14, null, null);
 
@@ -63,10 +65,10 @@ pub fn newFrame() void {
     imgui.igNewFrame();
 }
 
-pub fn draw(gctx: anytype, encoder: anytype, texture_view: anytype) void {
+pub fn draw(gctx: anytype, encoder: anytype, texture_view: anytype, depth_texture_view: anytype) void {
     if (!imgui_enabled) return;
 
-    const pass = gctx.beginRenderPassSimple(encoder, .load, texture_view, null, null, null);
+    const pass = gctx.beginRenderPassSimple(encoder, .load, texture_view, null, depth_texture_view, null);
     render(pass);
     pass.end();
     pass.release();

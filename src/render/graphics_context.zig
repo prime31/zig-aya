@@ -216,7 +216,7 @@ pub const GraphicsContext = struct {
             .label = label,
             .usage = usage,
             .size = size,
-            .mapped_at_creation = true,
+            .mapped_at_creation = .true,
         });
 
         var mapped_data = buffer.getMappedRange(T, 0, data.len).?;
@@ -479,11 +479,11 @@ pub const GraphicsContext = struct {
         rt_format: wgpu.TextureFormat,
         depth_state: ?*const wgpu.DepthStencilState,
     ) RenderPipelineHandle {
-        const pl = self.device.createPipelineLayout(&.{
+        const pipeline_layout = self.device.createPipelineLayout(&.{
             .bind_group_layout_count = bgls.len,
             .bind_group_layouts = bgls.ptr,
         });
-        defer pl.release();
+        defer pipeline_layout.release();
 
         const shader_module = createWgslShaderModule(self, shader_source, null);
         defer shader_module.release();
@@ -497,7 +497,7 @@ pub const GraphicsContext = struct {
         }} else null;
 
         const pipe_desc = wgpu.RenderPipelineDescriptor{
-            .layout = pl,
+            .layout = pipeline_layout,
             .vertex = wgpu.VertexState{
                 .module = shader_module,
                 .entry_point = "vs_main",

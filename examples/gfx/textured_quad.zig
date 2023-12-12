@@ -15,6 +15,7 @@ const Vertex = extern struct {
 pub fn main() !void {
     try aya.run(.{
         .init = init,
+        // .update = update,
         .render = render,
         .shutdown = shutdown,
     });
@@ -29,6 +30,7 @@ var state: struct {
     frame_bind_group: aya.render.BindGroupHandle,
     textures_bind_group: aya.render.BindGroupHandle,
     pipeline: aya.render.RenderPipelineHandle,
+    depth_view: aya.render.TextureViewHandle = undefined,
 } = undefined;
 
 pub fn init() !void {
@@ -60,10 +62,14 @@ pub fn init() !void {
     const bind_group_layout0 = gctx.createBindGroupLayout(&.{
         .label = "Uniform Bind Group",
         .entries = &.{
-            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = .true } },
         },
     });
     defer gctx.releaseResource(bind_group_layout0);
+
+    state.frame_bind_group = gctx.createBindGroup(bind_group_layout0, &.{
+        .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
+    });
 
     const bind_group_layout1 = gctx.createBindGroupLayout(&.{
         .label = "Texture Bind Group",
@@ -74,20 +80,26 @@ pub fn init() !void {
     });
     defer gctx.releaseResource(bind_group_layout1);
 
-    state.frame_bind_group = gctx.createBindGroup(bind_group_layout0, &.{
-        .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
-    });
-
     state.textures_bind_group = gctx.createBindGroup(bind_group_layout1, &.{
         .{ .texture_view_handle = state.tex_view },
         .{ .sampler_handle = state.sampler },
     });
 
-    state.pipeline = gctx.createPipeline(&.{
-        .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/quad.wgsl") catch unreachable,
-        .vbuffers = &gpu.vertexAttributesForType(Vertex).vertexBufferLayouts(),
-        .bgls = &.{ gctx.lookupResource(bind_group_layout0).?, gctx.lookupResource(bind_group_layout1).? },
-    });
+    state.pipeline = gctx.createPipelineSimple(
+        &.{ gctx.lookupResource(bind_group_layout0).?, gctx.lookupResource(bind_group_layout1).? },
+        aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/quad.wgsl") catch unreachable,
+        @sizeOf(Vertex),
+        &gpu.vertexAttributesForType(Vertex).attributes,
+        .{ .front_face = .cw, .cull_mode = .none },
+        aya.render.GraphicsContext.swapchain_format,
+        &.{
+            .format = .depth32_float,
+            .depth_write_enabled = .false,
+            .depth_compare = .less,
+        },
+    );
+
+    state.depth_view = createDepthTexture();
 }
 
 pub fn render(ctx: *aya.render.RenderContext) !void {
@@ -98,6 +110,7 @@ pub fn render(ctx: *aya.render.RenderContext) !void {
     const ib_info = gctx.lookupResourceInfo(state.ibuff) orelse return;
     const frame_bg = gctx.lookupResource(state.frame_bind_group) orelse return;
     const textures_bg = gctx.lookupResource(state.textures_bind_group) orelse return;
+    const depth = aya.gctx.lookupResource(state.depth_view) orelse return;
     const pip = gctx.lookupResource(state.pipeline) orelse return;
 
     var pass = ctx.beginRenderPass(&.{
@@ -108,6 +121,12 @@ pub fn render(ctx: *aya.render.RenderContext) !void {
             .load_op = .clear,
             .store_op = .store,
             .clear_value = .{ .r = 0.4, .g = 0.2, .b = 0.3, .a = 1.0 },
+        },
+        .depth_stencil_attachment = &.{
+            .view = depth,
+            .depth_load_op = .clear,
+            .depth_store_op = .store,
+            .depth_clear_value = 1.0,
         },
     });
 
@@ -136,9 +155,27 @@ pub fn render(ctx: *aya.render.RenderContext) !void {
 pub fn shutdown() !void {
     aya.gctx.destroyResource(state.vbuff);
     aya.gctx.destroyResource(state.ibuff);
-    aya.gctx.destroyResource(state.texture);
     // aya.gctx.releaseResource(state.tex_view); // TODO: why does this crash with "Cannot remove a vacant resource"
+    aya.gctx.destroyResource(state.texture);
     aya.gctx.releaseResource(state.sampler);
+    aya.gctx.releaseResource(state.frame_bind_group);
     aya.gctx.releaseResource(state.textures_bind_group);
+    aya.gctx.releaseResource(state.depth_view);
     aya.gctx.releaseResource(state.pipeline);
+}
+
+fn createDepthTexture() aya.render.TextureViewHandle {
+    const tex = aya.gctx.createTextureConfig(&.{
+        .usage = .{ .render_attachment = true },
+        .dimension = .dim_2d,
+        .size = .{
+            .width = aya.gctx.surface_config.width,
+            .height = aya.gctx.surface_config.height,
+            .depth_or_array_layers = 1,
+        },
+        .format = .depth32_float,
+        .mip_level_count = 1,
+        .sample_count = 1,
+    });
+    return aya.gctx.createTextureView(tex, &.{});
 }

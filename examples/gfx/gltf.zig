@@ -17,7 +17,6 @@ const Color = aya.math.Color;
 
 const CameraUniform = struct {
     world_to_clip: Mat,
-    view: Mat,
     position: [3]f32 = [_]f32{ 0.0, 4.0, -4.0 },
     time: f32 = 0,
 };
@@ -46,13 +45,17 @@ const MeshLod = struct {
 
 var all_meshes: std.ArrayList(GltfMesh) = undefined;
 var frame_bind_group: aya.render.BindGroupHandle = undefined;
+var object_bind_group: aya.render.BindGroupHandle = undefined;
 var gltf_pipeline: aya.render.RenderPipelineHandle = undefined;
 var vertex_buf: aya.render.BufferHandle = undefined;
 var index_buf: aya.render.BufferHandle = undefined;
 var depth_texv: aya.render.TextureViewHandle = undefined;
+var texture: aya.render.TextureHandle = undefined;
+var tex_view: aya.render.TextureViewHandle = undefined;
+var sampler: aya.render.SamplerHandle = undefined;
 
 var camera: struct {
-    position: [3]f32 = .{ 0.0, 4.0, -4.0 },
+    position: [3]f32 = .{ 0.0, 3.0, -6.0 },
     forward: [3]f32 = .{ 0.0, 0.0, 1.0 },
     pitch: f32 = 0.15 * std.math.pi,
     yaw: f32 = 0.0,
@@ -74,12 +77,15 @@ pub fn main() !void {
 fn init() !void {
     var gctx = aya.gctx;
 
+    // load the gltf model and texture
     loadGltf();
+
+    sampler = gctx.createSampler(&.{});
 
     const frame_bind_group_layout = gctx.createBindGroupLayout(&.{
         .label = "Frame BindGroupLayout", // Camera/Frame uniforms
         .entries = &.{
-            .{ .visibility = .{ .vertex = true, .fragment = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+            .{ .visibility = .{ .vertex = true, .fragment = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = .true } },
         },
     });
     defer gctx.releaseResource(frame_bind_group_layout); // TODO: do we have to hold onto these?
@@ -88,9 +94,21 @@ fn init() !void {
         .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
     });
 
-    // ####
-    // ****
-    // ####
+    const object_bind_group_layout = gctx.createBindGroupLayout(&.{
+        .label = "Texture Bind Group",
+        .entries = &.{
+            .{ .visibility = .{ .vertex = true, .fragment = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = .true } },
+            .{ .visibility = .{ .fragment = true }, .texture = .{} },
+            .{ .visibility = .{ .fragment = true }, .sampler = .{} },
+        },
+    });
+    defer gctx.releaseResource(object_bind_group_layout);
+
+    object_bind_group = gctx.createBindGroup(object_bind_group_layout, &.{
+        .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
+        .{ .texture_view_handle = tex_view },
+        .{ .sampler_handle = sampler },
+    });
 
     depth_texv = createDepthTexture();
 
@@ -98,10 +116,11 @@ fn init() !void {
     const pos_norm_attribs = [_]wgpu.VertexAttribute{
         .{ .format = .float32x3, .offset = 0, .shader_location = 0 },
         .{ .format = .float32x3, .offset = @offsetOf(GltfVertex, "normal"), .shader_location = 1 },
+        .{ .format = .float32x2, .offset = @offsetOf(GltfVertex, "texcoords0"), .shader_location = 2 },
     };
 
     gltf_pipeline = gctx.createPipelineSimple(
-        &.{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(frame_bind_group_layout).? },
+        &.{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(object_bind_group_layout).? },
         aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable,
         @sizeOf(GltfVertex),
         pos_norm_attribs[0..],
@@ -109,7 +128,7 @@ fn init() !void {
         aya.render.GraphicsContext.swapchain_format,
         &.{
             .format = .depth32_float,
-            .depth_write_enabled = true,
+            .depth_write_enabled = .true,
             .depth_compare = .less,
         },
     );
@@ -119,27 +138,89 @@ fn shutdown() !void {
     all_meshes.deinit();
 }
 
+fn update() !void {
+    // Handle camera rotation with mouse.
+    if (aya.mouse.pressed(.left)) {
+        for (aya.getEventReader(aya.mouse.MouseMotion).read()) |evt| {
+            camera.pitch += 0.0045 * evt.yrel;
+            camera.yaw += 0.0045 * evt.xrel;
+            camera.pitch = @min(camera.pitch, 0.48 * std.math.pi);
+            camera.pitch = @max(camera.pitch, -0.48 * std.math.pi);
+            camera.yaw = zm.modAngle(camera.yaw);
+        }
+    }
+
+    // Handle camera movement with 'WASD' keys.
+    {
+        const speed = if (aya.kb.pressed(.lshift)) zm.f32x4s(10.0) else zm.f32x4s(5.0);
+        const delta_time = zm.f32x4s(aya.time.dt());
+        const transform = zm.mul(zm.rotationX(camera.pitch), zm.rotationY(camera.yaw));
+        var forward = zm.normalize3(zm.mul(zm.f32x4(0.0, 0.0, 1.0, 0.0), transform));
+
+        zm.storeArr3(&camera.forward, forward);
+
+        const right = speed * delta_time * zm.normalize3(zm.cross3(zm.f32x4(0.0, 1.0, 0.0, 0.0), forward));
+        forward = speed * delta_time * forward;
+
+        var cam_pos = zm.loadArr3(camera.position);
+        if (aya.kb.pressed(.w)) {
+            cam_pos += forward;
+        } else if (aya.kb.pressed(.s)) {
+            cam_pos -= forward;
+        }
+        if (aya.kb.pressed(.d)) {
+            cam_pos += right;
+        } else if (aya.kb.pressed(.a)) {
+            cam_pos -= right;
+        }
+        if (aya.kb.pressed(.q)) {
+            cam_pos[1] -= 5.0 * aya.time.dt();
+        } else if (aya.kb.pressed(.e)) {
+            cam_pos[1] += 5.0 * aya.time.dt();
+        }
+
+        zm.storeArr3(&camera.position, cam_pos);
+    }
+
+    const fb_width = aya.gctx.surface_config.width;
+    const fb_height = aya.gctx.surface_config.height;
+
+    const cam_world_to_view = zm.lookToLh(
+        zm.loadArr3(camera.position),
+        zm.loadArr3(camera.forward),
+        zm.f32x4(0.0, 1.0, 0.0, 0.0),
+    );
+    const cam_view_to_clip = zm.perspectiveFovLh(
+        0.25 * std.math.pi,
+        @as(f32, @floatFromInt(fb_width)) / @as(f32, @floatFromInt(fb_height)),
+        0.01,
+        200.0,
+    );
+    camera.cam_world_to_clip = zm.mul(cam_world_to_view, cam_view_to_clip);
+}
+
 fn render(ctx: *aya.render.RenderContext) !void {
     const pipline = aya.gctx.lookupResource(gltf_pipeline) orelse return;
     const bg = aya.gctx.lookupResource(frame_bind_group) orelse return;
+    const object_bg = aya.gctx.lookupResource(object_bind_group) orelse return;
     const depth_view = aya.gctx.lookupResource(depth_texv) orelse return;
     const vb_info = aya.gctx.lookupResourceInfo(vertex_buf) orelse return;
     const ib_info = aya.gctx.lookupResourceInfo(index_buf) orelse return;
 
     // begin the render pass
     var pass = ctx.beginRenderPass(&.{
-        .label = "Ding Render Pass Encoder",
+        .label = "Gltf Render Pass Encoder",
         .color_attachment_count = 1,
         .color_attachments = &.{
             .view = ctx.swapchain_view,
             .load_op = .clear,
             .store_op = .store,
-            .clear_value = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 1.0 },
+            .clear_value = .{ .r = 0.2, .g = 0.2, .b = 0.3, .a = 1.0 },
         },
         .depth_stencil_attachment = &.{
             .view = depth_view,
-            .depth_load_op = .load, // .clear
-            .depth_store_op = .discard, // .store
+            .depth_load_op = .clear,
+            .depth_store_op = .store,
             .depth_clear_value = 1.0,
         },
     });
@@ -152,19 +233,29 @@ fn render(ctx: *aya.render.RenderContext) !void {
     {
         const mem = aya.gctx.uniforms.allocate(CameraUniform, 1);
         mem.slice[0] = .{
-            .world_to_clip = camera.cam_world_to_clip,
-            .view = camera.cam_world_to_clip,
+            .world_to_clip = zm.transpose(camera.cam_world_to_clip),
             .position = camera.position,
+            .time = aya.time.sinTime(),
         };
         pass.setBindGroup(0, bg, &.{mem.offset});
     }
 
     for (all_meshes.items) |mesh| {
-        const object_to_world = zm.translationV(zm.loadArr3(.{ 0, 0, 0 }));
+        const object_to_world = zm.scaling(10, 10, 10);
 
         const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
         mem.slice[0].object_to_world = zm.transpose(object_to_world);
-        pass.setBindGroup(1, bg, &.{mem.offset});
+        pass.setBindGroup(1, object_bg, &.{mem.offset});
+
+        pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
+    }
+
+    for (all_meshes.items) |mesh| {
+        const object_to_world = zm.mul(zm.scaling(10, 10, 10), zm.translation(0.3, 0.3, 0.3));
+
+        const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
+        mem.slice[0].object_to_world = zm.transpose(object_to_world);
+        pass.setBindGroup(1, object_bg, &.{mem.offset});
 
         pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
     }
@@ -193,19 +284,16 @@ fn loadGltf() void {
 
     loadMesh(arena_allocator, "examples/assets/models/avocado.glb", &all_vertices, &all_indices, 0) catch unreachable;
 
-    const total_num_vertices = @as(u32, @intCast(all_vertices.items.len));
-    const total_num_indices = @as(u32, @intCast(all_indices.items.len));
-    _ = total_num_indices;
-
     // Create a vertex buffer.
     {
         var vertex_data = std.ArrayList(GltfVertex).init(arena_allocator);
         defer vertex_data.deinit();
-        vertex_data.resize(total_num_vertices) catch unreachable;
+        vertex_data.resize(all_vertices.items.len) catch unreachable;
 
         for (all_vertices.items, 0..) |_, i| {
             vertex_data.items[i].position = all_vertices.items[i].position;
             vertex_data.items[i].normal = all_vertices.items[i].normal;
+            vertex_data.items[i].texcoords0 = all_vertices.items[i].texcoords0;
         }
 
         vertex_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .vertex = true }, GltfVertex, vertex_data.items);
@@ -233,6 +321,9 @@ fn loadMesh(
 
     const data = try zmesh.io.parseAndLoadFile(path);
     defer zmesh.io.freeData(data);
+
+    loadGltfTexture(data.textures.?[0]);
+
     try zmesh.io.appendMeshPrimitive(data, 0, 0, &indices, &positions, &normals, &texcoords0, &tangents, null);
 
     var mesh = GltfMesh{
@@ -302,6 +393,23 @@ fn loadMesh(
     }
 }
 
+fn loadGltfTexture(gltf_texture: zmesh.io.zcgltf.Texture) void {
+    const image = gltf_texture.image orelse return;
+    const buffer_view = image.buffer_view orelse return;
+    const data = buffer_view.buffer.data orelse return;
+
+    var x: c_int = undefined;
+    var y: c_int = undefined;
+    const stb_image = aya.stb.stbi_load_from_memory(@ptrCast(data), @intCast(buffer_view.buffer.size), &x, &y, null, 4);
+    defer aya.stb.stbi_image_free(stb_image);
+
+    texture = aya.gctx.createTexture(@intCast(x), @intCast(y), .rgba8_unorm);
+    const image_data = stb_image[0..@as(usize, @intCast(x * y * 4))];
+    aya.gctx.writeTexture(texture, u8, image_data);
+    tex_view = aya.gctx.createTextureView(texture, &.{});
+}
+
+// TODO: leaks the Texture
 fn createDepthTexture() aya.render.TextureViewHandle {
     const tex = aya.gctx.createTextureConfig(&.{
         .usage = .{ .render_attachment = true },
@@ -316,63 +424,6 @@ fn createDepthTexture() aya.render.TextureViewHandle {
         .sample_count = 1,
     });
     return aya.gctx.createTextureView(tex, &.{});
-}
-
-fn update() !void {
-    // Handle camera rotation with mouse.
-    if (aya.mouse.pressed(.left)) {
-        for (aya.getEventReader(aya.mouse.MouseMotion).read()) |evt| {
-            camera.pitch += 0.0025 * evt.yrel;
-            camera.yaw += 0.0025 * evt.xrel;
-            camera.pitch = @min(camera.pitch, 0.48 * std.math.pi);
-            camera.pitch = @max(camera.pitch, -0.48 * std.math.pi);
-            camera.yaw = zm.modAngle(camera.yaw);
-        }
-    }
-
-    // Handle camera movement with 'WASD' keys.
-    {
-        const speed = zm.f32x4s(2.0);
-        const delta_time = zm.f32x4s(aya.time.dt());
-        const transform = zm.mul(zm.rotationX(camera.pitch), zm.rotationY(camera.yaw));
-        var forward = zm.normalize3(zm.mul(zm.f32x4(0.0, 0.0, 1.0, 0.0), transform));
-
-        zm.storeArr3(&camera.forward, forward);
-
-        const right = speed * delta_time * zm.normalize3(zm.cross3(zm.f32x4(0.0, 1.0, 0.0, 0.0), forward));
-        forward = speed * delta_time * forward;
-
-        var cam_pos = zm.loadArr3(camera.position);
-
-        if (aya.kb.pressed(.w)) {
-            cam_pos += forward;
-        } else if (aya.kb.pressed(.s)) {
-            cam_pos -= forward;
-        }
-        if (aya.kb.pressed(.d)) {
-            cam_pos += right;
-        } else if (aya.kb.pressed(.a)) {
-            cam_pos -= right;
-        }
-
-        zm.storeArr3(&camera.position, cam_pos);
-    }
-
-    const fb_width = aya.gctx.surface_config.width;
-    const fb_height = aya.gctx.surface_config.height;
-
-    const cam_world_to_view = zm.lookToLh(
-        zm.loadArr3(camera.position),
-        zm.loadArr3(camera.forward),
-        zm.f32x4(0.0, 1.0, 0.0, 0.0),
-    );
-    const cam_view_to_clip = zm.perspectiveFovLh(
-        0.25 * std.math.pi,
-        @as(f32, @floatFromInt(fb_width)) / @as(f32, @floatFromInt(fb_height)),
-        0.01,
-        200.0,
-    );
-    camera.cam_world_to_clip = zm.mul(cam_world_to_view, cam_view_to_clip);
 }
 
 // *****

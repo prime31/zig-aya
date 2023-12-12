@@ -29,7 +29,8 @@
             "presentation": {
                 "clear": true,
                 "reveal": "silent"
-            }
+            },
+            "problemMatcher": "$zig",
         },
         {
             "label": "Build and Run Project (release-fast)",

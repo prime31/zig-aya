@@ -23,7 +23,7 @@ pub const RenderContext = struct {
     /// completes rendering: finishes the RenderContext, submits the CommandBuffers, and presents the surface
     pub fn deinit(self: *RenderContext) void {
         if (aya.ig.enabled) {
-            aya.ig.sdl.draw(aya.gctx, self.command_encoder, self.swapchain_view);
+            aya.ig.sdl.draw(aya.gctx, self.command_encoder, self.swapchain_view, null);
         }
 
         self.finish();
@@ -59,7 +59,7 @@ pub const RenderContext = struct {
 
     fn flushEncoder(self: *RenderContext) void {
         // finish the encoder then create a new one
-        self.command_buffers.append(self.command_encoder.finish(null)) catch unreachable;
+        self.command_buffers.append(self.command_encoder.finish(&.{ .label = "Base Command Buffer" })) catch unreachable;
         self.command_encoder = aya.gctx.device.createCommandEncoder(&.{ .label = "Base Command Encoder++" });
     }
 };
