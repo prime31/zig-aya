@@ -1,5 +1,6 @@
 const std = @import("std");
 const zmesh = @import("zmesh");
+const zm = @import("zmath");
 const aya = @import("aya");
 const wgpu = aya.wgpu;
 
@@ -7,18 +8,45 @@ const Vec = aya.utils.Vec;
 const PrimitiveMap = std.AutoHashMap(Primitive, Vec(aya.render.BindGroupHandle));
 
 const Vec2 = aya.math.Vec2;
-const Mat32 = aya.math.Mat32;
+const Vec3 = aya.math.Vec3;
+const Mat = zm.Mat;
 const Quad = aya.math.Quad;
 const Rect = aya.math.Rect;
 const RectI = aya.math.RectI;
 const Color = aya.math.Color;
 
-const Uniform = extern struct {
-    transform_matrix: Mat32,
+const CameraUniform = struct {
+    projection: Mat,
+    view: Mat,
+    position: Vec3 = .{ .x = 0.0, .y = 7.0, .z = -7.0 },
+    time: f32 = 0,
 };
 
+const GltfVertex = struct {
+    position: [3]f32,
+    normal: [3]f32,
+    texcoords0: [2]f32,
+    tangent: [4]f32,
+};
+
+const GltfMesh = struct {
+    vertex_offset: u32,
+    num_lods: u32,
+    lods: [4]MeshLod,
+};
+
+const MeshLod = struct {
+    index_offset: u32,
+    num_indices: u32,
+};
+
+var all_meshes: std.ArrayList(GltfMesh) = undefined;
 var frame_bind_group: aya.render.BindGroupHandle = undefined;
-var gltf_pipeline_layout: wgpu.PipelineLayout = undefined;
+var gltf_pipeline: aya.render.RenderPipelineHandle = undefined;
+var vertex_buf: aya.render.BufferHandle = undefined;
+var index_buf: aya.render.BufferHandle = undefined;
+var depth_tex: aya.render.TextureHandle = undefined;
+var depth_texv: aya.render.TextureViewHandle = undefined;
 
 pub fn main() !void {
     try aya.run(.{
@@ -31,42 +59,60 @@ pub fn main() !void {
 fn init() !void {
     var gctx = aya.gctx;
 
-    pipeline_gpu_data = std.AutoHashMap(u64, GpuPipeline).init(aya.mem.allocator);
     loadGltf();
 
     const frame_bind_group_layout = gctx.createBindGroupLayout(&.{
         .label = "Frame BindGroupLayout", // Camera/Frame uniforms
         .entries = &.{
-            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+            .{ .visibility = .{ .vertex = true, .fragment = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
         },
     });
-    // defer gctx.releaseResource(frame_bind_group_layout); // TODO: do we have to hold onto these?
+    defer gctx.releaseResource(frame_bind_group_layout); // TODO: do we have to hold onto these?
 
     frame_bind_group = gctx.createBindGroup(frame_bind_group_layout, &.{
         .{ .buffer_handle = gctx.uniforms.buffer, .size = 256 },
     });
 
-    const node_bind_group_layout = gctx.createBindGroupLayout(&.{
-        .label = "Node BindGroupLayout", // Node uniforms
-        .entries = &.{
-            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform } },
-            // .{ .visibility = .{ .fragment = true }, .texture = .{} },
-            // .{ .visibility = .{ .fragment = true }, .sampler = .{} },
-        },
-    });
-    // defer gctx.releaseResource(node_bind_group_layout); // TODO: do we have to hold onto these?
+    // ####
+    // ****
+    // ####
 
-    var bind_group_layouts = [_]wgpu.BindGroupLayout{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(node_bind_group_layout).? };
-    gltf_pipeline_layout = aya.gctx.device.createPipelineLayout(&.{
-        .bind_group_layout_count = bind_group_layouts.len,
-        .bind_group_layouts = &bind_group_layouts,
-    });
+    const depth = createDepthTexture();
+    depth_tex = depth.tex;
+    depth_texv = depth.texv;
+
+    // pipeline
+    const common_depth_state = wgpu.DepthStencilState{
+        .format = .depth32_float,
+        .depth_write_enabled = true,
+        .depth_compare = .less,
+    };
+
+    const pos_norm_attribs = [_]wgpu.VertexAttribute{
+        .{ .format = .float32x3, .offset = 0, .shader_location = 0 },
+        .{ .format = .float32x3, .offset = @offsetOf(GltfVertex, "normal"), .shader_location = 1 },
+    };
+    gltf_pipeline = gctx.createPipelineSimple(
+        &.{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(frame_bind_group_layout).? },
+        aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable,
+        @sizeOf(GltfVertex),
+        pos_norm_attribs[0..],
+        .{ .front_face = .cw, .cull_mode = .none },
+        aya.render.GraphicsContext.swapchain_format,
+        common_depth_state,
+    );
 }
 
-fn shutdown() !void {}
+fn shutdown() !void {
+    all_meshes.deinit();
+}
 
 fn render(ctx: *aya.render.RenderContext) !void {
+    const pipline = aya.gctx.lookupResource(gltf_pipeline) orelse return;
     const bg = aya.gctx.lookupResource(frame_bind_group) orelse return;
+    const depth_view = aya.gctx.lookupResource(depth_texv) orelse return;
+    const vb_info = aya.gctx.lookupResourceInfo(vertex_buf) orelse return;
+    const ib_info = aya.gctx.lookupResourceInfo(index_buf) orelse return;
 
     // begin the render pass
     var pass = ctx.beginRenderPass(&.{
@@ -78,24 +124,37 @@ fn render(ctx: *aya.render.RenderContext) !void {
             .store_op = .store,
             .clear_value = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 1.0 },
         },
+        .depth_stencil_attachment = &.{
+            .view = depth_view,
+            .depth_load_op = .clear,
+            .depth_store_op = .store,
+            .depth_clear_value = 1.0,
+        },
     });
+
+    pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
+    pass.setIndexBuffer(ib_info.gpuobj.?, .uint32, 0, ib_info.size);
+    pass.setPipeline(pipline);
 
     // projection matrix uniform
     {
-        const win_size = aya.window.sizeInPixels();
-
-        const mem = aya.gctx.uniforms.allocate(Uniform, 1);
+        const size = aya.window.sizeInPixels();
+        const mem = aya.gctx.uniforms.allocate(CameraUniform, 1);
         mem.slice[0] = .{
-            .transform_matrix = Mat32.initOrtho(@as(f32, @floatFromInt(win_size.w)), @as(f32, @floatFromInt(win_size.h))),
+            .projection = zm.perspectiveFovRh(std.math.pi * 0.5, @as(f32, @floatFromInt(size.w)) / @as(f32, @floatFromInt(size.h)), 0.1, 5000.0),
         };
         pass.setBindGroup(0, bg, &.{mem.offset});
+        pass.setBindGroup(1, bg, &.{mem.offset});
+    }
+
+    for (all_meshes.items) |mesh| {
+        std.debug.print("draw\n", .{});
+        pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
     }
 
     pass.end();
     pass.release();
 }
-
-var pipeline_gpu_data: std.AutoHashMap(u64, GpuPipeline) = undefined;
 
 const Node = zmesh.io.zcgltf.Node;
 const Mesh = zmesh.io.zcgltf.Mesh;
@@ -104,40 +163,159 @@ const BufferView = zmesh.io.zcgltf.BufferView;
 const Accessor = zmesh.io.zcgltf.Accessor;
 
 fn loadGltf() void {
-    zmesh.init(aya.mem.allocator);
+    var arena_allocator_state = std.heap.ArenaAllocator.init(aya.mem.allocator);
+    defer arena_allocator_state.deinit();
+    const arena_allocator = arena_allocator_state.allocator();
+
+    zmesh.init(arena_allocator);
     defer zmesh.deinit();
 
-    const data = zmesh.io.parseAndLoadFile("examples/assets/models/avocado.glb") catch unreachable;
-    defer zmesh.io.freeData(data);
+    all_meshes = std.ArrayList(GltfMesh).init(aya.mem.allocator);
+    var all_vertices = std.ArrayList(GltfVertex).init(arena_allocator);
+    var all_indices = std.ArrayList(u32).init(arena_allocator);
 
-    var primitive_instances = PrimitiveMap.init(aya.mem.allocator);
+    loadMesh(arena_allocator, "examples/assets/models/avocado.glb", &all_vertices, &all_indices, 0) catch unreachable;
 
-    for (0..data.nodes_count) |i| {
-        const node: Node = data.nodes.?[i];
-        if (node.mesh != null) setupMeshNode(data, node, &primitive_instances);
+    const total_num_vertices = @as(u32, @intCast(all_vertices.items.len));
+    const total_num_indices = @as(u32, @intCast(all_indices.items.len));
+
+    // Create a vertex buffer.
+    vertex_buf = aya.gctx.createBuffer(&.{
+        .usage = .{ .copy_dst = true, .vertex = true },
+        .size = total_num_vertices * @sizeOf(GltfVertex),
+    });
+    {
+        var vertex_data = std.ArrayList(GltfVertex).init(arena_allocator);
+        defer vertex_data.deinit();
+        vertex_data.resize(total_num_vertices) catch unreachable;
+
+        for (all_vertices.items, 0..) |_, i| {
+            vertex_data.items[i].position = all_vertices.items[i].position;
+            vertex_data.items[i].normal = all_vertices.items[i].normal;
+        }
+        aya.gctx.writeBuffer(vertex_buf, 0, GltfVertex, vertex_data.items);
+        aya.gctx.lookupResource(vertex_buf).?.unmap();
     }
 
-    for (0..data.meshes_count) |i| {
-        const mesh: Mesh = data.meshes.?[i];
-        for (0..mesh.primitives_count) |j| setupPrimitive(data, mesh.primitives[j], &primitive_instances);
-    }
-
-    // var mesh_indices = std.ArrayList(u32).init(aya.mem.allocator);
-    // var mesh_positions = std.ArrayList([3]f32).init(aya.mem.allocator);
-    // var mesh_normals = std.ArrayList([3]f32).init(aya.mem.allocator);
-
-    // zmesh.io.appendMeshPrimitive(
-    //     data, // *zmesh.io.cgltf.Data
-    //     0, // mesh index
-    //     0, // gltf primitive index (submesh index)
-    //     &mesh_indices,
-    //     &mesh_positions,
-    //     &mesh_normals, // normals (optional)
-    //     null, // texcoords (optional)
-    //     null, // tangents (optional)
-    //     null, // colors (optional)
-    // ) catch unreachable;
+    // Create an index buffer.
+    index_buf = aya.gctx.createBuffer(&.{
+        .usage = .{ .copy_dst = true, .index = true },
+        .size = total_num_indices * @sizeOf(u32),
+    });
+    aya.gctx.writeBuffer(index_buf, 0, u32, all_indices.items);
 }
+
+fn loadMesh(
+    arena: std.mem.Allocator,
+    path: [:0]const u8,
+    all_vertices: *std.ArrayList(GltfVertex),
+    all_indices: *std.ArrayList(u32),
+    generate_lods: u32,
+) !void {
+    var indices = std.ArrayList(u32).init(arena);
+    var positions = std.ArrayList([3]f32).init(arena);
+    var normals = std.ArrayList([3]f32).init(arena);
+    var texcoords0 = std.ArrayList([2]f32).init(arena);
+    var tangents = std.ArrayList([4]f32).init(arena);
+
+    const pre_indices_len = all_indices.items.len;
+    const pre_positions_len = all_vertices.items.len;
+
+    const data = try zmesh.io.parseAndLoadFile(path);
+    defer zmesh.io.freeData(data);
+    try zmesh.io.appendMeshPrimitive(data, 0, 0, &indices, &positions, &normals, &texcoords0, &tangents, null);
+
+    var mesh = GltfMesh{
+        .vertex_offset = @as(u32, @intCast(pre_positions_len)),
+        .num_lods = 1,
+        .lods = undefined,
+    };
+
+    mesh.lods[0] = .{
+        .index_offset = @as(u32, @intCast(pre_indices_len)),
+        .num_indices = @as(u32, @intCast(indices.items.len)),
+    };
+
+    if (generate_lods > 0) {
+        var all_lods_indices = std.ArrayList(u32).init(arena);
+
+        var lod_index: u32 = 1;
+        while (lod_index < generate_lods) : (lod_index += 1) {
+            mesh.num_lods += 1;
+
+            const threshold: f32 = 1.0 - @as(f32, @floatFromInt(lod_index)) / @as(f32, @floatFromInt(4));
+            const target_index_count: usize = @as(usize, @intFromFloat(@as(f32, @floatFromInt(indices.items.len)) * threshold));
+            const target_error: f32 = 1e-2;
+
+            var lod_indices = std.ArrayList(u32).init(arena);
+            lod_indices.resize(indices.items.len) catch unreachable;
+            var lod_error: f32 = 0.0;
+            const lod_indices_count = zmesh.opt.simplifySloppy(
+                [3]f32,
+                lod_indices.items,
+                indices.items,
+                indices.items.len,
+                positions.items,
+                positions.items.len,
+                target_index_count,
+                target_error,
+                &lod_error,
+            );
+            lod_indices.resize(lod_indices_count) catch unreachable;
+
+            mesh.lods[lod_index] = .{
+                .index_offset = mesh.lods[lod_index - 1].index_offset + mesh.lods[lod_index - 1].num_indices,
+                .num_indices = @as(u32, @intCast(lod_indices_count)),
+            };
+
+            all_lods_indices.appendSlice(lod_indices.items) catch unreachable;
+        }
+
+        indices.appendSlice(all_lods_indices.items) catch unreachable;
+    }
+
+    all_meshes.append(mesh) catch unreachable;
+
+    try all_indices.ensureTotalCapacity(indices.items.len);
+    for (indices.items) |mesh_index| {
+        all_indices.appendAssumeCapacity(mesh_index);
+    }
+
+    try all_vertices.ensureTotalCapacity(positions.items.len);
+    for (positions.items, 0..) |_, index| {
+        all_vertices.appendAssumeCapacity(.{
+            .position = positions.items[index],
+            .normal = normals.items[index],
+            .texcoords0 = texcoords0.items[index],
+            .tangent = tangents.items[index],
+        });
+    }
+}
+
+fn createDepthTexture() struct { tex: aya.render.TextureHandle, texv: aya.render.TextureViewHandle } {
+    const tex = aya.gctx.createTextureConfig(&.{
+        .usage = .{ .render_attachment = true },
+        .dimension = .dim_2d,
+        .size = .{
+            .width = aya.gctx.surface_config.width,
+            .height = aya.gctx.surface_config.height,
+            .depth_or_array_layers = 1,
+        },
+        .format = .depth32_float,
+        .mip_level_count = 1,
+        .sample_count = 1,
+    });
+    const texv = aya.gctx.createTextureView(tex, &.{});
+    return .{ .tex = tex, .texv = texv };
+}
+
+// *****
+// *****
+// *****
+// *****
+// *****
+// *****
+// *****
 
 fn setupMeshNode(gltf: *zmesh.io.zcgltf.Data, node: Node, primitive_instances: *PrimitiveMap) void {
     _ = gltf;
@@ -296,11 +474,12 @@ fn setupPrimitive(gltf: *zmesh.io.zcgltf.Data, primitive: Primitive, primitive_i
 
     // Make sure to pass the sorted buffer layout here
     const pipeline_args = .{ primitiveTopologyForMode(primitive.type), sorted_buffer_layouts };
-    var pipeline = getPipelineForPrimitive(pipeline_args);
+    _ = pipeline_args;
+    // var pipeline = getPipelineForPrimitive(pipeline_args);
 
     // Don't need to link the primitive and gpu_primitive any more, but we do need
     // to add the gpu_primitive to the pipeline's list of primitives.
-    pipeline.primitives.append(gpu_primitive);
+    // pipeline.primitives.append(gpu_primitive);
 }
 
 const BufferWtf = struct {
@@ -325,96 +504,6 @@ const GpuPipeline = struct {
         return .{ .pipeline = pipeline, .primitives = Vec(GpuPrimitive).init() };
     }
 };
-
-fn getPipelineForPrimitive(args: anytype) GpuPipeline {
-    var hasher = std.hash.Wyhash.init(0);
-    std.hash.autoHashStrat(&hasher, args, .Deep);
-    const hash = hasher.final();
-
-    if (pipeline_gpu_data.get(hash)) |pip| return pip;
-
-    const shader_module = createWgslShaderModule(aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable, null);
-    defer shader_module.release();
-
-    const pipe_desc = wgpu.RenderPipelineDescriptor{
-        .layout = pipeline_layout,
-        .vertex = wgpu.VertexState{
-            .module = shader_module,
-            .entry_point = "vs_main",
-            .buffer_count = desc.vbuffers.len,
-            .buffers = desc.vbuffers.ptr,
-        },
-        .fragment = &wgpu.FragmentState{
-            .module = shader_module,
-            .entry_point = "fs_main",
-            .target_count = 1,
-            .targets = &[_]wgpu.ColorTargetState{
-                .{
-                    .format = swapchain_format,
-                    .blend = &desc.blend_state,
-                },
-            },
-        },
-    };
-
-    const pipeline_handle = aya.gctx.createPipeline(&.{
-        .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable,
-        .vbuffers = &aya.gpu.vertexAttributesForType(aya.render.Vertex).vertexBufferLayouts(),
-        .bgls = &.{ aya.gctx.lookupResource(bind_group_layout0).?, aya.gctx.lookupResource(bind_group_layout1).? },
-    });
-
-    const pipeline = GpuPipeline.init(pipeline_handle);
-    pipeline_gpu_data.put(hash, pipeline) catch unreachable;
-    return pipeline;
-}
-
-// getPipelineForPrimitive(args) {
-//     const key = JSON.stringify(args);
-
-//     let pipeline = this.pipelineGpuData.get(key);
-//     if (pipeline) {
-//     return pipeline;
-//     }
-
-//     const module = this.getShaderModule();
-//     pipeline = this.device.createRenderPipeline({
-//     label: 'glTF renderer pipeline',
-//     layout: this.gltfPipelineLayout,
-//     vertex: {
-//         module,
-//         entryPoint: 'vertexMain',
-//         buffers: args.buffers,
-//     },
-//     primitive: {
-//         topology: args.topology,
-//         cullMode: 'back',
-//     },
-//     multisample: {
-//         count: this.app.sampleCount,
-//     },
-//     depthStencil: {
-//         format: this.app.depthFormat,
-//         depthWriteEnabled: true,
-//         depthCompare: 'less',
-//     },
-//     fragment: {
-//         module,
-//         entryPoint: 'fragmentMain',
-//         targets: [{
-//         format: this.app.colorFormat,
-//         }],
-//     },
-//     });
-
-//     const gpuPipeline = {
-//     pipeline,
-//     primitives: [] // Start tracking every primitive that uses this pipeline.
-//     };
-
-//     this.pipelineGpuData.set(key, gpuPipeline);
-
-//     return gpuPipeline;
-// }
 
 fn vertexFormatForAccessor(accessor: *Accessor) wgpu.VertexFormat {
     const count = accessor.type.numComponents();

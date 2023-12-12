@@ -272,17 +272,17 @@ pub const ComputePassDescriptor = extern struct {
 };
 
 pub const DepthStencilState = extern struct {
-    next_in_chain: [*c]const ChainedStruct = @import("std").mem.zeroes([*c]const ChainedStruct),
+    next_in_chain: [*c]const ChainedStruct = null,
     format: TextureFormat = @import("std").mem.zeroes(TextureFormat),
-    depth_write_enabled: bool = @import("std").mem.zeroes(bool),
+    depth_write_enabled: bool = false,
     depth_compare: CompareFunction = .always,
-    stencil_front: StencilFaceState = @import("std").mem.zeroes(StencilFaceState),
-    stencil_back: StencilFaceState = @import("std").mem.zeroes(StencilFaceState),
+    stencil_front: StencilFaceState = .{},
+    stencil_back: StencilFaceState = .{},
     stencil_read_mask: u32 = 0xffff_ffff,
     stencil_write_mask: u32 = 0xffff_ffff,
-    depth_bias: i32 = @import("std").mem.zeroes(i32),
-    depth_bias_slope_scale: f32 = @import("std").mem.zeroes(f32),
-    depth_bias_clamp: f32 = @import("std").mem.zeroes(f32),
+    depth_bias: i32 = 0,
+    depth_bias_slope_scale: f32 = 0.0,
+    depth_bias_clamp: f32 = 0.0,
 };
 
 pub const ImageCopyBuffer = extern struct {
@@ -652,10 +652,10 @@ pub const ShaderModuleWGSLDescriptor = extern struct {
 };
 
 pub const StencilFaceState = extern struct {
-    compare: CompareFunction = @import("std").mem.zeroes(CompareFunction),
-    fail_op: StencilOperation = @import("std").mem.zeroes(StencilOperation),
-    depth_fail_op: StencilOperation = @import("std").mem.zeroes(StencilOperation),
-    pass_op: StencilOperation = @import("std").mem.zeroes(StencilOperation),
+    compare: CompareFunction = .always,
+    fail_op: StencilOperation = .keep,
+    depth_fail_op: StencilOperation = .keep,
+    pass_op: StencilOperation = .keep,
 };
 
 pub const SurfaceDescriptorFromAndroidNativeWindow = extern struct {

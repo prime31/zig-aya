@@ -275,6 +275,18 @@ pub const GraphicsContext = struct {
         });
     }
 
+    pub fn createTextureConfig(self: *GraphicsContext, descriptor: *const wgpu.TextureDescriptor) TextureHandle {
+        return self.pools.texture_pool.addResource(self.*, .{
+            .gpuobj = self.device.createTexture(descriptor),
+            .usage = descriptor.usage,
+            .dimension = descriptor.dimension,
+            .size = descriptor.size,
+            .format = descriptor.format,
+            .mip_level_count = descriptor.mip_level_count,
+            .sample_count = descriptor.sample_count,
+        });
+    }
+
     pub fn writeTexture(self: *GraphicsContext, texture: TextureHandle, comptime T: type, data: []const T) void {
         const texture_info: pools.TextureInfo = self.lookupResourceInfo(texture).?;
 
@@ -449,6 +461,85 @@ pub const GraphicsContext = struct {
                 },
             },
         };
+
+        return self.pools.render_pipeline_pool.addResource(self.*, .{
+            .gpuobj = self.device.createRenderPipeline(&pipe_desc),
+        });
+    }
+
+    /// Helper function for creating render pipelines.
+    /// Supports: one vertex buffer, one non-blending render target, one vertex shader module and one fragment shader module.
+    pub fn createPipelineSimple(
+        self: *GraphicsContext,
+        bgls: []const wgpu.BindGroupLayout,
+        shader_source: [:0]const u8,
+        vertex_stride: ?u64,
+        vertex_attribs: ?[]const wgpu.VertexAttribute,
+        primitive_state: wgpu.PrimitiveState,
+        rt_format: wgpu.TextureFormat,
+        depth_state: ?wgpu.DepthStencilState,
+    ) RenderPipelineHandle {
+        const pl = self.device.createPipelineLayout(&.{
+            .bind_group_layout_count = bgls.len,
+            .bind_group_layouts = bgls.ptr,
+        });
+        defer pl.release();
+
+        const shader_module = createWgslShaderModule(self, shader_source, null);
+        defer shader_module.release();
+
+        const color_targets = [_]wgpu.ColorTargetState{.{ .format = rt_format }};
+
+        const vertex_buffers = if (vertex_stride) |vs| [_]wgpu.VertexBufferLayout{.{
+            .array_stride = vs,
+            .attribute_count = @intCast(vertex_attribs.?.len),
+            .attributes = vertex_attribs.?.ptr,
+        }} else null;
+
+        const pipe_desc = wgpu.RenderPipelineDescriptor{
+            .layout = pl,
+            .vertex = wgpu.VertexState{
+                .module = shader_module,
+                .entry_point = "vs_main",
+                .buffer_count = if (vertex_buffers) |vbs| vbs.len else 0,
+                .buffers = if (vertex_buffers) |vbs| &vbs else null,
+            },
+            .fragment = &wgpu.FragmentState{
+                .module = shader_module,
+                .entry_point = "fs_main",
+                .target_count = color_targets.len,
+                .targets = &color_targets,
+            },
+            .depth_stencil = if (depth_state) |ds| &ds else null,
+            .primitive = primitive_state,
+        };
+
+        // const pipeline_layout = if (desc.bgls.len == 0) null else self.device.createPipelineLayout(&.{
+        //     .bind_group_layout_count = desc.bgls.len,
+        //     .bind_group_layouts = desc.bgls.ptr,
+        // });
+        // defer if (pipeline_layout) |pl| pl.release();
+
+        // const pipe_desc = wgpu.RenderPipelineDescriptor{
+        //     .layout = pipeline_layout,
+        //     .vertex = wgpu.VertexState{
+        //         .module = shader_module,
+        //         .entry_point = "vs_main",
+        //         .buffer_count = desc.vbuffers.len,
+        //         .buffers = desc.vbuffers.ptr,
+        //     },
+        //     .fragment = &wgpu.FragmentState{
+        //         .module = shader_module,
+        //         .entry_point = "fs_main",
+        //         .target_count = 1,
+        //         .targets = &[_]wgpu.ColorTargetState{
+        //             .{
+        //                 .format = swapchain_format,
+        //                 .blend = &desc.blend_state,
+        //             },
+        //         },
+        //     },
+        // };
 
         return self.pools.render_pipeline_pool.addResource(self.*, .{
             .gpuobj = self.device.createRenderPipeline(&pipe_desc),
