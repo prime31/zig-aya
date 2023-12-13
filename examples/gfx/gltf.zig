@@ -1,8 +1,10 @@
 const std = @import("std");
-const zmesh = @import("zmesh");
-const zm = @import("zmath");
 const aya = @import("aya");
+const zmesh = aya.zmesh;
+const zm = aya.zm;
 const wgpu = aya.wgpu;
+
+const gltf_mesh = @import("gltf_mesh.zig");
 
 const Vec = aya.utils.Vec;
 const PrimitiveMap = std.AutoHashMap(Primitive, Vec(aya.render.BindGroupHandle));
@@ -29,7 +31,6 @@ const GltfVertex = struct {
     position: [3]f32,
     normal: [3]f32,
     texcoords0: [2]f32,
-    tangent: [4]f32,
 };
 
 const GltfMesh = struct {
@@ -43,6 +44,7 @@ const MeshLod = struct {
     num_indices: u32,
 };
 
+var gltf_loader: gltf_mesh.GltfLoader = undefined;
 var all_meshes: std.ArrayList(GltfMesh) = undefined;
 var frame_bind_group: aya.render.BindGroupHandle = undefined;
 var object_bind_group: aya.render.BindGroupHandle = undefined;
@@ -77,8 +79,14 @@ pub fn main() !void {
 fn init() !void {
     var gctx = aya.gctx;
 
-    // load the gltf model and texture
-    loadGltf();
+    gltf_loader = gltf_mesh.GltfLoader.init();
+    gltf_loader.appendGltf("examples/assets/models/DamagedHelmet.glb");
+    gltf_loader.appendGltf("examples/assets/models/cube.glb");
+
+    vertex_buf, index_buf = gltf_loader.generateBuffers();
+
+    texture = gltf_loader.gltfs.slice()[0].textures[0].texture;
+    tex_view = gltf_loader.gltfs.slice()[0].textures[0].texture_view;
 
     sampler = gctx.createSampler(&.{});
 
@@ -136,6 +144,7 @@ fn init() !void {
 
 fn shutdown() !void {
     all_meshes.deinit();
+    gltf_loader.deinit();
 }
 
 fn update() !void {
@@ -225,9 +234,9 @@ fn render(ctx: *aya.render.RenderContext) !void {
         },
     });
 
+    pass.setPipeline(pipline);
     pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
     pass.setIndexBuffer(ib_info.gpuobj.?, .uint32, 0, ib_info.size);
-    pass.setPipeline(pipline);
 
     // projection matrix uniform
     {
@@ -240,14 +249,22 @@ fn render(ctx: *aya.render.RenderContext) !void {
         pass.setBindGroup(0, bg, &.{mem.offset});
     }
 
-    for (all_meshes.items) |mesh| {
-        const object_to_world = zm.scaling(10, 10, 10);
+    for (gltf_loader.gltfs.slice(), 0..) |gl, i| {
+        for (gl.meshes) |gl_mesh| {
+            for (gl_mesh.meshes) |mesh| {
+                const object_to_world = blk: {
+                    if (i == 0)
+                        break :blk zm.mul(zm.rotationX(std.math.degreesToRadians(f32, 90)), zm.rotationY(std.math.degreesToRadians(f32, 180)));
+                    break :blk zm.translation(2, 1, 1);
+                };
 
-        const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
-        mem.slice[0].object_to_world = zm.transpose(object_to_world);
-        pass.setBindGroup(1, object_bg, &.{mem.offset});
+                const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
+                mem.slice[0].object_to_world = zm.transpose(object_to_world);
+                pass.setBindGroup(1, object_bg, &.{mem.offset});
 
-        pass.drawIndexed(mesh.lods[0].num_indices, 1, mesh.lods[0].index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
+                pass.drawIndexed(mesh.num_indices, 1, mesh.index_offset, @as(i32, @intCast(mesh.vertex_offset)), 0);
+            }
+        }
     }
 
     pass.end();
@@ -272,24 +289,10 @@ fn loadGltf() void {
     var all_vertices = std.ArrayList(GltfVertex).init(arena_allocator);
     var all_indices = std.ArrayList(u32).init(arena_allocator);
 
-    loadMesh(arena_allocator, "examples/assets/models/avocado.glb", &all_vertices, &all_indices, 0) catch unreachable;
+    loadMesh(arena_allocator, "examples/assets/models/DamagedHelmet.glb", &all_vertices, &all_indices, 0) catch unreachable;
 
-    // Create a vertex buffer.
-    {
-        var vertex_data = std.ArrayList(GltfVertex).init(arena_allocator);
-        defer vertex_data.deinit();
-        vertex_data.resize(all_vertices.items.len) catch unreachable;
-
-        for (all_vertices.items, 0..) |_, i| {
-            vertex_data.items[i].position = all_vertices.items[i].position;
-            vertex_data.items[i].normal = all_vertices.items[i].normal;
-            vertex_data.items[i].texcoords0 = all_vertices.items[i].texcoords0;
-        }
-
-        vertex_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .vertex = true }, GltfVertex, vertex_data.items);
-    }
-
-    // Create an index buffer.
+    // buffers
+    vertex_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .vertex = true }, GltfVertex, all_vertices.items);
     index_buf = aya.gctx.createBufferInit(null, .{ .copy_dst = true, .index = true }, u32, all_indices.items);
 }
 
@@ -378,7 +381,6 @@ fn loadMesh(
             .position = positions.items[index],
             .normal = normals.items[index],
             .texcoords0 = texcoords0.items[index],
-            .tangent = tangents.items[index],
         });
     }
 }
@@ -671,16 +673,4 @@ fn primitiveTopologyForMode(mode: zmesh.io.zcgltf.PrimitiveType) wgpu.PrimitiveT
         .triangle_strip => .triangle_strip,
         .triangle_fan => unreachable,
     };
-}
-
-fn createWgslShaderModule(source: [*:0]const u8, label: ?[*:0]const u8) wgpu.ShaderModule {
-    const wgsl_desc = wgpu.ShaderModuleWGSLDescriptor{
-        .chain = .{ .next = null, .s_type = .shader_module_wgsl_descriptor },
-        .code = source,
-    };
-    const desc = wgpu.ShaderModuleDescriptor{
-        .next_in_chain = @ptrCast(&wgsl_desc),
-        .label = if (label) |l| l else null,
-    };
-    return aya.gctx.device.createShaderModule(&desc);
 }

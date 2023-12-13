@@ -67,7 +67,7 @@ pub fn runTests(
         .optimize = optimize,
     });
 
-    const zmath_pkg = package(b, target, optimize, .{});
+    const zmath_pkg = package(b, .{});
     tests.addModule("zmath_options", zmath_pkg.zmath_options);
 
     return &b.addRunArtifact(tests).step;
