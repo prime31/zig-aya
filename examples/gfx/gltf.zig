@@ -216,9 +216,9 @@ fn render(ctx: *aya.render.RenderContext) !void {
         pass.setBindGroup(0, bg, &.{mem.offset});
     }
 
-    for (gltf_loader.gltfs.slice(), 0..) |gl, i| {
-        for (gl.meshes) |gl_mesh| {
-            for (gl_mesh.meshes) |mesh| {
+    for (gltf_loader.gltfs.slice(), 0..) |gltf_root, i| {
+        for (gltf_root.meshes) |mesh_root| {
+            for (mesh_root.meshes) |mesh| {
                 const object_to_world = blk: {
                     if (i == 0)
                         break :blk zm.mul(zm.rotationX(std.math.degreesToRadians(f32, 90)), zm.rotationY(std.math.degreesToRadians(f32, 180)));
