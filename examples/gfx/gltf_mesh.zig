@@ -6,7 +6,7 @@ const wgpu = aya.wgpu;
 
 const cgltf = zmesh.io.zcgltf;
 
-const GltfVertex = struct {
+pub const GltfVertex = struct {
     position: [3]f32,
     normal: [3]f32,
     texcoords0: [2]f32,
