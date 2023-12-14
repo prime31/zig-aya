@@ -27,7 +27,7 @@ pub const BasicRenderer = struct {
         const bind_group_layout0 = aya.gctx.createBindGroupLayout(&.{
             .label = "View Uniform Bind Group",
             .entries = &.{
-                .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+                .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = .true } },
             },
         });
         defer aya.gctx.releaseResource(bind_group_layout0);
@@ -112,7 +112,11 @@ pub const BasicRenderer = struct {
     }
 
     pub fn endFrame(self: *BasicRenderer) void {
-        if (self.debug.render(&self.draw, true))
-            self.draw.batcher.flush();
+        if (self.debug.debug_items.items.len == 0) return;
+        const pass = self.pass orelse return;
+
+        self.draw.batcher.begin(pass);
+        _ = self.debug.render(&self.draw, true);
+        self.draw.batcher.end();
     }
 };

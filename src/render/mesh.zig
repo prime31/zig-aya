@@ -42,7 +42,7 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
                 .usage = .{ .copy_dst = true, .vertex = true },
                 .size = vertex_count * @sizeOf(VertT),
             });
-            aya.gctx.lookupResource(vbuff).?.unmap();
+            // aya.gctx.lookupResource(vbuff).?.unmap(); // TODO: why was this required?
 
             return Self{
                 .ibuff = ibuff,
@@ -63,17 +63,16 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
             self.buffer_offset = 0;
         }
 
-        /// uploads to the GPU the slice from 0 to num_verts
+        /// uploads to the GPU the slice from `buffer_offset` to num_verts
         pub fn updateVertSlice(self: *Self, num_verts: usize) void {
             std.debug.assert(num_verts <= self.verts.len);
             const vert_slice = self.verts[0..num_verts];
             aya.gctx.writeBuffer(self.vbuff, self.buffer_offset, VertT, vert_slice);
-            self.buffer_offset += vert_slice.len * @sizeOf(VertT);
+            self.buffer_offset += @intCast(vert_slice.len * @sizeOf(VertT));
         }
 
         /// uploads to the GPU the slice from start with num_verts. Records the offset in the BufferBindings allowing you
-        /// to interleave appendVertSlice and draw calls. When calling draw after appendVertSlice
-        /// the base_element is reset to the start of the newly updated data so you would pass in 0 for base_element.
+        /// to interleave appendVertSlice and draw calls.
         pub fn appendVertSlice(self: *Self, start_index: usize, num_verts: usize) void {
             std.debug.assert(start_index + num_verts <= self.verts.len);
             const vert_slice = self.verts[start_index .. start_index + num_verts];

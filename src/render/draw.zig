@@ -20,7 +20,7 @@ pub const Draw = struct {
     quad: Quad = Quad.init(0, 0, 1, 1, 1, 1),
 
     pub fn init() Draw {
-        const fontbook = FontBook.init(128, 128);
+        const fontbook = FontBook.init(256, 256);
         _ = fontbook.addFontMem("ProggyTiny", @embedFile("assets/ProggyTiny.ttf"), false);
         fontbook.setSize(10);
 

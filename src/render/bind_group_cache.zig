@@ -5,7 +5,7 @@ const TextureHandle = aya.render.TextureHandle;
 const BindGroupHandle = aya.render.BindGroupHandle;
 
 pub const BindGroupCache = struct {
-    values: std.AutoHashMapUnmanaged(TextureHandle, BindGroupHandle),
+    values: std.AutoHashMapUnmanaged(u32, BindGroupHandle),
 
     pub fn init() BindGroupCache {
         return .{ .values = .{} };
@@ -16,15 +16,15 @@ pub const BindGroupCache = struct {
     }
 
     pub fn get(self: *BindGroupCache, texture: TextureHandle) BindGroupHandle {
-        return self.values.get(texture).?;
+        return self.values.get(texture.id).?;
     }
 
     pub fn remove(self: *BindGroupCache, texture: TextureHandle) void {
-        _ = self.values.remove(texture);
+        _ = self.values.remove(texture.id);
     }
 
     pub fn containsOrPut(self: *BindGroupCache, texture: TextureHandle) ?*BindGroupHandle {
-        var result = self.values.getOrPut(aya.mem.allocator, texture) catch unreachable;
+        var result = self.values.getOrPut(aya.mem.allocator, texture.id) catch unreachable;
         if (!result.found_existing) {
             return result.value_ptr;
         }
