@@ -1,4 +1,5 @@
 const std = @import("std");
+const aya = @import("../aya.zig");
 const wgpu = @import("wgpu");
 
 const pools = @import("graphics_context.zig");
@@ -102,6 +103,34 @@ pub fn vertexAttributesForType(comptime T: type) VertexAttributesReturnType(T) {
     return res;
 }
 
+pub fn createSinglePixelTexture(color: aya.math.Color) aya.render.TextureHandle {
+    const texture = aya.gctx.createTexture(1, 1, .rgba8_unorm);
+    aya.gctx.writeTexture(texture, u32, &.{color.value});
+    return texture;
+}
+
+pub fn createCheckerTexture(comptime scale: usize) aya.render.TextureHandle {
+    const colors = [_]u32{
+        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
+        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
+    };
+
+    var pixels: [4 * scale * 4 * scale]u32 = undefined;
+    var y: usize = 0;
+    while (y < 4 * scale) : (y += 1) {
+        var x: usize = 0;
+        while (x < 4 * scale) : (x += 1) {
+            pixels[y + x * 4 * scale] = colors[@mod(x / scale, 4) + @mod(y / scale, 4) * 4];
+        }
+    }
+
+    const tex = aya.gctx.createTexture(4 * scale, 4 * scale, aya.render.GraphicsContext.swapchain_format);
+    aya.gctx.writeTexture(tex, u32, &pixels);
+    return tex;
+}
+
 // gpu_texture_make(w, h, gpu_texture_format_rgb8, filter_type_nearest, false, lifetime);
 // gpu_texture_set_data(input_texture, in_bitmap);
 // gpu_texture_clear(textures[(cn-1)%2], (color_t){0});
@@ -135,16 +164,16 @@ pub fn vertexAttributesForType(comptime T: type) VertexAttributesReturnType(T) {
 //     .bindgroups = {render_uniform_bindgroup, texture_bindgroup[cn%2]},
 // });
 
-pub const DrawCall = struct {
-    pipeline: pools.RenderPipelineHandle,
-    first_vertex: u32 = 0,
-    last_vertex: u32 = 0,
-    vertex_buffers: []pools.BufferHandle = &.{},
-    index_buffer: ?pools.BufferHandle = null,
-    outputs: []pools.TextureHandle = &.{},
-    depth: ?pools.TextureHandle = null,
-    bindgroups: []pools.BindGroupHandle = &.{},
-    scissor: ?u1 = null,
-    viewport: ?u1 = null,
-    num_instances: u32 = 1,
-};
+// pub const DrawCall = struct {
+//     pipeline: pools.RenderPipelineHandle,
+//     first_vertex: u32 = 0,
+//     last_vertex: u32 = 0,
+//     vertex_buffers: []pools.BufferHandle = &.{},
+//     index_buffer: ?pools.BufferHandle = null,
+//     outputs: []pools.TextureHandle = &.{},
+//     depth: ?pools.TextureHandle = null,
+//     bindgroups: []pools.BindGroupHandle = &.{},
+//     scissor: ?u1 = null,
+//     viewport: ?u1 = null,
+//     num_instances: u32 = 1,
+// };

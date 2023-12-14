@@ -4,6 +4,7 @@ const zmesh = aya.zmesh;
 const zm = aya.zm;
 const wgpu = aya.wgpu;
 
+// https://www.slideshare.net/Khronos_Group/gltf-20-reference-guide
 const cgltf = zmesh.io.zcgltf;
 
 pub const GltfVertex = struct {
@@ -154,9 +155,6 @@ pub const GltfLoader = struct {
         std.debug.print("loaded {} meshes\n", .{mesh_root.len});
         for (mesh_root) |mesh| {
             std.debug.print("\tprimitives: {}\n", .{mesh.meshes.len});
-            for (mesh.meshes) |m| {
-                std.debug.print("\tmaterial: {?}\n", .{m.material});
-            }
         }
     }
 
@@ -233,12 +231,12 @@ pub const GltfData = struct {
             mesh_root.meshes[i].vertex_offset = @as(u32, @intCast(pre_positions_len));
             mesh_root.meshes[i].material = self.loadMaterial(primitive);
 
-            mesh_cache.all_indices.ensureTotalCapacity(mesh_cache.indices.items.len) catch unreachable;
+            mesh_cache.all_indices.ensureTotalCapacity(mesh_cache.all_indices.items.len + mesh_cache.indices.items.len) catch unreachable;
             for (mesh_cache.indices.items) |mesh_index| {
                 mesh_cache.all_indices.appendAssumeCapacity(mesh_index);
             }
 
-            mesh_cache.all_vertices.ensureTotalCapacity(mesh_cache.positions.items.len) catch unreachable;
+            mesh_cache.all_vertices.ensureTotalCapacity(mesh_cache.all_vertices.items.len + mesh_cache.positions.items.len) catch unreachable;
             for (mesh_cache.positions.items, 0..) |_, j| {
                 mesh_cache.all_vertices.appendAssumeCapacity(.{
                     .position = mesh_cache.positions.items[j],
