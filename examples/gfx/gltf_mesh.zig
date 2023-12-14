@@ -154,7 +154,7 @@ pub const GltfLoader = struct {
         // TODO: delete all this
         std.debug.print("loaded {} meshes\n", .{mesh_root.len});
         for (mesh_root) |mesh| {
-            std.debug.print("\tprimitives: {}\n", .{mesh.meshes.len});
+            std.debug.print("    primitives: {}\n", .{mesh.meshes.len});
         }
     }
 

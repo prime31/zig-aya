@@ -62,7 +62,11 @@ fn init() !void {
     texture = gltf_loader.gltfs.slice()[0].textures[0].texture;
     tex_view = gltf_loader.gltfs.slice()[0].textures[0].texture_view;
 
-    sampler = gctx.createSampler(&.{});
+    sampler = gctx.createSampler(&.{
+        .address_mode_u = .repeat,
+        .address_mode_v = .repeat,
+        .address_mode_w = .repeat,
+    });
 
     const frame_bind_group_layout = gctx.createBindGroupLayout(&.{
         .label = "Frame BindGroupLayout", // Camera/Frame uniforms
@@ -97,7 +101,7 @@ fn init() !void {
     // pipeline
     gltf_pipeline = gctx.createPipelineSimple(
         &.{ gctx.lookupResource(frame_bind_group_layout).?, gctx.lookupResource(object_bind_group_layout).? },
-        aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf.wgsl") catch unreachable,
+        aya.fs.readZ(aya.mem.tmp_allocator, "examples/assets/shaders/gltf_pbr.wgsl") catch unreachable,
         @sizeOf(gltf_mesh.GltfVertex),
         &aya.gpu.vertexAttributesForType(gltf_mesh.GltfVertex).attributes,
         .{ .front_face = .cw, .cull_mode = .none },
