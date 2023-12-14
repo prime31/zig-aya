@@ -5,6 +5,7 @@ const zm = aya.zm;
 const wgpu = aya.wgpu;
 
 // https://www.slideshare.net/Khronos_Group/gltf-20-reference-guide
+// https://toji.dev/webgpu-gltf-case-study/#track-your-render-data-carefully
 const cgltf = zmesh.io.zcgltf;
 
 pub const GltfVertex = struct {
