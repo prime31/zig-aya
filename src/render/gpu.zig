@@ -131,6 +131,18 @@ pub fn createCheckerTexture(comptime scale: usize) aya.render.TextureHandle {
     return tex;
 }
 
+pub fn createWgslShaderModule(source: [*:0]const u8, label: ?[*:0]const u8) wgpu.ShaderModule {
+    const wgsl_desc = wgpu.ShaderModuleWGSLDescriptor{
+        .chain = .{ .next = null, .s_type = .shader_module_wgsl_descriptor },
+        .code = source,
+    };
+    const desc = wgpu.ShaderModuleDescriptor{
+        .next_in_chain = @ptrCast(&wgsl_desc),
+        .label = if (label) |l| l else null,
+    };
+    return aya.gctx.device.createShaderModule(&desc);
+}
+
 // gpu_texture_make(w, h, gpu_texture_format_rgb8, filter_type_nearest, false, lifetime);
 // gpu_texture_set_data(input_texture, in_bitmap);
 // gpu_texture_clear(textures[(cn-1)%2], (color_t){0});

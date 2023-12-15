@@ -10,8 +10,6 @@ const Rect = aya.math.Rect;
 const RectI = aya.math.RectI;
 const Color = aya.math.Color;
 
-const Batcher = aya.render.Batcher;
-
 var state: struct {
     renderer: aya.render.BasicRenderer,
     texture: aya.render.TextureHandle,

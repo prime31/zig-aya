@@ -715,7 +715,7 @@ pub const VertexAttribute = extern struct {
 };
 
 pub const BlendState = extern struct {
-    pub const alpha_blending = .{
+    pub const alpha_blending: BlendState = .{
         .color = .{
             .src_factor = .src_alpha,
             .dst_factor = .one_minus_src_alpha,
