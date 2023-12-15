@@ -52,7 +52,7 @@ fn init() !void {
     state.renderables[1] = Renderable.init(state.layer2_tex);
     state.renderables[1].pos.z = 2;
     state.renderables[2] = Renderable.init(state.layer3_tex);
-    state.renderables[2].pos.z = 1;
+    state.renderables[2].pos.z = 1.99;
 }
 
 fn shutdown() !void {
@@ -248,12 +248,16 @@ pub const Renderer = struct {
             .blend = &wgpu.BlendState.alpha_blending,
         }};
 
-        const vertex_attribs: ?[]const wgpu.VertexAttribute = &aya.gpu.vertexAttributesForType(Vertex).attributes;
+        const vertex_attribs: []const wgpu.VertexAttribute = &aya.gpu.vertexAttributesForType(Vertex).attributes;
         const vertex_buffers = [_]wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(Vertex),
-            .attribute_count = @intCast(vertex_attribs.?.len),
-            .attributes = vertex_attribs.?.ptr,
+            .attribute_count = @intCast(vertex_attribs.len),
+            .attributes = vertex_attribs.ptr,
         }};
+
+        const constants: [1]wgpu.ConstantEntry = .{
+            wgpu.ConstantEntry{ .key = "uv_type", .value = 1 },
+        };
 
         const pipe_desc = wgpu.RenderPipelineDescriptor{
             .layout = pipeline_layout,
@@ -268,6 +272,8 @@ pub const Renderer = struct {
                 .entry_point = "fs_main",
                 .target_count = color_targets.len,
                 .targets = &color_targets,
+                .constant_count = constants.len,
+                .constants = &constants,
             },
             .depth_stencil = &.{
                 .format = .depth32_float,
@@ -310,6 +316,7 @@ pub const Renderer = struct {
             mem.slice[0] = .{
                 .world_to_clip = zm.transpose(camera.cam_world_to_clip),
                 .position = camera.position,
+                .uv_type = camera.uv_type,
             };
             pass.setBindGroup(0, bg, &.{mem.offset});
         }
@@ -327,6 +334,7 @@ pub const Camera = struct {
     yaw: f32 = 0.0,
     fov: f32 = 70,
     cam_world_to_clip: Mat = zm.identity(),
+    uv_type: i32 = 0,
 
     pub fn update(self: *Camera) void {
         self.imgui();
@@ -395,12 +403,15 @@ pub const Camera = struct {
     fn imgui(self: *Camera) void {
         _ = aya.ig.sliderScalar("fov", f32, .{ .v = &self.fov, .min = 10, .max = 120 });
         _ = aya.ig.igDragFloat3("pos", &self.position, 1, -1000, 1000, null, aya.ig.ImGuiSliderFlags_None);
+        _ = aya.ig.sliderScalar("uv_type", i32, .{ .v = &self.uv_type, .min = 0, .max = 4 });
+        aya.ig.igSpacing();
     }
 };
 
 const CameraUniform = struct {
     world_to_clip: Mat,
     position: [3]f32,
+    uv_type: i32,
 };
 
 const ObjectUniform = struct {

@@ -1,6 +1,7 @@
 struct Camera {
     world_to_clip: mat4x4f,
     position: vec3f,
+    uv_type: i32,
 };
 
 struct VertexInput {
@@ -28,10 +29,15 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4f {
     let texture_size = vec2f(textureDimensions(image));
-    // let uv = uv_iq(input.uv, texture_size);
-    // let uv = uv_cstantos(input.uv, texture_size);
 
-    let color = textureSample(image, image_sampler, input.uv);
+    var uv = input.uv;
+    if camera.uv_type == 1 {
+        uv = uv_iq(input.uv, texture_size);
+    } else if camera.uv_type == 1 {
+        uv = uv_cstantos(input.uv, texture_size);
+    }
+
+    let color = textureSample(image, image_sampler, uv);
     if color.a == 0.0 { discard; }
     return color;
 }
