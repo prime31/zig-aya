@@ -33,7 +33,7 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4f {
     var uv = input.uv;
     if camera.uv_type == 1 {
         uv = uv_iq(input.uv, texture_size);
-    } else if camera.uv_type == 1 {
+    } else if camera.uv_type == 2 {
         uv = uv_cstantos(input.uv, texture_size);
     }
 

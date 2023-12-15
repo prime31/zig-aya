@@ -15,9 +15,11 @@ const Vertex = extern struct {
 
 var state: struct {
     renderer: Renderer,
+    offscreen_pass: OffscreenPass,
     camera: Camera,
     quad_mesh: QuadMesh,
     renderables: [3]Renderable,
+    use_offscreen_pass: bool = false,
 
     checker_tex: aya.render.TextureHandle,
     checker_view: aya.render.TextureViewHandle,
@@ -37,6 +39,7 @@ pub fn main() !void {
 
 fn init() !void {
     state.renderer = Renderer.init();
+    state.offscreen_pass = OffscreenPass.init(aya.gctx.surface_config.width / 2, aya.gctx.surface_config.height / 2);
     state.camera = .{};
     state.quad_mesh = QuadMesh.init();
 
@@ -73,10 +76,18 @@ fn update() !void {
         _ = aya.ig.igCheckbox("Enabled", &renderable.enabled);
         _ = aya.ig.igDragFloat3("pos", &renderable.pos.x, 1, -1000, 1000, null, aya.ig.ImGuiSliderFlags_None);
     }
+
+    aya.ig.igSpacing();
+    _ = aya.ig.igCheckbox("Render Offscreen", &state.use_offscreen_pass);
+    aya.ig.igSpacing();
 }
 
 fn render(ctx: *aya.render.RenderContext) !void {
-    const pass = state.renderer.beginPass(state.camera, ctx);
+    const pass = blk: {
+        if (state.use_offscreen_pass)
+            break :blk state.renderer.beginOffscreenPass(state.camera, state.offscreen_pass, ctx);
+        break :blk state.renderer.beginPass(state.camera, ctx);
+    };
     state.quad_mesh.setBuffers(pass);
 
     for (state.renderables) |renderable| {
@@ -85,12 +96,37 @@ fn render(ctx: *aya.render.RenderContext) !void {
 
     pass.end();
     pass.release();
+
+    // if we rendered offscreen we need to blit the render texture to the backbuffer
+    if (state.use_offscreen_pass) {
+        const p = ctx.beginRenderPass(&.{
+            .label = "Offscreen Blit Render Pass Encoder",
+            .color_attachment_count = 1,
+            .color_attachments = &.{
+                .view = ctx.swapchain_view,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .r = 0.2, .g = 0.2, .b = 0.3, .a = 1.0 },
+            },
+        });
+
+        const pipeline = aya.gctx.lookupResource(state.offscreen_pass.pipeline) orelse unreachable;
+        const bg = aya.gctx.lookupResource(state.offscreen_pass.bind_group) orelse unreachable;
+
+        p.setPipeline(pipeline);
+        p.setBindGroup(0, bg, null);
+        p.draw(3, 1, 0, 0);
+
+        p.end();
+        p.release();
+    }
 }
 
 pub const Renderable = struct {
     material: Material,
     pos: Vec3 = .{},
     scale: Vec2 = .{ .x = (280 / 272) * 10, .y = 1 * 10 }, // 272 × 280
+    rot_z: f32 = 0,
     enabled: bool = true,
 
     pub fn init(tex: aya.render.TextureHandle) Renderable {
@@ -160,8 +196,8 @@ pub const Material = struct {
             },
         });
         defer aya.gctx.releaseResource(object_bind_group_layout);
-
         const tex_view = aya.gctx.createTextureView(tex, &.{});
+
         const object_bind_group = aya.gctx.createBindGroup(object_bind_group_layout, &.{
             .{ .buffer_handle = aya.gctx.uniforms.buffer, .size = 256 },
             .{ .texture_view_handle = tex_view },
@@ -180,6 +216,7 @@ pub const Renderer = struct {
     depth_tex: aya.render.TextureHandle,
     depth_view: aya.render.TextureViewHandle,
     pipeline: aya.render.RenderPipelineHandle,
+    offscreen_pipeline: aya.render.RenderPipelineHandle,
 
     pub fn init() Renderer {
         // bind group
@@ -198,18 +235,11 @@ pub const Renderer = struct {
         // depth texture
         const depth_tex = aya.gctx.createTextureConfig(&.{
             .usage = .{ .render_attachment = true },
-            .dimension = .dim_2d,
-            .size = .{
-                .width = aya.gctx.surface_config.width,
-                .height = aya.gctx.surface_config.height,
-                .depth_or_array_layers = 1,
-            },
+            .size = .{ .width = aya.gctx.surface_config.width, .height = aya.gctx.surface_config.height },
             .format = .depth32_float,
-            .mip_level_count = 1,
-            .sample_count = 1,
         });
 
-        // pipeline
+        // TODO: duplicated from Material
         const object_bind_group_layout = aya.gctx.createBindGroupLayout(&.{
             .label = "Texture Bind Group",
             .entries = &.{
@@ -220,8 +250,15 @@ pub const Renderer = struct {
         });
         defer aya.gctx.releaseResource(object_bind_group_layout);
 
+        // pipelines
         const pipeline = createPipeline(
             &.{ aya.gctx.lookupResource(frame_bind_group_layout).?, aya.gctx.lookupResource(object_bind_group_layout).? },
+            aya.render.GraphicsContext.swapchain_format,
+        );
+
+        const offscreen_pipeline = createPipeline(
+            &.{ aya.gctx.lookupResource(frame_bind_group_layout).?, aya.gctx.lookupResource(object_bind_group_layout).? },
+            .rgba8_unorm,
         );
 
         return .{
@@ -229,10 +266,11 @@ pub const Renderer = struct {
             .depth_tex = depth_tex,
             .depth_view = aya.gctx.createTextureView(depth_tex, &.{}),
             .pipeline = pipeline,
+            .offscreen_pipeline = offscreen_pipeline,
         };
     }
 
-    fn createPipeline(bgls: []const wgpu.BindGroupLayout) aya.render.RenderPipelineHandle {
+    fn createPipeline(bgls: []const wgpu.BindGroupLayout, color_target_format: wgpu.TextureFormat) aya.render.RenderPipelineHandle {
         const pipeline_layout = aya.gctx.device.createPipelineLayout(&.{
             .bind_group_layout_count = bgls.len,
             .bind_group_layouts = bgls.ptr,
@@ -244,7 +282,7 @@ pub const Renderer = struct {
         defer shader_module.release();
 
         const color_targets = [_]wgpu.ColorTargetState{.{
-            .format = aya.render.GraphicsContext.swapchain_format,
+            .format = color_target_format,
             .blend = &wgpu.BlendState.alpha_blending,
         }};
 
@@ -324,6 +362,102 @@ pub const Renderer = struct {
         pass.setPipeline(pipline);
 
         return pass;
+    }
+
+    pub fn beginOffscreenPass(self: Renderer, camera: Camera, offscreen_pass: OffscreenPass, ctx: *aya.render.RenderContext) wgpu.RenderPassEncoder {
+        const pipline = aya.gctx.lookupResource(self.offscreen_pipeline) orelse unreachable;
+        const color_view = aya.gctx.lookupResource(offscreen_pass.color_tex_view) orelse unreachable;
+        const depth_view = aya.gctx.lookupResource(offscreen_pass.depth_tex_view) orelse unreachable;
+        const bg = aya.gctx.lookupResource(self.frame_bind_group) orelse unreachable;
+
+        const pass = ctx.beginRenderPass(&.{
+            .label = "Offscreen Render Pass Encoder",
+            .color_attachment_count = 1,
+            .color_attachments = &.{
+                .view = color_view,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .r = 0.2, .g = 0.2, .b = 0.3, .a = 1.0 },
+            },
+            .depth_stencil_attachment = &.{
+                .view = depth_view,
+                .depth_load_op = .clear,
+                .depth_store_op = .store,
+                .depth_clear_value = 1.0,
+            },
+        });
+
+        // projection matrix uniform
+        {
+            const mem = aya.gctx.uniforms.allocate(CameraUniform, 1);
+            mem.slice[0] = .{
+                .world_to_clip = zm.transpose(camera.cam_world_to_clip),
+                .position = camera.position,
+                .uv_type = camera.uv_type,
+            };
+            pass.setBindGroup(0, bg, &.{mem.offset});
+        }
+
+        pass.setPipeline(pipline);
+
+        return pass;
+    }
+};
+
+pub const OffscreenPass = struct {
+    color_tex: aya.render.TextureHandle,
+    color_tex_view: aya.render.TextureViewHandle,
+    depth_tex: aya.render.TextureHandle,
+    depth_tex_view: aya.render.TextureViewHandle,
+    bind_group: aya.render.BindGroupHandle,
+    pipeline: aya.render.RenderPipelineHandle,
+
+    pub fn init(width: u32, height: u32) OffscreenPass {
+        const color_tex = aya.gctx.createTextureConfig(&.{
+            .usage = .{ .render_attachment = true, .texture_binding = true },
+            .size = .{ .width = width, .height = height },
+            .format = .rgba8_unorm,
+        });
+        const color_tex_view = aya.gctx.createTextureView(color_tex, &.{});
+
+        const depth_tex = aya.gctx.createTextureConfig(&.{
+            .usage = .{ .render_attachment = true },
+            .size = .{ .width = width, .height = height },
+            .format = .depth32_float,
+        });
+
+        // bind group
+        const object_bind_group_layout = aya.gctx.createBindGroupLayout(&.{
+            .label = "Offscreen Bind Group",
+            .entries = &.{
+                .{ .visibility = .{ .fragment = true }, .texture = .{} },
+                .{ .visibility = .{ .fragment = true }, .sampler = .{} },
+            },
+        });
+        defer aya.gctx.releaseResource(object_bind_group_layout);
+
+        const bind_group = aya.gctx.createBindGroup(object_bind_group_layout, &.{
+            .{ .texture_view_handle = color_tex_view },
+            .{ .sampler_handle = aya.gctx.createSampler(&.{}) },
+        });
+
+        const pipeline = aya.gctx.createPipeline(&.{
+            .source = aya.fs.readZ(aya.mem.tmp_allocator, "examples/pixel/fullscreen.wgsl") catch unreachable,
+            .bgls = &.{aya.gctx.lookupResource(object_bind_group_layout).?},
+        });
+
+        return .{
+            .color_tex = color_tex,
+            .color_tex_view = color_tex_view,
+            .depth_tex = depth_tex,
+            .depth_tex_view = aya.gctx.createTextureView(depth_tex, &.{}),
+            .bind_group = bind_group,
+            .pipeline = pipeline,
+        };
+    }
+
+    pub fn deinit(self: OffscreenPass) void {
+        aya.gctx.releaseResource(self.color_tex);
     }
 };
 
