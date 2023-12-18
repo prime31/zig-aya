@@ -42,6 +42,12 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4f {
     return color;
 }
 
+fn uv_nearest(uv: vec2<f32>, texture_size: vec2<f32>) -> vec2<f32> {
+    var pixel: vec2f = uv * texture_size;
+    pixel = floor(pixel) + .5;
+    return pixel / texture_size;
+}
+
 fn uv_iq(uv: vec2<f32>, texture_size: vec2<f32>) -> vec2<f32> {
     var pixel: vec2<f32> = uv * texture_size;
     let seam: vec2<f32> = floor(pixel + 0.5);
