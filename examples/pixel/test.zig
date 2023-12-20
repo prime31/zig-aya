@@ -44,7 +44,8 @@ pub fn main() !void {
 }
 
 fn init() !void {
-    state.offscreen_pass_size = 280 * 3;
+    state.use_offscreen_pass = true;
+    state.offscreen_pass_size = 280;
 
     state.renderer = Renderer.init();
     state.offscreen_pass = OffscreenPass.init(state.offscreen_pass_size, state.offscreen_pass_size);
@@ -98,7 +99,7 @@ fn render(ctx: *aya.render.RenderContext) !void {
     };
     state.quad_mesh.setBuffers(pass);
 
-    for (state.renderables) |renderable| {
+    for (&state.renderables) |*renderable| {
         renderable.draw(pass);
     }
 
@@ -138,16 +139,16 @@ pub const Renderable = struct {
     enabled: bool = true,
 
     pub fn init(tex: aya.render.TextureHandle) Renderable {
-        return .{
-            .material = Material.init(tex),
-        };
+        return .{ .material = Material.init(tex) };
     }
 
-    pub fn draw(self: Renderable, pass: wgpu.RenderPassEncoder) void {
+    pub fn draw(self: *Renderable, pass: wgpu.RenderPassEncoder) void {
         if (!self.enabled) return;
+
+        // self.rot_z = std.math.degreesToRadians(f32, aya.time.seconds() * 5);
         const object_bg = aya.gctx.lookupResource(self.material.object_bind_group) orelse return;
 
-        const object_to_world = zm.mul(zm.scaling(self.scale.x, self.scale.y, 1), zm.translation(self.pos.x, self.pos.y, self.pos.z));
+        const object_to_world = zm.mul(zm.mul(zm.scaling(self.scale.x, self.scale.y, 1), zm.translation(self.pos.x, self.pos.y, self.pos.z)), zm.rotationZ(self.rot_z));
 
         const mem = aya.gctx.uniforms.allocate(ObjectUniform, 1);
         mem.slice[0].object_to_world = zm.transpose(object_to_world);
@@ -209,7 +210,10 @@ pub const Material = struct {
         const object_bind_group = aya.gctx.createBindGroup(object_bind_group_layout, &.{
             .{ .buffer_handle = aya.gctx.uniforms.buffer, .size = 256 },
             .{ .texture_view_handle = tex_view },
-            .{ .sampler_handle = aya.gctx.createSampler(&.{}) },
+            .{ .sampler_handle = aya.gctx.createSampler(&.{
+                .mag_filter = .linear,
+                .min_filter = .linear,
+            }) },
         });
 
         return .{
@@ -301,10 +305,6 @@ pub const Renderer = struct {
             .attributes = vertex_attribs.ptr,
         }};
 
-        const constants: [1]wgpu.ConstantEntry = .{
-            wgpu.ConstantEntry{ .key = "uv_type", .value = 1 },
-        };
-
         const pipe_desc = wgpu.RenderPipelineDescriptor{
             .layout = pipeline_layout,
             .vertex = wgpu.VertexState{
@@ -318,8 +318,6 @@ pub const Renderer = struct {
                 .entry_point = "fs_main",
                 .target_count = color_targets.len,
                 .targets = &color_targets,
-                .constant_count = constants.len,
-                .constants = &constants,
             },
             .depth_stencil = &.{
                 .format = .depth32_float,
@@ -477,7 +475,7 @@ pub const Camera = struct {
     fov: f32 = 70,
     zoom: f32 = 1,
     cam_world_to_clip: Mat = zm.identity(),
-    uv_type: i32 = 0,
+    uv_type: i32 = 3,
     speed: f32 = 4.0,
 
     pub fn update(self: *Camera) void {
@@ -551,7 +549,7 @@ pub const Camera = struct {
         _ = ig.igDragFloat3("pos", &self.position, 1, -1000, 1000, null, ig.ImGuiSliderFlags_None);
         _ = ig.igDragFloat3("forward", &self.forward, 1, -1000, 1000, null, ig.ImGuiSliderFlags_None);
         _ = ig.sliderScalar("zoom", f32, .{ .v = &self.zoom, .min = -50, .max = 50 });
-        _ = ig.sliderScalar("uv_type", i32, .{ .v = &self.uv_type, .min = 0, .max = 4 });
+        _ = ig.sliderScalar("uv_type", i32, .{ .v = &self.uv_type, .min = 0, .max = 3 });
         ig.igSpacing();
     }
 
