@@ -1,5 +1,6 @@
 const std = @import("std");
 const aya = @import("aya");
+const ig = aya.ig;
 const zm = aya.zm;
 const wgpu = aya.wgpu;
 
@@ -19,7 +20,8 @@ var state: struct {
     camera: Camera,
     quad_mesh: QuadMesh,
     renderables: [3]Renderable,
-    use_offscreen_pass: bool = false,
+    use_offscreen_pass: bool,
+    offscreen_pass_size: u32,
 
     checker_tex: aya.render.TextureHandle,
     checker_view: aya.render.TextureViewHandle,
@@ -34,12 +36,18 @@ pub fn main() !void {
         .update = update,
         .render = render,
         .shutdown = shutdown,
+        .window = .{
+            .width = 768,
+            .height = 768,
+        },
     });
 }
 
 fn init() !void {
+    state.offscreen_pass_size = 280 * 3;
+
     state.renderer = Renderer.init();
-    state.offscreen_pass = OffscreenPass.init(aya.gctx.surface_config.width / 2, aya.gctx.surface_config.height / 2);
+    state.offscreen_pass = OffscreenPass.init(state.offscreen_pass_size, state.offscreen_pass_size);
     state.camera = .{};
     state.quad_mesh = QuadMesh.init();
 
@@ -51,11 +59,11 @@ fn init() !void {
     state.layer3_tex = aya.gctx.createTextureFromFile("examples/pixel/layer3.png");
 
     state.renderables[0] = Renderable.init(state.layer1_tex);
-    state.renderables[0].pos.z = 3;
+    state.renderables[0].pos.z = 2.1;
     state.renderables[1] = Renderable.init(state.layer2_tex);
     state.renderables[1].pos.z = 2;
     state.renderables[2] = Renderable.init(state.layer3_tex);
-    state.renderables[2].pos.z = 1.99;
+    state.renderables[2].pos.z = 2;
 }
 
 fn shutdown() !void {
@@ -70,16 +78,16 @@ fn update() !void {
     state.camera.update();
 
     for (&state.renderables) |*renderable| {
-        aya.ig.igPushID_Ptr(renderable);
-        defer aya.ig.igPopID();
+        ig.igPushID_Ptr(renderable);
+        defer ig.igPopID();
 
-        _ = aya.ig.igCheckbox("Enabled", &renderable.enabled);
-        _ = aya.ig.igDragFloat3("pos", &renderable.pos.x, 1, -1000, 1000, null, aya.ig.ImGuiSliderFlags_None);
+        _ = ig.igCheckbox("Enabled", &renderable.enabled);
+        _ = ig.igDragFloat3("pos", &renderable.pos.x, 1, -1000, 1000, null, ig.ImGuiSliderFlags_None);
     }
 
-    aya.ig.igSpacing();
-    _ = aya.ig.igCheckbox("Render Offscreen", &state.use_offscreen_pass);
-    aya.ig.igSpacing();
+    ig.igSpacing();
+    _ = ig.igCheckbox("Render Offscreen", &state.use_offscreen_pass);
+    ig.igSpacing();
 }
 
 fn render(ctx: *aya.render.RenderContext) !void {
@@ -125,7 +133,7 @@ fn render(ctx: *aya.render.RenderContext) !void {
 pub const Renderable = struct {
     material: Material,
     pos: Vec3 = .{},
-    scale: Vec2 = .{ .x = (280 / 272) * 10, .y = 1 * 10 }, // 272 × 280
+    scale: Vec2 = .{ .x = 1, .y = 1 },
     rot_z: f32 = 0,
     enabled: bool = true,
 
@@ -462,13 +470,15 @@ pub const OffscreenPass = struct {
 };
 
 pub const Camera = struct {
-    position: [3]f32 = .{ 5, 5, -6.0 },
+    position: [3]f32 = .{ 0.5, 0.5, 1.5 },
     forward: [3]f32 = .{ 0.0, 0.0, 1.0 },
     pitch: f32 = 0.0 * std.math.pi,
     yaw: f32 = 0.0,
     fov: f32 = 70,
+    zoom: f32 = 1,
     cam_world_to_clip: Mat = zm.identity(),
     uv_type: i32 = 0,
+    speed: f32 = 4.0,
 
     pub fn update(self: *Camera) void {
         self.imgui();
@@ -486,7 +496,7 @@ pub const Camera = struct {
 
         // Handle camera movement with 'WASD' keys.
         {
-            const speed = if (aya.kb.pressed(.lshift)) zm.f32x4s(10.0) else zm.f32x4s(5.0);
+            const speed = if (!aya.kb.pressed(.lshift)) zm.f32x4s(self.speed / 20) else zm.f32x4s(self.speed);
             const delta_time = zm.f32x4s(aya.time.dt());
             const transform = zm.mul(zm.rotationX(self.pitch), zm.rotationY(self.yaw));
             var forward = zm.normalize3(zm.mul(zm.f32x4(0.0, 0.0, 1.0, 0.0), transform));
@@ -508,16 +518,18 @@ pub const Camera = struct {
                 cam_pos -= right;
             }
             if (aya.kb.pressed(.q)) {
-                cam_pos[1] -= 5.0 * aya.time.dt();
+                cam_pos[1] -= speed[0] * aya.time.dt();
             } else if (aya.kb.pressed(.e)) {
-                cam_pos[1] += 5.0 * aya.time.dt();
+                cam_pos[1] += speed[0] * aya.time.dt();
             }
 
             zm.storeArr3(&self.position, cam_pos);
         }
 
-        const fb_width = aya.gctx.surface_config.width;
-        const fb_height = aya.gctx.surface_config.height;
+        const fb_width = if (state.use_offscreen_pass) aya.gctx.surface_config.width else state.offscreen_pass_size;
+        const fb_height = if (state.use_offscreen_pass) aya.gctx.surface_config.height else state.offscreen_pass_size;
+
+        self.fov = self.cameraFov(@floatFromInt(fb_height));
 
         const cam_world_to_view = zm.lookToLh(
             zm.loadArr3(self.position),
@@ -535,10 +547,17 @@ pub const Camera = struct {
     }
 
     fn imgui(self: *Camera) void {
-        _ = aya.ig.sliderScalar("fov", f32, .{ .v = &self.fov, .min = 10, .max = 120 });
-        _ = aya.ig.igDragFloat3("pos", &self.position, 1, -1000, 1000, null, aya.ig.ImGuiSliderFlags_None);
-        _ = aya.ig.sliderScalar("uv_type", i32, .{ .v = &self.uv_type, .min = 0, .max = 4 });
-        aya.ig.igSpacing();
+        _ = ig.sliderScalar("fov", f32, .{ .v = &self.fov, .min = 10, .max = 120 });
+        _ = ig.igDragFloat3("pos", &self.position, 1, -1000, 1000, null, ig.ImGuiSliderFlags_None);
+        _ = ig.igDragFloat3("forward", &self.forward, 1, -1000, 1000, null, ig.ImGuiSliderFlags_None);
+        _ = ig.sliderScalar("zoom", f32, .{ .v = &self.zoom, .min = -50, .max = 50 });
+        _ = ig.sliderScalar("uv_type", i32, .{ .v = &self.uv_type, .min = 0, .max = 4 });
+        ig.igSpacing();
+    }
+
+    fn cameraFov(self: *const Camera, viewport_height: f32) f32 {
+        const target_height = viewport_height / self.zoom;
+        return @abs(std.math.radiansToDegrees(f32, std.math.atan(target_height / (2.0 * self.position[2]))));
     }
 };
 
