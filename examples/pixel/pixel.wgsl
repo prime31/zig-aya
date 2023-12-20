@@ -66,3 +66,21 @@ fn uv_cstantos(uv: vec2f, res: vec2f) -> vec2f {
     pixels = floor(pixels) + pixels_diff;
     return pixels / res;
 }
+
+
+// TODO: no dFdx/dFdy
+// samples from a linearly-interpolated texture to produce an appearance similar to
+// nearest-neighbor interpolation, but with resolution-dependent antialiasing
+fn uv_dookie(uv: vec2f, texture_size: vec2f) -> vec2f {
+    var pixel: vec2f = uv * texture_size;
+    let seam: vec2f = floor(pixel + 0.5);
+
+    // pixel = (pixel - seam) / v2len(dFdx(pixel), dFdy(pixel)) + seam;
+    pixel = clamp(pixel, seam - 0.5, seam + 0.5); // clamp to the center of a texel.
+    return pixel / texture_size;
+}
+
+// basically calculates the lengths of (a.x, b.x) and (a.y, b.y) at the same time
+fn v2len(a: vec2f, b: vec2f) -> vec2f {
+    return sqrt(a * a + b * b);
+}
