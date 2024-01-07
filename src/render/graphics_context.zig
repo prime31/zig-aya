@@ -822,8 +822,8 @@ fn createSurfaceForWindow(instance: Instance, window: *aya.sdl.SDL_Window) wgpu.
         break :blk LocalSurfaceDescriptor{
             .windows_hwnd = .{
                 .label = "basic surface",
-                .hinstance = std.os.windows.kernel32.GetModuleHandleW(null) or info.info.hinstance,
-                .hwnd = info.info.window,
+                .hinstance = std.os.windows.kernel32.GetModuleHandleW(null).?, // or info.in```fo.hinstance,
+                .hwnd = info.info.win.window,
             },
         };
     } else if (os_tag == .linux) blk: {

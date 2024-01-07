@@ -15,7 +15,7 @@ pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
         exe.linkFramework("IOSurface");
         exe.linkFramework("QuartzCore");
     } else if (@import("builtin").os.tag == .windows) {
-        exe.addObjectFile(.{ .path = thisDir() ++ "/libs/windows/libwgpu_native.a" });
+        exe.addObjectFile(.{ .path = thisDir() ++ "/libs/windows/wgpu_native.dll" });
     }
 }
 

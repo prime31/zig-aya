@@ -16,9 +16,9 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
     } else if (@import("builtin").os.tag == .windows) {
         // Windows include dirs for SDL2. This requires downloading SDL2 dev and extracting to c:\SDL2
         exe.addLibraryPath(.{ .path = thisDir() ++ "/libs/windows" });
-        exe.addLibraryPath(.{ .cwd_relative = "." });
-        exe.addLibraryPath(.{ .path = "." });
-        exe.addLibraryPath(.{ .cwd_relative = "zig-out/bin" });
+        // exe.addLibraryPath(.{ .cwd_relative = "." });
+        // exe.addLibraryPath(.{ .path = "." });
+        // exe.addLibraryPath(.{ .cwd_relative = "zig-out/bin" });
 
         // SDL3.dll needs to be copied to the zig-cache/bin folder
         b.installFile(thisDir() ++ "/libs/windows/SDL3.dll", "bin/SDL3.dll");

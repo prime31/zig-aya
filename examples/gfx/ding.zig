@@ -52,7 +52,7 @@ fn init() !void {
     const bind_group_layout1 = gctx.createBindGroupLayout(&.{
         .label = "Uniform Bind Group",
         .entries = &.{
-            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = true } },
+            .{ .visibility = .{ .vertex = true }, .buffer = .{ .type = .uniform, .has_dynamic_offset = .true } },
         },
     });
     defer gctx.releaseResource(bind_group_layout1); // TODO: do we have to hold onto these?
