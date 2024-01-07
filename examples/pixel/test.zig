@@ -248,7 +248,7 @@ pub const Renderer = struct {
         const depth_tex = aya.gctx.createTextureConfig(&.{
             .usage = .{ .render_attachment = true },
             .size = .{ .width = aya.gctx.surface_config.width, .height = aya.gctx.surface_config.height },
-            .format = .depth32_float,
+            .format = .depth16_unorm,
         });
 
         // TODO: duplicated from Material
@@ -320,7 +320,7 @@ pub const Renderer = struct {
                 .targets = &color_targets,
             },
             .depth_stencil = &.{
-                .format = .depth32_float,
+                .format = .depth16_unorm,
                 .depth_write_enabled = .true,
                 .depth_compare = .less,
             },
@@ -429,7 +429,7 @@ pub const OffscreenPass = struct {
         const depth_tex = aya.gctx.createTextureConfig(&.{
             .usage = .{ .render_attachment = true },
             .size = .{ .width = width, .height = height },
-            .format = .depth32_float,
+            .format = .depth16_unorm,
         });
 
         // bind group

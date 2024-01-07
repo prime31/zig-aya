@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
+pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
     // Dear ImGui will need this
     exe.addIncludePath(.{ .path = thisDir() ++ "/headers/webgpu" });
 
@@ -16,6 +16,7 @@ pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
         exe.linkFramework("QuartzCore");
     } else if (@import("builtin").os.tag == .windows) {
         exe.addObjectFile(.{ .path = thisDir() ++ "/libs/windows/wgpu_native.dll" });
+        b.installFile(thisDir() ++ "/libs/windows/wgpu_native.dll", "bin/wgpu_native.dll");
     }
 }
 

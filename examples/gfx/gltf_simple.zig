@@ -127,7 +127,7 @@ fn init() !void {
         .{ .front_face = .cw, .cull_mode = .none },
         aya.render.GraphicsContext.swapchain_format,
         &.{
-            .format = .depth32_float,
+            .format = .depth16_unorm,
             .depth_write_enabled = .true,
             .depth_compare = .less,
         },
@@ -397,6 +397,7 @@ fn loadGltfTexture(gltf_texture: zmesh.io.zcgltf.Texture) void {
     texture = aya.gctx.createTexture(@intCast(x), @intCast(y), .rgba8_unorm);
     const image_data = stb_image[0..@as(usize, @intCast(x * y * 4))];
     aya.gctx.writeTexture(texture, u8, image_data);
+
     tex_view = aya.gctx.createTextureView(texture, &.{});
 }
 
@@ -410,9 +411,10 @@ fn createDepthTexture() aya.render.TextureViewHandle {
             .height = aya.gctx.surface_config.height,
             .depth_or_array_layers = 1,
         },
-        .format = .depth32_float,
+        .format = .depth16_unorm,
         .mip_level_count = 1,
         .sample_count = 1,
     });
+
     return aya.gctx.createTextureView(tex, &.{});
 }

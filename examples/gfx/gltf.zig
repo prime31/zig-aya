@@ -107,7 +107,7 @@ fn init() !void {
         .{ .front_face = .cw, .cull_mode = .none },
         aya.render.GraphicsContext.swapchain_format,
         &.{
-            .format = .depth32_float,
+            .format = .depth16_unorm,
             .depth_write_enabled = .true,
             .depth_compare = .less,
         },
@@ -252,7 +252,7 @@ fn createDepthTexture() aya.render.TextureViewHandle {
             .height = aya.gctx.surface_config.height,
             .depth_or_array_layers = 1,
         },
-        .format = .depth32_float,
+        .format = .depth16_unorm,
         .mip_level_count = 1,
         .sample_count = 1,
     });
