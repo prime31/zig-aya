@@ -220,7 +220,7 @@ pub const GraphicsContext = struct {
         });
 
         const mapped_data = buffer.getMappedRange(T, 0, data.len).?;
-        std.mem.copy(T, mapped_data, data[0..]);
+        std.mem.copyForwards(T, mapped_data, data[0..]);
         buffer.unmap();
 
         return self.pools.buffer_pool.addResource(self.*, .{

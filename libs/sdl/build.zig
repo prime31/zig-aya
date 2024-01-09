@@ -36,7 +36,17 @@ pub fn linkArtifact(b: *std.Build, exe: *std.Build.Step.Compile) void {
     exe.linkLibC();
     exe.linkLibCpp();
 
-    exe.addIncludePath(.{ .path = thisDir() ++ "/SDL3" });
+    exe.addIncludePath(.{ .cwd_relative = thisDir() ++ "/SDL3/" });
+    //const path = std.Build.LazyPath{ .path = "libs/sdl/SDL3" };
+    //exe.addIncludePath(path);
+    //@compileLog(path.getPath(b));
+
+    // var cstr: []u8 = "";
+    // for (exe.root_module.include_dirs.items) |dir| {
+    //     cstr = b.fmt("{s}{s}\n", .{ cstr, dir.path.getPath(b) });
+    // }
+
+    // std.log.debug("{s}", .{cstr});
 
     if (@import("builtin").os.tag == .macos) {
         b.installFile(thisDir() ++ "/libs/macos/libSDL3.1.0.0.dylib", "bin/libSDL3.1.0.0.dylib");
