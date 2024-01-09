@@ -33,10 +33,9 @@ pub fn build(b: *std.Build) void {
 
 pub fn linkArtifact(b: *std.Build, exe: *std.Build.Step.Compile) void {
     exe.linkSystemLibrary("SDL3");
-    exe.linkLibC();
     exe.linkLibCpp();
 
-    exe.addIncludePath(.{ .cwd_relative = thisDir() ++ "/SDL3/" });
+    exe.addIncludePath(.{ .cwd_relative = thisDir() });
     //const path = std.Build.LazyPath{ .path = "libs/sdl/SDL3" };
     //exe.addIncludePath(path);
     //@compileLog(path.getPath(b));
