@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
+pub fn linkArtifact(b: *std.Build, exe: *std.Build.Step.Compile) void {
     // Dear ImGui will need this
     exe.addIncludePath(.{ .path = thisDir() ++ "/headers/webgpu" });
 
@@ -20,8 +20,8 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
     }
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
-    return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/src/wgpu.zig" } });
+pub fn getModule(b: *std.Build) *std.Build.Module {
+    return b.createModule(.{ .root_source_file = .{ .path = thisDir() ++ "/src/wgpu.zig" } });
 }
 
 inline fn thisDir() []const u8 {

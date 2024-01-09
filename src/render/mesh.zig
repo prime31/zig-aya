@@ -8,8 +8,8 @@ pub const Mesh = struct {
 
     pub fn init(comptime IndexT: type, indices: []IndexT, comptime VertT: type, verts: []VertT) Mesh {
         if (true) @panic("untested, fix me");
-        var ibuff = aya.gctx.createBufferInit("mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
-        var vbuff = aya.gctx.createBufferInit("mesh_vert_buffer", .{ .copy_dst = true, .vertex = true }, VertT, verts);
+        const ibuff = aya.gctx.createBufferInit("mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
+        const vbuff = aya.gctx.createBufferInit("mesh_vert_buffer", .{ .copy_dst = true, .vertex = true }, VertT, verts);
 
         return .{
             .ibuff = ibuff,
@@ -37,8 +37,8 @@ pub fn DynamicMesh(comptime IndexT: type, comptime VertT: type) type {
         element_count: u32,
 
         pub fn init(vertex_count: usize, indices: []IndexT) Self {
-            var ibuff = aya.gctx.createBufferInit("dynamic_mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
-            var vbuff = aya.gctx.createBuffer(&.{
+            const ibuff = aya.gctx.createBufferInit("dynamic_mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
+            const vbuff = aya.gctx.createBuffer(&.{
                 .usage = .{ .copy_dst = true, .vertex = true },
                 .size = vertex_count * @sizeOf(VertT),
             });
@@ -98,9 +98,9 @@ pub fn InstancedMesh(comptime IndexT: type, comptime VertT: type, comptime Insta
 
         pub fn init(instance_count: usize, indices: []IndexT, verts: []VertT) Self {
             if (true) @panic("untested, fix me");
-            var ibuff = aya.gctx.createBufferInit("instanced_mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
-            var vbuff = aya.gctx.createBufferInit("mesh_vert_buffer", .{ .copy_dst = true, .vertex = true }, VertT, verts);
-            var instance_buff = aya.gctx.createBuffer(&.{
+            const ibuff = aya.gctx.createBufferInit("instanced_mesh_index_buffer", .{ .copy_dst = true, .index = true }, IndexT, indices);
+            const vbuff = aya.gctx.createBufferInit("mesh_vert_buffer", .{ .copy_dst = true, .vertex = true }, VertT, verts);
+            const instance_buff = aya.gctx.createBuffer(&.{
                 .usage = .{ .copy_dst = true, .vertex = true },
                 .size = instance_count * @sizeOf(InstanceT),
                 .step_func = .per_instance,

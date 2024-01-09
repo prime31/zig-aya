@@ -219,7 +219,7 @@ pub const GraphicsContext = struct {
             .mapped_at_creation = .true,
         });
 
-        var mapped_data = buffer.getMappedRange(T, 0, data.len).?;
+        const mapped_data = buffer.getMappedRange(T, 0, data.len).?;
         std.mem.copy(T, mapped_data, data[0..]);
         buffer.unmap();
 

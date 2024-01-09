@@ -2,16 +2,16 @@ const std = @import("std");
 
 pub const Package = struct {
     zmesh: *std.Build.Module,
-    zmesh_c_cpp: *std.Build.CompileStep,
+    zmesh_c_cpp: *std.Build.Step.Compile,
 
-    pub fn link(pkg: Package, exe: *std.Build.CompileStep) void {
+    pub fn link(pkg: Package, exe: *std.Build.Step.Compile) void {
         exe.linkLibrary(pkg.zmesh_c_cpp);
     }
 };
 
-pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) Package {
+pub fn package(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode) Package {
     const zmesh = b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/src/main.zig" },
+        .root_source_file = .{ .path = thisDir() ++ "/src/main.zig" },
     });
 
     const zmesh_c_cpp = b.addStaticLibrary(.{
@@ -20,9 +20,8 @@ pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin
         .optimize = optimize,
     });
 
-    const abi = (std.zig.system.NativeTargetInfo.detect(target) catch unreachable).target.abi;
     zmesh_c_cpp.linkLibC();
-    if (abi != .msvc)
+    if (target.result.abi != .msvc)
         zmesh_c_cpp.linkLibCpp();
 
     zmesh_c_cpp.addIncludePath(.{ .path = thisDir() ++ "/libs/par_shapes" });
@@ -68,7 +67,7 @@ pub fn build(b: *std.Build) void {
 pub fn runTests(
     b: *std.Build,
     optimize: std.builtin.Mode,
-    target: std.zig.CrossTarget,
+    target: std.Build.ResolvedTarget,
 ) *std.Build.Step {
     const tests = b.addTest(.{
         .name = "zmesh-tests",

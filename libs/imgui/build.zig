@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.Mode, sdl_include_path: []const u8) void {
+pub fn linkArtifact(b: *std.Build, exe: *std.Build.Step.Compile, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode, sdl_include_path: []const u8) void {
     exe.addIncludePath(.{ .path = thisDir() ++ "/lib" });
 
     const lib = buildStaticLibrary(b, target, optimize);
@@ -9,7 +9,7 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig
     exe.linkLibrary(lib);
 }
 
-fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.Mode) *std.Build.CompileStep {
+fn buildStaticLibrary(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode) *std.Build.Step.Compile {
     const lib = b.addStaticLibrary(.{
         .name = "imgui",
         .target = target,
@@ -19,8 +19,7 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
 
     lib.linkLibC();
 
-    const abi = (std.zig.system.NativeTargetInfo.detect(target) catch unreachable).target.abi;
-    if (abi != .msvc)
+    if (target.result.abi != .msvc)
         lib.linkLibCpp();
 
     const cflags = &.{ "-fno-sanitize=undefined", "-Wno-return-type-c-linkage" };
@@ -40,13 +39,13 @@ fn buildStaticLibrary(b: *std.build, target: std.zig.CrossTarget, optimize: std.
     return lib;
 }
 
-pub fn getModule(b: *std.Build, sdl_module: *std.build.Module, enable_imgui: bool) *std.build.Module {
+pub fn getModule(b: *std.Build, sdl_module: *std.Build.Module, enable_imgui: bool) *std.Build.Module {
     const step = b.addOptions();
     step.addOption(bool, "enable_imgui", enable_imgui);
 
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/src/imgui.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = thisDir() ++ "/src/imgui.zig" },
+        .imports = &.{
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "options", .module = step.createModule() },
         },

@@ -47,7 +47,7 @@ pub const Draw = struct {
         const tex_info: aya.render.TextureInfo = aya.gctx.lookupResourceInfo(texture) orelse return;
         self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
-        var mat = Mat32.initTransform(.{ .x = x, .y = y });
+        const mat = Mat32.initTransform(.{ .x = x, .y = y });
         self.batcher.draw(texture, self.quad, mat, Color.white);
     }
 
@@ -55,7 +55,7 @@ pub const Draw = struct {
         const tex_info = aya.gctx.lookupResourceInfo(texture) orelse return;
         self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
-        var mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale });
+        const mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale });
         self.batcher.draw(texture, self.quad, mat, Color.white);
     }
 
@@ -63,7 +63,7 @@ pub const Draw = struct {
         const tex_info = aya.gctx.lookupResourceInfo(texture) orelse return;
         self.quad.setFill(@floatFromInt(tex_info.size.width), @floatFromInt(tex_info.size.height));
 
-        var mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale, .ox = ox, .oy = oy });
+        const mat = Mat32.initTransform(.{ .x = x, .y = y, .sx = scale, .sy = scale, .ox = ox, .oy = oy });
         self.batcher.draw(texture, self.quad, mat, Color.white);
     }
 
@@ -76,7 +76,7 @@ pub const Draw = struct {
     pub fn text(self: *Draw, str: []const u8, x: f32, y: f32, fb: ?*FontBook) void {
         var book = fb orelse self.fontbook;
         // TODO: dont hardcode scale
-        var matrix = Mat32.initTransform(.{ .x = x, .y = y, .sx = 2, .sy = 2 });
+        const matrix = Mat32.initTransform(.{ .x = x, .y = y, .sx = 2, .sy = 2 });
 
         var fons_quad = FontBook.Quad{};
         var iter = book.getTextIterator(str);
@@ -97,7 +97,7 @@ pub const Draw = struct {
 
     pub fn textOptions(self: *Draw, str: []const u8, fb: ?*FontBook, options: struct { x: f32, y: f32, rot: f32 = 0, sx: f32 = 1, sy: f32 = 1, alignment: FontBook.Align = .default, color: Color = Color.white }) void {
         var book = fb orelse self.fontbook;
-        var matrix = Mat32.initTransform(.{ .x = options.x, .y = options.y, .angle = options.rot, .sx = options.sx, .sy = options.sy });
+        const matrix = Mat32.initTransform(.{ .x = options.x, .y = options.y, .angle = options.rot, .sx = options.sx, .sy = options.sy });
         book.setAlign(options.alignment);
 
         var fons_quad = FontBook.Quad{};
@@ -121,7 +121,7 @@ pub const Draw = struct {
         self.quad.setFill(size, size);
 
         const offset = if (size == 1) 0 else size * 0.5;
-        var mat = Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
+        const mat = Mat32.initTransform(.{ .x = position.x, .y = position.y, .ox = offset, .oy = offset });
         self.batcher.draw(self.white_tex, self.quad, mat, color);
     }
 
@@ -131,13 +131,13 @@ pub const Draw = struct {
         const angle = start.angleBetween(end);
         const length = start.distance(end);
 
-        var mat = Mat32.initTransform(.{ .x = start.x, .y = start.y, .angle = angle, .sx = length, .sy = thickness });
+        const mat = Mat32.initTransform(.{ .x = start.x, .y = start.y, .angle = angle, .sx = length, .sy = thickness });
         self.batcher.draw(self.white_tex, self.quad, mat, color);
     }
 
     pub fn rect(self: *Draw, position: Vec2, width: f32, height: f32, color: Color) void {
         self.quad.setFill(width, height);
-        var mat = Mat32.initTransform(.{ .x = position.x, .y = position.y });
+        const mat = Mat32.initTransform(.{ .x = position.x, .y = position.y });
         self.batcher.draw(self.white_tex, self.quad, mat, color);
     }
 

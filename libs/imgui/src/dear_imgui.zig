@@ -253,8 +253,8 @@ pub extern fn __srget([*c]FILE) c_int;
 pub extern fn __svfscanf([*c]FILE, [*c]const u8, va_list) c_int;
 pub extern fn __swbuf(c_int, [*c]FILE) c_int;
 pub inline fn __sputc(arg__c: c_int, arg__p: [*c]FILE) c_int {
-    var _c = arg__c;
-    var _p = arg__p;
+    const _c = arg__c;
+    const _p = arg__p;
     if (((blk: {
         const ref = &_p.*._w;
         ref.* -= 1;

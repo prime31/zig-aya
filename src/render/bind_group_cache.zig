@@ -24,7 +24,7 @@ pub const BindGroupCache = struct {
     }
 
     pub fn containsOrPut(self: *BindGroupCache, texture: TextureHandle) ?*BindGroupHandle {
-        var result = self.values.getOrPut(aya.mem.allocator, texture.id) catch unreachable;
+        const result = self.values.getOrPut(aya.mem.allocator, texture.id) catch unreachable;
         if (!result.found_existing) {
             return result.value_ptr;
         }

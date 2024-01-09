@@ -118,11 +118,11 @@ pub const Mat4 = extern struct {
     }
 
     pub fn createAngleAxis(axis: Vec3, angle: f32) Mat4 {
-        var cos = std.math.cos(angle);
-        var sin = std.math.sin(angle);
-        var x = axis.x;
-        var y = axis.y;
-        var z = axis.z;
+        const cos = std.math.cos(angle);
+        const sin = std.math.sin(angle);
+        const x = axis.x;
+        const y = axis.y;
+        const z = axis.z;
 
         return .{
             .fields = [4][4]f32{

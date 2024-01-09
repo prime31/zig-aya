@@ -1,11 +1,42 @@
 const std = @import("std");
-const Builder = std.build.Builder;
+const Builder = std.Build.Builder;
+const install_options: enum { all, only_current } = .only_current;
 
-pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const exe = b.addExecutable(.{
+        .name = "sdl",
+        .root_source_file = .{ .path = "src/sdl.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    linkArtifact(b, exe);
+
+    const run_cmd = b.addRunArtifact(exe);
+
+    if (install_options == .only_current) {
+        const add_install_step = b.addInstallArtifact(exe, .{});
+        run_cmd.step.dependOn(&add_install_step.step);
+    } else {
+        b.installArtifact(exe);
+        run_cmd.step.dependOn(b.getInstallStep());
+    }
+
+    var buffer: [100]u8 = undefined;
+    const description = std.fmt.bufPrint(buffer[0..], "Run {s}", .{"sdl"}) catch unreachable;
+    const run_step = b.step("sdl", description);
+    run_step.dependOn(&run_cmd.step);
+}
+
+pub fn linkArtifact(b: *std.Build, exe: *std.Build.Step.Compile) void {
     exe.linkSystemLibrary("SDL3");
+    exe.linkLibC();
     exe.linkLibCpp();
 
-    exe.addIncludePath(.{ .path = thisDir() });
+    exe.addIncludePath(.{ .path = thisDir() ++ "/SDL3" });
 
     if (@import("builtin").os.tag == .macos) {
         b.installFile(thisDir() ++ "/libs/macos/libSDL3.1.0.0.dylib", "bin/libSDL3.1.0.0.dylib");
@@ -25,8 +56,8 @@ pub fn linkArtifact(b: *std.build, exe: *std.Build.Step.Compile) void {
     }
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
-    return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/src/sdl.zig" } });
+pub fn getModule(b: *std.Build) *std.Build.Module {
+    return b.createModule(.{ .root_source_file = .{ .path = thisDir() ++ "/src/sdl.zig" } });
 }
 
 inline fn thisDir() []const u8 {

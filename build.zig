@@ -35,7 +35,7 @@ pub fn build(b: *std.Build) void {
     }
 }
 
-fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
+fn addExecutable(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, options: Options, name: []const u8, source: []const u8) void {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = .{ .path = source },
@@ -43,7 +43,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
         .optimize = optimize,
     });
 
-    if (exe.optimize == .ReleaseFast) exe.strip = true;
+    //if (optimize == .ReleaseFast) exe.strip = true;
 
     linkLibs(b, exe, target, optimize, options);
 
@@ -63,7 +63,7 @@ fn addExecutable(b: *std.build, target: std.zig.CrossTarget, optimize: std.built
     run_step.dependOn(&run_cmd.step);
 }
 
-fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
+fn linkLibs(b: *std.Build, exe: *std.Build.Step.Compile, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, options: Options) void {
     wgpu_build.linkArtifact(b, exe);
     const wgpu_module = wgpu_build.getModule(b);
 
@@ -91,8 +91,8 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
     const watcher_module = watcher_build.getModule(b, options.enable_hot_reload);
 
     const aya_module = b.createModule(.{
-        .source_file = .{ .path = "src/aya.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = "src/aya.zig" },
+        .imports = &.{
             .{ .name = "stb", .module = stb_module },
             .{ .name = "sdl", .module = sdl_module },
             .{ .name = "imgui", .module = imgui_module },
@@ -106,19 +106,19 @@ fn linkLibs(b: *std.build, exe: *std.Build.Step.Compile, target: std.zig.CrossTa
             .{
                 .name = "build_options",
                 .module = b.createModule(.{
-                    .source_file = options.build_options.getOutput(),
+                    .root_source_file = options.build_options.getOutput(),
                 }),
             },
         },
     });
 
-    exe.addModule("aya", aya_module);
-    exe.addModule("wgpu", wgpu_module);
-    exe.addModule("sdl", sdl_module);
-    exe.addModule("stb", stb_module);
-    exe.addModule("imgui", imgui_module);
-    exe.addModule("zmath", zmath_module);
-    exe.addModule("zmesh", zmesh_module);
+    exe.root_module.addImport("aya", aya_module);
+    exe.root_module.addImport("wgpu", wgpu_module);
+    exe.root_module.addImport("sdl", sdl_module);
+    exe.root_module.addImport("stb", stb_module);
+    exe.root_module.addImport("imgui", imgui_module);
+    exe.root_module.addImport("zmath", zmath_module);
+    exe.root_module.addImport("zmesh", zmesh_module);
 }
 
 fn getAllExamples(b: *std.Build, root_directory: []const u8) [][2][]const u8 {
@@ -128,7 +128,7 @@ fn getAllExamples(b: *std.Build, root_directory: []const u8) [][2][]const u8 {
         fn search(alloc: std.mem.Allocator, directory: []const u8, filelist: *std.ArrayList([2][]const u8)) void {
             if (std.mem.eql(u8, directory, "examples/assets") or std.mem.eql(u8, directory, "examples\\assets")) return;
 
-            var dir = std.fs.cwd().openIterableDir(directory, .{}) catch unreachable;
+            var dir = std.fs.cwd().openDir(directory, .{ .iterate = true }) catch unreachable;
             defer dir.close();
 
             var iter = dir.iterate();
