@@ -374,7 +374,7 @@ pub const Sfxr = struct {
 
     fn onRead(ds: *ma.DataSource, frames_out: ?*anyopaque, frame_count: u64, frames_read: *u64) callconv(.C) ma.Result {
         var self: *Sfxr = @ptrCast(@alignCast(ds));
-        var out = @as([*]f32, @ptrCast(@alignCast(frames_out)))[0..frame_count];
+        const out = @as([*]f32, @ptrCast(@alignCast(frames_out)))[0..frame_count];
 
         for (out, 0..) |*frame, i| {
             self.rep_time += 1;
@@ -464,7 +464,7 @@ pub const Sfxr = struct {
                 }
 
                 // base waveform
-                var fp = @as(f32, @floatFromInt(self.phase)) / @as(f32, @floatFromInt(self.period));
+                const fp = @as(f32, @floatFromInt(self.phase)) / @as(f32, @floatFromInt(self.period));
                 switch (self.params.wave_type) {
                     0 => {
                         // square
@@ -490,7 +490,7 @@ pub const Sfxr = struct {
                 }
 
                 // lp filter
-                var pp = self.fltp;
+                const pp = self.fltp;
                 self.fltw *= self.fltw_d;
                 if (self.fltw < 0.0) self.fltw = 0.0;
                 if (self.fltw > 0.1) self.fltw = 0.1;
@@ -550,7 +550,7 @@ pub const Sfxr = struct {
     }
 
     fn onGetCursor(ds: *ma.DataSource, cursor: ?*u64) callconv(.C) ma.Result {
-        var self: *Sfxr = @ptrCast(@alignCast(ds));
+        const self: *Sfxr = @ptrCast(@alignCast(ds));
         std.debug.print("onGetCursor\n", .{});
         cursor.?.* = @intCast(self.rep_time);
         return .success;

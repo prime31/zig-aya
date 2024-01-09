@@ -18,7 +18,7 @@ pub const Image = struct {
         defer file.close();
 
         const file_size = try file.getEndPos();
-        var buffer = try allocator.alloc(u8, file_size);
+        const buffer = try allocator.alloc(u8, file_size);
         defer allocator.free(buffer);
         _ = try file.read(buffer);
 

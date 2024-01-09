@@ -55,7 +55,7 @@ pub const FontBook = struct {
         defer file.close();
 
         const file_size = file.getEndPos() catch unreachable;
-        var buffer = std.heap.c_allocator.alloc(u8, file_size) catch unreachable;
+        const buffer = std.heap.c_allocator.alloc(u8, file_size) catch unreachable;
         _ = file.read(buffer) catch unreachable;
 
         // we can let FONS free the data since we are using the c_allocator here

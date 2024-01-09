@@ -77,7 +77,7 @@ const MeshCache = struct {
     colors: ?std.ArrayList([4]f32) = null,
 
     pub fn init() MeshCache {
-        var arena_allocator = std.heap.ArenaAllocator.init(aya.mem.allocator); // TODO: why do we crash using this?
+        const arena_allocator = std.heap.ArenaAllocator.init(aya.mem.allocator); // TODO: why do we crash using this?
 
         return .{
             .arena_allocator = arena_allocator,
@@ -253,7 +253,7 @@ pub const GltfData = struct {
     }
 
     fn loadMaterial(self: *const GltfData, primitive: *cgltf.Primitive) ?GltfMaterial {
-        var mat = primitive.material orelse return null;
+        const mat = primitive.material orelse return null;
         var material = GltfMaterial{};
 
         const getTextureIndex = struct {
@@ -299,7 +299,7 @@ fn loadTexture(gltf_texture: zmesh.io.zcgltf.Texture) GltfTexture {
     const stb_image = aya.stb.stbi_load_from_memory(buffer_bytes.ptr, @intCast(buffer_bytes.len), &x, &y, null, 4);
     defer aya.stb.stbi_image_free(stb_image);
 
-    var texture = aya.gctx.createTexture(@intCast(x), @intCast(y), .rgba8_unorm);
+    const texture = aya.gctx.createTexture(@intCast(x), @intCast(y), .rgba8_unorm);
     const image_data = stb_image[0..@as(usize, @intCast(x * y * 4))];
     aya.gctx.writeTexture(texture, u8, image_data);
 

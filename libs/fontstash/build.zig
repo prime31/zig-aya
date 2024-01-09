@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const Builder = std.build.Builder;
+const Builder = std.Build.Builder;
 
 pub fn build(b: *Builder) void {
     const exe = b.addStaticLibrary("JunkLib", null);
@@ -9,17 +9,17 @@ pub fn build(b: *Builder) void {
 }
 
 /// prefix_path is used to add package paths. It should be the the same path used to include this build file
-pub fn linkArtifact(exe: *std.build.LibExeObjStep) void {
+pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
     const lib_cflags = &[_][]const u8{"-O3"};
-    exe.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+    exe.addCSourceFile(.{
         .file = .{ .path = thisDir() ++ "/src/fontstash.c" },
         .flags = lib_cflags,
     });
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
+pub fn getModule(b: *std.Build) *std.Build.Module {
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/fontstash.zig" },
+        .root_source_file = .{ .path = thisDir() ++ "/fontstash.zig" },
     });
 }
 

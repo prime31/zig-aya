@@ -2,17 +2,17 @@ const std = @import("std");
 
 pub const Package = struct {
     zaudio: *std.Build.Module,
-    zaudio_c_cpp: *std.Build.CompileStep,
+    zaudio_c_cpp: *std.Build.Step.Compile,
 
-    pub fn link(pkg: Package, exe: *std.Build.CompileStep) void {
+    pub fn link(pkg: Package, exe: *std.Build.Step.Compile) void {
         exe.linkLibrary(pkg.zaudio_c_cpp);
-        exe.addModule("zaudio", pkg.zaudio);
+        exe.root_module.addImport("zaudio", pkg.zaudio);
     }
 };
 
-pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mode, _: struct {}) Package {
+pub fn package(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.Mode, _: struct {}) Package {
     const zaudio = b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/src/zaudio.zig" },
+        .root_source_file = .{ .path = thisDir() ++ "/src/zaudio.zig" },
     });
 
     const zaudio_c_cpp = b.addStaticLibrary(.{
@@ -24,17 +24,15 @@ pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin
     zaudio_c_cpp.addIncludePath(.{ .path = thisDir() ++ "/libs/miniaudio" });
     zaudio_c_cpp.linkLibC();
 
-    const host = (std.zig.system.NativeTargetInfo.detect(zaudio_c_cpp.target) catch unreachable).target;
-
-    if (host.os.tag == .macos) {
+    if (target.result.os.tag == .macos) {
         zaudio_c_cpp.linkFramework("CoreAudio");
         zaudio_c_cpp.linkFramework("CoreFoundation");
         zaudio_c_cpp.linkFramework("AudioUnit");
         zaudio_c_cpp.linkFramework("AudioToolbox");
-    } else if (host.os.tag == .linux) {
-        zaudio_c_cpp.linkSystemLibraryName("pthread");
-        zaudio_c_cpp.linkSystemLibraryName("m");
-        zaudio_c_cpp.linkSystemLibraryName("dl");
+    } else if (target.result.os.tag == .linux) {
+        zaudio_c_cpp.linkSystemLibrary("pthread");
+        zaudio_c_cpp.linkSystemLibrary("m");
+        zaudio_c_cpp.linkSystemLibrary("dl");
     }
 
     zaudio_c_cpp.addCSourceFile(.{
@@ -52,7 +50,7 @@ pub fn package(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin
             "-DMA_NO_WINMM",
             "-std=c99",
             "-fno-sanitize=undefined",
-            if (host.os.tag == .macos) "-DMA_NO_RUNTIME_LINKING" else "",
+            if (target.result.os.tag == .macos) "-DMA_NO_RUNTIME_LINKING" else "",
         },
     });
 

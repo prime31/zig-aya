@@ -85,7 +85,7 @@ pub const Mat32 = extern struct {
 
     pub fn invert(self: Mat32) Mat32 {
         var res = Mat32{};
-        var det = 1 / (self.data[0] * self.data[3] - self.data[1] * self.data[2]);
+        const det = 1 / (self.data[0] * self.data[3] - self.data[1] * self.data[2]);
 
         res.data[0] = self.data[3] * det;
         res.data[1] = -self.data[1] * det;

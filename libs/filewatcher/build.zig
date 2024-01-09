@@ -1,22 +1,22 @@
 const std = @import("std");
 
-pub fn linkArtifact(exe: *std.build.LibExeObjStep) void {
+pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
     exe.linkLibC();
     exe.linkFramework("CoreServices");
 
-    exe.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+    exe.addCSourceFile(.{
         .file = .{ .path = thisDir() ++ "/lib/watcher.c" },
         .flags = &.{ "-std=c99", "-fno-sanitize=undefined" },
     });
 }
 
-pub fn getModule(b: *std.Build, enable_hot_reload: bool) *std.build.Module {
+pub fn getModule(b: *std.Build, enable_hot_reload: bool) *std.Build.Module {
     const step = b.addOptions();
     step.addOption(bool, "hot_reload", enable_hot_reload);
 
     return b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/src/watcher.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = thisDir() ++ "/src/watcher.zig" },
+        .imports = &.{
             .{ .name = "options", .module = step.createModule() },
         },
     });

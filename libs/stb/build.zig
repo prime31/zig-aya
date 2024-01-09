@@ -1,17 +1,17 @@
 const std = @import("std");
 
-pub fn linkArtifact(exe: *std.build.LibExeObjStep) void {
+pub fn linkArtifact(exe: *std.Build.Step.Compile) void {
     exe.linkLibC();
     exe.addIncludePath(.{ .path = thisDir() ++ "/libs" });
 
-    exe.addCSourceFile(std.Build.Step.Compile.CSourceFile{
+    exe.addCSourceFile(.{
         .file = .{ .path = thisDir() ++ "/libs/stb_impl.c" },
         .flags = &.{ "-std=c99", "-fno-sanitize=undefined" },
     });
 }
 
-pub fn getModule(b: *std.Build) *std.build.Module {
-    return b.createModule(.{ .source_file = .{ .path = thisDir() ++ "/src/stb.zig" } });
+pub fn getModule(b: *std.Build) *std.Build.Module {
+    return b.createModule(.{ .root_source_file = .{ .path = thisDir() ++ "/src/stb.zig" } });
 }
 
 inline fn thisDir() []const u8 {

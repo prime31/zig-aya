@@ -60,7 +60,7 @@ pub fn now() u64 {
 
 /// returns the time in milliseconds since the last call
 pub fn laptime(last_time: *u64) f64 {
-    var tmp = last_time;
+    const tmp = last_time;
     const now_time = now();
 
     const dtime: f64 = if (tmp.* != 0) {

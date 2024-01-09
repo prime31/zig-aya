@@ -9,7 +9,7 @@ pub const Package = struct {
     zmath: *std.Build.Module,
     zmath_options: *std.Build.Module,
 
-    pub fn link(pkg: Package, exe: *std.Build.CompileStep) void {
+    pub fn link(pkg: Package, exe: *std.Build.Step.Compile) void {
         exe.addModule("zmath", pkg.zmath);
         exe.addModule("zmath_options", pkg.zmath_options);
     }
@@ -31,8 +31,8 @@ pub fn package(
     const zmath_options = step.createModule();
 
     const zmath = b.createModule(.{
-        .source_file = .{ .path = thisDir() ++ "/src/main.zig" },
-        .dependencies = &.{
+        .root_source_file = .{ .path = thisDir() ++ "/src/main.zig" },
+        .imports = &.{
             .{ .name = "zmath_options", .module = zmath_options },
         },
     });
@@ -58,7 +58,7 @@ pub fn build(b: *std.Build) void {
 pub fn runTests(
     b: *std.Build,
     optimize: std.builtin.Mode,
-    target: std.zig.CrossTarget,
+    target: std.Build.ResolvedTarget,
 ) *std.Build.Step {
     const tests = b.addTest(.{
         .name = "zmath-tests",
@@ -75,7 +75,7 @@ pub fn runTests(
 
 pub fn runBenchmarks(
     b: *std.Build,
-    target: std.zig.CrossTarget,
+    target: std.Build.ResolvedTarget,
 ) *std.Build.Step {
     const exe = b.addExecutable(.{
         .name = "zmath-benchmarks",

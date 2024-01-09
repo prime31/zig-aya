@@ -10,7 +10,7 @@ pub fn read(allocator: std.mem.Allocator, filename: []const u8) ReadError![]u8 {
     defer file.close();
 
     const file_size = try file.getEndPos();
-    var buffer = try allocator.alloc(u8, file_size);
+    const buffer = try allocator.alloc(u8, file_size);
     _ = try file.read(buffer);
 
     return buffer;
@@ -72,7 +72,7 @@ pub fn savePrefsJson(app: []const u8, filename: []const u8, data: anytype) !void
 
 pub fn readPrefsJson(comptime T: type, app: []const u8, filename: []const u8) !T {
     const file = try getSaveGamesFile(app, filename);
-    var bytes = try aya.fs.read(aya.mem.tmp_allocator, file);
+    const bytes = try aya.fs.read(aya.mem.tmp_allocator, file);
     var tokens = std.json.TokenStream.init(bytes);
 
     const options = std.json.ParseOptions{ .allocator = aya.mem.allocator };

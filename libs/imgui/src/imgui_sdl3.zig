@@ -33,7 +33,7 @@ pub fn init(
         icons_config[0].GlyphOffset = .{ .x = 0, .y = 2 };
 
         const font_awesome_range: [3]imgui.ImWchar = [_]imgui.ImWchar{ icons.icon_range_min, icons.icon_range_max, 0 };
-        var data = @embedFile("assets/" ++ icons.font_icon_filename_fas);
+        const data = @embedFile("assets/" ++ icons.font_icon_filename_fas);
         _ = imgui.ImFontAtlas_AddFontFromMemoryTTF(io.Fonts, @constCast(data.ptr), data.len, 14, icons_config, &font_awesome_range);
         _ = imgui.ImFontAtlas_Build(io.Fonts);
     }
